@@ -1,0 +1,9 @@
+[package]
+name = "sequencer-framework"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { path = "../core" }
+database = { path = "../database" }
+json-rpc = { path = "../json-rpc" }

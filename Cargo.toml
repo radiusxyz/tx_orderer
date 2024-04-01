@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "core",
+    "database",
+    "json-rpc",
+    "sequencer-framework",
+]
+resolver = "2"
