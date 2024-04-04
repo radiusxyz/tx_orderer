@@ -1,0 +1,15 @@
+[package]
+name = "sequencer-macros"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.79"
+quote = "1.0.35"
+syn = { version = "2.0.57", features = ["extra-traits"] }
+
+[dev-dependencies]
+sequencer-core = { path = "../sequencer-core" }

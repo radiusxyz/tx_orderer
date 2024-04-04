@@ -1,8 +1,9 @@
 [workspace]
 members = [
-    "core",
-    "database",
-    "json-rpc",
+    "sequencer-core",
+    "sequencer-database",
     "sequencer-framework",
+    "sequencer-json-rpc",
+    "sequencer-macros",
 ]
 resolver = "2"

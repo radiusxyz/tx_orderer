@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-core = { path = "../core" }
-database = { path = "../database" }
-json-rpc = { path = "../json-rpc" }
+sequencer-core = { path = "../sequencer-core" }
+sequencer-database = { path = "../sequencer-database" }
+sequencer-json-rpc = { path = "../sequencer-json-rpc" }
+sequencer-macros = { path = "../sequencer-macros" }

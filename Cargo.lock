@@ -85,20 +85,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "rocksdb",
-]
-
-[[package]]
-name = "database"
-version = "0.1.0"
-dependencies = [
- "core",
-]
-
-[[package]]
 name = "either"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -127,10 +113,6 @@ checksum = "ab46a6e9526ddef3ae7f787c06f0f2600639ba80ea3eade3d8e670a2230f51d6"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "json-rpc"
-version = "0.1.0"
 
 [[package]]
 name = "lazy_static"
@@ -289,12 +271,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
+name = "sequencer-core"
+version = "0.1.0"
+dependencies = [
+ "rocksdb",
+]
+
+[[package]]
+name = "sequencer-database"
+version = "0.1.0"
+dependencies = [
+ "sequencer-core",
+]
+
+[[package]]
 name = "sequencer-framework"
 version = "0.1.0"
 dependencies = [
- "core",
- "database",
- "json-rpc",
+ "sequencer-core",
+ "sequencer-database",
+ "sequencer-json-rpc",
+ "sequencer-macros",
+]
+
+[[package]]
+name = "sequencer-json-rpc"
+version = "0.1.0"
+dependencies = [
+ "sequencer-core",
+]
+
+[[package]]
+name = "sequencer-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "sequencer-core",
+ "syn",
 ]
 
 [[package]]

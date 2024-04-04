@@ -3,7 +3,27 @@ use std::panic::Location;
 pub trait WrapError {
     type Output;
 
-    fn wrap()
+    fn wrap<C>(self, context: C) -> Self::Output
+    where
+        C: std::fmt::Debug;
+}
+
+impl<T, E> WrapError for Result<T, E>
+where
+    E: std::error::Error + 'static,
+{
+    type Output = Result<T, Error>;
+
+    #[track_caller]
+    fn wrap<C>(self, context: C) -> Self::Output
+    where
+        C: std::fmt::Debug,
+    {
+        match self {
+            Ok(value) => Ok(value),
+            Err(error) => Err(Error::new(error, context)),
+        }
+    }
 }
 
 pub struct Error {
@@ -66,23 +86,16 @@ impl From<String> for Error {
 
 impl Error {
     #[track_caller]
-    pub fn new<E>(error: E) -> Self
+    pub fn new<E, C>(error: E, context: C) -> Self
     where
         E: std::error::Error + 'static,
+        C: std::fmt::Debug,
     {
         Self {
             source: ErrorKind::Boxed(Box::new(error)),
             location: *Location::caller(),
-            context: None,
+            context: Some(format!("{:?}", context)),
         }
-    }
-
-    pub fn with_context<C>(mut self, context: C) -> Self
-    where
-        C: std::fmt::Debug,
-    {
-        self.context = Some(format!("{:?}", context));
-        self
     }
 }
 
@@ -100,11 +113,4 @@ impl std::fmt::Display for ErrorKind {
             Self::String(error) => write!(f, "{}", error),
         }
     }
-}
-
-#[test]
-fn works() {
-    std::fs::read_to_string("no_file")
-        .map_err(Error::new)
-        .unwrap();
 }
