@@ -1,6 +1,13 @@
+pub mod batch_reader;
+pub mod impl_basic_ops;
+pub mod impl_batch_ops;
+pub mod lock;
+pub mod macros;
+
 use std::{path::Path, sync::Arc};
 
 use sequencer_core::{
+    caller,
     error::{Error, WrapError},
     rocksdb::{Options, TransactionDB, TransactionDBOptions},
 };
@@ -38,13 +45,13 @@ impl Database {
         db_options.create_if_missing(true);
         let tx_db_options = TransactionDBOptions::default();
 
-        let transaction_db = TransactionDB::open(&db_options, &tx_db_options, &path)
-            .wrap(format_args!("path: {:?}", path.as_ref()))?;
+        let transaction_db = TransactionDB::open(&db_options, &tx_db_options, &path).wrap_context(
+            caller!(Database::new()),
+            format_args!("path: {:?}", path.as_ref()),
+        )?;
 
         Ok(Self {
             client: Arc::new(transaction_db),
         })
     }
-
-    // pub fn get<K, V>(&self, key: &K) -> Result<V, Error> {}
 }
