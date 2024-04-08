@@ -1,7 +1,7 @@
 use sequencer_core::serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(crate = "primitives::serde")]
+#[serde(crate = "sequencer_core::serde")]
 #[serde(untagged)]
 pub enum Id {
     String(String),

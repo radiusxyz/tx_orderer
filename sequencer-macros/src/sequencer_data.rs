@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse2, spanned::Spanned, Error, Ident, Item, ItemEnum, ItemStruct, Result, Type};
+use syn::{parse2, spanned::Spanned, Error, Item, ItemEnum, ItemStruct, Result, Type};
 
 pub fn expand_sequencer_data(input: TokenStream) -> Result<TokenStream> {
     let item: Item = parse2(input.clone())?;
@@ -23,7 +23,7 @@ pub fn expand_item_struct(input: TokenStream, item_struct: ItemStruct) -> Result
     })
 }
 
-pub fn expand_item_enum(input: TokenStream, item_enum: ItemEnum) -> Result<TokenStream> {
+pub fn expand_item_enum(input: TokenStream, _item_enum: ItemEnum) -> Result<TokenStream> {
     Ok(quote! {
         #[derive(Debug, sequencer_framework::serde::Deserialize, sequencer_framework::serde::Serialize)]
         #[serde(crate = "sequencer_framework::serde")]

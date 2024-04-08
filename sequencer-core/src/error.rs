@@ -1,5 +1,7 @@
 use std::panic::Location;
 
+use jsonrpsee::types::ErrorObjectOwned;
+
 pub trait WrapError {
     type Output;
 
@@ -86,6 +88,16 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<Error> for ErrorObjectOwned {
+    fn from(value: Error) -> Self {
+        crate::jsonrpsee::types::ErrorObjectOwned::owned::<usize>(
+            crate::jsonrpsee::types::error::ErrorCode::InternalError.code(),
+            value.to_string(),
+            None,
+        )
+    }
+}
 
 impl Error {
     fn fmt_caller(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
