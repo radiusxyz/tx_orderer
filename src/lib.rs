@@ -10,3 +10,6 @@ pub use sequencer_http as http;
 pub use sequencer_json_rpc as json_rpc;
 #[cfg(feature = "macros")]
 pub use sequencer_macros::*;
+
+mod interface;
+use interface::*;

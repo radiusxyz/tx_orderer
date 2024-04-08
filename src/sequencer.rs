@@ -89,14 +89,14 @@ impl Sequencer {
             .build()
             .wrap_context(
                 caller!(Sequencer::init()),
-                "Failed to initialize the tokio runtime",
+                "Failed to initialize tokio runtime",
             )?;
 
         let rpc_server_handle = runtime
             .block_on(Server::builder().build(builder.rpc_endpoint))
             .wrap_context(
                 caller!(Sequencer::init()),
-                "Failed to initialize the RPC server",
+                "Failed to initialize RPC server",
             )?
             .start(builder.rpc_module);
 
