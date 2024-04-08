@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 sequencer-core = { path = "../sequencer-core" }
+sequencer-database = { path = "../sequencer-database" }
