@@ -7,7 +7,6 @@ version = "0.1.0"
 [dependencies]
 sequencer-core = { version = "0.1", path = "sequencer-core", optional = true }
 sequencer-database = { version = "0.1", path = "sequencer-database", optional = true }
-sequencer-http = { version = "0.1", path = "sequencer-http", optional = true }
 sequencer-json-rpc = { version = "0.1", path = "sequencer-json-rpc", optional = true }
 sequencer-macros = { version = "0.1", path = "sequencer-macros", optional = true }
 
@@ -15,7 +14,6 @@ sequencer-macros = { version = "0.1", path = "sequencer-macros", optional = true
 members = [
     "sequencer-core",
     "sequencer-database",
-    "sequencer-http",
     "sequencer-json-rpc",
     "sequencer-macros",
 ]
@@ -25,11 +23,9 @@ resolver = "2"
 default = [
     "core",
     "database",
-    "http",
     "json-rpc",
 ]
 core = ["sequencer-core"]
 database = ["sequencer-database"]
-http = ["sequencer-http"]
 json-rpc = ["sequencer-json-rpc"]
 macros = ["sequencer-macros"]
