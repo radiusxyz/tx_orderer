@@ -1,6 +1,6 @@
 use std::panic::Location;
 
-use jsonrpsee::types::ErrorObjectOwned;
+use jsonrpsee::types::error::{ErrorCode, ErrorObjectOwned};
 
 pub trait WrapError {
     type Output;
@@ -72,6 +72,8 @@ pub struct Error {
     source: ErrorKind,
 }
 
+unsafe impl Send for Error {}
+
 impl std::fmt::Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
@@ -89,13 +91,15 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<Error> for ErrorObjectOwned {
-    fn from(value: Error) -> Self {
-        crate::jsonrpsee::types::ErrorObjectOwned::owned::<usize>(
-            crate::jsonrpsee::types::error::ErrorCode::InternalError.code(),
-            value.to_string(),
-            None,
-        )
+impl Into<ErrorObjectOwned> for Error {
+    fn into(self) -> ErrorObjectOwned {
+        ErrorObjectOwned::owned::<usize>(ErrorCode::InternalError.code(), self, None)
+    }
+}
+
+impl Into<String> for Error {
+    fn into(self) -> String {
+        self.to_string()
     }
 }
 
