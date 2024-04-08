@@ -1,3 +1,5 @@
+#[cfg(feature = "default")]
+pub mod sequencer;
 #[cfg(feature = "core")]
 pub use sequencer_core::*;
 #[cfg(feature = "database")]
