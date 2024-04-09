@@ -3,12 +3,16 @@ use std::{any, future::Future, mem::MaybeUninit, path::Path, sync::Once};
 use sequencer_core::{
     caller,
     error::{Error, WrapError},
-    jsonrpsee::server::{RpcModule, Server, ServerHandle},
+    hyper::{header, Method},
+    jsonrpsee::server::{middleware::http::ProxyGetRequestLayer, RpcModule, Server, ServerHandle},
     serde::Serialize,
+    serde_json,
     tokio::{
         runtime::{Builder, Runtime},
         task::JoinHandle,
     },
+    tower::ServiceBuilder,
+    tower_http::cors::{Any, CorsLayer},
     tracing_subscriber, unrecoverable,
 };
 use sequencer_database::Database;
@@ -81,6 +85,36 @@ pub struct Sequencer {
 }
 
 impl Sequencer {
+    async fn build_rpc_server(
+        rpc_endpoint: String,
+        mut rpc_module: RpcModule<Database>,
+    ) -> Result<ServerHandle, Error> {
+        let cors = CorsLayer::new()
+            .allow_methods([Method::GET, Method::POST])
+            .allow_origin(Any)
+            .allow_headers([header::CONTENT_TYPE]);
+
+        let middleware = ServiceBuilder::new().layer(cors).layer(
+            ProxyGetRequestLayer::new("/health", "system_health")
+                .wrap(caller!(Sequencer::build_rpc_server()))?,
+        );
+
+        let rpc_server = Server::builder()
+            .set_http_middleware(middleware)
+            .build(rpc_endpoint)
+            .await
+            .wrap(caller!(Sequencer::build_rpc_server()))?;
+
+        rpc_module
+            .register_method("health_check", |_, _| serde_json::json!({ "health": true }))
+            .wrap_context(
+                caller!(Sequencer::build_rpc_server()),
+                "Failed to register 'health_check' endpoint",
+            )?;
+
+        Ok(rpc_server.start(rpc_module))
+    }
+
     pub fn build(builder: SequencerBuilder) -> Result<Self, Error> {
         let runtime = Builder::new_multi_thread()
             .enable_all()
@@ -91,13 +125,11 @@ impl Sequencer {
                 "Failed to initialize tokio runtime",
             )?;
 
-        let rpc_server_handle: ServerHandle = runtime
-            .block_on(async move {
-                match Server::builder().build(builder.rpc_endpoint).await {
-                    Ok(rpc_server) => Ok(rpc_server.start(builder.rpc_module)),
-                    Err(error) => Err(error),
-                }
-            })
+        let rpc_server_handle = runtime
+            .block_on(Self::build_rpc_server(
+                builder.rpc_endpoint,
+                builder.rpc_module,
+            ))
             .wrap_context(
                 caller!(Sequencer::build()),
                 "Failed to initialize the RPC server",
