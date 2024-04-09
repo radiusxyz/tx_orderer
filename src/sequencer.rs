@@ -3,7 +3,7 @@ use std::{any, future::Future, mem::MaybeUninit, path::Path, sync::Once};
 use sequencer_core::{
     caller,
     error::{Error, WrapError},
-    jsonrpsee::server::{RpcModule, Server, ServerHandle},
+    jsonrpsee::server::{RpcModule, Server},
     serde::Serialize,
     tokio::{
         runtime::{Builder, Runtime},
@@ -78,7 +78,6 @@ impl SequencerBuilder {
 pub struct Sequencer {
     database: Database,
     runtime: Runtime,
-    rpc_server_handle: ServerHandle,
 }
 
 impl Sequencer {
@@ -107,16 +106,24 @@ impl Sequencer {
                 let sequencer = Self {
                     database: builder.database,
                     runtime,
-                    rpc_server_handle,
                 };
                 SEQUENCER.write(sequencer);
             });
         }
+
+        sequencer().block_on(async move { rpc_server_handle.stopped().await });
         Ok(())
     }
 
     pub fn database(&self) -> Database {
         self.database.clone()
+    }
+
+    pub fn block_on<F>(&self, future: F) -> F::Output
+    where
+        F: Future,
+    {
+        self.runtime.block_on(future)
     }
 
     pub fn spawn<F>(&self, future: F) -> JoinHandle<F::Output>
