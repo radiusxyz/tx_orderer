@@ -150,7 +150,7 @@ impl Sequencer {
             });
         }
 
-        sequencer().block_on(async move { while let false = sequencer().is_stopped() {} });
+        // sequencer().block_on(async move { while let false = sequencer().is_stopped() {} });
     }
 
     pub fn is_stopped(&self) -> bool {
