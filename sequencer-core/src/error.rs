@@ -179,6 +179,13 @@ impl Error {
         self.context = Some(format!("{:?}", context));
         self
     }
+
+    pub fn is_none_type(&self) -> bool {
+        match &self.source {
+            ErrorKind::NoneType => true,
+            _others => false,
+        }
+    }
 }
 
 pub enum ErrorKind {
