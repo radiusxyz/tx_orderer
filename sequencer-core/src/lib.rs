@@ -7,6 +7,7 @@ pub use axum;
 pub use bincode;
 pub use hyper;
 pub use jsonrpsee;
+pub use rand;
 pub use reqwest;
 pub use rocksdb;
 pub use serde;
