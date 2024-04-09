@@ -13,4 +13,4 @@ pub use sequencer_macros::*;
 
 #[cfg(feature = "default")]
 mod interface;
-use interface::*;
+pub use interface::*;

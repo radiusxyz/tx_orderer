@@ -3,7 +3,7 @@ use std::{any, future::Future, mem::MaybeUninit, path::Path, sync::Once};
 use sequencer_core::{
     caller,
     error::{Error, WrapError},
-    jsonrpsee::server::{RpcModule, Server},
+    jsonrpsee::server::{RpcModule, Server, ServerHandle},
     serde::Serialize,
     tokio::{
         runtime::{Builder, Runtime},
@@ -69,50 +69,60 @@ impl SequencerBuilder {
         Ok(self)
     }
 
-    pub fn build(self) -> Result<(), Error> {
-        Sequencer::init(self)
+    pub fn build(self) -> Result<Sequencer, Error> {
+        Sequencer::build(self)
     }
 }
 
-#[allow(unused)]
 pub struct Sequencer {
     database: Database,
     runtime: Runtime,
+    rpc_server_handle: ServerHandle,
 }
 
 impl Sequencer {
-    pub fn init(builder: SequencerBuilder) -> Result<(), Error> {
+    pub fn build(builder: SequencerBuilder) -> Result<Self, Error> {
         let runtime = Builder::new_multi_thread()
             .enable_all()
             .worker_threads(builder.thread_count)
             .build()
             .wrap_context(
-                caller!(Sequencer::init()),
+                caller!(Sequencer::build()),
                 "Failed to initialize tokio runtime",
             )?;
 
-        let rpc_server_handle = runtime
-            .block_on(Server::builder().build(builder.rpc_endpoint))
+        let rpc_server_handle: ServerHandle = runtime
+            .block_on(async move {
+                match Server::builder().build(builder.rpc_endpoint).await {
+                    Ok(rpc_server) => Ok(rpc_server.start(builder.rpc_module)),
+                    Err(error) => Err(error),
+                }
+            })
             .wrap_context(
-                caller!(Sequencer::init()),
-                "Failed to initialize RPC server",
-            )?
-            .start(builder.rpc_module);
+                caller!(Sequencer::build()),
+                "Failed to initialize the RPC server",
+            )?;
 
+        Ok(Self {
+            database: builder.database,
+            runtime,
+            rpc_server_handle,
+        })
+    }
+
+    pub fn init(self) {
         unsafe {
             INIT.call_once(|| {
                 tracing_subscriber::fmt().init();
-
-                let sequencer = Self {
-                    database: builder.database,
-                    runtime,
-                };
-                SEQUENCER.write(sequencer);
+                SEQUENCER.write(self);
             });
         }
 
-        sequencer().block_on(async move { rpc_server_handle.stopped().await });
-        Ok(())
+        sequencer().block_on(async move { while let false = sequencer().is_stopped() {} });
+    }
+
+    pub fn is_stopped(&self) -> bool {
+        self.rpc_server_handle.is_stopped()
     }
 
     pub fn database(&self) -> Database {
