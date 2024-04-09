@@ -151,6 +151,34 @@ impl Error {
             source: ErrorKind::Boxed(Box::new(error)),
         }
     }
+
+    #[track_caller]
+    pub fn str_error(operation: &'static str, error: &'static str) -> Self {
+        Self {
+            operation,
+            location: *Location::caller(),
+            context: None,
+            source: ErrorKind::StaticStr(error),
+        }
+    }
+
+    #[track_caller]
+    pub fn string_error(operation: &'static str, error: String) -> Self {
+        Self {
+            operation,
+            location: *Location::caller(),
+            context: None,
+            source: ErrorKind::String(error),
+        }
+    }
+
+    pub fn add_context<C>(mut self, context: C) -> Self
+    where
+        C: std::fmt::Debug,
+    {
+        self.context = Some(format!("{:?}", context));
+        self
+    }
 }
 
 pub enum ErrorKind {
