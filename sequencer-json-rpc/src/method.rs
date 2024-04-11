@@ -65,6 +65,7 @@ pub trait RpcMethod: Clone + Debug + DeserializeOwned + Serialize + Send {
     ///     Err(err) => eprintln!("Error: {:?}", err),
     /// }
     /// ```
+    #[allow(unused_variables)]
     async fn handler(self, state: Arc<Database>) -> Result<Self::Response, Error> {
         unimplemented!()
     }
