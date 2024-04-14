@@ -1665,6 +1665,7 @@ dependencies = [
  "bincode",
  "hyper 0.14.28",
  "jsonrpsee",
+ "rand",
  "reqwest",
  "rocksdb",
  "serde",

@@ -1,6 +1,6 @@
 use sequencer_core::{
     bincode, caller,
-    error::{Error, WrapError},
+    _error::{Error, WrapError},
     rocksdb::{Transaction, TransactionDB},
     serde::ser::Serialize,
 };

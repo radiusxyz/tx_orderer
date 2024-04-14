@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use sequencer_core::{
     caller,
-    error::{Error, WrapError},
+    _error::{Error, WrapError},
 };
 
 use crate::batch_reader::BatchReader;

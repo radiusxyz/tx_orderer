@@ -2,7 +2,7 @@ use std::{any, future::Future, mem::MaybeUninit, path::Path, sync::Once};
 
 use sequencer_core::{
     caller,
-    error::{Error, WrapError},
+    _error::{Error, WrapError},
     hyper::{header, Method},
     jsonrpsee::server::{middleware::http::ProxyGetRequestLayer, RpcModule, Server, ServerHandle},
     serde::Serialize,

@@ -8,7 +8,7 @@ use std::{path::Path, sync::Arc};
 
 use sequencer_core::{
     caller,
-    error::{Error, WrapError},
+    _error::{Error, WrapError},
     rocksdb::{Options, TransactionDB, TransactionDBOptions},
 };
 

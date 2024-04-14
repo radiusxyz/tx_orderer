@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use sequencer_core::{
     caller,
-    error::{Error, WrapError},
+    _error::{Error, WrapError},
     jsonrpsee::{
         core::client::ClientT,
         http_client::{HttpClient, HttpClientBuilder},

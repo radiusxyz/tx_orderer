@@ -2,7 +2,7 @@ use std::{any, collections::HashMap, fmt::Debug};
 
 use sequencer_core::{
     bincode, caller,
-    error::{Error, WrapError},
+    error::{DatabaseError, Error, ErrorKind, WrapError},
     serde::{de::DeserializeOwned, ser::Serialize},
 };
 
@@ -26,19 +26,19 @@ impl BatchReader {
         V: Debug + DeserializeOwned,
     {
         let key_vec = bincode::serialize(key)
-            .wrap_context(caller!(BatchReader::get()), format_args!("key: {:?}", key))?;
+            .map_err(ErrorKind::from)
+            .wrap(DatabaseError::SerializeKey(key))?;
 
         let value_vec_opt = self
             .key_value_map
             .get(&key_vec)
-            .wrap_context(caller!(BatchReader::get()), format_args!("key: {:?}", key))?;
-        let value_vec = value_vec_opt
-            .as_ref()
-            .wrap_context(caller!(BatchReader::get()), format_args!("key: {:?}", key))?;
-        let value: V = bincode::deserialize(&value_vec).wrap_context(
-            caller!(BatchReader::get()),
-            format_args!("type: {:?}", any::type_name::<V>()),
-        )?;
+            .ok_or(ErrorKind::NoneType)
+            .wrap(DatabaseError::KeyDoesNotExist(key))?;
+        let value_vec = value_vec_opt.as_ref().ok_or(ErrorKind::NoneType).wrap("")?;
+        // .wrap_context(caller!(BatchReader::get()), format_args!("key: {:?}", key))?;
+        let value: V = bincode::deserialize(&value_vec)
+            .map_err(ErrorKind::from)
+            .wrap(DatabaseError::PutTransaction(key))?;
         Ok(value)
     }
 }
