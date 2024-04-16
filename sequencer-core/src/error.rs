@@ -108,7 +108,7 @@ impl Error {
     fn fmt_verbose(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Error:")?;
         for error_frame in self.backtrace.iter().rev() {
-            writeln!(f, "\t{}", error_frame)?;
+            writeln!(f, "\t{:?}", error_frame)?;
         }
         writeln!(f, "Caused by:")?;
         writeln!(f, "\t{}", self.source)?;
