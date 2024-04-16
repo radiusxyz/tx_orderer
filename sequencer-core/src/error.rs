@@ -75,6 +75,24 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+impl From<&str> for Error {
+    fn from(value: &str) -> Self {
+        Self {
+            backtrace: Vec::new(),
+            source: ErrorKind::Custom(value.to_string()),
+        }
+    }
+}
+
+impl From<String> for Error {
+    fn from(value: String) -> Self {
+        Self {
+            backtrace: Vec::new(),
+            source: ErrorKind::Custom(value),
+        }
+    }
+}
+
 impl Error {
     fn fmt_verbose(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Error:")?;
@@ -121,16 +139,6 @@ impl Error {
         C: std::fmt::Debug,
     {
         self.backtrace.push(ErrorFrame::new(context))
-    }
-
-    pub fn custom<E>(error: E) -> Self
-    where
-        E: std::fmt::Display,
-    {
-        Self {
-            backtrace: Vec::new(),
-            source: ErrorKind::Custom(error.to_string()),
-        }
     }
 
     pub fn is_none_type(&self) -> bool {
@@ -206,37 +214,4 @@ where
     fn from(value: E) -> Self {
         Self::Boxed(Box::new(value))
     }
-}
-
-#[test]
-fn works() {
-    enum Context<T>
-    where
-        T: std::fmt::Debug,
-    {
-        OpenError(T),
-    }
-
-    impl<T> std::fmt::Debug for Context<T>
-    where
-        T: std::fmt::Debug,
-    {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            match self {
-                Self::OpenError(path) => write!(f, "Failed to open the file (path: {:?})", path),
-            }
-        }
-    }
-
-    fn open(path: impl AsRef<std::path::Path>) -> Result<String, Error> {
-        let fs = std::fs::read_to_string(path.as_ref())
-            .map_err(ErrorKind::from)
-            .wrap(Context::OpenError(path.as_ref()))?;
-        Ok(fs)
-    }
-
-    open("no_file").unwrap_or_else(|error| {
-        println!("{:?}", error);
-        String::new()
-    });
 }
