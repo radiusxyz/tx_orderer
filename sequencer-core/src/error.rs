@@ -8,21 +8,6 @@ pub trait WrapError {
         C: std::fmt::Debug;
 }
 
-impl<T> WrapError for Result<T, ErrorKind> {
-    type Output = Result<T, Error>;
-
-    #[track_caller]
-    fn wrap<C>(self, context: C) -> Self::Output
-    where
-        C: std::fmt::Debug,
-    {
-        match self {
-            Ok(value) => Ok(value),
-            Err(error_kind) => Err(Error::new(context, error_kind)),
-        }
-    }
-}
-
 impl<T> WrapError for Result<T, Error> {
     type Output = Result<T, Error>;
 
@@ -33,10 +18,7 @@ impl<T> WrapError for Result<T, Error> {
     {
         match self {
             Ok(value) => Ok(value),
-            Err(mut error) => {
-                error.push_context(context);
-                Err(error)
-            }
+            Err(error) => Err(error.push_context(context)),
         }
     }
 }
@@ -51,7 +33,10 @@ impl<T> WrapError for Option<T> {
     {
         match self {
             Some(value) => Ok(value),
-            None => Err(Error::new(context, ErrorKind::NoneType)),
+            None => Err(Error {
+                backtrace: vec![ErrorFrame::new(context)],
+                source: ErrorKind::NoneType,
+            }),
         }
     }
 }
@@ -94,10 +79,36 @@ impl From<String> for Error {
 }
 
 impl Error {
+    pub fn new<E>(error: E) -> Self
+    where
+        E: std::error::Error + 'static,
+    {
+        Self {
+            backtrace: Vec::new(),
+            source: ErrorKind::Boxed(Box::new(error)),
+        }
+    }
+
+    pub fn is_none_type(&self) -> bool {
+        match &self.source {
+            ErrorKind::NoneType => true,
+            _others => false,
+        }
+    }
+
+    #[track_caller]
+    fn push_context<C>(mut self, context: C) -> Self
+    where
+        C: std::fmt::Debug,
+    {
+        self.backtrace.push(ErrorFrame::new(context));
+        self
+    }
+
     fn fmt_verbose(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Error:")?;
         for error_frame in self.backtrace.iter().rev() {
-            writeln!(f, "\t{:?}", error_frame)?;
+            writeln!(f, "\t{}", error_frame)?;
         }
         writeln!(f, "Caused by:")?;
         writeln!(f, "\t{}", self.source)?;
@@ -119,32 +130,6 @@ impl Error {
                 )
             }
             None => write!(f, "{}", self.source),
-        }
-    }
-
-    #[track_caller]
-    pub fn new<C>(context: C, kind: ErrorKind) -> Self
-    where
-        C: std::fmt::Debug,
-    {
-        Self {
-            backtrace: vec![ErrorFrame::new(context)],
-            source: kind,
-        }
-    }
-
-    #[track_caller]
-    pub fn push_context<C>(&mut self, context: C)
-    where
-        C: std::fmt::Debug,
-    {
-        self.backtrace.push(ErrorFrame::new(context))
-    }
-
-    pub fn is_none_type(&self) -> bool {
-        match &self.source {
-            ErrorKind::NoneType => true,
-            _others => false,
         }
     }
 }
@@ -185,7 +170,7 @@ impl ErrorFrame {
     }
 }
 
-pub enum ErrorKind {
+enum ErrorKind {
     Boxed(Box<dyn std::error::Error>),
     Custom(String),
     NoneType,
@@ -204,14 +189,5 @@ impl std::fmt::Display for ErrorKind {
             Self::Custom(error) => write!(f, "{}", error),
             Self::NoneType => write!(f, "The value returned None"),
         }
-    }
-}
-
-impl<E> From<E> for ErrorKind
-where
-    E: std::error::Error + 'static,
-{
-    fn from(value: E) -> Self {
-        Self::Boxed(Box::new(value))
     }
 }
