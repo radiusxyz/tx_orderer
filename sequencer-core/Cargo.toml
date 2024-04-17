@@ -10,6 +10,7 @@ doctest = false
 async-trait = "0.1.73"
 axum = "0.7"
 bincode = "1.3.3"
+ethers = "2.0"
 hyper = "0.14.27"
 jsonrpsee = { version = "0.22", features = ["full"] }
 rand = "0.8.5"
