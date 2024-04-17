@@ -3,22 +3,20 @@ use std::panic::Location;
 pub trait WrapError {
     type Output;
 
-    fn wrap<C>(self, context: C) -> Self::Output
-    where
-        C: std::fmt::Debug;
+    fn wrap(self, context: String) -> Self::Output;
 }
 
-impl<T> WrapError for Result<T, Error> {
+impl<T, E> WrapError for Result<T, E>
+where
+    E: std::error::Error + 'static,
+{
     type Output = Result<T, Error>;
 
     #[track_caller]
-    fn wrap<C>(self, context: C) -> Self::Output
-    where
-        C: std::fmt::Debug,
-    {
+    fn wrap(self, context: String) -> Self::Output {
         match self {
             Ok(value) => Ok(value),
-            Err(error) => Err(error.push_context(context)),
+            Err(error) => Err(Error::boxed(error, Some(context))),
         }
     }
 }
@@ -27,145 +25,89 @@ impl<T> WrapError for Option<T> {
     type Output = Result<T, Error>;
 
     #[track_caller]
-    fn wrap<C>(self, context: C) -> Self::Output
-    where
-        C: std::fmt::Debug,
-    {
+    fn wrap(self, context: String) -> Self::Output {
         match self {
             Some(value) => Ok(value),
-            None => Err(Error {
-                backtrace: vec![ErrorFrame::new(context)],
-                source: ErrorKind::NoneType,
-            }),
+            None => Err(Error::none_type(Some(context))),
         }
     }
 }
 
 pub struct Error {
-    backtrace: Vec<ErrorFrame>,
+    location: Location<'static>,
     source: ErrorKind,
+    context: Option<String>,
 }
 
 impl std::fmt::Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.fmt_verbose(f)
+        write!(f, "{}", self)
     }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.fmt_succint(f)
+        writeln!(f, "Error:")?;
+        writeln!(
+            f,
+            "\t{} at {}:{}",
+            self.source,
+            self.location.file(),
+            self.location.line(),
+        )?;
+        writeln!(f, "Context:")?;
+
+        match &self.context {
+            Some(context) => writeln!(f, "{}", context)?,
+            None => writeln!(f, "None")?,
+        }
+        Ok(())
     }
 }
 
 impl std::error::Error for Error {}
 
 impl From<&str> for Error {
+    #[track_caller]
     fn from(value: &str) -> Self {
         Self {
-            backtrace: Vec::new(),
+            location: *Location::caller(),
             source: ErrorKind::Custom(value.to_string()),
+            context: None,
         }
     }
 }
 
 impl From<String> for Error {
+    #[track_caller]
     fn from(value: String) -> Self {
         Self {
-            backtrace: Vec::new(),
+            location: *Location::caller(),
             source: ErrorKind::Custom(value),
+            context: None,
         }
     }
 }
 
 impl Error {
-    pub fn new<E>(error: E) -> Self
+    #[track_caller]
+    pub fn boxed<E>(error: E, context: Option<String>) -> Self
     where
         E: std::error::Error + 'static,
     {
         Self {
-            backtrace: Vec::new(),
+            location: *Location::caller(),
             source: ErrorKind::Boxed(Box::new(error)),
-        }
-    }
-
-    pub fn is_none_type(&self) -> bool {
-        match &self.source {
-            ErrorKind::NoneType => true,
-            _others => false,
+            context,
         }
     }
 
     #[track_caller]
-    fn push_context<C>(mut self, context: C) -> Self
-    where
-        C: std::fmt::Debug,
-    {
-        self.backtrace.push(ErrorFrame::new(context));
-        self
-    }
-
-    fn fmt_verbose(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Error:")?;
-        for error_frame in self.backtrace.iter().rev() {
-            writeln!(f, "\t{:?}", error_frame)?;
-        }
-        writeln!(f, "Caused by:")?;
-        writeln!(f, "\t{}", self.source)?;
-        Ok(())
-    }
-
-    fn fmt_succint(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.backtrace.first() {
-            Some(error) => {
-                // # Safety
-                // Safe to call unwrap() on self.bactrace.last() because it is guaranteed to exist.
-                let top_level_caller = self.backtrace.last().unwrap();
-                write!(
-                    f,
-                    "{} at {}:{}",
-                    error,
-                    top_level_caller.location.file(),
-                    top_level_caller.location.line(),
-                )
-            }
-            None => write!(f, "{}", self.source),
-        }
-    }
-}
-
-struct ErrorFrame {
-    location: Location<'static>,
-    message: String,
-}
-
-impl std::fmt::Debug for ErrorFrame {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} at {}:{}",
-            self.message,
-            self.location.file(),
-            self.location.line(),
-        )
-    }
-}
-
-impl std::fmt::Display for ErrorFrame {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl ErrorFrame {
-    #[track_caller]
-    pub fn new<C>(context: C) -> Self
-    where
-        C: std::fmt::Debug,
-    {
+    pub fn none_type(context: Option<String>) -> Self {
         Self {
             location: *Location::caller(),
-            message: format!("{:?}", context),
+            source: ErrorKind::NoneType,
+            context,
         }
     }
 }
@@ -187,7 +129,7 @@ impl std::fmt::Display for ErrorKind {
         match self {
             Self::Boxed(error) => write!(f, "{}", error),
             Self::Custom(error) => write!(f, "{}", error),
-            Self::NoneType => write!(f, "The value returned None"),
+            Self::NoneType => write!(f, "NoneType Error"),
         }
     }
 }
