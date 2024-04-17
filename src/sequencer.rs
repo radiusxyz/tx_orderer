@@ -1,8 +1,8 @@
-use std::{any, future::Future, mem::MaybeUninit, path::Path, sync::Once};
+use std::{any::type_name, future::Future, mem::MaybeUninit, path::Path, sync::Once};
 
 use sequencer_core::{
-    caller,
-    _error::{Error, WrapError},
+    context,
+    error::{Error, WrapError},
     hyper::{header, Method},
     jsonrpsee::server::{middleware::http::ProxyGetRequestLayer, RpcModule, Server, ServerHandle},
     serde::Serialize,
@@ -42,8 +42,8 @@ impl SequencerBuilder {
         database_path: impl AsRef<Path>,
         rpc_server_endpoint: impl AsRef<str>,
     ) -> Result<Self, Error> {
-        let database =
-            Database::new(database_path.as_ref()).wrap(caller!(SequencerBuilder::new()))?;
+        let database_path = database_path.as_ref();
+        let database = Database::new(database_path).wrap(context!(database_path))?;
 
         Ok(Self {
             database: database.clone(),
@@ -60,16 +60,10 @@ impl SequencerBuilder {
     {
         self.rpc_module
             .register_async_method(T::method_name(), |parameter, state| async move {
-                let rpc_parameter: T = parameter.parse().wrap_context(
-                    caller!(RpcMethod::handler()),
-                    format_args!("{:#?}", parameter),
-                )?;
+                let rpc_parameter: T = parameter.parse().wrap(context!(parameter))?;
                 rpc_parameter.handler(state).await
             })
-            .wrap_context(
-                caller!(SequencerBuilder::register_rpc_method()),
-                format_args!("parameter: {:?}", any::type_name::<T>()),
-            )?;
+            .wrap(context!(type_name::<T>()))?;
         Ok(self)
     }
 
@@ -96,21 +90,18 @@ impl Sequencer {
 
         let middleware = ServiceBuilder::new().layer(cors).layer(
             ProxyGetRequestLayer::new("/health", "system_health")
-                .wrap(caller!(Sequencer::build_rpc_server()))?,
+                .map_err(|error| Error::boxed(error, None))?,
         );
 
         let rpc_server = Server::builder()
             .set_http_middleware(middleware)
-            .build(rpc_endpoint)
+            .build(&rpc_endpoint)
             .await
-            .wrap(caller!(Sequencer::build_rpc_server()))?;
+            .wrap(context!(rpc_endpoint))?;
 
         rpc_module
             .register_method("health_check", |_, _| serde_json::json!({ "health": true }))
-            .wrap_context(
-                caller!(Sequencer::build_rpc_server()),
-                "Failed to register 'health_check' endpoint",
-            )?;
+            .map_err(|error| Error::boxed(error, None))?;
 
         Ok(rpc_server.start(rpc_module))
     }
@@ -120,20 +111,14 @@ impl Sequencer {
             .enable_all()
             .worker_threads(builder.thread_count)
             .build()
-            .wrap_context(
-                caller!(Sequencer::build()),
-                "Failed to initialize tokio runtime",
-            )?;
+            .map_err(|error| Error::boxed(error, None))?;
 
         let rpc_server_handle = runtime
             .block_on(Self::build_rpc_server(
                 builder.rpc_endpoint,
                 builder.rpc_module,
             ))
-            .wrap_context(
-                caller!(Sequencer::build()),
-                "Failed to initialize the RPC server",
-            )?;
+            .map_err(|error| Error::boxed(error, None))?;
 
         Ok(Self {
             database: builder.database,
