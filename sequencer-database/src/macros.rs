@@ -6,11 +6,7 @@ macro_rules! key_list {
 
             $(
                 let key_vec = sequencer_framework::bincode::serialize(&$key).map_err(|error| {
-                    sequencer_framework::error::Error::new_with_context(
-                        sequencer_framework::caller!(key_list!()),
-                        format_args!("key: {:?}", &$key),
-                        error,
-                    )
+                    sequencer_framework::error::Error::boxed(error, Some(sequencer_framework::context!(&$key)))
                 })?;
                 key_list.push(key_vec);
             )+
@@ -28,18 +24,11 @@ macro_rules! key_value_list {
 
             $(
                 let key_vec = sequencer_framework::bincode::serialize(&$key).map_err(|error| {
-                    sequencer_framework::error::Error::new_with_context(
-                        sequencer_framework::caller!(key_value_list!()),
-                        format_args!("key: {:?}", &$value),
-                        error,
-                    )
+                    sequencer_framework::error::Error::boxed(error, Some(sequencer_framework::context!(&$key)))
                 })?;
+
                 let value_vec = sequencer_framework::bincode::serialize(&$value).map_err(|error| {
-                    sequencer_framework::error::Error::new_with_context(
-                        sequencer_framework::caller!(key_value_list!()),
-                        format_args!("value: {:?}", &$value),
-                        error,
-                    )
+                    sequencer_framework::error::Error::boxed(error, Some(sequencer_framework::context!(&$value)))
                 })?;
                 key_value_list.push((key_vec, value_vec));
             )+

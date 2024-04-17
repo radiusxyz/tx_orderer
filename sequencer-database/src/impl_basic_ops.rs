@@ -1,8 +1,8 @@
-use std::{any, fmt::Debug};
+use std::{any::type_name, fmt::Debug};
 
 use sequencer_core::{
-    bincode,
-    error::{DatabaseError, Error, ErrorKind, WrapError},
+    bincode, context,
+    error::{Error, WrapError},
     serde::{de::DeserializeOwned, ser::Serialize},
 };
 
@@ -36,20 +36,16 @@ impl super::Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key)
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::SerializeKey(key))?;
+        let key_vec = bincode::serialize(key).wrap(context!(key))?;
 
         let value_slice = self
             .client
             .get_pinned(key_vec)
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::GetBytesValue(key))?
-            .wrap(DatabaseError::KeyDoesNotExist(key))?;
+            .wrap(context!(key))?
+            .wrap(context!(key))?;
 
-        let value: V = bincode::deserialize(value_slice.as_ref())
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::DeserializeValue(key, any::type_name::<V>()))?;
+        let value: V =
+            bincode::deserialize(value_slice.as_ref()).wrap(context!(key, type_name::<V>()))?;
         Ok(value)
     }
 
@@ -88,21 +84,16 @@ impl super::Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key)
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::SerializeKey(key))?;
-
+        let key_vec = bincode::serialize(key).wrap(context!(key))?;
         let transaction = self.client.transaction();
 
         let value_vec = transaction
             .get_for_update(&key_vec, true)
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::GetBytesValue(key))?
-            .wrap(DatabaseError::KeyDoesNotExist(key))?;
+            .wrap(context!(key))?
+            .wrap(context!(key))?;
 
-        let value: V = bincode::deserialize(value_vec.as_ref())
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::DeserializeValue(key, any::type_name::<V>()))?;
+        let value: V =
+            bincode::deserialize(value_vec.as_ref()).wrap(context!(key, type_name::<V>()))?;
 
         let locked_value = Lock::new(Some(transaction), key_vec, value);
         Ok(locked_value)
@@ -132,23 +123,15 @@ impl super::Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key)
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::SerializeKey(key))?;
+        let key_vec = bincode::serialize(key).wrap(context!(key))?;
 
-        let value_vec = bincode::serialize(value)
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::SerializeValue(value))?;
+        let value_vec = bincode::serialize(value).wrap(context!(value))?;
 
         let transaction = self.client.transaction();
         transaction
             .put(key_vec, value_vec)
-            .map_err(ErrorKind::from)
-            .wrap(DatabaseError::PutTransaction(key))?;
-        transaction.commit().wrap_context(
-            caller!(Database::put()),
-            format_args!("key: {:?}, value: {:?}", key, value),
-        )?;
+            .wrap(context!(key, value))?;
+        transaction.commit().wrap(context!(key, value))?;
         Ok(())
     }
 
@@ -174,16 +157,11 @@ impl super::Database {
     where
         K: Debug + Serialize,
     {
-        let key_vec = bincode::serialize(key)
-            .wrap_context(caller!(Database::delete()), format_args!("key: {:?}", key))?;
+        let key_vec = bincode::serialize(key).wrap(context!(key))?;
 
         let transaction = self.client.transaction();
-        transaction
-            .delete(key_vec)
-            .wrap_context(caller!(Database::delete()), format_args!("key: {:?}", key))?;
-        transaction
-            .commit()
-            .wrap_context(caller!(Database::delete()), format_args!("key: {:?}", key))?;
+        transaction.delete(key_vec).wrap(context!(key))?;
+        transaction.commit().wrap(context!(key))?;
         Ok(())
     }
 }

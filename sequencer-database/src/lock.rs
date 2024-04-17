@@ -1,6 +1,6 @@
 use sequencer_core::{
-    bincode, caller,
-    _error::{Error, WrapError},
+    bincode, context,
+    error::{Error, WrapError},
     rocksdb::{Transaction, TransactionDB},
     serde::ser::Serialize,
 };
@@ -35,37 +35,6 @@ where
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
-    }
-}
-
-impl<'db, V> Drop for Lock<'db, V>
-where
-    V: std::fmt::Debug + Serialize,
-{
-    fn drop(&mut self) {
-        if let Some(transaction) = self.transaction.take() {
-            let value = bincode::serialize(&self.value)
-                .wrap_context(
-                    caller!(Database::commit()),
-                    format_args!("value: {:?}", self.value),
-                )
-                .unwrap();
-
-            transaction
-                .put(&self.key_vec, value)
-                .wrap_context(
-                    caller!(Database::commit()),
-                    format_args!("value: {:?}", self.value),
-                )
-                .unwrap();
-            transaction
-                .commit()
-                .wrap_context(
-                    caller!(Database::commit()),
-                    format_args!("value: {:?}", self.value),
-                )
-                .unwrap();
-        }
     }
 }
 
@@ -116,20 +85,15 @@ where
     /// locked_value.commit().unwrap();
     /// ```
     pub fn commit(mut self) -> Result<(), Error> {
-        if let Some(transaction) = self.transaction.take() {
-            let value = bincode::serialize(&self.value).wrap_context(
-                caller!(Database::commit()),
-                format_args!("value: {:?}", self.value),
-            )?;
+        let value = &self.value;
 
-            transaction.put(&self.key_vec, value).wrap_context(
-                caller!(Database::commit()),
-                format_args!("value: {:?}", self.value),
-            )?;
-            transaction.commit().wrap_context(
-                caller!(Database::commit()),
-                format_args!("value: {:?}", self.value),
-            )?;
+        if let Some(transaction) = self.transaction.take() {
+            let value_vec = bincode::serialize(value).wrap(context!(value))?;
+
+            transaction
+                .put(&self.key_vec, value_vec)
+                .wrap(context!(value))?;
+            transaction.commit().wrap(context!(value))?;
         }
         Ok(())
     }

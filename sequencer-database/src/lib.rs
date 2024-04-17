@@ -7,8 +7,8 @@ pub mod macros;
 use std::{path::Path, sync::Arc};
 
 use sequencer_core::{
-    caller,
-    _error::{Error, WrapError},
+    context,
+    error::{Error, WrapError},
     rocksdb::{Options, TransactionDB, TransactionDBOptions},
 };
 
@@ -45,11 +45,8 @@ impl Database {
         db_options.create_if_missing(true);
         let tx_db_options = TransactionDBOptions::default();
 
-        let transaction_db = TransactionDB::open(&db_options, &tx_db_options, &path).wrap_context(
-            caller!(Database::new()),
-            format_args!("path: {:?}", path.as_ref()),
-        )?;
-
+        let transaction_db = TransactionDB::open(&db_options, &tx_db_options, &path)
+            .wrap(context!(path.as_ref()))?;
         Ok(Self {
             client: Arc::new(transaction_db),
         })

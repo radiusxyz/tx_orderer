@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use sequencer_core::{
-    caller,
-    _error::{Error, WrapError},
-};
+use sequencer_core::error::Error;
 
 use crate::batch_reader::BatchReader;
 
@@ -58,7 +55,7 @@ impl super::Database {
                 let value_list = self.client.multi_get(&key_list);
 
                 for (key_vec, value_wrapped) in key_list.into_iter().zip(value_list) {
-                    let value_option = value_wrapped.wrap(caller!(Database::batch_get()))?;
+                    let value_option = value_wrapped.map_err(|error| Error::boxed(error, None))?;
                     key_value_map.insert(key_vec, value_option);
                 }
                 Ok(key_value_map.into())
@@ -116,10 +113,12 @@ impl super::Database {
                 for (key, value) in key_value_list {
                     transaction
                         .put(&key, &value)
-                        .wrap(caller!(Database::batch_put()))?;
+                        .map_err(|error| Error::boxed(error, None))?;
                 }
 
-                transaction.commit().wrap(caller!(Database::batch_put()))?;
+                transaction
+                    .commit()
+                    .map_err(|error| Error::boxed(error, None))?;
                 Ok(())
             }
             Err(error) => Err(error),
@@ -178,12 +177,12 @@ impl super::Database {
                 for key_vec in key_list {
                     transaction
                         .delete(key_vec)
-                        .wrap(caller!(Database::batch_delete()))?;
+                        .map_err(|error| Error::boxed(error, None))?;
                 }
 
                 transaction
                     .commit()
-                    .wrap(caller!(Database::batch_delete()))?;
+                    .map_err(|error| Error::boxed(error, None))?;
                 Ok(())
             }
             Err(error) => Err(error),
