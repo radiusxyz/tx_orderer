@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use sequencer_core::{
-    caller,
-    _error::{Error, WrapError},
+    context,
+    error::{Error, WrapError},
     jsonrpsee::{
         core::client::ClientT,
         http_client::{HttpClient, HttpClientBuilder},
@@ -17,10 +17,11 @@ pub struct RpcClient {
 
 impl RpcClient {
     pub fn new(endpoint: impl AsRef<str>, timeout: u64) -> Result<Self, Error> {
+        let endpoint = endpoint.as_ref();
         let http_client = HttpClientBuilder::new()
             .request_timeout(Duration::from_secs(timeout))
-            .build(endpoint.as_ref())
-            .wrap(caller!(RpcClient::new()))?;
+            .build(endpoint)
+            .wrap(context!(endpoint))?;
         Ok(Self { http_client })
     }
 
@@ -34,7 +35,7 @@ impl RpcClient {
             .http_client
             .request(method_name, rpc_parameter)
             .await
-            .wrap(caller!(RpcClient::request()))?;
+            .wrap(context!(method_name))?;
         Ok(rpc_response)
     }
 }

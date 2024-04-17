@@ -2,7 +2,7 @@ use std::{fmt::Debug, sync::Arc};
 
 use sequencer_core::{
     async_trait::async_trait,
-    _error::Error,
+    error::Error,
     jsonrpsee::core::traits::ToRpcParams,
     serde::{de::DeserializeOwned, ser::Serialize},
     serde_json::{self, error::Error as SerdeJsonError, value::RawValue},
