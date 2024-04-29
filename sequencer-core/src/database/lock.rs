@@ -1,8 +1,9 @@
-use sequencer_core::{
-    bincode, context,
+use rocksdb::{Transaction, TransactionDB};
+use serde::ser::Serialize;
+
+use crate::{
+    context,
     error::{Error, WrapError},
-    rocksdb::{Transaction, TransactionDB},
-    serde::ser::Serialize,
 };
 
 /// A locking mechanism for values stored in the database.

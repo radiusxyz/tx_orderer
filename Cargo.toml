@@ -4,28 +4,10 @@ edition = "2021"
 name = "sequencer-framework"
 version = "0.1.0"
 
-[dependencies]
-sequencer-core = { version = "0.1", path = "sequencer-core", optional = true }
-sequencer-database = { version = "0.1", path = "sequencer-database", optional = true }
-sequencer-json-rpc = { version = "0.1", path = "sequencer-json-rpc", optional = true }
-sequencer-macros = { version = "0.1", path = "sequencer-macros", optional = true }
-
 [workspace]
 members = [
+    "sequencer",
     "sequencer-core",
-    "sequencer-database",
-    "sequencer-json-rpc",
     "sequencer-macros",
 ]
 resolver = "2"
-
-[features]
-default = [
-    "core",
-    "database",
-    "json-rpc",
-]
-core = ["sequencer-core"]
-database = ["sequencer-database"]
-json-rpc = ["sequencer-json-rpc"]
-macros = ["sequencer-macros"]

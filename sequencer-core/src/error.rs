@@ -1,8 +1,6 @@
 use std::panic::Location;
 
-use jsonrpsee::types::ErrorCode;
-
-use crate::jsonrpsee::types::ErrorObjectOwned;
+use jsonrpsee::types::{ErrorCode, ErrorObjectOwned};
 
 pub trait WrapError {
     type Output;

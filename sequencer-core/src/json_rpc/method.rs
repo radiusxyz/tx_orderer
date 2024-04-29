@@ -1,13 +1,11 @@
 use std::{fmt::Debug, sync::Arc};
 
-use sequencer_core::{
-    async_trait::async_trait,
-    error::Error,
-    jsonrpsee::core::traits::ToRpcParams,
-    serde::{de::DeserializeOwned, ser::Serialize},
-    serde_json::{self, error::Error as SerdeJsonError, value::RawValue},
-};
-use sequencer_database::Database;
+use async_trait::async_trait;
+use jsonrpsee::core::traits::ToRpcParams;
+use serde::{de::DeserializeOwned, ser::Serialize};
+use serde_json::{error::Error as SerdeJsonError, value::RawValue};
+
+use crate::{database::client::Database, error::Error};
 
 /// Defines the necessary traits for a type to be used as an RPC parameter.
 ///

@@ -1,15 +1,15 @@
 use std::time::Duration;
 
-use sequencer_core::{
-    context,
-    error::{Error, WrapError},
-    jsonrpsee::{
-        core::client::ClientT,
-        http_client::{HttpClient, HttpClientBuilder},
-    },
+use jsonrpsee::{
+    core::client::ClientT,
+    http_client::{HttpClient, HttpClientBuilder},
 };
 
-use crate::method::{RpcMethod, RpcParam};
+use crate::{
+    context,
+    error::{Error, WrapError},
+    json_rpc::method::{RpcMethod, RpcParam},
+};
 
 pub struct RpcClient {
     http_client: HttpClient,

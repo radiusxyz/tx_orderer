@@ -1,14 +1,31 @@
-use std::{any::type_name, fmt::Debug};
+use std::{any::type_name, fmt::Debug, sync::Arc};
 
-use sequencer_core::{
-    bincode, context,
+use rocksdb::TransactionDB;
+use serde::{de::DeserializeOwned, ser::Serialize};
+
+use crate::{
+    context,
+    database::lock::Lock,
     error::{Error, WrapError},
-    serde::{de::DeserializeOwned, ser::Serialize},
 };
 
-use crate::lock::Lock;
+pub struct Database {
+    client: Arc<TransactionDB>,
+}
 
-impl super::Database {
+unsafe impl Send for Database {}
+
+unsafe impl Sync for Database {}
+
+impl Clone for Database {
+    fn clone(&self) -> Self {
+        Self {
+            client: self.client.clone(),
+        }
+    }
+}
+
+impl Database {
     /// Retrieves a value associated with the given key from the database.
     ///
     /// # Arguments

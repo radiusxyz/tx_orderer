@@ -1,4 +1,4 @@
-use crate::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BlockHeight(usize);
