@@ -1,11 +1,15 @@
+pub mod context;
+pub mod macros;
+
 use std::panic::Location;
 
+use context::Context;
 use jsonrpsee::types::{ErrorCode, ErrorObjectOwned};
 
 pub trait WrapError {
     type Output;
 
-    fn wrap(self, context: String) -> Self::Output;
+    fn wrap(self, context: impl Into<Context>) -> Self::Output;
 }
 
 impl<T, E> WrapError for Result<T, E>
@@ -15,10 +19,10 @@ where
     type Output = Result<T, Error>;
 
     #[track_caller]
-    fn wrap(self, context: String) -> Self::Output {
+    fn wrap(self, context: impl Into<Context>) -> Self::Output {
         match self {
             Ok(value) => Ok(value),
-            Err(error) => Err(Error::boxed(error, Some(context))),
+            Err(error) => Err(Error::new_with_context(error, context)),
         }
     }
 }
@@ -27,10 +31,10 @@ impl<T> WrapError for Option<T> {
     type Output = Result<T, Error>;
 
     #[track_caller]
-    fn wrap(self, context: String) -> Self::Output {
+    fn wrap(self, context: impl Into<Context>) -> Self::Output {
         match self {
             Some(value) => Ok(value),
-            None => Err(Error::none_type(Some(context))),
+            None => Err(Error::none_type(context)),
         }
     }
 }
@@ -38,33 +42,27 @@ impl<T> WrapError for Option<T> {
 pub struct Error {
     location: Location<'static>,
     source: ErrorKind,
-    context: Option<String>,
+    context: Context,
 }
 
 unsafe impl Send for Error {}
 
 impl std::fmt::Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{}", self.source)
     }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Error:")?;
         writeln!(
             f,
-            "\t{} at {}:{}",
-            self.source,
+            "\nError at {}:{}:",
             self.location.file(),
-            self.location.line(),
+            self.location.line()
         )?;
-        writeln!(f, "Context:")?;
-
-        match &self.context {
-            Some(context) => writeln!(f, "{}", context)?,
-            None => writeln!(f, "None")?,
-        }
+        writeln!(f, "\t{}", self.source)?;
+        write!(f, "{}", self.context)?;
         Ok(())
     }
 }
@@ -77,7 +75,7 @@ impl From<&str> for Error {
         Self {
             location: *Location::caller(),
             source: ErrorKind::Custom(value.to_string()),
-            context: None,
+            context: Context::empty(),
         }
     }
 }
@@ -88,47 +86,63 @@ impl From<String> for Error {
         Self {
             location: *Location::caller(),
             source: ErrorKind::Custom(value),
-            context: None,
+            context: Context::empty(),
         }
     }
 }
 
 impl Into<ErrorObjectOwned> for Error {
     fn into(self) -> ErrorObjectOwned {
-        match self.context {
-            Some(context) => ErrorObjectOwned::owned::<String>(
-                ErrorCode::InternalError.code(),
-                self.source,
-                Some(context),
-            ),
-            None => ErrorObjectOwned::owned::<String>(
-                ErrorCode::InternalError.code(),
-                self.source,
-                None,
-            ),
-        }
+        ErrorObjectOwned::owned::<String>(
+            ErrorCode::InternalError.code(),
+            self.source,
+            Some(self.context.as_string()),
+        )
     }
 }
 
 impl Error {
     #[track_caller]
-    pub fn boxed<E>(error: E, context: Option<String>) -> Self
+    pub fn new<E, C>(error: E) -> Self
     where
         E: std::error::Error + 'static,
     {
         Self {
             location: *Location::caller(),
             source: ErrorKind::Boxed(Box::new(error)),
-            context,
+            context: Context::empty(),
         }
     }
 
     #[track_caller]
-    pub fn none_type(context: Option<String>) -> Self {
+    pub fn new_with_context<E, C>(error: E, context: C) -> Self
+    where
+        E: std::error::Error + 'static,
+        C: Into<Context>,
+    {
+        Self {
+            location: *Location::caller(),
+            source: ErrorKind::Boxed(Box::new(error)),
+            context: context.into(),
+        }
+    }
+
+    #[track_caller]
+    pub fn none_type<C>(context: C) -> Self
+    where
+        C: Into<Context>,
+    {
         Self {
             location: *Location::caller(),
             source: ErrorKind::NoneType,
-            context,
+            context: context.into(),
+        }
+    }
+
+    pub fn is_none_type(&self) -> bool {
+        match &self.source {
+            ErrorKind::NoneType => true,
+            _others => false,
         }
     }
 }
@@ -139,24 +153,34 @@ enum ErrorKind {
     NoneType,
 }
 
-impl std::fmt::Debug for ErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
 impl std::fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Boxed(error) => write!(f, "{}", error),
             Self::Custom(error) => write!(f, "{}", error),
-            Self::NoneType => write!(f, "NoneType Error"),
+            Self::NoneType => write!(f, "Value returned None"),
         }
     }
 }
 
 impl Into<String> for ErrorKind {
     fn into(self) -> String {
-        format!("{}", self)
+        match self {
+            Self::Boxed(error) => format!("{}", error),
+            Self::Custom(error) => error,
+            Self::NoneType => String::from("Value returned None"),
+        }
     }
+}
+
+#[test]
+fn works() {
+    tracing_subscriber::fmt().init();
+
+    fn read_file(path: &str) -> Result<(), Error> {
+        std::fs::read_to_string(path).wrap(crate::context!(path, path))?;
+        Ok(())
+    }
+
+    read_file("no_file").unwrap_or_else(|error| tracing::error!("{}", error));
 }
