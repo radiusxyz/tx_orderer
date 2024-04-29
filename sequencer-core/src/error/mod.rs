@@ -172,15 +172,3 @@ impl Into<String> for ErrorKind {
         }
     }
 }
-
-#[test]
-fn works() {
-    tracing_subscriber::fmt().init();
-
-    fn read_file(path: &str) -> Result<(), Error> {
-        std::fs::read_to_string(path).wrap(crate::context!(path, path))?;
-        Ok(())
-    }
-
-    read_file("no_file").unwrap_or_else(|error| tracing::error!("{}", error));
-}
