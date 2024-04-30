@@ -1,4 +1,3 @@
-pub mod macros;
 pub mod manager;
 pub mod subscription;
 

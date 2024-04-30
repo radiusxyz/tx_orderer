@@ -2,7 +2,6 @@ pub mod database;
 pub mod error;
 pub mod event;
 pub mod json_rpc;
-pub mod macros;
 pub mod types;
 
 // pub use async_trait;
