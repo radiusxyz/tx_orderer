@@ -5,7 +5,7 @@ use serde::{de::DeserializeOwned, ser::Serialize};
 
 use crate::{
     context,
-    database::{lock::Lock, Data},
+    database::lock::Lock,
     error::{Error, WrapError},
 };
 
