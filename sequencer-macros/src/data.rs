@@ -12,15 +12,15 @@ pub fn expand_attribute_data(input: TokenStream) -> Result<TokenStream> {
 }
 
 pub fn expand_item_struct(input: TokenStream, item: ItemStruct) -> Result<TokenStream> {
+    let ident = &item.ident;
+
     Ok(quote! {
-        #[derive(Clone, Debug)]
         #input
     })
 }
 
 pub fn expand_item_enum(input: TokenStream, item: ItemEnum) -> Result<TokenStream> {
     Ok(quote! {
-        #[derive(Clone, Debug)]
         #input
     })
 }

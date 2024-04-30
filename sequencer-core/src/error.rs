@@ -1,15 +1,14 @@
-pub mod context;
-pub mod macros;
+use std::{
+    fmt::{Arguments, Write},
+    panic::Location,
+};
 
-use std::panic::Location;
-
-use context::Context;
 use jsonrpsee::types::{ErrorCode, ErrorObjectOwned};
 
 pub trait WrapError {
     type Output;
 
-    fn wrap(self, context: impl Into<Context>) -> Self::Output;
+    fn wrap(self, context: impl Into<ErrorContext>) -> Self::Output;
 }
 
 impl<T, E> WrapError for Result<T, E>
@@ -19,7 +18,7 @@ where
     type Output = Result<T, Error>;
 
     #[track_caller]
-    fn wrap(self, context: impl Into<Context>) -> Self::Output {
+    fn wrap(self, context: impl Into<ErrorContext>) -> Self::Output {
         match self {
             Ok(value) => Ok(value),
             Err(error) => Err(Error::new_with_context(error, context)),
@@ -31,7 +30,7 @@ impl<T> WrapError for Option<T> {
     type Output = Result<T, Error>;
 
     #[track_caller]
-    fn wrap(self, context: impl Into<Context>) -> Self::Output {
+    fn wrap(self, context: impl Into<ErrorContext>) -> Self::Output {
         match self {
             Some(value) => Ok(value),
             None => Err(Error::none_type(context)),
@@ -42,7 +41,7 @@ impl<T> WrapError for Option<T> {
 pub struct Error {
     location: Location<'static>,
     source: ErrorKind,
-    context: Context,
+    context: ErrorContext,
 }
 
 unsafe impl Send for Error {}
@@ -75,7 +74,7 @@ impl From<&str> for Error {
         Self {
             location: *Location::caller(),
             source: ErrorKind::Custom(value.to_string()),
-            context: Context::empty(),
+            context: ErrorContext::empty(),
         }
     }
 }
@@ -86,7 +85,7 @@ impl From<String> for Error {
         Self {
             location: *Location::caller(),
             source: ErrorKind::Custom(value),
-            context: Context::empty(),
+            context: ErrorContext::empty(),
         }
     }
 }
@@ -110,7 +109,7 @@ impl Error {
         Self {
             location: *Location::caller(),
             source: ErrorKind::Boxed(Box::new(error)),
-            context: Context::empty(),
+            context: ErrorContext::empty(),
         }
     }
 
@@ -118,7 +117,7 @@ impl Error {
     pub fn new_with_context<E, C>(error: E, context: C) -> Self
     where
         E: std::error::Error + 'static,
-        C: Into<Context>,
+        C: Into<ErrorContext>,
     {
         Self {
             location: *Location::caller(),
@@ -130,7 +129,7 @@ impl Error {
     #[track_caller]
     pub fn none_type<C>(context: C) -> Self
     where
-        C: Into<Context>,
+        C: Into<ErrorContext>,
     {
         Self {
             location: *Location::caller(),
@@ -170,5 +169,62 @@ impl Into<String> for ErrorKind {
             Self::Custom(error) => error,
             Self::NoneType => String::from("Value returned None"),
         }
+    }
+}
+
+pub struct ErrorContext(String);
+
+impl std::fmt::Debug for ErrorContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl std::fmt::Display for ErrorContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0.is_empty() {
+            true => Ok(()),
+            false => writeln!(f, "ErrorContext: {}", self.0),
+        }
+    }
+}
+
+impl std::fmt::Write for ErrorContext {
+    fn write_fmt(&mut self, args: Arguments<'_>) -> std::fmt::Result {
+        self.0.write_fmt(args)
+    }
+
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        self.0.write_str(s)
+    }
+}
+
+impl From<Arguments<'_>> for ErrorContext {
+    fn from(value: Arguments<'_>) -> Self {
+        let mut context = Self::empty();
+        context.write_fmt(value).unwrap();
+        context
+    }
+}
+
+impl From<&str> for ErrorContext {
+    fn from(value: &str) -> Self {
+        Self(value.to_string())
+    }
+}
+
+impl From<String> for ErrorContext {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl ErrorContext {
+    pub fn empty() -> Self {
+        Self(String::new())
+    }
+
+    pub fn as_string(self) -> String {
+        self.0
     }
 }

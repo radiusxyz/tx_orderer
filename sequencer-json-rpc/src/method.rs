@@ -1,11 +1,12 @@
-use std::{fmt::Debug, sync::Arc};
+use std::fmt::Debug;
 
-use async_trait::async_trait;
-use jsonrpsee::core::traits::ToRpcParams;
-use serde::{de::DeserializeOwned, ser::Serialize};
-use serde_json::{error::Error as SerdeJsonError, value::RawValue};
-
-use crate::{database::client::Database, error::Error};
+use sequencer_core::{
+    async_trait::async_trait,
+    error::Error,
+    jsonrpsee::core::traits::ToRpcParams,
+    serde::{de::DeserializeOwned, ser::Serialize},
+    serde_json::{self, error::Error as SerdeJsonError, value::RawValue},
+};
 
 /// Defines the necessary traits for a type to be used as an RPC parameter.
 ///
@@ -64,7 +65,7 @@ pub trait RpcMethod: Clone + Debug + DeserializeOwned + Serialize + Send {
     /// }
     /// ```
     #[allow(unused_variables)]
-    async fn handler(self, state: Arc<Database>) -> Result<Self::Response, Error> {
+    async fn handler(self) -> Result<Self::Response, Error> {
         unimplemented!()
     }
 }

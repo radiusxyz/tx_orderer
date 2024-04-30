@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! context {
+macro_rules! error_context {
     ($($argument:expr),* $(,)?) => {{
         let mut context = String::new();
         $(

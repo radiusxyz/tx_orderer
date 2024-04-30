@@ -6,8 +6,17 @@ version = "0.1.0"
 
 [workspace]
 members = [
-    "sequencer",
     "sequencer-core",
+    "sequencer-database",
+    "sequencer-event",
+    "sequencer-json-rpc",
     "sequencer-macros",
 ]
 resolver = "2"
+
+[dependencies]
+sequencer-core = { path = "sequencer-core" }
+sequencer-database = { path = "sequencer-database" }
+sequencer-event = { path = "sequencer-event" }
+sequencer-json-rpc = { path = "sequencer-json-rpc" }
+sequencer-macros = { path = "sequencer-macros" }

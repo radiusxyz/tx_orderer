@@ -1,9 +1,9 @@
-use rocksdb::{Transaction, TransactionDB};
-use serde::ser::Serialize;
-
-use crate::{
-    context,
+use sequencer_core::{
+    bincode,
     error::{Error, WrapError},
+    error_context,
+    rocksdb::{Transaction, TransactionDB},
+    serde::ser::Serialize,
 };
 
 /// A locking mechanism for values stored in the database.
@@ -89,12 +89,12 @@ where
         let value = &self.value;
 
         if let Some(transaction) = self.transaction.take() {
-            let value_vec = bincode::serialize(value).wrap(context!(value))?;
+            let value_vec = bincode::serialize(value).wrap(error_context!(value))?;
 
             transaction
                 .put(&self.key_vec, value_vec)
-                .wrap(context!(value))?;
-            transaction.commit().wrap(context!(value))?;
+                .wrap(error_context!(value))?;
+            transaction.commit().wrap(error_context!(value))?;
         }
         Ok(())
     }

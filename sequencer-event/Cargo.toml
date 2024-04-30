@@ -1,0 +1,7 @@
+[package]
+name = "sequencer-event"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sequencer-core = { path = "../sequencer-core" }

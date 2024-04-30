@@ -1,13 +1,14 @@
 use std::{any::type_name, fmt::Debug, sync::Arc};
 
-use rocksdb::TransactionDB;
-use serde::{de::DeserializeOwned, ser::Serialize};
-
-use crate::{
-    context,
-    database::lock::Lock,
+use sequencer_core::{
+    bincode,
     error::{Error, WrapError},
+    error_context,
+    rocksdb::TransactionDB,
+    serde::{de::DeserializeOwned, ser::Serialize},
 };
+
+use crate::lock::Lock;
 
 pub struct Database {
     client: Arc<TransactionDB>,
@@ -53,16 +54,16 @@ impl Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key).wrap(context!(key))?;
+        let key_vec = bincode::serialize(key).wrap(error_context!(key))?;
 
         let value_slice = self
             .client
             .get_pinned(key_vec)
-            .wrap(context!(key))?
-            .wrap(context!(key))?;
+            .wrap(error_context!(key))?
+            .wrap(error_context!(key))?;
 
-        let value: V =
-            bincode::deserialize(value_slice.as_ref()).wrap(context!(key, type_name::<V>()))?;
+        let value: V = bincode::deserialize(value_slice.as_ref())
+            .wrap(error_context!(key, type_name::<V>()))?;
         Ok(value)
     }
 
@@ -101,16 +102,16 @@ impl Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key).wrap(context!(key))?;
+        let key_vec = bincode::serialize(key).wrap(error_context!(key))?;
         let transaction = self.client.transaction();
 
         let value_vec = transaction
             .get_for_update(&key_vec, true)
-            .wrap(context!(key))?
-            .wrap(context!(key))?;
+            .wrap(error_context!(key))?
+            .wrap(error_context!(key))?;
 
         let value: V =
-            bincode::deserialize(value_vec.as_ref()).wrap(context!(key, type_name::<V>()))?;
+            bincode::deserialize(value_vec.as_ref()).wrap(error_context!(key, type_name::<V>()))?;
 
         let locked_value = Lock::new(Some(transaction), key_vec, value);
         Ok(locked_value)
@@ -140,15 +141,15 @@ impl Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key).wrap(context!(key))?;
+        let key_vec = bincode::serialize(key).wrap(error_context!(key))?;
 
-        let value_vec = bincode::serialize(value).wrap(context!(value))?;
+        let value_vec = bincode::serialize(value).wrap(error_context!(value))?;
 
         let transaction = self.client.transaction();
         transaction
             .put(key_vec, value_vec)
-            .wrap(context!(key, value))?;
-        transaction.commit().wrap(context!(key, value))?;
+            .wrap(error_context!(key, value))?;
+        transaction.commit().wrap(error_context!(key, value))?;
         Ok(())
     }
 
@@ -174,11 +175,11 @@ impl Database {
     where
         K: Debug + Serialize,
     {
-        let key_vec = bincode::serialize(key).wrap(context!(key))?;
+        let key_vec = bincode::serialize(key).wrap(error_context!(key))?;
 
         let transaction = self.client.transaction();
-        transaction.delete(key_vec).wrap(context!(key))?;
-        transaction.commit().wrap(context!(key))?;
+        transaction.delete(key_vec).wrap(error_context!(key))?;
+        transaction.commit().wrap(error_context!(key))?;
         Ok(())
     }
 }
