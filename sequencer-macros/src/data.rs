@@ -15,6 +15,7 @@ pub fn expand_item_struct(input: TokenStream, item: ItemStruct) -> Result<TokenS
     let ident = &item.ident;
 
     Ok(quote! {
+        sequencer_framework::check_trait_bound!(#ident, Clone);
         #input
     })
 }
