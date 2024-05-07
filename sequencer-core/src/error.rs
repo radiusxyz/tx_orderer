@@ -102,7 +102,7 @@ impl Into<ErrorObjectOwned> for Error {
 
 impl Error {
     #[track_caller]
-    pub fn new<E, C>(error: E) -> Self
+    pub fn new<E>(error: E) -> Self
     where
         E: std::error::Error + 'static,
     {
