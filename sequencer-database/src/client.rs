@@ -1,10 +1,10 @@
-use std::{any::type_name, fmt::Debug, sync::Arc};
+use std::{any::type_name, fmt::Debug, path::Path, sync::Arc};
 
 use sequencer_core::{
     bincode,
     error::{Error, WrapError},
     error_context,
-    rocksdb::TransactionDB,
+    rocksdb::{Options, TransactionDB, TransactionDBOptions},
     serde::{de::DeserializeOwned, ser::Serialize},
 };
 
@@ -27,6 +27,19 @@ impl Clone for Database {
 }
 
 impl Database {
+    pub fn new(path: impl AsRef<Path>) -> Result<Self, Error> {
+        let path = path.as_ref();
+        let mut database_options = Options::default();
+        database_options.create_if_missing(true);
+
+        let transaction_database_options = TransactionDBOptions::default();
+        let transaction_database =
+            TransactionDB::open(&database_options, &transaction_database_options, path)
+                .wrap(error_context!(path))?;
+        Ok(Self {
+            client: Arc::new(transaction_database),
+        })
+    }
     /// Retrieves a value associated with the given key from the database.
     ///
     /// # Arguments
