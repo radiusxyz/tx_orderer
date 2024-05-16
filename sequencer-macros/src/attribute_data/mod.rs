@@ -7,6 +7,8 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Item, Result};
 
+use crate::util;
+
 pub fn expand_attribute_data(metadata: TokenStream, input: TokenStream) -> Result<TokenStream> {
     let metadata: Option<Metadata> = match metadata.is_empty() {
         true => None,
@@ -16,9 +18,13 @@ pub fn expand_attribute_data(metadata: TokenStream, input: TokenStream) -> Resul
     let container = ContainerType::new(metadata, &item)?;
     let impl_blocks = container.impl_blocks();
 
+    let serde_deserialize = util::deserialize();
+    let serde_serialize = util::serialize();
+    let serde_path = util::serde_path();
+
     Ok(quote! {
-        #[derive(Clone, Debug, tpm::serde::Deserialize, tpm::serde::Serialize)]
-        #[serde(crate = "tpm::serde")]
+        #[derive(Clone, Debug, #serde_deserialize, #serde_serialize)]
+        #serde_path
         #input
         #impl_blocks
     })

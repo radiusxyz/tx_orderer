@@ -1,8 +1,6 @@
-use core::iter::Map;
-
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{punctuated::Iter, Field, Generics, Ident, ItemStruct};
+use syn::{Generics, Ident, ItemStruct};
 
 use crate::attribute_data::{container::Container, metadata::Metadata, AttributeData};
 
