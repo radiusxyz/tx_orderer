@@ -3,7 +3,7 @@ pub(crate) mod util;
 // pub(crate) mod event;
 
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, DeriveInput, Error};
+use syn::Error;
 
 #[proc_macro_attribute]
 pub fn data(metadata: TokenStream, input: TokenStream) -> TokenStream {
