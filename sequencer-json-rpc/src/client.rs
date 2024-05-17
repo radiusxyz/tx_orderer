@@ -27,7 +27,7 @@ impl RpcClient {
 
     pub async fn request<T>(&self, method: T) -> Result<T::Response, Error>
     where
-        T: RpcMethod + Into<RpcParam<T>>,
+        T: RpcMethod + Into<RpcParam<T>> + Send,
     {
         let method_name = T::method_name();
         let rpc_parameter = RpcParam::from(method);

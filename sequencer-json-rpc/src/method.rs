@@ -1,11 +1,9 @@
-use std::fmt::Debug;
-
 use sequencer_core::{
     async_trait::async_trait,
     error::Error,
     jsonrpsee::core::traits::ToRpcParams,
-    serde::{de::DeserializeOwned, ser::Serialize},
     serde_json::{self, error::Error as SerdeJsonError, value::RawValue},
+    traits::Data,
 };
 
 /// Defines the necessary traits for a type to be used as an RPC parameter.
@@ -29,9 +27,9 @@ use sequencer_core::{
 /// }
 /// ```
 #[async_trait]
-pub trait RpcMethod: Clone + Debug + DeserializeOwned + Serialize + Send {
+pub trait RpcMethod: Data {
     /// The type of the output that the RPC method returns.
-    type Response: Clone + Debug + DeserializeOwned + Serialize + Send;
+    type Response: Data;
 
     /// Provides the method name for the RPC parameter type.
     ///
