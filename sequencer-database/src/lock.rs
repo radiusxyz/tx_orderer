@@ -1,7 +1,6 @@
 use sequencer_core::{
     bincode,
-    error::{Error, WrapError},
-    error_context,
+    error::Error,
     rocksdb::{Transaction, TransactionDB},
     serde::ser::Serialize,
 };
@@ -89,12 +88,12 @@ where
         let value = &self.value;
 
         if let Some(transaction) = self.transaction.take() {
-            let value_vec = bincode::serialize(value).wrap(error_context!(value))?;
+            let value_vec = bincode::serialize(value).map_err(Error::new)?;
 
             transaction
                 .put(&self.key_vec, value_vec)
-                .wrap(error_context!(value))?;
-            transaction.commit().wrap(error_context!(value))?;
+                .map_err(Error::new)?;
+            transaction.commit().map_err(Error::new)?;
         }
         Ok(())
     }

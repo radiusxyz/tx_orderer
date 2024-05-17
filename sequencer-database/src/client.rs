@@ -1,9 +1,8 @@
-use std::{any::type_name, fmt::Debug, path::Path, sync::Arc};
+use std::{fmt::Debug, path::Path, sync::Arc};
 
 use sequencer_core::{
     bincode,
-    error::{Error, WrapError},
-    error_context,
+    error::{Error, ErrorKind},
     rocksdb::{Options, TransactionDB, TransactionDBOptions},
     serde::{de::DeserializeOwned, ser::Serialize},
 };
@@ -13,10 +12,6 @@ use crate::lock::Lock;
 pub struct Database {
     client: Arc<TransactionDB>,
 }
-
-unsafe impl Send for Database {}
-
-unsafe impl Sync for Database {}
 
 impl Clone for Database {
     fn clone(&self) -> Self {
@@ -28,14 +23,13 @@ impl Clone for Database {
 
 impl Database {
     pub fn new(path: impl AsRef<Path>) -> Result<Self, Error> {
-        let path = path.as_ref();
         let mut database_options = Options::default();
         database_options.create_if_missing(true);
 
         let transaction_database_options = TransactionDBOptions::default();
         let transaction_database =
             TransactionDB::open(&database_options, &transaction_database_options, path)
-                .wrap(error_context!(path))?;
+                .map_err(Error::new)?;
         Ok(Self {
             client: Arc::new(transaction_database),
         })
@@ -67,16 +61,15 @@ impl Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key).wrap(error_context!(key))?;
+        let key_vec = bincode::serialize(key).map_err(Error::new)?;
 
         let value_slice = self
             .client
             .get_pinned(key_vec)
-            .wrap(error_context!(key))?
-            .wrap(error_context!(key))?;
+            .map_err(Error::new)?
+            .ok_or(ErrorKind::NoneType)?;
 
-        let value: V = bincode::deserialize(value_slice.as_ref())
-            .wrap(error_context!(key, type_name::<V>()))?;
+        let value: V = bincode::deserialize(value_slice.as_ref()).map_err(Error::new)?;
         Ok(value)
     }
 
@@ -115,16 +108,15 @@ impl Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key).wrap(error_context!(key))?;
+        let key_vec = bincode::serialize(key).map_err(Error::new)?;
         let transaction = self.client.transaction();
 
         let value_vec = transaction
             .get_for_update(&key_vec, true)
-            .wrap(error_context!(key))?
-            .wrap(error_context!(key))?;
+            .map_err(Error::new)?
+            .ok_or(ErrorKind::NoneType)?;
 
-        let value: V =
-            bincode::deserialize(value_vec.as_ref()).wrap(error_context!(key, type_name::<V>()))?;
+        let value: V = bincode::deserialize(value_vec.as_ref()).map_err(Error::new)?;
 
         let locked_value = Lock::new(Some(transaction), key_vec, value);
         Ok(locked_value)
@@ -154,15 +146,13 @@ impl Database {
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
-        let key_vec = bincode::serialize(key).wrap(error_context!(key))?;
+        let key_vec = bincode::serialize(key).map_err(Error::new)?;
 
-        let value_vec = bincode::serialize(value).wrap(error_context!(value))?;
+        let value_vec = bincode::serialize(value).map_err(Error::new)?;
 
         let transaction = self.client.transaction();
-        transaction
-            .put(key_vec, value_vec)
-            .wrap(error_context!(key, value))?;
-        transaction.commit().wrap(error_context!(key, value))?;
+        transaction.put(key_vec, value_vec).map_err(Error::new)?;
+        transaction.commit().map_err(Error::new)?;
         Ok(())
     }
 
@@ -188,11 +178,11 @@ impl Database {
     where
         K: Debug + Serialize,
     {
-        let key_vec = bincode::serialize(key).wrap(error_context!(key))?;
+        let key_vec = bincode::serialize(key).map_err(Error::new)?;
 
         let transaction = self.client.transaction();
-        transaction.delete(key_vec).wrap(error_context!(key))?;
-        transaction.commit().wrap(error_context!(key))?;
+        transaction.delete(key_vec).map_err(Error::new)?;
+        transaction.commit().map_err(Error::new)?;
         Ok(())
     }
 }
