@@ -1,0 +1,11 @@
+[package]
+name = "sequencer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+database = { path = "../crates/database" }
+json-rpc = { path = "../crates/json-rpc" }
+primitives = { path = "../crates/primitives" }
+
+tokio = { version = "1", features = ["full"] }
