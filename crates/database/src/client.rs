@@ -3,9 +3,9 @@ use std::{fmt::Debug, path::Path, sync::Arc};
 use primitives::{
     bincode,
     error::{Error, ErrorKind},
-    rocksdb::{Options, TransactionDB, TransactionDBOptions},
     serde::{de::DeserializeOwned, ser::Serialize},
 };
+use rocksdb::{Options, TransactionDB, TransactionDBOptions};
 
 use crate::lock::Lock;
 

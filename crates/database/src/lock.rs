@@ -1,9 +1,5 @@
-use primitives::{
-    bincode,
-    error::Error,
-    rocksdb::{Transaction, TransactionDB},
-    serde::ser::Serialize,
-};
+use primitives::{bincode, error::Error, serde::ser::Serialize};
+use rocksdb::{Transaction, TransactionDB};
 
 /// A locking mechanism for values stored in the database.
 ///
