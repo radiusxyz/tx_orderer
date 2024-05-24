@@ -2,9 +2,7 @@ pub mod error;
 pub mod types;
 
 pub use async_trait;
-pub use axum;
 pub use bincode;
-// pub use ethers;
 pub use hyper;
 pub use jsonrpsee;
 pub use rand;

@@ -8,7 +8,6 @@ doctest = false
 
 [dependencies]
 async-trait = "0.1.73"
-axum = "0.7"
 bincode = "1.3.3"
 # ethers = { version = "2.0", features = ["abigen", "ws"] }
 hyper = "0.14.27"
