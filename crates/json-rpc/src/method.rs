@@ -1,6 +1,5 @@
-use std::{fmt::Debug, sync::Arc};
+use std::fmt::Debug;
 
-use database::client::Database;
 use primitives::{
     async_trait::async_trait,
     error::Error,
@@ -66,7 +65,7 @@ pub trait RpcMethod: Clone + Debug + DeserializeOwned + Serialize {
     /// }
     /// ```
     #[allow(unused_variables)]
-    async fn handler(self, context: Arc<Database>) -> Result<Self::Response, Error> {
+    async fn handler(self) -> Result<Self::Response, Error> {
         unimplemented!()
     }
 }

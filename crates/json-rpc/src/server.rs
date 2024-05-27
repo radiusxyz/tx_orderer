@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use database::client::Database;
 use primitives::{
     error::Error,
     hyper::{header, Method},
@@ -16,13 +15,13 @@ use primitives::{
 use crate::method::RpcMethod;
 
 pub struct RpcServer {
-    rpc_module: RpcModule<Database>,
+    rpc_module: RpcModule<()>,
 }
 
 impl RpcServer {
-    pub fn new(context: Database) -> Self {
+    pub fn new() -> Self {
         Self {
-            rpc_module: RpcModule::new(context),
+            rpc_module: RpcModule::new(()),
         }
     }
 
@@ -32,9 +31,9 @@ impl RpcServer {
         R::Response: Clone + Debug + DeserializeOwned + Serialize + 'static,
     {
         self.rpc_module
-            .register_async_method(R::method_name(), |parameter, state| async move {
+            .register_async_method(R::method_name(), |parameter, _state| async move {
                 let rpc_parameter: R = parameter.parse().map_err(Error::new)?;
-                rpc_parameter.handler(state).await
+                rpc_parameter.handler().await
             })
             .map_err(Error::new)?;
         Ok(self)
