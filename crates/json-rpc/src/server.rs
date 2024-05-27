@@ -25,7 +25,7 @@ impl RpcServer {
         }
     }
 
-    pub fn register_rpc_method<R>(mut self) -> Result<Self, Error>
+    pub fn register_rpc_method<R>(&mut self) -> Result<(), Error>
     where
         R: RpcMethod + Send,
         R::Response: Clone + Debug + DeserializeOwned + Serialize + 'static,
@@ -36,7 +36,7 @@ impl RpcServer {
                 rpc_parameter.handler().await
             })
             .map_err(Error::new)?;
-        Ok(self)
+        Ok(())
     }
 
     pub async fn init(self, rpc_endpoint: impl AsRef<str>) -> Result<ServerHandle, Error> {
