@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 
+pub use primitives::jsonrpsee::server::ServerHandle;
 use primitives::{
     error::Error,
     hyper::{header, Method},
     jsonrpsee::{
-        server::{middleware::http::ProxyGetRequestLayer, Server, ServerHandle},
+        server::{middleware::http::ProxyGetRequestLayer, Server},
         RpcModule,
     },
     serde::{de::DeserializeOwned, ser::Serialize},
