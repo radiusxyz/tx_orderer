@@ -1,0 +1,15 @@
+[package]
+name = "ssal"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+doctest = false
+
+[dependencies]
+database = { path = "../database" }
+primitives = { path = "../primitives" }
+ethers = { version = "2.0", features = ["abigen", "ws"] }
+
+# [features]
+# ethereum = ["dep:ethers"]
