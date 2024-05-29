@@ -9,9 +9,9 @@ use primitives::{
         RpcModule,
     },
     serde::{de::DeserializeOwned, ser::Serialize},
-    tower::ServiceBuilder,
-    tower_http::cors::{Any, CorsLayer},
 };
+use tower::ServiceBuilder;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::method::RpcMethod;
 
