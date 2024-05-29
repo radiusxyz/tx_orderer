@@ -1,3 +1,8 @@
+[package]
+name = "sequencer-framework"
+version = "0.1.0"
+edition = "2021"
+
 [workspace]
 members = [
     "crates/database",
@@ -5,6 +10,16 @@ members = [
     "crates/primitives",
     "crates/server",
     "crates/ssal",
-    "sequencer",
 ]
 resolver = "2"
+
+[dependencies]
+database = { path = "crates/database", optional = true }
+json-rpc = { path = "crates/json-rpc", optional = true }
+primitives = { path = "crates/primitives" }
+ssal = { path = "crates/ssal", optional = true }
+
+[features]
+database = ["dep:database"]
+json-rpc = ["dep:json-rpc"]
+ssal = ["dep:ssal"]
