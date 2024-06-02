@@ -12,7 +12,7 @@ pub trait SsalApi: Clone + Send + Sync {
 }
 
 #[async_trait]
-pub trait SeederApi {
+pub trait SeederApi: Clone + Send + Sync {
     async fn register(&self) -> Result<(), Error>;
 
     async fn deregister(&self) -> Result<(), Error>;
