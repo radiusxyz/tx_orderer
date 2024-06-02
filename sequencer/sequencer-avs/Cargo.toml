@@ -1,0 +1,9 @@
+[package]
+name = "sequencer-avs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+database = { workspace = true }
+json-rpc = { workspace = true }
+ssal = { workspace = true, features = ["ethereum"] }

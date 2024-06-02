@@ -1,9 +1,9 @@
 use std::{str::FromStr, sync::Arc, time::Duration};
 
-use primitives::{error::Error, serde_json::json, types::SequencerAddress};
 use reqwest::{Client, ClientBuilder, StatusCode, Url};
+use serde_json::json;
 
-use crate::ethereum::types::*;
+use crate::ethereum::{types::*, Error};
 
 pub struct SeederClient {
     metadata: Arc<Metadata>,
@@ -38,12 +38,14 @@ impl SeederClient {
         let client = ClientBuilder::new()
             .timeout(Duration::from_secs(3))
             .build()
-            .map_err(Error::new)?;
+            .map_err(Error::BuildSeederClient)?;
         let seeder_url_list: Result<Vec<Url>, _> = seeder_address_list
             .iter()
             .map(|seeder_address| Url::from_str(seeder_address))
             .collect();
-        let seeder_url_list = seeder_url_list.map_err(Error::new)?;
+        let seeder_url_list = seeder_url_list
+            .map_err(Box::new)
+            .map_err(Error::ParseSeederUrl)?;
 
         let metadata = Metadata {
             seeder_url_list,

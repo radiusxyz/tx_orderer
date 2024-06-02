@@ -1,7 +1,6 @@
-use primitives::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(crate = "primitives::serde")]
 pub struct PublicKey(ethers::types::H160);
 
 impl std::ops::Deref for PublicKey {

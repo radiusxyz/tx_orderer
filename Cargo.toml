@@ -1,25 +1,21 @@
-[package]
-name = "sequencer-framework"
-version = "0.1.0"
-edition = "2021"
-
 [workspace]
 members = [
     "crates/database",
     "crates/json-rpc",
-    "crates/primitives",
-    "crates/server",
     "crates/ssal",
+    "seeder/seeder-avs",
+    "sequencer/sequencer-avs",
 ]
 resolver = "2"
 
-[dependencies]
-database = { path = "crates/database", optional = true }
-json-rpc = { path = "crates/json-rpc", optional = true }
-primitives = { path = "crates/primitives" }
-ssal = { path = "crates/ssal", optional = true }
-
-[features]
-database = ["dep:database"]
-json-rpc = ["dep:json-rpc"]
-ssal = ["dep:ssal"]
+[workspace.dependencies]
+async-trait = "0.1.73"
+database = { path = "crates/database" }
+json-rpc = { path = "crates/json-rpc" }
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.117"
+ssal = { path = "crates/ssal", default-features = false }
+tokio = { version = "1.37.0", default-features = false }
+toml = "0.8.13"
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"

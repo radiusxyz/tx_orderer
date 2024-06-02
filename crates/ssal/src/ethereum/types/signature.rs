@@ -1,7 +1,6 @@
-use primitives::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(crate = "primitives::serde")]
 pub struct Signature(ethers::types::Signature);
 
 impl std::ops::Deref for Signature {
