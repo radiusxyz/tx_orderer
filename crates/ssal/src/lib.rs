@@ -1,16 +1,24 @@
-pub mod ethereum;
+pub mod seeder;
+pub mod ssal;
 pub mod types;
 
 use primitives::{async_trait::async_trait, error::Error};
 
+use crate::types::*;
+
 #[async_trait]
-pub trait Client {
-    // async fn initialize_cluster(&self) -> Result<(), Error>;
+pub trait SsalApi: Clone + Send + Sync {
+    async fn get_sequencer_list(&self) -> Result<Vec<SequencerPublicKey>, Error>;
+}
 
-    // async fn register_sequencer(&self) -> Result<(), Error>;
+#[async_trait]
+pub trait SeederApi {
+    async fn register(&self) -> Result<(), Error>;
 
-    // async fn deregister_sequencer(&self) -> Result<(), Error>;
-    async fn get_block(&self) -> Result<usize, Error>;
+    async fn deregister(&self) -> Result<(), Error>;
 
-    async fn get_sequencer_list(&self) -> Result<(), Error>;
+    async fn get_address_list(
+        &self,
+        sequencer_list: Vec<SequencerPublicKey>,
+    ) -> Result<Vec<Option<SequencerAddress>>, Error>;
 }

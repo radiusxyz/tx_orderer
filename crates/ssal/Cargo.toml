@@ -7,7 +7,8 @@ edition = "2021"
 doctest = false
 
 [dependencies]
-primitives = { path = "../primitives" }
+database = { path = "../database" }
 ethers = { version = "2.0", features = ["abigen", "ws"] }
-tokio = { version = "1", features = ["full"] }
-reqwest = "0.12.4"
+primitives = { path = "../primitives" }
+reqwest = { version = "0.12.4", features = ["json"] }
+tokio = { version = "1", features = ["net"] }
