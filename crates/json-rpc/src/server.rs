@@ -1,19 +1,16 @@
 use std::fmt::Debug;
 
 use hyper::{header, Method};
-pub use primitives::jsonrpsee::server::ServerHandle;
-use primitives::{
-    error::Error,
-    jsonrpsee::{
-        server::{middleware::http::ProxyGetRequestLayer, Server},
-        RpcModule,
-    },
-    serde::{de::DeserializeOwned, ser::Serialize},
+use jsonrpsee::{
+    server::{middleware::http::ProxyGetRequestLayer, Server, ServerHandle},
+    types::{ErrorCode, ErrorObjectOwned},
+    RpcModule,
 };
+use serde::{de::DeserializeOwned, ser::Serialize};
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::method::RpcMethod;
+use crate::{method::RpcMethod, Error};
 
 pub struct RpcServer {
     rpc_module: RpcModule<()>,
@@ -26,18 +23,25 @@ impl RpcServer {
         }
     }
 
-    pub fn register_rpc_method<R>(&mut self) -> Result<(), Error>
+    pub fn register_rpc_method<R>(mut self) -> Result<Self, Error>
     where
         R: RpcMethod + Send,
         R::Response: Clone + Debug + DeserializeOwned + Serialize + 'static,
     {
         self.rpc_module
             .register_async_method(R::method_name(), |parameter, _state| async move {
-                let rpc_parameter: R = parameter.parse().map_err(Error::new)?;
-                rpc_parameter.handler().await
+                let rpc_parameter: R = parameter.parse()?;
+                match rpc_parameter.handler().await {
+                    Ok(response) => Ok(response),
+                    Err(error) => Err(ErrorObjectOwned::owned::<u8>(
+                        ErrorCode::InternalError.code(),
+                        error,
+                        None,
+                    )),
+                }
             })
-            .map_err(Error::new)?;
-        Ok(())
+            .map_err(Error::RegisterRpcMethod)?;
+        Ok(self)
     }
 
     pub async fn init(self, rpc_endpoint: impl AsRef<str>) -> Result<ServerHandle, Error> {
@@ -48,13 +52,13 @@ impl RpcServer {
 
         let middleware = ServiceBuilder::new()
             .layer(cors)
-            .layer(ProxyGetRequestLayer::new("/health", "health").unwrap());
+            .layer(ProxyGetRequestLayer::new("/health", "health").map_err(Error::RpcMiddleware)?);
 
         let server = Server::builder()
             .set_http_middleware(middleware)
             .build(rpc_endpoint.as_ref())
             .await
-            .map_err(Error::new)?;
+            .map_err(Error::BuildServer)?;
 
         Ok(server.start(self.rpc_module))
     }

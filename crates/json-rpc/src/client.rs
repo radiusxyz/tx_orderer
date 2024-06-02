@@ -1,14 +1,14 @@
 use std::time::Duration;
 
-use primitives::{
-    error::Error,
-    jsonrpsee::{
-        core::client::ClientT,
-        http_client::{HttpClient, HttpClientBuilder},
-    },
+use jsonrpsee::{
+    core::client::ClientT,
+    http_client::{HttpClient, HttpClientBuilder},
 };
 
-use crate::method::{RpcMethod, RpcParam};
+use crate::{
+    method::{RpcMethod, RpcParam},
+    Error,
+};
 
 pub struct RpcClient {
     http_client: HttpClient,
@@ -20,7 +20,7 @@ impl RpcClient {
         let http_client = HttpClientBuilder::new()
             .request_timeout(Duration::from_secs(timeout))
             .build(endpoint)
-            .map_err(Error::new)?;
+            .map_err(Error::BuildClient)?;
         Ok(Self { http_client })
     }
 
@@ -34,7 +34,7 @@ impl RpcClient {
             .http_client
             .request(method_name, rpc_parameter)
             .await
-            .map_err(Error::new)?;
+            .map_err(Error::RpcRequest)?;
         Ok(rpc_response)
     }
 }

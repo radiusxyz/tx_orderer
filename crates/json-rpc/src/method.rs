@@ -1,12 +1,11 @@
 use std::fmt::Debug;
 
-use primitives::{
-    async_trait::async_trait,
-    error::Error,
-    jsonrpsee::core::traits::ToRpcParams,
-    serde::{de::DeserializeOwned, ser::Serialize},
-    serde_json::{self, error::Error as SerdeJsonError, value::RawValue},
-};
+use async_trait::async_trait;
+use jsonrpsee::core::traits::ToRpcParams;
+use serde::{de::DeserializeOwned, ser::Serialize};
+use serde_json::{value::RawValue, Error};
+
+use crate::RpcError;
 
 /// Defines the necessary traits for a type to be used as an RPC parameter.
 ///
@@ -65,7 +64,7 @@ pub trait RpcMethod: Clone + Debug + DeserializeOwned + Serialize {
     /// }
     /// ```
     #[allow(unused_variables)]
-    async fn handler(self) -> Result<Self::Response, Error> {
+    async fn handler(self) -> Result<Self::Response, RpcError> {
         unimplemented!()
     }
 }
@@ -87,7 +86,7 @@ impl<T> ToRpcParams for RpcParam<T>
 where
     T: RpcMethod,
 {
-    fn to_rpc_params(self) -> Result<Option<Box<RawValue>>, SerdeJsonError> {
+    fn to_rpc_params(self) -> Result<Option<Box<RawValue>>, Error> {
         let json_string = serde_json::to_string(&self.0)?;
         RawValue::from_string(json_string).map(Some)
     }
