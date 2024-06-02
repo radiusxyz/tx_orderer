@@ -1,9 +1,9 @@
 use std::{str::FromStr, sync::Arc, time::Duration};
 
-use primitives::{async_trait::async_trait, error::Error, serde_json::json};
+use primitives::{error::Error, serde_json::json, types::SequencerAddress};
 use reqwest::{Client, ClientBuilder, StatusCode, Url};
 
-use crate::types::*;
+use crate::ethereum::types::*;
 
 pub struct SeederClient {
     metadata: Arc<Metadata>,
@@ -12,8 +12,8 @@ pub struct SeederClient {
 
 struct Metadata {
     seeder_url_list: Vec<Url>,
-    signature: SequencerSignature,
-    public_key: SequencerPublicKey,
+    signature: Signature,
+    public_key: PublicKey,
 }
 
 unsafe impl Send for SeederClient {}
@@ -32,8 +32,8 @@ impl Clone for SeederClient {
 impl SeederClient {
     pub fn new(
         seeder_address_list: &Vec<String>,
-        signature: SequencerSignature,
-        public_key: SequencerPublicKey,
+        signature: Signature,
+        public_key: PublicKey,
     ) -> Result<Self, Error> {
         let client = ClientBuilder::new()
             .timeout(Duration::from_secs(3))
@@ -57,21 +57,18 @@ impl SeederClient {
         })
     }
 
-    pub fn signature(&self) -> &SequencerSignature {
+    pub fn signature(&self) -> &Signature {
         &self.metadata.signature
     }
 
-    pub fn public_key(&self) -> &SequencerPublicKey {
+    pub fn public_key(&self) -> &PublicKey {
         &self.metadata.public_key
     }
 
     pub fn seeder_url_list(&self) -> &Vec<Url> {
         &self.metadata.seeder_url_list
     }
-}
 
-#[async_trait]
-impl crate::SeederApi for SeederClient {
     async fn register(&self) -> Result<(), Error> {
         let payload = json!({
             "signature": self.signature(),
@@ -114,7 +111,7 @@ impl crate::SeederApi for SeederClient {
 
     async fn get_address_list(
         &self,
-        sequencer_list: Vec<SequencerPublicKey>,
+        sequencer_list: Vec<PublicKey>,
     ) -> Result<Vec<Option<SequencerAddress>>, Error> {
         let query = [("sequencer_list", sequencer_list)];
 

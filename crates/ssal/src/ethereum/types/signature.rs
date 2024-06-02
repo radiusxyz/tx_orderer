@@ -2,24 +2,24 @@ use primitives::serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(crate = "primitives::serde")]
-pub struct SequencerPublicKey(pub ethers::types::H160);
+pub struct Signature(ethers::types::Signature);
 
-impl std::ops::Deref for SequencerPublicKey {
-    type Target = ethers::types::H160;
+impl std::ops::Deref for Signature {
+    type Target = ethers::types::Signature;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl std::ops::DerefMut for SequencerPublicKey {
+impl std::ops::DerefMut for Signature {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl From<ethers::types::H160> for SequencerPublicKey {
-    fn from(value: ethers::types::H160) -> Self {
+impl From<ethers::types::Signature> for Signature {
+    fn from(value: ethers::types::Signature) -> Self {
         Self(value)
     }
 }
