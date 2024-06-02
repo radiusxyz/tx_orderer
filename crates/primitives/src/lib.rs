@@ -3,7 +3,6 @@ pub mod types;
 
 pub use async_trait;
 pub use bincode;
-pub use hyper;
 pub use jsonrpsee;
 pub use rand;
 pub use serde;
