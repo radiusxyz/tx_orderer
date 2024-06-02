@@ -7,6 +7,7 @@ edition = "2021"
 doctest = false
 
 [dependencies]
+hyper = "0.14.27"
 primitives = { path = "../primitives" }
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["cors"] }

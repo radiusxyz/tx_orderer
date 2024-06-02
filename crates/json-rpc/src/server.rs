@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 
+use hyper::{header, Method};
 pub use primitives::jsonrpsee::server::ServerHandle;
 use primitives::{
     error::Error,
-    hyper::{header, Method},
     jsonrpsee::{
         server::{middleware::http::ProxyGetRequestLayer, Server},
         RpcModule,
