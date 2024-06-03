@@ -1,15 +1,26 @@
-use std::env;
+use std::net::SocketAddr;
+
+use axum::{
+    routing::{get, post},
+    Router,
+};
+use database::Database;
+use seeder_avs::{api::*, config::Config, error::Error};
+use ssal::ethereum::Endpoint;
+use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
-    let config = Config::load("Config.toml")?;
-    let database = Database::new(config.database_path())?;
-    let listener = TcpListener::bind(config.seeder_address()).await?;
+    let config = Config::load("Config.toml").map_err(Error::boxed)?;
+    let database = Database::new(config.database_path()).map_err(Error::boxed)?;
+    let listener = TcpListener::bind(config.seeder_address())
+        .await
+        .map_err(Error::boxed)?;
     let app = Router::new()
-        .route("/register", post(Register::handler))
-        .route("/deregister", post(Deregister::handler))
-        .route("/get-sequencer-list", get(SequencerList::handler))
+        .route(Endpoint::REGISTER, post(Register::handler))
+        .route(Endpoint::DEREGISTER, post(Deregister::handler))
+        .route(Endpoint::ADDRESS_LIST, get(AddressList::handler))
         .with_state(database);
 
     tracing::info!("Starting the seeder server at {}", config.seeder_address());
@@ -18,6 +29,7 @@ async fn main() {
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .await?;
+    .await
+    .map_err(Error::boxed)?;
     Ok(())
 }

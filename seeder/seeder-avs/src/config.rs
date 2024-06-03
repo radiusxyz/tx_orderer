@@ -3,12 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use sequencer_framework::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
 
 #[derive(Deserialize, Serialize)]
-#[serde(crate = "sequencer_framework::serde")]
 pub struct Config {
     database_path: PathBuf,
     seeder_address: String,
@@ -16,8 +15,8 @@ pub struct Config {
 
 impl Config {
     pub fn load(config_path: impl AsRef<Path>) -> Result<Self, Error> {
-        let config_string = fs::read_to_string(config_path)?;
-        let config: Self = toml::from_str(&config_string)?;
+        let config_string = fs::read_to_string(config_path).map_err(Error::boxed)?;
+        let config: Self = toml::from_str(&config_string).map_err(Error::boxed)?;
         Ok(config)
     }
 
