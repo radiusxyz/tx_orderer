@@ -13,9 +13,7 @@ impl AddressList {
         let address_list: Vec<Option<String>> = parameter
             .sequencer_list
             .iter()
-            .filter_map(|sequencer_public_key| {
-                state.get::<PublicKey, String>(&sequencer_public_key).ok()
-            })
+            .map(|sequencer_public_key| state.get::<PublicKey, String>(&sequencer_public_key).ok())
             .collect();
         Ok((StatusCode::OK, Json(address_list)))
     }
