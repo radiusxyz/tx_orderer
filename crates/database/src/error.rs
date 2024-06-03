@@ -9,11 +9,13 @@ pub enum ErrorKind {
     SerializeKey,
     SerializeValue,
     DeserializeValue,
+    KeyDoesNotExist,
 }
 
-enum ErrorSource {
+pub(crate) enum ErrorSource {
     Bincode(bincode::Error),
     RocksDB(rocksdb::Error),
+    NoneType,
 }
 
 impl From<bincode::Error> for ErrorSource {
@@ -33,6 +35,7 @@ impl std::fmt::Display for ErrorSource {
         match self {
             Self::Bincode(error) => write!(f, "{}", error),
             Self::RocksDB(error) => write!(f, "{}", error),
+            Self::NoneType => write!(f, "The value returned None"),
         }
     }
 }

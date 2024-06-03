@@ -3,7 +3,7 @@ use std::{fmt::Debug, path::Path, sync::Arc};
 use rocksdb::{Options, TransactionDB, TransactionDBOptions};
 use serde::{de::DeserializeOwned, ser::Serialize};
 
-use crate::{Error, ErrorKind, Lock};
+use crate::{error::ErrorSource, Error, ErrorKind, Lock};
 
 pub struct Database {
     client: Arc<TransactionDB>,
@@ -31,28 +31,25 @@ impl Database {
         })
     }
 
-    pub fn get<K, V>(&self, key: &K) -> Result<Option<V>, Error>
+    pub fn get<K, V>(&self, key: &K) -> Result<V, Error>
     where
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
     {
         let key_vec = bincode::serialize(key).map_err(|error| (ErrorKind::SerializeKey, error))?;
 
-        match self
+        let value_slice = self
             .client
             .get_pinned(key_vec)
             .map_err(|error| (ErrorKind::Get, error))?
-        {
-            Some(value_slice) => {
-                let value: V = bincode::deserialize(value_slice.as_ref())
-                    .map_err(|error| (ErrorKind::DeserializeValue, error))?;
-                Ok(Some(value))
-            }
-            None => Ok(None),
-        }
+            .ok_or((ErrorKind::KeyDoesNotExist, ErrorSource::NoneType))?;
+
+        let value: V = bincode::deserialize(value_slice.as_ref())
+            .map_err(|error| (ErrorKind::DeserializeValue, error))?;
+        Ok(value)
     }
 
-    pub fn get_mut<K, V>(&self, key: &K) -> Result<Option<Lock<V>>, Error>
+    pub fn get_mut<K, V>(&self, key: &K) -> Result<Lock<V>, Error>
     where
         K: Debug + Serialize,
         V: Debug + DeserializeOwned + Serialize,
@@ -60,18 +57,15 @@ impl Database {
         let key_vec = bincode::serialize(key).map_err(|error| (ErrorKind::SerializeKey, error))?;
 
         let transaction = self.client.transaction();
-        match transaction
+        let value_vec = transaction
             .get_for_update(&key_vec, true)
             .map_err(|error| (ErrorKind::GetMut, error))?
-        {
-            Some(value_vec) => {
-                let value: V = bincode::deserialize(&value_vec)
-                    .map_err(|error| (ErrorKind::DeserializeValue, error))?;
-                let locked_value = Lock::new(Some(transaction), key_vec, value);
-                Ok(Some(locked_value))
-            }
-            None => Ok(None),
-        }
+            .ok_or((ErrorKind::KeyDoesNotExist, ErrorSource::NoneType))?;
+
+        let value: V = bincode::deserialize(&value_vec)
+            .map_err(|error| (ErrorKind::DeserializeValue, error))?;
+        let locked_value = Lock::new(Some(transaction), key_vec, value);
+        Ok(locked_value)
     }
 
     pub fn put<K, V>(&self, key: &K, value: &V) -> Result<(), Error>
