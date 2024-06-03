@@ -54,7 +54,11 @@ impl SeederClient {
         Ok(Self { seeder_url, client })
     }
 
-    async fn register(&self, signature: &Signature, public_key: &PublicKey) -> Result<(), Error> {
+    pub async fn register(
+        &self,
+        signature: &Signature,
+        public_key: &PublicKey,
+    ) -> Result<(), Error> {
         let payload = json!({
             "signature": signature,
             "public_key": public_key,
@@ -70,7 +74,11 @@ impl SeederClient {
         Ok(())
     }
 
-    async fn deregister(&self, signature: &Signature, public_key: &PublicKey) -> Result<(), Error> {
+    pub async fn deregister(
+        &self,
+        signature: &Signature,
+        public_key: &PublicKey,
+    ) -> Result<(), Error> {
         let payload = json!({
             "signature": signature,
             "public_key": public_key,
@@ -86,7 +94,7 @@ impl SeederClient {
         Ok(())
     }
 
-    async fn get_address_list(
+    pub async fn get_address_list(
         &self,
         sequencer_list: &Vec<PublicKey>,
     ) -> Result<Vec<Option<String>>, Error> {

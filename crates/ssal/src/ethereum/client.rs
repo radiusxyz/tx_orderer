@@ -8,7 +8,7 @@ use std::{
 
 use ethers::{
     contract::abigen,
-    providers::{Http, Provider},
+    providers::{Http, Middleware, Provider},
     types::H160,
 };
 
@@ -20,7 +20,7 @@ pub struct SsalClient {
     provider: Arc<Provider<Http>>,
     contract_address: H160,
     cluster_id: [u8; 32],
-    ssal_block_height: Arc<AtomicU64>,
+    block_number: Arc<AtomicU64>,
 }
 
 unsafe impl Send for SsalClient {}
@@ -33,7 +33,7 @@ impl Clone for SsalClient {
             provider: self.provider.clone(),
             contract_address: self.contract_address.clone(),
             cluster_id: self.cluster_id.clone(),
-            ssal_block_height: self.ssal_block_height.clone(),
+            block_number: self.block_number.clone(),
         }
     }
 }
@@ -47,35 +47,56 @@ impl SsalClient {
         let rpc_endpoint = format!("http://{}", ssal_address.as_ref());
         let provider = Provider::<Http>::try_from(rpc_endpoint)
             .map_err(|error| (ErrorKind::BuildSsalClient, error))?;
-        let contract_address =
-            H160::from_str(contract_address.as_ref()).map_err(|error| Error::new)?;
+        let contract_address = H160::from_str(contract_address.as_ref())
+            .map_err(|error| (ErrorKind::ParseContractAddress, error))?;
 
         Ok(Self {
             provider: Arc::new(provider),
             contract_address,
             cluster_id,
-            ssal_block_height: Arc::new(AtomicU64::default()),
+            block_number: Arc::new(AtomicU64::default()),
         })
     }
 
-    async fn get_sequencer_list(&self) -> Result<Vec<PublicKey>, Error> {
-        let contract = Ssal::new(self.contract_address, self.provider.clone());
-        let sequencer_list: [H160; 30] = contract
-            .get_sequencers(self.cluster_id)
-            .block()
-            .call()
+    fn block_number(&self) -> u64 {
+        self.block_number.load(Ordering::SeqCst)
+    }
+
+    fn update_block_number(&self, block_number: u64) {
+        self.block_number.store(block_number, Ordering::SeqCst)
+    }
+
+    async fn get_latest_block_number(&self) -> Result<u64, Error> {
+        let block_number = self
+            .provider
+            .get_block_number()
             .await
-            .map_err(Error::new)?;
-        let sequencer_list: Vec<Option<SequencerAddress>> = sequencer_list
-            .iter()
-            .map(|sequencer_public_key| {
-                if sequencer_public_key.is_zero() {
-                    None
-                } else {
-                    Some(SequencerAddress::from(sequencer_public_key))
-                }
-            })
-            .collect();
-        Ok(sequencer_list)
+            .map_err(|error| (ErrorKind::GetBlockNumber, error))?
+            .as_u64();
+        Ok(block_number)
+    }
+
+    pub async fn get_sequencer_list(&self) -> Result<Option<Vec<PublicKey>>, Error> {
+        let latest_block_number = self.get_latest_block_number().await?;
+        if self.block_number() != latest_block_number {
+            let contract = Ssal::new(self.contract_address, self.provider.clone());
+            let sequencer_list: [H160; 30] = contract
+                .get_sequencers(self.cluster_id)
+                .block(latest_block_number)
+                .call()
+                .await
+                .map_err(|error| (ErrorKind::GetSequencerList, error))?;
+
+            let sequencer_list: Vec<PublicKey> = sequencer_list
+                .into_iter()
+                .filter(|public_key| !public_key.is_zero())
+                .map(PublicKey::from)
+                .collect();
+
+            self.update_block_number(latest_block_number);
+            Ok(Some(sequencer_list))
+        } else {
+            Ok(None)
+        }
     }
 }
