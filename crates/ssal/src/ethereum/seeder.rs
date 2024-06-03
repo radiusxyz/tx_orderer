@@ -1,19 +1,21 @@
-use std::{str::FromStr, sync::Arc, time::Duration};
+use std::{str::FromStr, time::Duration};
 
-use reqwest::{Client, ClientBuilder, StatusCode, Url};
+use reqwest::{Client, Url};
 use serde_json::json;
 
-use crate::ethereum::{types::*, Error};
+use crate::ethereum::{types::*, Error, ErrorKind};
 
-pub struct SeederClient {
-    metadata: Arc<Metadata>,
-    client: Client,
+pub struct Endpoint;
+
+impl Endpoint {
+    pub const REGISTER: &'static str = "/register";
+    pub const DEREGISTER: &'static str = "/deregister";
+    pub const ADDRESS_LIST: &'static str = "/address-list";
 }
 
-struct Metadata {
-    seeder_url_list: Vec<Url>,
-    signature: Signature,
-    public_key: PublicKey,
+pub struct SeederClient {
+    seeder_url: [Url; 3],
+    client: Client,
 }
 
 unsafe impl Send for SeederClient {}
@@ -23,111 +25,84 @@ unsafe impl Sync for SeederClient {}
 impl Clone for SeederClient {
     fn clone(&self) -> Self {
         Self {
-            metadata: self.metadata.clone(),
+            seeder_url: self.seeder_url.clone(),
             client: self.client.clone(),
         }
     }
 }
 
 impl SeederClient {
-    pub fn new(
-        seeder_address_list: &Vec<String>,
-        signature: Signature,
-        public_key: PublicKey,
-    ) -> Result<Self, Error> {
-        let client = ClientBuilder::new()
+    pub fn new(seeder_address: impl AsRef<str>) -> Result<Self, Error> {
+        let client = Client::builder()
             .timeout(Duration::from_secs(3))
             .build()
-            .map_err(Error::BuildSeederClient)?;
-        let seeder_url_list: Result<Vec<Url>, _> = seeder_address_list
-            .iter()
-            .map(|seeder_address| Url::from_str(seeder_address))
-            .collect();
-        let seeder_url_list = seeder_url_list
-            .map_err(Box::new)
-            .map_err(Error::ParseSeederUrl)?;
+            .map_err(|error| (ErrorKind::BuildSeederClient, error))?;
+        let base_url = Url::from_str(seeder_address.as_ref())
+            .map_err(|error| (ErrorKind::ParseSeederAddress, error))?;
+        let seeder_url = [
+            base_url
+                .join(Endpoint::REGISTER)
+                .map_err(|error| (ErrorKind::ParseSeederAddress, error))?,
+            base_url
+                .join(Endpoint::DEREGISTER)
+                .map_err(|error| (ErrorKind::ParseSeederAddress, error))?,
+            base_url
+                .join(Endpoint::ADDRESS_LIST)
+                .map_err(|error| (ErrorKind::ParseSeederAddress, error))?,
+        ];
 
-        let metadata = Metadata {
-            seeder_url_list,
-            signature,
-            public_key,
-        };
-
-        Ok(Self {
-            metadata: Arc::new(metadata),
-            client,
-        })
+        Ok(Self { seeder_url, client })
     }
 
-    pub fn signature(&self) -> &Signature {
-        &self.metadata.signature
-    }
-
-    pub fn public_key(&self) -> &PublicKey {
-        &self.metadata.public_key
-    }
-
-    pub fn seeder_url_list(&self) -> &Vec<Url> {
-        &self.metadata.seeder_url_list
-    }
-
-    async fn register(&self) -> Result<(), Error> {
+    async fn register(&self, signature: &Signature, public_key: &PublicKey) -> Result<(), Error> {
         let payload = json!({
-            "signature": self.signature(),
-            "public_key": self.public_key(),
+            "signature": signature,
+            "public_key": public_key,
         });
-
-        for seeder_url in self.seeder_url_list().iter() {
-            let url = seeder_url.join("register").map_err(Error::new)?;
-            match self.client.post(url).json(&payload).send().await {
-                Ok(response) => match response.status() {
-                    StatusCode::OK => return Ok(()),
-                    _other_status_code => continue,
-                },
-                Err(_) => continue,
-            }
-        }
-
-        Err(Error::from("All seeder nodes are unresponsive"))
+        self.client
+            .post(self.seeder_url[0].clone())
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|error| (ErrorKind::Register, error))?
+            .error_for_status()
+            .map_err(|error| (ErrorKind::Register, error))?;
+        Ok(())
     }
 
-    async fn deregister(&self) -> Result<(), Error> {
+    async fn deregister(&self, signature: &Signature, public_key: &PublicKey) -> Result<(), Error> {
         let payload = json!({
-            "signature": self.signature(),
-            "public_key": self.public_key(),
+            "signature": signature,
+            "public_key": public_key,
         });
-
-        for seeder_url in self.seeder_url_list().iter() {
-            let url = seeder_url.join("deregister").map_err(Error::new)?;
-            match self.client.post(url).json(&payload).send().await {
-                Ok(response) => match response.status() {
-                    StatusCode::OK => return Ok(()),
-                    _other_status_code => continue,
-                },
-                Err(_) => continue,
-            }
-        }
-
-        Err(Error::from("All seeder nodes are unresponsive"))
+        self.client
+            .post(self.seeder_url[1].clone())
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|error| (ErrorKind::Deregister, error))?
+            .error_for_status()
+            .map_err(|error| (ErrorKind::Deregister, error))?;
+        Ok(())
     }
 
     async fn get_address_list(
         &self,
-        sequencer_list: Vec<PublicKey>,
-    ) -> Result<Vec<Option<SequencerAddress>>, Error> {
+        sequencer_list: &Vec<PublicKey>,
+    ) -> Result<Vec<Option<String>>, Error> {
         let query = [("sequencer_list", sequencer_list)];
-
-        for seeder_url in self.seeder_url_list().iter() {
-            let url = seeder_url.join("/get-address-list").map_err(Error::new)?;
-            match self.client.get(url).query(&query).send().await {
-                Ok(response) => match response.json::<Vec<Option<SequencerAddress>>>().await {
-                    Ok(sequencer_address_list) => return Ok(sequencer_address_list),
-                    Err(_) => continue,
-                },
-                Err(_) => continue,
-            }
-        }
-
-        Err(Error::from("All seeder nodes are unresponsive"))
+        let response: Vec<Option<String>> = self
+            .client
+            .get(self.seeder_url[2].clone())
+            .query(&query)
+            .send()
+            .await
+            .map_err(|error| (ErrorKind::GetAddressList, error))?
+            .error_for_status()
+            .map_err(|error| (ErrorKind::GetAddressList, error))?
+            .json()
+            .await
+            .map_err(|error| (ErrorKind::DeserializeResponse, error))?;
+        Ok(response)
     }
 }

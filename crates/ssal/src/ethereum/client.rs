@@ -12,9 +12,9 @@ use ethers::{
     types::H160,
 };
 
-use crate::ethereum::{types::*, Error};
+use crate::ethereum::{types::*, Error, ErrorKind};
 
-abigen!(Ssal, "../contract/Ssal.json");
+abigen!(Ssal, "src/ethereum/contract/Ssal.json");
 
 pub struct SsalClient {
     provider: Arc<Provider<Http>>,
@@ -45,7 +45,8 @@ impl SsalClient {
         cluster_id: [u8; 32],
     ) -> Result<Self, Error> {
         let rpc_endpoint = format!("http://{}", ssal_address.as_ref());
-        let provider = Provider::<Http>::try_from(rpc_endpoint).map_err(Error::ParseUrl)?;
+        let provider = Provider::<Http>::try_from(rpc_endpoint)
+            .map_err(|error| (ErrorKind::BuildSsalClient, error))?;
         let contract_address =
             H160::from_str(contract_address.as_ref()).map_err(|error| Error::new)?;
 
