@@ -5,6 +5,8 @@ use sequencer_avs::{config::Config, error::Error, task::cluster_manager};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    tracing_subscriber::fmt().init();
+
     let arguments: Vec<String> = env::args().skip(1).collect();
     let config_path = arguments
         .get(0)

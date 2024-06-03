@@ -76,7 +76,7 @@ impl SsalClient {
         Ok(block_number)
     }
 
-    pub async fn get_sequencer_list(&self) -> Result<Option<Vec<PublicKey>>, Error> {
+    pub async fn get_sequencer_list(&self) -> Result<Option<(u64, Vec<PublicKey>)>, Error> {
         let latest_block_number = self.get_latest_block_number().await?;
         if self.block_number() != latest_block_number {
             let contract = Ssal::new(self.contract_address, self.provider.clone());
@@ -94,7 +94,7 @@ impl SsalClient {
                 .collect();
 
             self.update_block_number(latest_block_number);
-            Ok(Some(sequencer_list))
+            Ok(Some((latest_block_number, sequencer_list)))
         } else {
             Ok(None)
         }
