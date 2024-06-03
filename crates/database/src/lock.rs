@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use rocksdb::{Transaction, TransactionDB};
 use serde::ser::Serialize;
 
-use crate::Error;
+use crate::{Error, ErrorKind};
 
 /// A locking mechanism for values stored in the database.
 ///
@@ -56,12 +56,15 @@ where
 
     pub fn commit(mut self) -> Result<(), Error> {
         if let Some(transaction) = self.transaction.take() {
-            let value_vec = bincode::serialize(&self.value).map_err(Error::SerializeValue)?;
+            let value_vec = bincode::serialize(&self.value)
+                .map_err(|error| (ErrorKind::SerializeValue, error))?;
 
             transaction
                 .put(&self.key_vec, value_vec)
-                .map_err(Error::Put)?;
-            transaction.commit().map_err(Error::Commit)?;
+                .map_err(|error| (ErrorKind::Put, error))?;
+            transaction
+                .commit()
+                .map_err(|error| (ErrorKind::Commit, error))?;
         }
         Ok(())
     }

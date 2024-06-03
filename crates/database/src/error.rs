@@ -1,20 +1,96 @@
-#[derive(Debug)]
-pub enum Error {
-    Open(rocksdb::Error),
-    Get(rocksdb::Error),
-    GetMut(rocksdb::Error),
-    Put(rocksdb::Error),
-    Delete(rocksdb::Error),
-    Commit(rocksdb::Error),
-    SerializeKey(bincode::Error),
-    SerializeValue(bincode::Error),
-    DeserializeValue(bincode::Error),
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ErrorKind {
+    Open,
+    Get,
+    GetMut,
+    Put,
+    Delete,
+    Commit,
+    SerializeKey,
+    SerializeValue,
+    DeserializeValue,
+}
+
+enum ErrorSource {
+    Bincode(bincode::Error),
+    RocksDB(rocksdb::Error),
+}
+
+impl From<bincode::Error> for ErrorSource {
+    fn from(value: bincode::Error) -> Self {
+        Self::Bincode(value)
+    }
+}
+
+impl From<rocksdb::Error> for ErrorSource {
+    fn from(value: rocksdb::Error) -> Self {
+        Self::RocksDB(value)
+    }
+}
+
+impl std::fmt::Display for ErrorSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Bincode(error) => write!(f, "{}", error),
+            Self::RocksDB(error) => write!(f, "{}", error),
+        }
+    }
+}
+
+pub struct Error {
+    kind: ErrorKind,
+    source: ErrorSource,
+}
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{:?}: {}", self.kind, self.source)
     }
 }
 
 impl std::error::Error for Error {}
+
+impl<E> From<(ErrorKind, E)> for Error
+where
+    E: Into<ErrorSource>,
+{
+    fn from(value: (ErrorKind, E)) -> Self {
+        Self {
+            kind: value.0,
+            source: value.1.into(),
+        }
+    }
+}
+
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        self.kind
+    }
+}
+
+// #[derive(Debug)]
+// pub enum Error {
+//     Open(rocksdb::Error),
+//     Get(rocksdb::Error),
+//     GetMut(rocksdb::Error),
+//     Put(rocksdb::Error),
+//     Delete(rocksdb::Error),
+//     Commit(rocksdb::Error),
+//     SerializeKey(bincode::Error),
+//     SerializeValue(bincode::Error),
+//     DeserializeValue(bincode::Error),
+// }
+
+// impl std::fmt::Display for Error {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{:?}", self)
+//     }
+// }
+
+// impl std::error::Error for Error {}
