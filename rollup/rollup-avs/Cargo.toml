@@ -1,0 +1,9 @@
+[package]
+name = "rollup-avs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+database = { workspace = true }
+json-rpc = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
