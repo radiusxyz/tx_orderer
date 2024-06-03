@@ -12,6 +12,7 @@ resolver = "2"
 async-trait = "0.1.73"
 database = { path = "crates/database" }
 json-rpc = { path = "crates/json-rpc" }
+reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.117"
 ssal = { path = "crates/ssal", default-features = false }
