@@ -10,3 +10,6 @@ doctest = false
 bincode = "1.3.3"
 rocksdb = "0.22"
 serde = { workspace = true }
+
+[features]
+singleton = []
