@@ -1,4 +1,4 @@
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ErrorKind {
     BuildSeederClient,
     ParseSeederAddress,
@@ -7,6 +7,9 @@ pub enum ErrorKind {
     GetAddressList,
     DeserializeResponse,
     BuildSsalClient,
+    ParseContractAddress,
+    GetBlockNumber,
+    GetSequencerList,
 }
 
 pub struct Error {
@@ -49,5 +52,11 @@ impl From<ErrorKind> for Error {
             kind: value,
             source: None,
         }
+    }
+}
+
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        self.kind
     }
 }
