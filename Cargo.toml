@@ -3,6 +3,7 @@ members = [
     "crates/database",
     "crates/json-rpc",
     "crates/ssal",
+    "rollup/rollup-avs",
     "seeder/seeder-avs",
     "sequencer/sequencer-avs",
 ]

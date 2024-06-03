@@ -5,6 +5,7 @@ pub enum Error {
     Ssal(ssal::ethereum::Error),
     Seeder(ssal::ethereum::Error),
     Database(database::Error),
+    JsonRPC(json_rpc::Error),
 }
 
 impl std::fmt::Display for Error {
@@ -14,3 +15,15 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<database::Error> for Error {
+    fn from(value: database::Error) -> Self {
+        Self::Database(value)
+    }
+}
+
+impl From<json_rpc::Error> for Error {
+    fn from(value: json_rpc::Error) -> Self {
+        Self::JsonRPC(value)
+    }
+}

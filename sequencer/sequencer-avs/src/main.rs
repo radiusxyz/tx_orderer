@@ -1,7 +1,8 @@
 use std::env;
 
 use database::Database;
-use sequencer_avs::{config::Config, error::Error, task::cluster_manager};
+use json_rpc::RpcServer;
+use sequencer_avs::{config::Config, error::Error, rpc::external, task::cluster_manager};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -16,10 +17,19 @@ async fn main() -> Result<(), Error> {
     // Load the configuration from the path.
     let config = Config::load(config_path)?;
 
-    // Initialize the database.
-    let database = Database::new(&config.database_path).map_err(Error::Database)?;
+    // Initialize the database as a global singleton called by `database::database()`.
+    Database::new(&config.database_path)?.init();
+
+    // Initialize JSON-RPC server.
+    RpcServer::new()
+        .register_rpc_method::<external::CloseBlock>()?
+        .register_rpc_method::<external::SendTransaction>()?
+        .register_rpc_method::<external::SyncTransaction>()?
+        .init(&config.rpc_address)
+        .await?;
 
     // Initialize the cluster manager.
-    cluster_manager::init(&config, database.clone())?;
+    cluster_manager::init(&config)?;
+
     Ok(())
 }

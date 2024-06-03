@@ -1,7 +1,9 @@
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SyncTransaction {}
+pub struct SyncTransaction {
+    transaction: Transaction,
+}
 
 #[async_trait]
 impl RpcMethod for SyncTransaction {

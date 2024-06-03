@@ -10,6 +10,7 @@ use crate::error::Error;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub database_path: PathBuf,
+    pub rpc_address: String,
     pub ssal_address: String,
     pub contract_address: String,
     pub cluster_id: [u8; 32],
