@@ -7,7 +7,7 @@ use jsonrpsee::{
 
 use crate::{
     method::{RpcMethod, RpcParam},
-    Error,
+    Error, ErrorKind,
 };
 
 pub struct RpcClient {
@@ -20,7 +20,7 @@ impl RpcClient {
         let http_client = HttpClientBuilder::new()
             .request_timeout(Duration::from_secs(timeout))
             .build(endpoint)
-            .map_err(Error::BuildClient)?;
+            .map_err(|error| (ErrorKind::BuildClient, error))?;
         Ok(Self { http_client })
     }
 
@@ -34,7 +34,7 @@ impl RpcClient {
             .http_client
             .request(method_name, rpc_parameter)
             .await
-            .map_err(Error::RpcRequest)?;
+            .map_err(|error| (ErrorKind::RpcRequest, error))?;
         Ok(rpc_response)
     }
 }

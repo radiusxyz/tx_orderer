@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, ser::Serialize};
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::{method::RpcMethod, Error};
+use crate::{method::RpcMethod, Error, ErrorKind};
 
 pub struct RpcServer {
     rpc_module: RpcModule<()>,
@@ -40,7 +40,7 @@ impl RpcServer {
                     )),
                 }
             })
-            .map_err(Error::RegisterRpcMethod)?;
+            .map_err(|error| (ErrorKind::RegisterRpcMethod, error))?;
         Ok(self)
     }
 
@@ -50,15 +50,16 @@ impl RpcServer {
             .allow_origin(Any)
             .allow_headers([header::CONTENT_TYPE]);
 
-        let middleware = ServiceBuilder::new()
-            .layer(cors)
-            .layer(ProxyGetRequestLayer::new("/health", "health").map_err(Error::RpcMiddleware)?);
+        let middleware = ServiceBuilder::new().layer(cors).layer(
+            ProxyGetRequestLayer::new("/health", "health")
+                .map_err(|error| (ErrorKind::RpcMiddleware, error))?,
+        );
 
         let server = Server::builder()
             .set_http_middleware(middleware)
             .build(rpc_endpoint.as_ref())
             .await
-            .map_err(Error::BuildServer)?;
+            .map_err(|error| (ErrorKind::BuildServer, error))?;
 
         Ok(server.start(self.rpc_module))
     }
