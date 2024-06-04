@@ -15,6 +15,12 @@ impl AsRef<str> for RpcAddress {
     }
 }
 
+impl From<std::net::SocketAddr> for RpcAddress {
+    fn from(value: std::net::SocketAddr) -> Self {
+        Self(value.to_string())
+    }
+}
+
 impl From<&str> for RpcAddress {
     fn from(value: &str) -> Self {
         Self(value.to_string())
