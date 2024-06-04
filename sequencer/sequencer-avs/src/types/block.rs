@@ -17,11 +17,11 @@ impl std::ops::AddAssign<u64> for RollupBlockNumber {
     }
 }
 
-impl std::ops::Rem<u64> for RollupBlockNumber {
-    type Output = u64;
+impl std::ops::Rem<usize> for RollupBlockNumber {
+    type Output = usize;
 
-    fn rem(self, rhs: u64) -> Self::Output {
-        self.0 & rhs
+    fn rem(self, rhs: usize) -> Self::Output {
+        self.0 as usize % rhs
     }
 }
 
@@ -54,19 +54,19 @@ impl Default for BlockMetadata {
 impl BlockMetadata {
     const ID: &'static str = stringify!(BlockMetadata);
 
-    pub fn get(rollup_block_number: RollupBlockNumber) -> Result<Self, Error> {
+    pub fn get(rollup_block_number: RollupBlockNumber) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number);
         database().get(&key)
     }
 
-    pub fn put(&self, rollup_block_number: RollupBlockNumber) -> Result<(), Error> {
+    pub fn put(&self, rollup_block_number: RollupBlockNumber) -> Result<(), database::Error> {
         let key = (Self::ID, rollup_block_number);
         database().put(&key, self)
     }
 
     pub fn issue_order_commitment(
         rollup_block_number: RollupBlockNumber,
-    ) -> Result<OrderCommitment, Error> {
+    ) -> Result<OrderCommitment, database::Error> {
         let key = (Self::ID, rollup_block_number);
         let mut block_metadata: Lock<Self> = database().get_mut(&key)?;
         block_metadata.block_height += 1;

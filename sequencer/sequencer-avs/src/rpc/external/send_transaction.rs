@@ -7,7 +7,7 @@ pub struct SendTransaction {
 
 #[async_trait]
 impl RpcMethod for SendTransaction {
-    type Response = OrderCommitment;
+    type Response = ();
 
     fn method_name() -> &'static str {
         stringify!(SendTransaction)
@@ -28,10 +28,13 @@ impl RpcMethod for SendTransaction {
                 }
             }
         }
+        Ok(())
     }
 }
 
 impl SendTransaction {
+    async fn sync_transaction() {}
+
     async fn leader(self, cluster_metadata: ClusterMetadata) -> Result<OrderCommitment, RpcError> {
         // Issue order commitment
         let order_commitment =
@@ -47,8 +50,8 @@ impl SendTransaction {
         self,
         cluster_metadata: ClusterMetadata,
     ) -> Result<OrderCommitment, RpcError> {
-        match cluster_metadata.leader_address() {
-            Some(leader_address) => {
+        match cluster_metadata.leader() {
+            Some((leader_public_key, leader_address)) => {
                 let rpc_client = RpcClient::new(leader_address, 5)?;
                 let order_commitment: OrderCommitment = rpc_client.request(self).await?;
                 Ok(order_commitment)
