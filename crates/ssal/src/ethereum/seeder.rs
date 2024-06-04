@@ -97,9 +97,9 @@ impl SeederClient {
     pub async fn get_address_list(
         &self,
         sequencer_list: &Vec<PublicKey>,
-    ) -> Result<Vec<Option<String>>, Error> {
+    ) -> Result<Vec<Option<RpcAddress>>, Error> {
         let query = [("sequencer_list", sequencer_list)];
-        let response: Vec<Option<String>> = self
+        let response: Vec<Option<RpcAddress>> = self
             .client
             .get(self.seeder_url[2].clone())
             .query(&query)
