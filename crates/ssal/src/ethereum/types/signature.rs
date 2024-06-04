@@ -1,6 +1,6 @@
 use super::prelude::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Copy, Deserialize, Serialize)]
 pub struct Signature(ethers::types::Signature);
 
 impl std::ops::Deref for Signature {

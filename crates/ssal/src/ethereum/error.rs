@@ -10,6 +10,7 @@ pub enum ErrorKind {
     ParseContractAddress,
     GetBlockNumber,
     GetSequencerList,
+    ParseStr,
 }
 
 pub struct Error {

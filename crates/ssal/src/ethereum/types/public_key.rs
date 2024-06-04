@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use super::prelude::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct PublicKey(ethers::types::H160);
 
 impl std::ops::Deref for PublicKey {
@@ -20,5 +22,15 @@ impl std::ops::DerefMut for PublicKey {
 impl From<ethers::types::H160> for PublicKey {
     fn from(value: ethers::types::H160) -> Self {
         Self(value)
+    }
+}
+
+impl TryFrom<&str> for PublicKey {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let public_key =
+            ethers::types::H160::from_str(value).map_err(|error| (ErrorKind::ParseStr, error))?;
+        Ok(Self(public_key))
     }
 }
