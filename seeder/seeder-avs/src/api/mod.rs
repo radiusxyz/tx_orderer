@@ -12,7 +12,7 @@ mod prelude {
     };
     pub use database::Database;
     pub use serde::{Deserialize, Serialize};
-    pub use ssal::ethereum::{PublicKey, Signature};
+    pub use ssal::ethereum::types::*;
 
     pub use crate::error::Error;
 }
