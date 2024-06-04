@@ -29,14 +29,11 @@ impl std::ops::AddAssign<u64> for TransactionOrder {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitment {
     rollup_block_number: RollupBlockNumber,
-    transaction_order: TransactionOrder,
+    transaction_order: u64,
 }
 
 impl OrderCommitment {
-    pub fn new(
-        rollup_block_number: RollupBlockNumber,
-        transaction_order: TransactionOrder,
-    ) -> Self {
+    pub fn new(rollup_block_number: RollupBlockNumber, transaction_order: u64) -> Self {
         Self {
             rollup_block_number,
             transaction_order,

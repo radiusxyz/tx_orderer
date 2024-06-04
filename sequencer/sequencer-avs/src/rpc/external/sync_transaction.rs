@@ -2,6 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncTransaction {
+    order_commitment: OrderCommitment,
     transaction: Transaction,
 }
 

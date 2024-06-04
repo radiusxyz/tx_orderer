@@ -6,6 +6,7 @@ mod transaction;
 mod prelude {
     pub use database::{database, Error, Lock};
     pub use serde::{Deserialize, Serialize};
+    pub use ssal::ethereum::types::*;
 
     pub use crate::types::*;
 }

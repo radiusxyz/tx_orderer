@@ -1,28 +1,24 @@
-use serde::{Deserialize, Serialize};
-use ssal::ethereum::PublicKey;
-
-use crate::types::*;
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct ClusterKey(&'static str, SsalBlockNumber);
-
-impl ClusterKey {
-    const IDENTIFIER: &'static str = stringify!(ClusterKey);
-
-    pub fn new(ssal_block_number: SsalBlockNumber) -> Self {
-        Self(Self::IDENTIFIER, ssal_block_number)
-    }
-}
+use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Cluster {
+pub struct ClusterMetadata {
     ssal_block_number: SsalBlockNumber,
     rollup_block_number: RollupBlockNumber,
-    leader_index: usize,
+    leader_index: u64,
     sequencer_list: SequencerList,
 }
 
-impl Cluster {
+impl ClusterMetadata {
+    const ID: &'static str = stringify!(ClusterMetadata);
+
+    pub fn get() -> Result<Self, Error> {
+        database().get(&Self::ID)
+    }
+
+    pub fn put(&self) -> Result<(), Error> {
+        database().put(&Self::ID, self)
+    }
+
     pub fn new(
         ssal_block_number: SsalBlockNumber,
         rollup_block_number: RollupBlockNumber,
@@ -31,7 +27,7 @@ impl Cluster {
         Self {
             ssal_block_number,
             rollup_block_number,
-            leader_index: ,
+            leader_index: rollup_block_number % sequencer_list.len(),
             sequencer_list,
         }
     }
@@ -43,10 +39,22 @@ impl Cluster {
     pub fn rollup_block_number(&self) -> RollupBlockNumber {
         self.rollup_block_number
     }
-}
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum ClusterStatus {
-    Uninitialized,
-    Initialized(OrderCommitment),
+    /// TODO:
+    pub fn is_leader(&self) -> bool {
+        false
+    }
+
+    /// TODO:
+    pub fn leader_address(&self) -> Option<SequencerAddress> {
+        None
+    }
+
+    pub fn leader(&self) -> Option<&(PublicKey, Option<SequencerAddress>)> {
+        self.sequencer_list.get_by_index(self.leader_index)
+    }
+
+    pub fn sequencer_list(&self) -> &SequencerList {
+        &self.sequencer_list
+    }
 }

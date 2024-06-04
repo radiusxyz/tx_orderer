@@ -1,13 +1,10 @@
-use serde::{Deserialize, Serialize};
-use ssal::ethereum::PublicKey;
-
-use crate::types::*;
+use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum SequencerStatus {
     Uninitialized,
-    Initialized,
     BlockBuildingInProgress,
+    OrderCommitment(OrderCommitment),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -32,25 +29,25 @@ impl From<String> for SequencerAddress {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SequencerListKey(&'static str, SsalBlockNumber);
-
-impl SequencerListKey {
-    const IDENTIFIER: &'static str = stringify!(SequencerListKey);
-
-    pub fn new(ssal_block_number: SsalBlockNumber) -> Self {
-        Self(Self::IDENTIFIER, ssal_block_number)
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SequencerList(Vec<(PublicKey, Option<SequencerAddress>)>);
 
 impl SequencerList {
-    pub fn len(&self) -> usize {
-        self.0.len()
+    const ID: &'static str = stringify!(SequencerList);
+
+    pub fn len(&self) -> u64 {
+        self.0.len() as u64
     }
 
     pub fn iter(&self) -> core::slice::Iter<(PublicKey, Option<SequencerAddress>)> {
         self.0.iter()
+    }
+
+    pub fn get_by_index(&self, index: u64) -> Option<&(PublicKey, Option<SequencerAddress>)> {
+        self.0.get(index as usize)
+    }
+
+    pub fn get(ssal_block_number: SsalBlockNumber) -> Result<Self, Error> {
+        let key = (Self::ID, ssal_block_number);
+        database().get(&key)
     }
 }

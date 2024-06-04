@@ -6,6 +6,8 @@ pub enum Error {
     Seeder(ssal::ethereum::Error),
     Database(database::Error),
     JsonRPC(json_rpc::Error),
+    Uninitialized,
+    EmptyLeaderAddress,
 }
 
 impl std::fmt::Display for Error {
