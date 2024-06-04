@@ -1,9 +1,10 @@
-use crate::rpc::prelude::*;
+use super::SyncCloseBlock;
+use crate::rpc::{prelude::*, util::update_cluster_metadata};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CloseBlock {
-    ssal_block_number: SsalBlockNumber,
-    rollup_block_number: RollupBlockNumber,
+    pub ssal_block_number: SsalBlockNumber,
+    pub rollup_block_number: RollupBlockNumber,
 }
 
 #[async_trait]
@@ -16,15 +17,15 @@ impl RpcMethod for CloseBlock {
 
     async fn handler(self) -> Result<Self::Response, RpcError> {
         match ClusterMetadata::get() {
-            Ok(cluster_metadata) => {
-                // Todo: Spawn a syncer task to forward the request to other sequencers.
-                // tokio::spawn(async move {});
-                self.update_cluster_metadata()?;
-                Ok(SequencerStatus::BlockBuildingInProgress)
+            Ok(_cluster_metadata) => {
+                self.sync_close_block()?;
+                update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
+                Ok(SequencerStatus::Running)
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                    self.update_cluster_metadata()?;
+                    self.sync_close_block()?;
+                    update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
                     Ok(SequencerStatus::Uninitialized)
                 } else {
                     Err(error.into())
@@ -35,25 +36,28 @@ impl RpcMethod for CloseBlock {
 }
 
 impl CloseBlock {
-    /// After the first updating cluster metadata, the sequencer will no longer return
-    /// `SequencerStatus::Uninitialized` to both users and rollups.
-    fn update_cluster_metadata(self) -> Result<(), RpcError> {
-        let next_rollup_block_number = self.rollup_block_number + 1;
-
-        // Create a new block metadata.
-        let block_metadata = BlockMetadata::default();
-        block_metadata.put(next_rollup_block_number)?;
-
-        // Get the sequencer list corresponding to SSAL block number.
+    pub fn sync_close_block(&self) -> Result<(), RpcError> {
+        let me = Me::get()?;
         let sequencer_list = SequencerList::get(self.ssal_block_number)?;
+        for (public_key, rpc_address) in sequencer_list.iter() {
+            // Always skip forwarding to myself to avoid redundant handling.
+            if me.as_public_key() == public_key {
+                continue;
+            }
 
-        // Create a new current cluster metadata.
-        let cluster_metadata = ClusterMetadata::new(
-            self.ssal_block_number,
-            next_rollup_block_number,
-            sequencer_list,
-        );
-        cluster_metadata.put()?;
+            if let Some(rpc_address) = rpc_address {
+                let rpc_client = RpcClient::new(rpc_address, 3)?;
+                let rpc_method = SyncCloseBlock {
+                    ssal_block_number: self.ssal_block_number,
+                    rollup_block_number: self.rollup_block_number,
+                };
+
+                // Fire and forget.
+                tokio::spawn(async move {
+                    let _ = rpc_client.request(rpc_method);
+                });
+            }
+        }
         Ok(())
     }
 }
