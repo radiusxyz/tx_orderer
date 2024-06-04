@@ -20,15 +20,13 @@ impl Register {
         if signer.0 == payload.public_key.0 {
             // Change the port to that of the default JSON RPC endpoint.
             address.set_port(8000);
-            let sequencer_address = address.to_string();
+            let rpc_address = RpcAddress::from(address);
 
             // Check if the sequencer is up and running.
-            health_check(&sequencer_address)
-                .await
-                .map_err(Error::boxed)?;
+            health_check(&rpc_address).await.map_err(Error::boxed)?;
 
             state
-                .put(&payload.public_key, &sequencer_address)
+                .put(&payload.public_key, &rpc_address)
                 .map_err(Error::boxed)?;
             Ok((StatusCode::OK, Json(())))
         } else {
