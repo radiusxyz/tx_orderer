@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Signature(ethers::types::Signature);
