@@ -19,7 +19,7 @@ async fn main() -> Result<(), Error> {
     Database::new(&config.database_path)?.init();
 
     // Initialize the cluster manager.
-    // cluster_manager::init(&config)?;
+    cluster_manager::init(&config)?;
 
     // Initialize the rollup block number.
     let mut rollup_block_number = RollupBlockNumber::from(0);
@@ -32,7 +32,7 @@ async fn main() -> Result<(), Error> {
             Ok(sequencer_status) => match sequencer_status {
                 SequencerStatus::Uninitialized => rollup_block_number += 1,
                 SequencerStatus::Running => {
-                    GetBlock::request(rollup_block_number - 1).await;
+                    GetBlock::request(rollup_block_number - 1).await?;
                     rollup_block_number += 1;
                 }
             },
