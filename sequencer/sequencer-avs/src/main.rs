@@ -28,6 +28,7 @@ async fn main() -> Result<(), Error> {
     // Initialize JSON-RPC server.
     RpcServer::new()
         .register_rpc_method::<external::CloseBlock>()?
+        .register_rpc_method::<external::SyncCloseBlock>()?
         .register_rpc_method::<external::SendTransaction>()?
         .register_rpc_method::<external::SyncTransaction>()?
         .init(&config.sequencer_rpc_address)

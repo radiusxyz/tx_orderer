@@ -48,8 +48,16 @@ impl ClusterMetadata {
         &self.leader
     }
 
+    pub fn into_leader(self) -> (PublicKey, Option<RpcAddress>) {
+        self.leader
+    }
+
     pub fn followers(&self) -> &Vec<(PublicKey, Option<RpcAddress>)> {
         &self.followers
+    }
+
+    pub fn into_followers(self) -> Vec<(PublicKey, Option<RpcAddress>)> {
+        self.followers
     }
 
     pub fn is_leader(&self) -> bool {

@@ -1,6 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-use crate::types::*;
+use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Transaction(usize);
@@ -11,18 +9,38 @@ impl From<usize> for Transaction {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct TransactionOrder(u64);
-
-impl From<u64> for TransactionOrder {
-    fn from(value: u64) -> Self {
-        Self(value)
-    }
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ProcessedTransaction {
+    order_commitment: OrderCommitment,
+    transaction: Transaction,
 }
 
-impl std::ops::AddAssign<u64> for TransactionOrder {
-    fn add_assign(&mut self, rhs: u64) {
-        self.0 += rhs;
+impl ProcessedTransaction {
+    const ID: &'static str = stringify!(ProcessedTransaction);
+
+    pub fn get(order_commitment: OrderCommitment) -> Result<Self, database::Error> {
+        let key = (
+            Self::ID,
+            order_commitment.rollup_block_number,
+            order_commitment.transaction_order,
+        );
+        database().get(&key)
+    }
+
+    pub fn put(&self) -> Result<(), database::Error> {
+        let key = (
+            Self::ID,
+            self.order_commitment.rollup_block_number,
+            self.order_commitment.transaction_order,
+        );
+        database().put(&key, self)
+    }
+
+    pub fn new(order_commitment: OrderCommitment, transaction: Transaction) -> Self {
+        Self {
+            order_commitment,
+            transaction,
+        }
     }
 }
 

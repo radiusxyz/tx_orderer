@@ -4,6 +4,7 @@ use super::prelude::*;
 pub enum SequencerStatus {
     Uninitialized,
     Running,
+    OrderCommitment(OrderCommitment),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -34,6 +35,10 @@ impl SequencerList {
         self.0.iter()
     }
 
+    pub fn into_iter(self) -> std::vec::IntoIter<(PublicKey, Option<RpcAddress>)> {
+        self.0.into_iter()
+    }
+
     pub fn split_leader_from_followers(
         self,
         leader_index: usize,
@@ -53,6 +58,12 @@ impl SequencerList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Me(PublicKey);
+
+impl std::cmp::PartialEq<PublicKey> for Me {
+    fn eq(&self, other: &PublicKey) -> bool {
+        &self.0 == other
+    }
+}
 
 impl TryFrom<&str> for Me {
     type Error = crate::error::Error;
