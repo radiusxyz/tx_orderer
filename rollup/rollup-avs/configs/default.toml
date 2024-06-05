@@ -1,0 +1,11 @@
+# Rollup
+database_path = "databases/rollup_default"
+block_creation_time = 4
+
+# SSAL
+ssal_rpc_address = "127.0.0.1:8545"
+contract_address = ""
+cluster_id = ""
+
+# Seeder
+seeder_rpc_address = "127.0.0.1:3000"
