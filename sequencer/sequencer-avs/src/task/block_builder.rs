@@ -14,6 +14,6 @@ pub fn init(rollup_block_number: RollupBlockNumber) {
                 ProcessedTransaction::get(rollup_block_number, transaction_order).unwrap();
             block.push(processed_transaction);
         }
-        Block::new(block).put(previous_rollup_block_number);
+        Block::new(block).put(previous_rollup_block_number).unwrap();
     });
 }
