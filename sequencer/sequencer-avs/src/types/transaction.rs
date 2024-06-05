@@ -18,12 +18,11 @@ pub struct ProcessedTransaction {
 impl ProcessedTransaction {
     const ID: &'static str = stringify!(ProcessedTransaction);
 
-    pub fn get(order_commitment: OrderCommitment) -> Result<Self, database::Error> {
-        let key = (
-            Self::ID,
-            order_commitment.rollup_block_number,
-            order_commitment.transaction_order,
-        );
+    pub fn get(
+        rollup_block_number: RollupBlockNumber,
+        transaction_order: u64,
+    ) -> Result<Self, database::Error> {
+        let key = (Self::ID, rollup_block_number, transaction_order);
         database().get(&key)
     }
 
@@ -56,5 +55,13 @@ impl OrderCommitment {
             rollup_block_number,
             transaction_order,
         }
+    }
+
+    pub fn rollup_block_number(&self) -> RollupBlockNumber {
+        self.rollup_block_number
+    }
+
+    pub fn transaction_order(&self) -> u64 {
+        self.transaction_order
     }
 }

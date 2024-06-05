@@ -6,11 +6,9 @@ pub fn update_cluster_metadata(
     ssal_block_number: SsalBlockNumber,
     rollup_block_number: RollupBlockNumber,
 ) -> Result<(), RpcError> {
-    let next_rollup_block_number = rollup_block_number + 1;
-
     // Create a new block metadata.
     let block_metadata = BlockMetadata::default();
-    block_metadata.put(next_rollup_block_number)?;
+    block_metadata.put(rollup_block_number)?;
 
     // Get the sequencer list corresponding to the SSAL block number.
     let sequencer_list = SequencerList::get(ssal_block_number)?;
@@ -26,7 +24,7 @@ pub fn update_cluster_metadata(
     // Create a new cluster metadata.
     ClusterMetadata::new(
         ssal_block_number,
-        next_rollup_block_number,
+        rollup_block_number,
         leader,
         followers,
         is_leader,

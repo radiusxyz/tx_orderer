@@ -32,14 +32,12 @@ impl RpcMethod for SendTransaction {
 }
 
 impl SendTransaction {
-    fn sync_transaction(
-        processed_transaction: ProcessedTransaction,
-        cluster_metadata: ClusterMetadata,
-    ) {
+    fn syncer(processed_transaction: ProcessedTransaction, cluster_metadata: ClusterMetadata) {
         let rpc_method = SyncTransaction {
             transaction: processed_transaction,
         };
 
+        // Fire and forget.
         tokio::spawn(async move {
             for (_public_key, rpc_address) in cluster_metadata.into_followers() {
                 if let Some(rpc_address) = rpc_address {
@@ -53,7 +51,10 @@ impl SendTransaction {
         });
     }
 
-    async fn leader(self, cluster_metadata: ClusterMetadata) -> Result<OrderCommitment, RpcError> {
+    async fn leader(
+        self,
+        cluster_metadata: ClusterMetadata,
+    ) -> Result<<Self as RpcMethod>::Response, RpcError> {
         // Issue order commitment
         let order_commitment =
             BlockMetadata::issue_order_commitment(cluster_metadata.rollup_block_number())?;
@@ -63,7 +64,7 @@ impl SendTransaction {
         processed_transaction.put()?;
 
         // Spawn a syncer task to forward the transaction to other sequencers.
-        Self::sync_transaction(processed_transaction, cluster_metadata);
+        Self::syncer(processed_transaction, cluster_metadata);
 
         Ok(order_commitment)
     }
@@ -71,12 +72,11 @@ impl SendTransaction {
     async fn follower(
         self,
         cluster_metadata: ClusterMetadata,
-    ) -> Result<OrderCommitment, RpcError> {
+    ) -> Result<<Self as RpcMethod>::Response, RpcError> {
         let (_leader_public_key, leader_rpc_address) = cluster_metadata.leader();
         if let Some(rpc_address) = leader_rpc_address {
             let client = RpcClient::new(rpc_address, 5)?;
-            let order_commitment = client.request(self).await?;
-            Ok(order_commitment)
+            client.request(self).await.map_err(|error| error.into())
         } else {
             Err(Error::EmptyLeaderAddress.into())
         }

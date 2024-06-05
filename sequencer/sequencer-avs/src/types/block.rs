@@ -11,6 +11,14 @@ impl std::ops::Add<u64> for RollupBlockNumber {
     }
 }
 
+impl std::ops::Sub<u64> for RollupBlockNumber {
+    type Output = Self;
+
+    fn sub(self, rhs: u64) -> Self::Output {
+        Self(self.0 - rhs)
+    }
+}
+
 impl std::ops::AddAssign<u64> for RollupBlockNumber {
     fn add_assign(&mut self, rhs: u64) {
         self.0 += rhs;
@@ -75,10 +83,14 @@ impl BlockMetadata {
         block_metadata.commit()?;
         Ok(order_commitment)
     }
+
+    pub fn block_height(&self) -> u64 {
+        self.block_height
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Block(Vec<Transaction>);
+pub struct Block(Vec<ProcessedTransaction>);
 
 impl Block {
     const ID: &'static str = stringify!(Block);
@@ -93,7 +105,7 @@ impl Block {
         database().put(&key, self)
     }
 
-    pub fn new(block: Vec<Transaction>) -> Self {
+    pub fn new(block: Vec<ProcessedTransaction>) -> Self {
         Self(block)
     }
 }

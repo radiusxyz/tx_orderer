@@ -12,14 +12,14 @@ use crate::{
 pub fn init(config: &Config) -> Result<(), Error> {
     // Initialize SSAL client.
     let ssal_client = SsalClient::new(
-        &config.ssal_address,
+        &config.ssal_rpc_address,
         &config.contract_address,
         config.cluster_id,
     )
     .map_err(Error::Ssal)?;
 
     // Initialize Seeder client.
-    let seeder_client = SeederClient::new(&config.seeder_address).map_err(Error::Seeder)?;
+    let seeder_client = SeederClient::new(&config.seeder_rpc_address).map_err(Error::Seeder)?;
 
     tokio::spawn(async move {
         loop {

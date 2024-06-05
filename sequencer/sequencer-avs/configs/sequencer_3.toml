@@ -1,0 +1,12 @@
+# Sequencer
+database_path = "databases/sequencer_3"
+sequencer_rpc_address = "127.0.0.1:8003"
+
+# SSAL
+ssal_rpc_address = "127.0.0.1:8545"
+sequencer_public_key = ""
+contract_address = ""
+cluster_id = ""
+
+# Seeder
+seeder_rpc_address = "127.0.0.1:3000"

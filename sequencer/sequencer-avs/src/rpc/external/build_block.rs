@@ -1,5 +1,7 @@
-use super::SyncBuildBlock;
-use crate::rpc::{prelude::*, util::update_cluster_metadata};
+use crate::{
+    rpc::{external::SyncBuildBlock, prelude::*, util::update_cluster_metadata},
+    task::block_builder,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BuildBlock {
@@ -18,14 +20,23 @@ impl RpcMethod for BuildBlock {
     async fn handler(self) -> Result<Self::Response, RpcError> {
         match ClusterMetadata::get() {
             Ok(_cluster_metadata) => {
-                self.sync_build_block()?;
+                // After updating the cluster metadata, the previous block height remains unchanged.
                 update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
+
+                // Run the block builder.
+                block_builder::init(self.rollup_block_number);
+
+                // Run the syncer.
+                self.syncer()?;
                 Ok(SequencerStatus::Running)
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                    self.sync_build_block()?;
+                    // After updating the cluster metadata, the previous block height remains unchanged.
                     update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
+
+                    // Skip the block builder and run the syncer because the previous block does not exist.
+                    self.syncer()?;
                     Ok(SequencerStatus::Uninitialized)
                 } else {
                     Err(error.into())
@@ -36,12 +47,21 @@ impl RpcMethod for BuildBlock {
 }
 
 impl BuildBlock {
-    fn sync_build_block(&self) -> Result<(), RpcError> {
+    fn syncer(&self) -> Result<(), RpcError> {
         let me = Me::get()?;
         let sequencer_list = SequencerList::get(self.ssal_block_number)?;
+
+        let previous_rollup_block_number = self.rollup_block_number - 1;
+        let previous_block_height: u64 = match BlockMetadata::get(previous_rollup_block_number).ok()
+        {
+            Some(block_metadata) => block_metadata.block_height(),
+            None => 0,
+        };
+
         let rpc_method = SyncBuildBlock {
             ssal_block_number: self.ssal_block_number,
             rollup_block_number: self.rollup_block_number,
+            previous_block_height,
         };
 
         tokio::spawn(async move {

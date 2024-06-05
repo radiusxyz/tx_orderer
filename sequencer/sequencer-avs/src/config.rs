@@ -9,18 +9,18 @@ use crate::error::Error;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
-    // Database
+    // Sequencer
     pub database_path: PathBuf,
-
-    // IPs
     pub sequencer_rpc_address: String,
-    pub ssal_address: String,
-    pub seeder_address: String,
 
-    // SSAL-related
+    // SSAL
+    pub ssal_rpc_address: String,
     pub sequencer_public_key: String,
     pub contract_address: String,
     pub cluster_id: [u8; 32],
+
+    // Seeder
+    pub seeder_rpc_address: String,
 }
 
 impl Config {
