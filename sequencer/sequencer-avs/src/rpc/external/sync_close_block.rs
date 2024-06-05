@@ -1,4 +1,4 @@
-use crate::rpc::{external::CloseBlock, prelude::*, util::update_cluster_metadata};
+use crate::rpc::{prelude::*, util::update_cluster_metadata};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncCloseBlock {
