@@ -1,6 +1,6 @@
 use std::env;
 
-use database::{database, Database};
+use database::Database;
 use json_rpc::RpcServer;
 use sequencer_avs::{
     config::Config, error::Error, rpc::external, task::cluster_manager, types::Me,
