@@ -76,3 +76,24 @@ impl BlockMetadata {
         Ok(order_commitment)
     }
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Block(Vec<Transaction>);
+
+impl Block {
+    const ID: &'static str = stringify!(Block);
+
+    pub fn get(rollup_block_number: RollupBlockNumber) -> Result<Self, database::Error> {
+        let key = (Self::ID, rollup_block_number);
+        database().get(&key)
+    }
+
+    pub fn put(&self, rollup_block_number: RollupBlockNumber) -> Result<(), database::Error> {
+        let key = (Self::ID, rollup_block_number);
+        database().put(&key, self)
+    }
+
+    pub fn new(block: Vec<Transaction>) -> Self {
+        Self(block)
+    }
+}
