@@ -4,7 +4,6 @@ use super::prelude::*;
 pub enum SequencerStatus {
     Uninitialized,
     Running,
-    OrderCommitment(OrderCommitment),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
