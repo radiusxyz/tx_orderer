@@ -36,28 +36,31 @@ impl RpcMethod for CloseBlock {
 }
 
 impl CloseBlock {
-    pub fn sync_close_block(&self) -> Result<(), RpcError> {
+    fn sync_close_block(&self) -> Result<(), RpcError> {
         let me = Me::get()?;
         let sequencer_list = SequencerList::get(self.ssal_block_number)?;
-        for (public_key, rpc_address) in sequencer_list.iter() {
-            // Always skip forwarding to myself to avoid redundant handling.
-            if me.as_public_key() == public_key {
-                continue;
-            }
+        let rpc_method = SyncCloseBlock {
+            ssal_block_number: self.ssal_block_number,
+            rollup_block_number: self.rollup_block_number,
+        };
 
-            if let Some(rpc_address) = rpc_address {
-                let rpc_client = RpcClient::new(rpc_address, 3)?;
-                let rpc_method = SyncCloseBlock {
-                    ssal_block_number: self.ssal_block_number,
-                    rollup_block_number: self.rollup_block_number,
-                };
+        tokio::spawn(async move {
+            for (public_key, rpc_address) in sequencer_list.into_iter() {
+                // Always skip forwarding to myself to avoid redundant handling.
+                if me == public_key {
+                    continue;
+                }
 
-                // Fire and forget.
-                tokio::spawn(async move {
-                    let _ = rpc_client.request(rpc_method);
-                });
+                if let Some(rpc_address) = rpc_address {
+                    let rpc_method = rpc_method.clone();
+                    tokio::spawn(async move {
+                        let rpc_client = RpcClient::new(rpc_address, 1).unwrap();
+                        let _ = rpc_client.request(rpc_method).await;
+                    });
+                }
             }
-        }
+        });
+
         Ok(())
     }
 }

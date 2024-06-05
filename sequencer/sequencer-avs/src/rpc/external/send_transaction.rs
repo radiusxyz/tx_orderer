@@ -1,4 +1,4 @@
-use crate::rpc::prelude::*;
+use crate::rpc::{external::SyncTransaction, prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendTransaction {
@@ -7,7 +7,7 @@ pub struct SendTransaction {
 
 #[async_trait]
 impl RpcMethod for SendTransaction {
-    type Response = ();
+    type Response = OrderCommitment;
 
     fn method_name() -> &'static str {
         stringify!(SendTransaction)
@@ -28,20 +28,42 @@ impl RpcMethod for SendTransaction {
                 }
             }
         }
-        Ok(())
     }
 }
 
 impl SendTransaction {
-    async fn sync_transaction() {}
+    fn sync_transaction(
+        processed_transaction: ProcessedTransaction,
+        cluster_metadata: ClusterMetadata,
+    ) {
+        let rpc_method = SyncTransaction {
+            transaction: processed_transaction,
+        };
+
+        tokio::spawn(async move {
+            for (_public_key, rpc_address) in cluster_metadata.into_followers() {
+                if let Some(rpc_address) = rpc_address {
+                    let rpc_method = rpc_method.clone();
+                    tokio::spawn(async move {
+                        let rpc_client = RpcClient::new(rpc_address, 1).unwrap();
+                        let _ = rpc_client.request(rpc_method).await;
+                    });
+                }
+            }
+        });
+    }
 
     async fn leader(self, cluster_metadata: ClusterMetadata) -> Result<OrderCommitment, RpcError> {
         // Issue order commitment
         let order_commitment =
             BlockMetadata::issue_order_commitment(cluster_metadata.rollup_block_number())?;
 
-        // TODO: Spawn a syncer task to forward the transaction to other sequencers.
-        // tokio::spawn(async move {});
+        let processed_transaction =
+            ProcessedTransaction::new(order_commitment.clone(), self.transaction);
+        processed_transaction.put()?;
+
+        // Spawn a syncer task to forward the transaction to other sequencers.
+        Self::sync_transaction(processed_transaction, cluster_metadata);
 
         Ok(order_commitment)
     }
@@ -50,13 +72,13 @@ impl SendTransaction {
         self,
         cluster_metadata: ClusterMetadata,
     ) -> Result<OrderCommitment, RpcError> {
-        match cluster_metadata.leader() {
-            Some((leader_public_key, leader_address)) => {
-                let rpc_client = RpcClient::new(leader_address, 5)?;
-                let order_commitment: OrderCommitment = rpc_client.request(self).await?;
-                Ok(order_commitment)
-            }
-            None => Err(Error::EmptyLeaderAddress.into()),
+        let (_leader_public_key, leader_rpc_address) = cluster_metadata.leader();
+        if let Some(rpc_address) = leader_rpc_address {
+            let client = RpcClient::new(rpc_address, 5)?;
+            let order_commitment = client.request(self).await?;
+            Ok(order_commitment)
+        } else {
+            Err(Error::EmptyLeaderAddress.into())
         }
     }
 }
