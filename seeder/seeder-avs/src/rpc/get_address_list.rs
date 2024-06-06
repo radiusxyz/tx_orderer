@@ -12,4 +12,13 @@ impl RpcMethod for GetAddressList {
     fn method_name() -> &'static str {
         stringify!(GetAddressList)
     }
+
+    async fn handler(self) -> Result<Self::Response, RpcError> {
+        let sequencer_list: Vec<Option<RpcAddress>> = self
+            .sequencer_list
+            .iter()
+            .filter_map(|sequencer_public_key| database().get(&sequencer_public_key).ok())
+            .collect();
+        Ok(sequencer_list)
+    }
 }
