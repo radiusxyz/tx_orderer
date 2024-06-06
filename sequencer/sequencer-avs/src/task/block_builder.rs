@@ -14,6 +14,9 @@ pub fn init(rollup_block_number: RollupBlockNumber) {
                 ProcessedTransaction::get(rollup_block_number, transaction_order).unwrap();
             block.push(processed_transaction);
         }
+
+        // TODO: Block commitment.
+        // Transaction type must implement `AsRef<[u8]>`.
         Block::new(block).put(previous_rollup_block_number).unwrap();
     });
 }

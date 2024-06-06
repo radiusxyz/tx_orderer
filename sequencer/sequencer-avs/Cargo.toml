@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 async-trait = { workspace = true }
+block-commitment = { workspace = true }
 database = { workspace = true, features = ["singleton"] }
 json-rpc = { workspace = true }
 serde = { workspace = true }

@@ -33,9 +33,13 @@ pub fn init(config: &Config) -> Result<(), Error> {
 
             if let Some((ssal_block_number, sequencer_list)) = cluster_info {
                 match seeder_client.get_address_list(sequencer_list.clone()).await {
-                    Ok(address_list) => SequencerList::new(sequencer_list, address_list)
-                        .put(SsalBlockNumber::from(ssal_block_number))
-                        .unwrap_or_else(|error| tracing::error!("{}", error)),
+                    Ok(address_list) => {
+                        tracing::info!("{:?}", address_list);
+                        let sequencer_list = SequencerList::new(sequencer_list, address_list);
+                        sequencer_list
+                            .put(SsalBlockNumber::from(ssal_block_number))
+                            .unwrap_or_else(|error| tracing::error!("{}", error));
+                    }
                     Err(error) => tracing::error!("{}", error),
                 }
             }
