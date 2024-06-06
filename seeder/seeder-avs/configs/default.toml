@@ -1,2 +1,2 @@
-database_path = "databases/seeder-avs"
+database_path = ""
 seeder_rpc_address = "127.0.0.1:3000"
