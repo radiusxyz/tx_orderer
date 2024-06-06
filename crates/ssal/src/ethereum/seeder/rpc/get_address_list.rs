@@ -6,7 +6,7 @@ pub struct GetAddressList {
 }
 
 impl RpcMethod for GetAddressList {
-    type Response = Vec<(PublicKey, Option<RpcAddress>)>;
+    type Response = Vec<Option<RpcAddress>>;
 
     fn method_name() -> &'static str {
         stringify!(GetAddressList)
