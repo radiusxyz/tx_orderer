@@ -15,8 +15,8 @@ pub struct RpcClient {
 }
 
 impl RpcClient {
-    pub fn new(endpoint: impl AsRef<str>, timeout: u64) -> Result<Self, Error> {
-        let endpoint = endpoint.as_ref();
+    pub fn new(rpc_address: impl AsRef<str>, timeout: u64) -> Result<Self, Error> {
+        let endpoint = format!("http://{}", rpc_address.as_ref());
         let http_client = HttpClientBuilder::new()
             .request_timeout(Duration::from_secs(timeout))
             .build(endpoint)
