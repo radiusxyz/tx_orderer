@@ -18,11 +18,14 @@ async fn main() -> Result<(), Error> {
 
     Database::new(config.database_path())?.init();
 
-    RpcServer::new()
+    let rpc_server_handle = RpcServer::new()
         .register_rpc_method::<Register>()?
         .register_rpc_method::<Deregister>()?
         .register_rpc_method::<GetAddressList>()?
         .init(config.seeder_rpc_address())
         .await?;
+
+    tracing::info!("Seeder server starting at {}", config.seeder_rpc_address());
+    rpc_server_handle.stopped().await;
     Ok(())
 }
