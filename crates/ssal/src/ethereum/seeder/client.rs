@@ -13,12 +13,10 @@ impl SeederClient {
 
     pub async fn register(
         &self,
-        signature: Signature,
         public_key: PublicKey,
         sequencer_rpc_address: RpcAddress,
     ) -> Result<<Register as RpcMethod>::Response, Error> {
         let rpc_method = Register {
-            signature,
             public_key,
             sequencer_rpc_address,
         };
@@ -30,13 +28,9 @@ impl SeederClient {
 
     pub async fn deregister(
         &self,
-        signature: Signature,
         public_key: PublicKey,
     ) -> Result<<Deregister as RpcMethod>::Response, Error> {
-        let rpc_method = Deregister {
-            signature,
-            public_key,
-        };
+        let rpc_method = Deregister { public_key };
         self.0
             .request(rpc_method)
             .await

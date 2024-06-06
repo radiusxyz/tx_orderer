@@ -2,7 +2,6 @@ use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Register {
-    pub signature: Signature,
     pub public_key: PublicKey,
     pub sequencer_rpc_address: RpcAddress,
 }
