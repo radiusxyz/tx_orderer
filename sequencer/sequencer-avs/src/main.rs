@@ -25,8 +25,11 @@ async fn main() -> Result<(), Error> {
     // Store my public key.
     Me::try_from(config.sequencer_public_key.as_str())?.put()?;
 
+    // Initialize the cluster manager.
+    cluster_manager::init(&config)?;
+
     // Initialize JSON-RPC server.
-    RpcServer::new()
+    let rpc_server_handle = RpcServer::new()
         .register_rpc_method::<external::BuildBlock>()?
         .register_rpc_method::<external::SyncBuildBlock>()?
         .register_rpc_method::<external::GetBlock>()?
@@ -35,8 +38,6 @@ async fn main() -> Result<(), Error> {
         .init(&config.sequencer_rpc_address)
         .await?;
 
-    // Initialize the cluster manager.
-    cluster_manager::init(&config)?;
-
+    rpc_server_handle.stopped().await;
     Ok(())
 }
