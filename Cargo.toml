@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "client/client-avs",
+    "crates/block-commitment",
     "crates/database",
     "crates/json-rpc",
     "crates/ssal",
@@ -11,6 +13,7 @@ resolver = "2"
 
 [workspace.dependencies]
 async-trait = "0.1.73"
+block-commitment = { path = "crates/block-commitment" }
 database = { path = "crates/database" }
 json-rpc = { path = "crates/json-rpc" }
 reqwest = { version = "0.12.4", features = ["json"] }
