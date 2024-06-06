@@ -1,7 +1,7 @@
-use axum::{http::StatusCode, response::IntoResponse};
-
 pub enum Error {
     Boxed(Box<dyn std::error::Error>),
+    Database(database::Error),
+    JsonRPC(json_rpc::Error),
     SignatureMismatch,
     HealthCheck,
 }
@@ -16,6 +16,8 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Boxed(error) => write!(f, "{}", error),
+            Self::Database(error) => write!(f, "{}", error),
+            Self::JsonRPC(error) => write!(f, "{}", error),
             Self::SignatureMismatch => write!(f, "Sender is not the signer."),
             Self::HealthCheck => {
                 write!(
@@ -29,15 +31,15 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl IntoResponse for Error {
-    fn into_response(self) -> axum::response::Response {
-        match self {
-            Self::Boxed(error) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()).into_response()
-            }
-            Self::SignatureMismatch => (StatusCode::INTERNAL_SERVER_ERROR, self).into_response(),
-            Self::HealthCheck => (StatusCode::INTERNAL_SERVER_ERROR, self).into_response(),
-        }
+impl From<database::Error> for Error {
+    fn from(value: database::Error) -> Self {
+        Self::Database(value)
+    }
+}
+
+impl From<json_rpc::Error> for Error {
+    fn from(value: json_rpc::Error) -> Self {
+        Self::JsonRPC(value)
     }
 }
 

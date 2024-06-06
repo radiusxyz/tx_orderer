@@ -10,7 +10,7 @@ use crate::error::Error;
 #[derive(Deserialize, Serialize)]
 pub struct Config {
     database_path: PathBuf,
-    seeder_address: String,
+    seeder_rpc_address: String,
 }
 
 impl Config {
@@ -24,7 +24,7 @@ impl Config {
         &self.database_path
     }
 
-    pub fn seeder_address(&self) -> &String {
-        &self.seeder_address
+    pub fn seeder_rpc_address(&self) -> &String {
+        &self.seeder_rpc_address
     }
 }
