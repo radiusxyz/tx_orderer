@@ -17,7 +17,11 @@ impl RpcMethod for GetAddressList {
         let sequencer_list: Vec<Option<RpcAddress>> = self
             .sequencer_list
             .iter()
-            .filter_map(|sequencer_public_key| database().get(&sequencer_public_key).ok())
+            .map(|sequencer_public_key| {
+                database()
+                    .get::<PublicKey, RpcAddress>(sequencer_public_key)
+                    .ok()
+            })
             .collect();
         Ok(sequencer_list)
     }

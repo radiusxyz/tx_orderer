@@ -8,7 +8,7 @@ mod prelude {
     pub use serde::{Deserialize, Serialize};
     pub use ssal::ethereum::types::*;
 
-    pub use crate::{error::Error, util::health_check};
+    pub use crate::util::health_check;
 }
 
 pub use deregister::Deregister;
