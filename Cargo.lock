@@ -3608,6 +3608,7 @@ name = "sequencer-avs"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "block-commitment",
  "database",
  "json-rpc",
  "serde",
