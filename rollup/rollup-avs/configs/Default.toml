@@ -1,5 +1,5 @@
 # Rollup
-database_path = "databases/rollup_default"
+database_path = ""
 block_creation_time = 4
 
 # SSAL
