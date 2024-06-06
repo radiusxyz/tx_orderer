@@ -38,7 +38,7 @@ pub trait CommitmentScheme {
     fn to_string(&self) -> String;
 }
 
-pub fn get_block_commitment<T>(block: Vec<T>, seed: [u8; 32]) -> Vec<u8>
+pub fn get_block_commitment<T>(block: &Vec<T>, seed: [u8; 32]) -> Vec<u8>
 where
     T: AsRef<[u8]>,
 {
@@ -46,10 +46,10 @@ where
     let srs = StructuredReferenceString::<Bn254, 1024>::new_srs_for_testing(&mut rng);
     let prover_param: ProverParam<Bn254, 1024> = (&srs).into();
     let message: Vec<<Bn254 as PairingEngine>::Fr> = block
-        .into_iter()
-        .map(|raw_tx| {
+        .iter()
+        .map(|element| {
             let mut hasher = Sha224::new();
-            hasher.update(raw_tx.as_ref());
+            hasher.update(element.as_ref());
             let mut hashed_raw_tx = hasher.finalize().to_vec();
             hashed_raw_tx.extend_from_slice(&[0; 24]);
             <Bn254 as PairingEngine>::Fr::read(hashed_raw_tx.as_slice()).unwrap()
