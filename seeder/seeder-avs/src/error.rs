@@ -1,5 +1,7 @@
 pub enum Error {
     Boxed(Box<dyn std::error::Error>),
+    OpenConfig(std::io::Error),
+    ParseConfig(toml::de::Error),
     Database(database::Error),
     JsonRPC(json_rpc::Error),
     SignatureMismatch,
@@ -16,6 +18,8 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Boxed(error) => write!(f, "{}", error),
+            Self::OpenConfig(error) => write!(f, "{}", error),
+            Self::ParseConfig(error) => write!(f, "{}", error),
             Self::Database(error) => write!(f, "{}", error),
             Self::JsonRPC(error) => write!(f, "{}", error),
             Self::SignatureMismatch => write!(f, "Sender is not the signer."),

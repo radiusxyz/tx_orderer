@@ -15,8 +15,8 @@ pub struct Config {
 
 impl Config {
     pub fn load(config_path: impl AsRef<Path>) -> Result<Self, Error> {
-        let config_string = fs::read_to_string(config_path).map_err(Error::boxed)?;
-        let config: Self = toml::from_str(&config_string).map_err(Error::boxed)?;
+        let config_string = fs::read_to_string(config_path).map_err(Error::OpenConfig)?;
+        let config: Self = toml::from_str(&config_string).map_err(Error::ParseConfig)?;
         Ok(config)
     }
 

@@ -1,3 +1,5 @@
+use std::env;
+
 use database::Database;
 use json_rpc::RpcServer;
 use seeder_avs::{config::Config, error::Error, rpc::*};
@@ -5,7 +7,14 @@ use seeder_avs::{config::Config, error::Error, rpc::*};
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
-    let config = Config::load("Config.toml").map_err(Error::boxed)?;
+
+    let arguments: Vec<String> = env::args().skip(1).collect();
+    let config_path: String = arguments
+        .get(0)
+        .expect("Provide the configuration file path.")
+        .to_owned();
+
+    let config = Config::load(config_path)?;
 
     Database::new(config.database_path())?.init();
 
