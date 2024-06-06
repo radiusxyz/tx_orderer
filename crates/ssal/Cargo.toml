@@ -8,9 +8,8 @@ doctest = false
 
 [dependencies]
 ethers = { version = "2.0", features = ["abigen", "ws"], optional = true }
-reqwest = { workspace = true, optional = true }
+json-rpc = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
 
 [features]
-ethereum = ["ethers", "reqwest", "serde", "serde_json"]
+ethereum = ["ethers", "json-rpc", "serde"]

@@ -11,11 +11,54 @@ pub enum ErrorKind {
     GetBlockNumber,
     GetSequencerList,
     ParseStr,
+    ParseToPublicKey,
+}
+
+pub enum ErrorSource {
+    Boxed(Box<dyn std::error::Error>),
+    JsonRPC(json_rpc::Error),
+    Provider(ethers::providers::ProviderError),
+    Contract(ethers::contract::ContractError<ethers::providers::Provider<ethers::providers::Http>>),
+}
+
+impl std::fmt::Display for ErrorSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Boxed(error) => write!(f, "{}", error),
+            Self::JsonRPC(error) => write!(f, "{}", error),
+            Self::Provider(error) => write!(f, "{}", error),
+            Self::Contract(error) => write!(f, "{}", error),
+        }
+    }
+}
+
+impl From<json_rpc::Error> for ErrorSource {
+    fn from(value: json_rpc::Error) -> Self {
+        Self::JsonRPC(value)
+    }
+}
+
+impl From<ethers::providers::ProviderError> for ErrorSource {
+    fn from(value: ethers::providers::ProviderError) -> Self {
+        Self::Provider(value)
+    }
+}
+
+impl From<ethers::contract::ContractError<ethers::providers::Provider<ethers::providers::Http>>>
+    for ErrorSource
+{
+    fn from(
+        value: ethers::contract::ContractError<
+            ethers::providers::Provider<ethers::providers::Http>,
+        >,
+    ) -> Self {
+        Self::Contract(value)
+    }
 }
 
 pub struct Error {
     kind: ErrorKind,
-    source: Option<Box<dyn std::error::Error>>,
+    source: ErrorSource,
 }
 
 impl std::fmt::Debug for Error {
@@ -26,10 +69,7 @@ impl std::fmt::Debug for Error {
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.source {
-            Some(error) => write!(f, "{:?}: {}", self.kind, error),
-            None => write!(f, "{:?}", self.kind),
-        }
+        write!(f, "{:?}: {}", self.kind, self.source)
     }
 }
 
@@ -37,21 +77,12 @@ impl std::error::Error for Error {}
 
 impl<E> From<(ErrorKind, E)> for Error
 where
-    E: std::error::Error + 'static,
+    E: Into<ErrorSource>,
 {
     fn from(value: (ErrorKind, E)) -> Self {
         Self {
             kind: value.0,
-            source: Some(value.1.into()),
-        }
-    }
-}
-
-impl From<ErrorKind> for Error {
-    fn from(value: ErrorKind) -> Self {
-        Self {
-            kind: value,
-            source: None,
+            source: value.1.into(),
         }
     }
 }
@@ -59,5 +90,15 @@ impl From<ErrorKind> for Error {
 impl Error {
     pub fn kind(&self) -> ErrorKind {
         self.kind
+    }
+
+    pub fn boxed<E>(kind: ErrorKind, error: E) -> Self
+    where
+        E: std::error::Error + 'static,
+    {
+        Self {
+            kind,
+            source: ErrorSource::Boxed(Box::new(error)),
+        }
     }
 }

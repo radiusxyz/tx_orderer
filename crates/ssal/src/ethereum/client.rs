@@ -46,9 +46,9 @@ impl SsalClient {
     ) -> Result<Self, Error> {
         let rpc_endpoint = format!("http://{}", ssal_address.as_ref());
         let provider = Provider::<Http>::try_from(rpc_endpoint)
-            .map_err(|error| (ErrorKind::BuildSsalClient, error))?;
+            .map_err(|error| Error::boxed(ErrorKind::BuildSsalClient, error))?;
         let contract_address = H160::from_str(contract_address.as_ref())
-            .map_err(|error| (ErrorKind::ParseContractAddress, error))?;
+            .map_err(|error| Error::boxed(ErrorKind::ParseContractAddress, error))?;
 
         Ok(Self {
             provider: Arc::new(provider),

@@ -29,8 +29,8 @@ impl TryFrom<&str> for PublicKey {
     type Error = Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let public_key =
-            ethers::types::H160::from_str(value).map_err(|error| (ErrorKind::ParseStr, error))?;
+        let public_key = ethers::types::H160::from_str(value)
+            .map_err(|error| Error::boxed(ErrorKind::ParseToPublicKey, error))?;
         Ok(Self(public_key))
     }
 }
