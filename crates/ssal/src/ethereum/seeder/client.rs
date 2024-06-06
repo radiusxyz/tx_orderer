@@ -5,8 +5,8 @@ use crate::ethereum::{seeder::rpc::*, types::*, Error, ErrorKind};
 pub struct SeederClient(RpcClient);
 
 impl SeederClient {
-    pub fn new(seeder_address: impl AsRef<str>) -> Result<Self, Error> {
-        let client = RpcClient::new(seeder_address, 5)
+    pub fn new(seeder_rpc_address: impl AsRef<str>) -> Result<Self, Error> {
+        let client = RpcClient::new(seeder_rpc_address, 5)
             .map_err(|error| (ErrorKind::BuildSeederClient, error))?;
         Ok(Self(client))
     }
