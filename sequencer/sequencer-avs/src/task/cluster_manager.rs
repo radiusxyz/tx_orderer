@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use ssal::ethereum::{SeederClient, SsalClient};
+use ssal::ethereum::{seeder::SeederClient, SsalClient};
 use tokio::time::sleep;
 
 use crate::{
@@ -32,7 +32,7 @@ pub fn init(config: &Config) -> Result<(), Error> {
                 });
 
             if let Some((ssal_block_number, sequencer_list)) = cluster_info {
-                match seeder_client.get_address_list(&sequencer_list).await {
+                match seeder_client.get_address_list(sequencer_list.clone()).await {
                     Ok(address_list) => SequencerList::new(sequencer_list, address_list)
                         .put(SsalBlockNumber::from(ssal_block_number))
                         .unwrap_or_else(|error| tracing::error!("{}", error)),
