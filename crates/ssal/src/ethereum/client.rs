@@ -17,10 +17,23 @@ pub struct SsalClient {
     signer: Arc<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
     contract: Ssal<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
     cluster_id: [u8; 32],
-    seeder_client: SeederClient,
+    seeder_client: Arc<SeederClient>,
 }
 
 unsafe impl Send for SsalClient {}
+
+unsafe impl Sync for SeederClient {}
+
+impl Clone for SsalClient {
+    fn clone(&self) -> Self {
+        Self {
+            signer: self.signer.clone(),
+            contract: self.contract.clone(),
+            cluster_id: self.cluster_id,
+            seeder_client: self.seeder_client.clone(),
+        }
+    }
+}
 
 impl SsalClient {
     pub fn new(
@@ -41,8 +54,7 @@ impl SsalClient {
         let contract_address = H160::from_str(contract_address.as_ref())
             .map_err(|error| Error::boxed(ErrorKind::ParseContractAddress, error))?;
         let contract = Ssal::new(contract_address, signer.clone());
-
-        let seeder_client = SeederClient::new(seeder_rpc_address.as_ref())?;
+        let seeder_client = Arc::new(SeederClient::new(seeder_rpc_address.as_ref())?);
 
         Ok(Self {
             signer,
