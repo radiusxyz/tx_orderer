@@ -1,52 +1,27 @@
 use std::time::Duration;
 
-use ssal::ethereum::{seeder::SeederClient, SsalClient};
+use ssal::ethereum::SsalClient;
 use tokio::time::sleep;
 
-use crate::{
-    config::Config,
-    error::Error,
-    rpc::prelude::{SequencerList, SsalBlockNumber},
-};
+use crate::types::*;
 
-pub fn init(config: &Config) -> Result<(), Error> {
-    // Initialize SSAL client.
-    let ssal_client = SsalClient::new(
-        &config.ssal_rpc_address,
-        &config.contract_address,
-        config.cluster_id,
-    )
-    .map_err(Error::Ssal)?;
-
-    // Initialize Seeder client.
-    let seeder_client = SeederClient::new(&config.seeder_rpc_address).map_err(Error::Seeder)?;
-
+pub fn init(ssal_client: SsalClient) {
     tokio::spawn(async move {
+        let mut last_block_number = ssal_client.get_latest_block_number().await.unwrap();
+
         loop {
-            let cluster_info = ssal_client
-                .get_sequencer_list()
-                .await
-                .unwrap_or_else(|error| {
-                    tracing::error!("{}", error);
-                    None
-                });
-
-            if let Some((ssal_block_number, sequencer_list)) = cluster_info {
-                match seeder_client.get_address_list(sequencer_list.clone()).await {
-                    Ok(address_list) => {
-                        tracing::info!("{:?}", address_list);
-                        let sequencer_list = SequencerList::new(sequencer_list, address_list);
-                        sequencer_list
-                            .put(SsalBlockNumber::from(ssal_block_number))
-                            .unwrap_or_else(|error| tracing::error!("{}", error));
-                    }
-                    Err(error) => tracing::error!("{}", error),
-                }
+            let block_number = ssal_client.get_latest_block_number().await.unwrap();
+            if block_number != last_block_number {
+                let sequencer_list: SequencerList = ssal_client
+                    .get_sequencer_list(block_number)
+                    .await
+                    .unwrap()
+                    .into();
+                tracing::info!("{:?}", sequencer_list);
+                sequencer_list.put(block_number.into()).unwrap();
+                last_block_number = block_number;
             }
-
-            // Wait for the next request.
             sleep(Duration::from_secs(3)).await;
         }
     });
-    Ok(())
 }
