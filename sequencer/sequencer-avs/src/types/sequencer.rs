@@ -9,6 +9,12 @@ pub enum SequencerStatus {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SequencerList(Vec<(PublicKey, Option<RpcAddress>)>);
 
+impl From<(Vec<PublicKey>, Vec<Option<RpcAddress>>)> for SequencerList {
+    fn from(value: (Vec<PublicKey>, Vec<Option<RpcAddress>>)) -> Self {
+        Self(std::iter::zip(value.0, value.1).collect())
+    }
+}
+
 impl SequencerList {
     const ID: &'static str = stringify!(SequencerList);
 
