@@ -2,10 +2,9 @@
 pub enum Error {
     OpenConfig(std::io::Error),
     ParseConfig(toml::de::Error),
-    Ssal(ssal::ethereum::Error),
-    Seeder(ssal::ethereum::Error),
     Database(database::Error),
     JsonRPC(json_rpc::Error),
+    Ssal(ssal::ethereum::Error),
     Uninitialized,
     EmptyLeaderAddress,
 }
@@ -27,5 +26,11 @@ impl From<database::Error> for Error {
 impl From<json_rpc::Error> for Error {
     fn from(value: json_rpc::Error) -> Self {
         Self::JsonRPC(value)
+    }
+}
+
+impl From<ssal::ethereum::Error> for Error {
+    fn from(value: ssal::ethereum::Error) -> Self {
+        Self::Ssal(value)
     }
 }
