@@ -74,7 +74,16 @@ impl SsalClient {
         Ok(block_number)
     }
 
-    pub async fn register(&self, sequencer_rpc_address: String) -> Result<(), Error> {
+    pub async fn initialize_cluster(&self) -> Result<(), Error> {
+        // The seeder must respond in order to minimize the hassle.
+        // self.seeder_client
+        //     .register(self.signer.address().into(), sequencer_rpc_address.into())
+        //     .await?;
+        // self.contract.initialize_cluster(sequencer, rollup);
+        Ok(())
+    }
+
+    pub async fn register_sequencer(&self, sequencer_rpc_address: String) -> Result<(), Error> {
         // The seeder must respond in order to minimize the hassle.
         self.seeder_client
             .register(self.signer.address().into(), sequencer_rpc_address.into())
@@ -87,16 +96,19 @@ impl SsalClient {
         Ok(())
     }
 
-    pub async fn deregister(&self) -> Result<(), Error> {
-        // Deregistering does not depend on deleting the sequencer RPC address from seeder.
+    pub async fn deregister_sequencer(&self) -> Result<(), Error> {
         self.contract
             .deregister_sequencer(self.cluster_id, self.signer.address())
             .send()
             .await
             .map_err(|error| Error::boxed(ErrorKind::Deregister, error))?;
-        self.seeder_client
+
+        // Deregistering does not depend on deleting the sequencer RPC address from seeder.
+        // Therefore, it is safe to ignore any errors.
+        let _ = self
+            .seeder_client
             .deregister(self.signer.address().into())
-            .await?;
+            .await;
         Ok(())
     }
 
