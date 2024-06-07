@@ -1,17 +1,15 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ErrorKind {
     BuildSeederClient,
-    ParseSeederAddress,
-    Register,
-    Deregister,
     GetAddressList,
-    DeserializeResponse,
+    ParsePublicKey,
     BuildSsalClient,
+    ParsePrivateKey,
     ParseContractAddress,
     GetBlockNumber,
+    Register,
+    Deregister,
     GetSequencerList,
-    ParseStr,
-    ParseToPublicKey,
 }
 
 pub enum ErrorSource {

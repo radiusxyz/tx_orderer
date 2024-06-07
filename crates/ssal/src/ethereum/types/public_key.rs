@@ -30,7 +30,7 @@ impl TryFrom<&str> for PublicKey {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let public_key = ethers::types::H160::from_str(value)
-            .map_err(|error| Error::boxed(ErrorKind::ParseToPublicKey, error))?;
+            .map_err(|error| Error::boxed(ErrorKind::ParsePublicKey, error))?;
         Ok(Self(public_key))
     }
 }
