@@ -15,11 +15,9 @@ pub struct Config {
 
     // SSAL
     pub ssal_rpc_address: String,
-    pub sequencer_public_key: String,
+    pub ssal_private_key: String,
     pub contract_address: String,
     pub cluster_id: [u8; 32],
-
-    // Seeder
     pub seeder_rpc_address: String,
 }
 
