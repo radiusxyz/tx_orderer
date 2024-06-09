@@ -1,8 +1,8 @@
-use crate::rpc::{external::SyncTransaction, prelude::*};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendTransaction {
-    transaction: Transaction,
+    pub transaction: Transaction,
 }
 
 #[async_trait]
@@ -32,25 +32,6 @@ impl RpcMethod for SendTransaction {
 }
 
 impl SendTransaction {
-    fn syncer(processed_transaction: ProcessedTransaction, cluster_metadata: ClusterMetadata) {
-        let rpc_method = SyncTransaction {
-            transaction: processed_transaction,
-        };
-
-        // Fire and forget.
-        tokio::spawn(async move {
-            for (_public_key, rpc_address) in cluster_metadata.into_followers() {
-                if let Some(rpc_address) = rpc_address {
-                    let rpc_method = rpc_method.clone();
-                    tokio::spawn(async move {
-                        let rpc_client = RpcClient::new(rpc_address, 1).unwrap();
-                        let _ = rpc_client.request(rpc_method).await;
-                    });
-                }
-            }
-        });
-    }
-
     async fn leader(
         self,
         cluster_metadata: ClusterMetadata,
@@ -59,13 +40,13 @@ impl SendTransaction {
         let order_commitment =
             BlockMetadata::issue_order_commitment(cluster_metadata.rollup_block_number())?;
 
-        let processed_transaction =
-            ProcessedTransaction::new(order_commitment.clone(), self.transaction);
-        processed_transaction.put()?;
+        self.transaction.put(
+            order_commitment.rollup_block_number(),
+            order_commitment.transaction_order(),
+        )?;
 
-        // Spawn a syncer task to forward the transaction to other sequencers.
-        Self::syncer(processed_transaction, cluster_metadata);
-
+        // Spawn a transaction syncer task.
+        transaction_syncer::init(self.transaction, order_commitment.clone(), cluster_metadata);
         Ok(order_commitment)
     }
 
@@ -74,11 +55,12 @@ impl SendTransaction {
         cluster_metadata: ClusterMetadata,
     ) -> Result<<Self as RpcMethod>::Response, RpcError> {
         let (_leader_public_key, leader_rpc_address) = cluster_metadata.leader();
-        if let Some(rpc_address) = leader_rpc_address {
-            let client = RpcClient::new(rpc_address, 5)?;
-            client.request(self).await.map_err(|error| error.into())
-        } else {
-            Err(Error::EmptyLeaderAddress.into())
+        match leader_rpc_address {
+            Some(rpc_address) => {
+                let client = RpcClient::new(rpc_address, 5)?;
+                client.request(self).await.map_err(|error| error.into())
+            }
+            None => Err(Error::EmptyLeaderAddress.into()),
         }
     }
 }

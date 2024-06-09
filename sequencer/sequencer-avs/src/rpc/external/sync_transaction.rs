@@ -2,7 +2,8 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncTransaction {
-    pub transaction: ProcessedTransaction,
+    pub transaction: Transaction,
+    pub order_commitment: OrderCommitment,
 }
 
 #[async_trait]
@@ -14,7 +15,10 @@ impl RpcMethod for SyncTransaction {
     }
 
     async fn handler(self) -> Result<Self::Response, RpcError> {
-        self.transaction.put()?;
+        self.transaction.put(
+            self.order_commitment.rollup_block_number(),
+            self.order_commitment.transaction_order(),
+        )?;
         Ok(())
     }
 }
