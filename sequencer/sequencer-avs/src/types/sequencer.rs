@@ -29,7 +29,12 @@ impl SequencerList {
     }
 
     pub fn new(public_key_list: Vec<PublicKey>, address_list: Vec<Option<RpcAddress>>) -> Self {
-        Self(std::iter::zip(public_key_list, address_list).collect())
+        Self(
+            public_key_list
+                .into_iter()
+                .zip(address_list.into_iter())
+                .collect(),
+        )
     }
 
     pub fn len(&self) -> usize {
