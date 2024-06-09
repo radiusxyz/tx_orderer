@@ -48,34 +48,40 @@ async fn main() -> Result<(), Error> {
     // Initialize the rollup block number.
     let mut rollup_block_number = RollupBlockNumber::from(0);
     loop {
-        let ssal_block_number = SsalBlockNumber::get()? - block_margin;
-        let sequencer_list = SequencerList::get(ssal_block_number)?;
-        let leader_index = rollup_block_number % sequencer_list.len();
-        let (leader, followers) = sequencer_list.split_leader_from_followers(leader_index);
+        if let Some(ssal_block_number) = SsalBlockNumber::get().ok() {
+            let ssal_block_number = ssal_block_number - block_margin;
+            if let Some(sequencer_list) = SequencerList::get(ssal_block_number).ok() {
+                let leader_index = rollup_block_number % sequencer_list.len();
+                let (leader, followers) = sequencer_list.split_leader_from_followers(leader_index);
+                tracing::info!("{:?}", leader);
+                tracing::info!("{:?}", followers);
 
-        match send_build_block(
-            ssal_block_number,
-            rollup_block_number,
-            &leader,
-            &followers,
-            3,
-            1,
-        )
-        .await
-        {
-            Ok(sequencer_status) => match sequencer_status {
-                SequencerStatus::Running => {
-                    match send_get_block(rollup_block_number, &leader, &followers, 3, 1).await {
-                        Ok(block) => tracing::info!("{:?}", block),
-                        Err(error) => tracing::error!("{}", error),
-                    }
-                    rollup_block_number += 1;
+                match send_build_block(
+                    ssal_block_number,
+                    rollup_block_number,
+                    &leader,
+                    &followers,
+                    3,
+                    1,
+                )
+                .await
+                {
+                    Ok(sequencer_status) => match sequencer_status {
+                        SequencerStatus::Running => {
+                            match send_get_block(rollup_block_number, &leader, &followers, 3, 1)
+                                .await
+                            {
+                                Ok(block) => tracing::info!("{:?}", block),
+                                Err(error) => tracing::error!("{}", error),
+                            }
+                            rollup_block_number += 1;
+                        }
+                        SequencerStatus::Uninitialized => rollup_block_number += 1,
+                    },
+                    Err(error) => tracing::error!("{}", error),
                 }
-                SequencerStatus::Uninitialized => rollup_block_number += 1,
-            },
-            Err(error) => tracing::error!("{}", error),
+            }
         }
-
         sleep(Duration::from_secs(block_creation_time - 2)).await;
     }
 }
