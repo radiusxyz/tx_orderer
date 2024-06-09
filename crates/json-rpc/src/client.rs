@@ -24,17 +24,13 @@ impl RpcClient {
         Ok(Self { http_client })
     }
 
-    pub async fn request<T>(&self, method: T) -> Result<T::Response, Error>
+    pub async fn request<T>(&self, method: T) -> Result<<T as RpcMethod>::Response, Error>
     where
         T: RpcMethod + Into<RpcParam<T>> + Send,
     {
-        let method_name = T::method_name();
-        let rpc_parameter = RpcParam::from(method);
-        let rpc_response = self
-            .http_client
-            .request(method_name, rpc_parameter)
+        self.http_client
+            .request::<<T as RpcMethod>::Response, RpcParam<T>>(T::method_name(), method.into())
             .await
-            .map_err(|error| (ErrorKind::RpcRequest, error))?;
-        Ok(rpc_response)
+            .map_err(|error| (ErrorKind::RpcRequest, error).into())
     }
 }
