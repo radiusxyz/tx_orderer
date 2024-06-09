@@ -1,22 +1,20 @@
 use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Transaction(usize);
+pub struct Transaction {
+    encrypted_transaction: EncryptedTransaction,
+    time_lock_puzzle: TimeLockPuzzle,
+    nonce: Nonce,
+}
 
-impl From<usize> for Transaction {
-    fn from(value: usize) -> Self {
-        Self(value)
+impl AsRef<[u8]> for Transaction {
+    fn as_ref(&self) -> &[u8] {
+        self.encrypted_transaction.as_ref()
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ProcessedTransaction {
-    order_commitment: OrderCommitment,
-    transaction: Transaction,
-}
-
-impl ProcessedTransaction {
-    const ID: &'static str = stringify!(ProcessedTransaction);
+impl Transaction {
+    const ID: &'static str = stringify!(Transaction);
 
     pub fn get(
         rollup_block_number: RollupBlockNumber,
@@ -26,22 +24,44 @@ impl ProcessedTransaction {
         database().get(&key)
     }
 
-    pub fn put(&self) -> Result<(), database::Error> {
-        let key = (
-            Self::ID,
-            self.order_commitment.rollup_block_number,
-            self.order_commitment.transaction_order,
-        );
+    pub fn put(
+        &self,
+        rollup_block_number: RollupBlockNumber,
+        transaction_order: u64,
+    ) -> Result<(), database::Error> {
+        let key = (Self::ID, rollup_block_number, transaction_order);
         database().put(&key, self)
     }
 
-    pub fn new(order_commitment: OrderCommitment, transaction: Transaction) -> Self {
-        Self {
-            order_commitment,
-            transaction,
-        }
+    pub fn encrypted_transaction(&self) -> &EncryptedTransaction {
+        &self.encrypted_transaction
     }
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct EncryptedTransaction(String);
+
+impl AsRef<[u8]> for EncryptedTransaction {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TimeLockPuzzle {
+    t: u8,
+    g: String,
+    n: String,
+}
+
+impl TimeLockPuzzle {
+    pub fn new(t: u8, g: String, n: String) -> Self {
+        Self { t, g, n }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Nonce(String);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitment {
