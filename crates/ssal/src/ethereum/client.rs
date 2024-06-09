@@ -90,7 +90,11 @@ impl SsalClient {
             )
             .await?;
         self.contract
-            .initialize_cluster(self.signer.address(), rollup_public_key.into())
+            .initialize_cluster(
+                self.signer.address(),
+                H160::from_str(rollup_public_key.as_ref())
+                    .map_err(|error| Error::boxed(ErrorKind::ParsePublicKey, error))?,
+            )
             .send()
             .await
             .map_err(|error| Error::boxed(ErrorKind::InitializeCluster, error))?;
@@ -116,13 +120,6 @@ impl SsalClient {
             .send()
             .await
             .map_err(|error| Error::boxed(ErrorKind::DeregisterSequencer, error))?;
-
-        // Deregistering does not depend on deleting the sequencer RPC address from seeder.
-        // Therefore, it is safe to ignore any errors.
-        let _ = self
-            .seeder_client
-            .deregister(self.signer.address().into())
-            .await;
         Ok(())
     }
 
@@ -168,7 +165,6 @@ impl SsalClient {
                 handler(block_number.as_u64(), sequencer_list).await;
             }
         }
-
         Ok(())
     }
 }
