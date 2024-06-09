@@ -33,6 +33,18 @@ impl Transaction {
         database().put(&key, self)
     }
 
+    pub fn new(
+        encrypted_transaction: EncryptedTransaction,
+        time_lock_puzzle: TimeLockPuzzle,
+        nonce: Nonce,
+    ) -> Self {
+        Self {
+            encrypted_transaction,
+            time_lock_puzzle,
+            nonce,
+        }
+    }
+
     pub fn encrypted_transaction(&self) -> &EncryptedTransaction {
         &self.encrypted_transaction
     }
@@ -47,6 +59,12 @@ impl AsRef<[u8]> for EncryptedTransaction {
     }
 }
 
+impl EncryptedTransaction {
+    pub fn new(value: impl AsRef<str>) -> Self {
+        Self(value.as_ref().to_owned())
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TimeLockPuzzle {
     t: u8,
@@ -55,13 +73,23 @@ pub struct TimeLockPuzzle {
 }
 
 impl TimeLockPuzzle {
-    pub fn new(t: u8, g: String, n: String) -> Self {
-        Self { t, g, n }
+    pub fn new(t: u8, g: impl AsRef<str>, n: impl AsRef<str>) -> Self {
+        Self {
+            t,
+            g: g.as_ref().to_owned(),
+            n: n.as_ref().to_owned(),
+        }
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Nonce(String);
+
+impl Nonce {
+    pub fn new(value: impl AsRef<str>) -> Self {
+        Self(value.as_ref().to_owned())
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitment {
