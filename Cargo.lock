@@ -632,17 +632,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "client-avs"
-version = "0.1.0"
-dependencies = [
- "ethers",
- "json-rpc",
- "serde",
- "tokio",
- "toml",
-]
-
-[[package]]
 name = "coins-bip32"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3611,6 +3600,7 @@ dependencies = [
  "block-commitment",
  "database",
  "json-rpc",
+ "rand",
  "serde",
  "ssal",
  "tokio",

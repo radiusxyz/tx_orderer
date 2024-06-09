@@ -3,11 +3,24 @@ name = "sequencer-avs"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "test-client-avs"
+path = "src/bin/test_client.rs"
+
+[[bin]]
+name = "test-rollup-avs"
+path = "src/bin/test_rollup.rs"
+
+[[bin]]
+name = "sequencer-avs"
+path = "src/bin/sequencer.rs"
+
 [dependencies]
 async-trait = { workspace = true }
 block-commitment = { workspace = true }
 database = { workspace = true, features = ["singleton"] }
 json-rpc = { workspace = true }
+rand = { workspace = true }
 serde = { workspace = true }
 ssal = { workspace = true, features = ["ethereum"] }
 tokio = { workspace = true, features = ["full"] }

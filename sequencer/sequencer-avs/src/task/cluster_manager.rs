@@ -1,27 +1,22 @@
-// use std::time::Duration;
+use ssal::ethereum::{types::*, SsalClient};
 
-// use ssal::ethereum::SsalClient;
-// use tokio::time::sleep;
+use crate::{error::Error, types::*};
 
-// use crate::types::*;
+pub fn init(ssal_client: &SsalClient) {
+    let ssal_client = ssal_client.clone();
+    tokio::spawn(async move {
+        ssal_client
+            .sequencer_list_subscriber(handler)
+            .await
+            .unwrap();
+    });
+}
 
-// pub fn init(ssal_client: SsalClient) {
-//     tokio::spawn(async move {
-//         let mut last_block_number = ssal_client.get_latest_block_number().await.unwrap();
-
-//         loop {
-//             let block_number = ssal_client.get_latest_block_number().await.unwrap();
-//             if block_number != last_block_number {
-//                 let sequencer_list: SequencerList = ssal_client
-//                     .get_sequencer_list(block_number)
-//                     .await
-//                     .unwrap()
-//                     .into();
-//                 tracing::info!("{:?}", sequencer_list);
-//                 sequencer_list.put(block_number.into()).unwrap();
-//                 last_block_number = block_number;
-//             }
-//             sleep(Duration::from_secs(3)).await;
-//         }
-//     });
-// }
+async fn handler(
+    ssal_block_number: u64,
+    sequencer_list: (Vec<PublicKey>, Vec<Option<RpcAddress>>),
+) -> Result<(), Error> {
+    let sequencer_list = SequencerList::from(sequencer_list);
+    sequencer_list.put(ssal_block_number.into())?;
+    Ok(())
+}

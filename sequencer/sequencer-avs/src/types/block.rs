@@ -44,9 +44,29 @@ impl From<u64> for RollupBlockNumber {
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct SsalBlockNumber(u64);
 
+impl std::ops::Sub<u64> for SsalBlockNumber {
+    type Output = Self;
+
+    fn sub(self, rhs: u64) -> Self::Output {
+        Self(self.0 - rhs)
+    }
+}
+
 impl From<u64> for SsalBlockNumber {
     fn from(value: u64) -> Self {
         Self(value)
+    }
+}
+
+impl SsalBlockNumber {
+    const ID: &'static str = stringify!(SsalBlockNumber);
+
+    pub fn get() -> Result<Self, database::Error> {
+        database().get(&Self::ID)
+    }
+
+    pub fn put(&self) -> Result<(), database::Error> {
+        database().put(&Self::ID, self)
     }
 }
 

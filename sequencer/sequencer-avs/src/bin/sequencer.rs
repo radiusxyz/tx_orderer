@@ -5,6 +5,7 @@ use json_rpc::RpcServer;
 use sequencer_avs::{
     config::Config, error::Error, rpc::external, task::cluster_manager, types::Me,
 };
+use ssal::ethereum::SsalClient;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -22,11 +23,18 @@ async fn main() -> Result<(), Error> {
     // Initialize the database as a global singleton called by `database::database()`.
     Database::new(&config.database_path)?.init();
 
-    // Store my public key.
-    // Me::try_from(config.sequencer_public_key.as_str())?.put()?;
+    // Initialize the SSAL client.
+    let ssal_client = SsalClient::new(
+        &config.ssal_rpc_address,
+        &config.ssal_private_key,
+        &config.contract_address,
+        config.cluster_id,
+        &config.seeder_rpc_address,
+    )
+    .await?;
 
-    // Initialize the cluster manager.
-    // cluster_manager::init(&config)?;
+    // Initialize the cluster manager
+    cluster_manager::init(&ssal_client);
 
     // Initialize JSON-RPC server.
     let rpc_server_handle = RpcServer::new()
