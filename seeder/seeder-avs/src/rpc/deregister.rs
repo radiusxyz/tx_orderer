@@ -14,6 +14,7 @@ impl RpcMethod for Deregister {
     }
 
     async fn handler(self) -> Result<Self::Response, RpcError> {
+        tracing::info!("{:?}", self);
         database()
             .delete(&self.public_key)
             .map_err(|error| error.into())
