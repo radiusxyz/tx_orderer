@@ -2,17 +2,14 @@ use json_rpc::RpcClient;
 
 use crate::{rpc::external::SyncBuildBlock, types::*};
 
-pub fn init(ssal_block_number: SsalBlockNumber, rollup_block_number: RollupBlockNumber) {
+pub fn init(
+    ssal_block_number: SsalBlockNumber,
+    rollup_block_number: RollupBlockNumber,
+    previous_block_height: u64,
+) {
     tokio::spawn(async move {
         let me = Me::get().unwrap();
         let sequencer_list = SequencerList::get(ssal_block_number).unwrap();
-        let previous_rollup_block_number = rollup_block_number - 1;
-        let previous_block_height: u64 = match BlockMetadata::get(previous_rollup_block_number).ok()
-        {
-            Some(block_metadata) => block_metadata.block_height(),
-            None => 0,
-        };
-
         let rpc_method = SyncBuildBlock {
             ssal_block_number,
             rollup_block_number,
