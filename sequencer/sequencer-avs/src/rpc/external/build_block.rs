@@ -23,13 +23,12 @@ impl RpcMethod for BuildBlock {
                 // Calling `update_cluster_metadata()` before running the syncer makes it safe to
                 // sync the previous block height.
                 update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
-
                 let previous_block_height =
                     BlockMetadata::get(cluster_metadata.rollup_block_number())?.block_height();
                 block_syncer::init(
                     self.ssal_block_number,
                     self.rollup_block_number,
-                    Some(previous_block_height),
+                    previous_block_height,
                 );
                 block_builder::init(
                     cluster_metadata.rollup_block_number(),
@@ -44,7 +43,7 @@ impl RpcMethod for BuildBlock {
                     // Calling `update_cluster_metadata()` before running the syncer makes it safe to
                     // sync the previous block height.
                     update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
-                    block_syncer::init(self.ssal_block_number, self.rollup_block_number, None);
+                    block_syncer::init(self.ssal_block_number, self.rollup_block_number, 0);
                     Ok(SequencerStatus::Uninitialized)
                 } else {
                     Err(error.into())
