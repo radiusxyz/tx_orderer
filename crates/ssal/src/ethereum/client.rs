@@ -67,6 +67,10 @@ impl SsalClient {
         })
     }
 
+    pub fn public_key(&self) -> PublicKey {
+        self.signer.address().into()
+    }
+
     pub async fn get_latest_block_number(&self) -> Result<u64, Error> {
         let block_number = self
             .signer
@@ -101,10 +105,16 @@ impl SsalClient {
         Ok(())
     }
 
-    pub async fn register_sequencer(&self, sequencer_rpc_address: String) -> Result<(), Error> {
+    pub async fn register_sequencer(
+        &self,
+        sequencer_rpc_address: impl AsRef<str>,
+    ) -> Result<(), Error> {
         // The seeder must respond in order to minimize the hassle.
         self.seeder_client
-            .register(self.signer.address().into(), sequencer_rpc_address.into())
+            .register(
+                self.signer.address().into(),
+                sequencer_rpc_address.as_ref().into(),
+            )
             .await?;
         self.contract
             .register_sequencer(self.cluster_id, self.signer.address())
