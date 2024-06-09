@@ -1,7 +1,4 @@
-use crate::{
-    rpc::{prelude::*, util::update_cluster_metadata},
-    task::block_builder,
-};
+use crate::rpc::{prelude::*, util::update_cluster_metadata};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncBuildBlock {
@@ -22,7 +19,7 @@ impl RpcMethod for SyncBuildBlock {
         update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
 
         // Run the block builder.
-        block_builder::init(self.rollup_block_number);
+        block_builder::init(self.rollup_block_number, false);
         Ok(())
     }
 }

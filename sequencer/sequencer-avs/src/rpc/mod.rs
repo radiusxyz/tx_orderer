@@ -7,5 +7,5 @@ pub mod prelude {
     pub use json_rpc::{RpcClient, RpcError, RpcMethod};
     pub use serde::{Deserialize, Serialize};
 
-    pub use crate::{error::Error, types::*};
+    pub use crate::{error::Error, task::*, types::*};
 }

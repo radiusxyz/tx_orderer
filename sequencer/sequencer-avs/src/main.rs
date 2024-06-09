@@ -23,10 +23,10 @@ async fn main() -> Result<(), Error> {
     Database::new(&config.database_path)?.init();
 
     // Store my public key.
-    Me::try_from(config.sequencer_public_key.as_str())?.put()?;
+    // Me::try_from(config.sequencer_public_key.as_str())?.put()?;
 
     // Initialize the cluster manager.
-    cluster_manager::init(&config)?;
+    // cluster_manager::init(&config)?;
 
     // Initialize JSON-RPC server.
     let rpc_server_handle = RpcServer::new()
