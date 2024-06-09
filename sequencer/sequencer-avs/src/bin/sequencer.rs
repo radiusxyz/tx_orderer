@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, io};
 
 use database::Database;
 use json_rpc::RpcServer;
@@ -33,6 +33,9 @@ async fn main() -> Result<(), Error> {
     )
     .await?;
 
+    // Store my public key.
+    Me::from(ssal_client.public_key()).put()?;
+
     // Initialize the cluster manager
     cluster_manager::init(&ssal_client);
 
@@ -51,14 +54,46 @@ async fn main() -> Result<(), Error> {
     });
 
     loop {
+        println!("1. Initialize a cluster\n2. Register the sequencer\n3. Deregister the sequencer");
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
 
         match input.trim() {
-            // "1" => ssal_client.initialize_cluster(),
-            // "2" => ssal_client.register_sequencer(),
-            // "3" => ssal_client.derregister_sequencer(),
+            "1" => initialize(&config, &ssal_client).await,
+            "2" => register(&config, &ssal_client).await,
+            "3" => deregister(&ssal_client).await,
             _ => continue,
         }
+    }
+}
+
+async fn initialize(config: &Config, ssal_client: &SsalClient) {
+    println!("Rollup Public Key:");
+    let mut rollup_public_key = String::new();
+    io::stdin().read_line(&mut rollup_public_key).unwrap();
+
+    match ssal_client
+        .initialize_cluster(&config.sequencer_rpc_address, rollup_public_key.trim())
+        .await
+    {
+        Ok(_) => (),
+        Err(error) => tracing::error!("{}", error),
+    }
+}
+
+async fn register(config: &Config, ssal_client: &SsalClient) {
+    match ssal_client
+        .register_sequencer(&config.sequencer_rpc_address)
+        .await
+    {
+        Ok(_) => (),
+        Err(error) => tracing::error!("{}", error),
+    }
+}
+
+async fn deregister(ssal_client: &SsalClient) {
+    match ssal_client.deregister_sequencer().await {
+        Ok(_) => (),
+        Err(error) => tracing::error!("{}", error),
     }
 }

@@ -70,6 +70,12 @@ impl std::cmp::PartialEq<PublicKey> for Me {
     }
 }
 
+impl From<PublicKey> for Me {
+    fn from(value: PublicKey) -> Self {
+        Self(value)
+    }
+}
+
 impl TryFrom<&str> for Me {
     type Error = crate::error::Error;
 
