@@ -3244,20 +3244,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rollup-avs"
-version = "0.1.0"
-dependencies = [
- "database",
- "json-rpc",
- "serde",
- "ssal",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
 name = "route-recognizer"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

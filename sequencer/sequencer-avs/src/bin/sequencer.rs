@@ -46,6 +46,19 @@ async fn main() -> Result<(), Error> {
         .init(&config.sequencer_rpc_address)
         .await?;
 
-    rpc_server_handle.stopped().await;
-    Ok(())
+    tokio::spawn(async move {
+        rpc_server_handle.stopped().await;
+    });
+
+    loop {
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+
+        match input.trim() {
+            // "1" => ssal_client.initialize_cluster(),
+            // "2" => ssal_client.register_sequencer(),
+            // "3" => ssal_client.derregister_sequencer(),
+            _ => continue,
+        }
+    }
 }

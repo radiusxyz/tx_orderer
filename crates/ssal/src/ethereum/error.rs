@@ -7,8 +7,9 @@ pub enum ErrorKind {
     ParsePrivateKey,
     ParseContractAddress,
     GetBlockNumber,
-    Register,
-    Deregister,
+    InitializeCluster,
+    RegisterSequencer,
+    DeregisterSequencer,
     GetSequencerList,
     BlockSubscriber,
 }

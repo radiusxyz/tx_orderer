@@ -23,7 +23,7 @@ impl SeederClient {
         self.0
             .request(rpc_method)
             .await
-            .map_err(|error| (ErrorKind::Register, error).into())
+            .map_err(|error| (ErrorKind::RegisterSequencer, error).into())
     }
 
     pub async fn deregister(
@@ -34,7 +34,7 @@ impl SeederClient {
         self.0
             .request(rpc_method)
             .await
-            .map_err(|error| (ErrorKind::Deregister, error).into())
+            .map_err(|error| (ErrorKind::DeregisterSequencer, error).into())
     }
 
     pub async fn get_address_list(

@@ -77,12 +77,23 @@ impl SsalClient {
         Ok(block_number)
     }
 
-    pub async fn initialize_cluster(&self) -> Result<(), Error> {
+    pub async fn initialize_cluster(
+        &self,
+        sequencer_rpc_address: impl AsRef<str>,
+        rollup_public_key: impl AsRef<str>,
+    ) -> Result<(), Error> {
         // The seeder must respond in order to minimize the hassle.
-        // self.seeder_client
-        //     .register(self.signer.address().into(), sequencer_rpc_address.into())
-        //     .await?;
-        // self.contract.initialize_cluster(sequencer, rollup);
+        self.seeder_client
+            .register(
+                self.signer.address().into(),
+                sequencer_rpc_address.as_ref().into(),
+            )
+            .await?;
+        self.contract
+            .initialize_cluster(self.signer.address(), rollup_public_key.into())
+            .send()
+            .await
+            .map_err(|error| Error::boxed(ErrorKind::InitializeCluster, error))?;
         Ok(())
     }
 
@@ -95,7 +106,7 @@ impl SsalClient {
             .register_sequencer(self.cluster_id, self.signer.address())
             .send()
             .await
-            .map_err(|error| Error::boxed(ErrorKind::Register, error))?;
+            .map_err(|error| Error::boxed(ErrorKind::RegisterSequencer, error))?;
         Ok(())
     }
 
@@ -104,7 +115,7 @@ impl SsalClient {
             .deregister_sequencer(self.cluster_id, self.signer.address())
             .send()
             .await
-            .map_err(|error| Error::boxed(ErrorKind::Deregister, error))?;
+            .map_err(|error| Error::boxed(ErrorKind::DeregisterSequencer, error))?;
 
         // Deregistering does not depend on deleting the sequencer RPC address from seeder.
         // Therefore, it is safe to ignore any errors.
@@ -136,7 +147,6 @@ impl SsalClient {
             .seeder_client
             .get_address_list(sequencer_list.clone())
             .await?;
-
         Ok((sequencer_list, address_list))
     }
 

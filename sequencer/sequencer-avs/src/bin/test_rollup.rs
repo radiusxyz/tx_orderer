@@ -51,12 +51,16 @@ async fn main() -> Result<(), Error> {
         let ssal_block_number = SsalBlockNumber::get()? - block_margin;
         let sequencer_list = SequencerList::get(ssal_block_number)?;
         let leader_index = rollup_block_number % sequencer_list.len();
+        let (leader, followers) = sequencer_list.split_leader_from_followers(leader_index);
 
-        match send_build_block().await {
+        match send_build_block(&leader, &followers).await {
             Ok(sequencer_status) => match sequencer_status {
                 SequencerStatus::Running => {
-                    send_get_block().await;
-                    rollup_block_number += 1
+                    match send_get_block(&leader, &followers).await {
+                        Ok(block) => tracing::info!("{:?}", block),
+                        Err(error) => tracing::error!("{}", error),
+                    }
+                    rollup_block_number += 1;
                 }
                 SequencerStatus::Uninitialized => rollup_block_number += 1,
             },
@@ -90,12 +94,39 @@ async fn handler(
         .unwrap();
 }
 
-async fn send_to_leader(rpc_address: &Option<RpcAddress>, rpc_method: impl RpcMethod) -> Result<(), Error> {
-    if let Some()
-    let rpc_client = RpcClient::new(rpc_, 2)?;
-    Ok(())
+async fn send_build_block(
+    leader: &(PublicKey, Option<RpcAddress>),
+    followers: &Vec<(PublicKey, Option<RpcAddress>)>,
+) -> Result<<BuildBlock as RpcMethod>::Response, Error> {
+    let rpc_method = BuildBlock {};
+    send_to_leader()?;
+    send_to_followers(followers)?;
 }
 
-async fn send_to_followers(rpc_method: impl RpcMethod) -> Result<(), Error> {
-    Ok(())
+async fn send_to_leader<T>(
+    rpc_address: &Option<RpcAddress>,
+    rpc_method: T,
+) -> Result<<T as RpcMethod>::Response, Error>
+where
+    T: RpcMethod + Send,
+{
+    if let Some(rpc_address) = rpc_address {
+        let rpc_client = RpcClient::new(rpc_address, 2)?;
+        rpc_client
+            .request(rpc_method)
+            .await
+            .map_err(|error| error.into())
+    } else {
+        Err(Error::EmptyLeaderAddress)
+    }
+}
+
+async fn send_to_followers<T>(followers: &Vec<Option<RpcAddress>>) -> Result<(), Error> {
+    for rpc_address in followers {
+        if let Some(rpc_address) = rpc_address {
+            let client = RpcClient::new(rpc_address)?;
+        } else {
+            continue;
+        }
+    }
 }
