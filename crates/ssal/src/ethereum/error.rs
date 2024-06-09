@@ -10,6 +10,7 @@ pub enum ErrorKind {
     Register,
     Deregister,
     GetSequencerList,
+    BlockSubscriber,
 }
 
 pub enum ErrorSource {
