@@ -16,10 +16,25 @@ impl RpcMethod for SyncBuildBlock {
     }
 
     async fn handler(self) -> Result<Self::Response, RpcError> {
-        update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
-
-        // Run the block builder.
-        block_builder::init(self.rollup_block_number, false);
-        Ok(())
+        match ClusterMetadata::get() {
+            Ok(cluster_metadata) => {
+                tracing::info!("{}: {:?}", Self::method_name(), self);
+                update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
+                block_builder::init(
+                    cluster_metadata.rollup_block_number(),
+                    self.previous_block_height,
+                    false,
+                );
+                Ok(())
+            }
+            Err(error) => {
+                if error.kind() == database::ErrorKind::KeyDoesNotExist {
+                    update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
+                    Ok(())
+                } else {
+                    Err(error.into())
+                }
+            }
+        }
     }
 }
