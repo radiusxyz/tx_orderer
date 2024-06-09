@@ -53,10 +53,19 @@ async fn main() -> Result<(), Error> {
         let leader_index = rollup_block_number % sequencer_list.len();
         let (leader, followers) = sequencer_list.split_leader_from_followers(leader_index);
 
-        match send_build_block(&leader, &followers).await {
+        match send_build_block(
+            ssal_block_number,
+            rollup_block_number,
+            &leader,
+            &followers,
+            3,
+            1,
+        )
+        .await
+        {
             Ok(sequencer_status) => match sequencer_status {
                 SequencerStatus::Running => {
-                    match send_get_block(&leader, &followers).await {
+                    match send_get_block(rollup_block_number, &leader, &followers, 3, 1).await {
                         Ok(block) => tracing::info!("{:?}", block),
                         Err(error) => tracing::error!("{}", error),
                     }
@@ -67,7 +76,7 @@ async fn main() -> Result<(), Error> {
             Err(error) => tracing::error!("{}", error),
         }
 
-        sleep(Duration::from_secs(block_creation_time)).await;
+        sleep(Duration::from_secs(block_creation_time - 2)).await;
     }
 }
 
@@ -95,38 +104,115 @@ async fn handler(
 }
 
 async fn send_build_block(
+    ssal_block_number: SsalBlockNumber,
+    rollup_block_number: RollupBlockNumber,
     leader: &(PublicKey, Option<RpcAddress>),
     followers: &Vec<(PublicKey, Option<RpcAddress>)>,
+    retry: usize,
+    retry_interval: u64,
 ) -> Result<<BuildBlock as RpcMethod>::Response, Error> {
-    let rpc_method = BuildBlock {};
-    send_to_leader()?;
-    send_to_followers(followers)?;
+    let rpc_method = BuildBlock {
+        ssal_block_number,
+        rollup_block_number,
+    };
+
+    for retry_count in 0..retry {
+        tracing::info!(
+            "[{}] Trying the leader.. retry count: {}",
+            stringify!(GetBlock),
+            retry_count,
+        );
+        if let Some(rpc_response) = send_to_leader(&leader, rpc_method.clone()).await.ok() {
+            return Ok(rpc_response);
+        }
+        sleep(Duration::from_secs(retry_interval)).await;
+    }
+
+    for retry_count in 0..retry {
+        tracing::info!(
+            "[{}] Trying the followers.. retry count: {}",
+            stringify!(GetBlock),
+            retry_count
+        );
+        if let Some(rpc_response) = send_to_followers(followers, rpc_method.clone()).await.ok() {
+            return Ok(rpc_response);
+        }
+    }
+
+    Err(Error::ClusterDown)
+}
+
+async fn send_get_block(
+    rollup_block_number: RollupBlockNumber,
+    leader: &(PublicKey, Option<RpcAddress>),
+    followers: &Vec<(PublicKey, Option<RpcAddress>)>,
+    retry: usize,
+    retry_interval: u64,
+) -> Result<<GetBlock as RpcMethod>::Response, Error> {
+    let rpc_method = GetBlock {
+        rollup_block_number,
+    };
+
+    for retry_count in 0..retry {
+        tracing::info!(
+            "[{}] Trying the leader.. retry count: {}",
+            stringify!(GetBlock),
+            retry_count,
+        );
+        if let Some(rpc_response) = send_to_leader(&leader, rpc_method.clone()).await.ok() {
+            return Ok(rpc_response);
+        }
+        sleep(Duration::from_secs(retry_interval)).await;
+    }
+
+    for retry_count in 0..retry {
+        tracing::info!(
+            "[{}] Trying the followers.. retry count: {}",
+            stringify!(GetBlock),
+            retry_count
+        );
+        if let Some(rpc_response) = send_to_followers(followers, rpc_method.clone()).await.ok() {
+            return Ok(rpc_response);
+        }
+    }
+
+    Err(Error::ClusterDown)
 }
 
 async fn send_to_leader<T>(
-    rpc_address: &Option<RpcAddress>,
+    leader: &(PublicKey, Option<RpcAddress>),
     rpc_method: T,
 ) -> Result<<T as RpcMethod>::Response, Error>
 where
     T: RpcMethod + Send,
 {
-    if let Some(rpc_address) = rpc_address {
+    if let Some(rpc_address) = &leader.1 {
         let rpc_client = RpcClient::new(rpc_address, 2)?;
-        rpc_client
-            .request(rpc_method)
-            .await
-            .map_err(|error| error.into())
+        let rpc_response = rpc_client.request(rpc_method).await?;
+        Ok(rpc_response)
     } else {
         Err(Error::EmptyLeaderAddress)
     }
 }
 
-async fn send_to_followers<T>(followers: &Vec<Option<RpcAddress>>) -> Result<(), Error> {
-    for rpc_address in followers {
-        if let Some(rpc_address) = rpc_address {
-            let client = RpcClient::new(rpc_address)?;
+async fn send_to_followers<T>(
+    followers: &Vec<(PublicKey, Option<RpcAddress>)>,
+    rpc_method: T,
+) -> Result<<T as RpcMethod>::Response, Error>
+where
+    T: RpcMethod + Send,
+{
+    for follower in followers {
+        if let Some(rpc_address) = &follower.1 {
+            let rpc_client = RpcClient::new(rpc_address, 2)?;
+            match rpc_client.request(rpc_method.clone()).await {
+                Ok(rpc_response) => return Ok(rpc_response),
+                Err(_) => continue,
+            }
         } else {
             continue;
         }
     }
+
+    Err(Error::UnresponsiveFollowers)
 }

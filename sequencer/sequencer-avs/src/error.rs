@@ -7,6 +7,8 @@ pub enum Error {
     Ssal(ssal::ethereum::Error),
     Uninitialized,
     EmptyLeaderAddress,
+    UnresponsiveFollowers,
+    ClusterDown,
 }
 
 unsafe impl Send for Error {}

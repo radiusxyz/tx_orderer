@@ -2,7 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlock {
-    rollup_block_number: RollupBlockNumber,
+    pub rollup_block_number: RollupBlockNumber,
 }
 
 #[async_trait]
