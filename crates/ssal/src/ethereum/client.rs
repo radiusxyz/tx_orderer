@@ -157,22 +157,20 @@ impl SsalClient {
         Ok((sequencer_list, address_list))
     }
 
-    pub async fn sequencer_list_subscriber<F, R, H>(&self, handler: H) -> Result<(), Error>
+    pub async fn block_number_subscriber<F, R, H>(&self, handler: H) -> Result<(), Error>
     where
         F: Future<Output = R>,
         R: Send + 'static,
-        H: Fn(u64, (Vec<PublicKey>, Vec<Option<RpcAddress>>)) -> F,
+        H: Fn(u64, SsalClient) -> F,
     {
         let mut block_stream = self
             .signer
             .subscribe_blocks()
             .await
             .map_err(|error| Error::boxed(ErrorKind::BlockSubscriber, error))?;
-
         while let Some(block) = block_stream.next().await {
             if let Some(block_number) = block.number {
-                let sequencer_list = self.get_sequencer_list(block_number.as_u64()).await?;
-                handler(block_number.as_u64(), sequencer_list).await;
+                handler(block_number.as_u64(), self.clone()).await;
             }
         }
         Ok(())
