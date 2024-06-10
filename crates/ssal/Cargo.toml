@@ -1,0 +1,15 @@
+[package]
+name = "ssal"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+doctest = false
+
+[dependencies]
+ethers = { version = "2.0", features = ["abigen", "ws"], optional = true }
+json-rpc = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+
+[features]
+ethereum = ["ethers", "json-rpc", "serde"]

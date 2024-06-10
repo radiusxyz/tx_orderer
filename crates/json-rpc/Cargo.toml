@@ -1,0 +1,16 @@
+[package]
+name = "json-rpc"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+doctest = false
+
+[dependencies]
+async-trait = { workspace = true }
+hyper = "0.14.27"
+jsonrpsee = { version = "0.22", features = ["full"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tower = "0.4.13"
+tower-http = { version = "0.4.4", features = ["cors"] }
