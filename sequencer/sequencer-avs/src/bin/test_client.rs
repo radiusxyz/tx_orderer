@@ -2,8 +2,10 @@ use std::env;
 
 use database::Database;
 use json_rpc::RpcClient;
-use sequencer_avs::{config::Config, error::Error, rpc::external::SendTransaction, types::*};
-use ssal::ethereum::{types::*, SsalClient};
+use sequencer_avs::{
+    config::Config, error::Error, rpc::external::SendTransaction, task::cluster_manager, types::*,
+};
+use ssal::ethereum::SsalClient;
 use tokio::time::{sleep, Duration};
 
 #[tokio::main]
@@ -38,7 +40,7 @@ async fn main() -> Result<(), Error> {
     .await?;
 
     // Initialize the cluster manager.
-    cluster_manager(&ssal_client);
+    cluster_manager::init(&ssal_client);
 
     // Start sending the transaction.
     loop {
@@ -78,25 +80,25 @@ async fn transaction_sender(sequencer_list: SequencerList) {
     }
 }
 
-fn cluster_manager(ssal_client: &SsalClient) {
-    let ssal_client = ssal_client.clone();
-    tokio::spawn(async move {
-        ssal_client
-            .sequencer_list_subscriber(handler)
-            .await
-            .unwrap()
-    });
-}
+// fn cluster_manager(ssal_client: &SsalClient) {
+//     let ssal_client = ssal_client.clone();
+//     tokio::spawn(async move {
+//         ssal_client
+//             .sequencer_list_subscriber(handler)
+//             .await
+//             .unwrap()
+//     });
+// }
 
-async fn handler(
-    ssal_block_number: u64,
-    sequencer_list: (Vec<PublicKey>, Vec<Option<RpcAddress>>),
-) {
-    // Store the current SSAL block number.
-    SsalBlockNumber::from(ssal_block_number).put().unwrap();
+// async fn handler(
+//     ssal_block_number: u64,
+//     sequencer_list: (Vec<PublicKey>, Vec<Option<RpcAddress>>),
+// ) {
+//     // Store the current SSAL block number.
+//     SsalBlockNumber::from(ssal_block_number).put().unwrap();
 
-    // Store the sequencer list corresponding to the current block number.
-    SequencerList::from(sequencer_list)
-        .put(ssal_block_number.into())
-        .unwrap();
-}
+//     // Store the sequencer list corresponding to the current block number.
+//     SequencerList::from(sequencer_list)
+//         .put(ssal_block_number.into())
+//         .unwrap();
+// }

@@ -2,7 +2,9 @@ use std::{env, time::Duration};
 
 use database::Database;
 use json_rpc::{RpcClient, RpcMethod};
-use sequencer_avs::{config::Config, error::Error, rpc::external::*, types::*};
+use sequencer_avs::{
+    config::Config, error::Error, rpc::external::*, task::cluster_manager, types::*,
+};
 use ssal::ethereum::{types::*, SsalClient};
 use tokio::time::sleep;
 
@@ -43,18 +45,18 @@ async fn main() -> Result<(), Error> {
     .await?;
 
     // Initialize the cluster manager.
-    cluster_manager(&ssal_client);
+    cluster_manager::init(&ssal_client);
 
     // Initialize the rollup block number.
     let mut rollup_block_number = RollupBlockNumber::from(0);
     loop {
-        if let Some(ssal_block_number) = SsalBlockNumber::get().ok() {
-            let ssal_block_number = ssal_block_number - block_margin;
+        if let Some(current_ssal_block_number) = SsalBlockNumber::get().ok() {
+            let ssal_block_number = current_ssal_block_number - block_margin;
             if let Some(sequencer_list) = SequencerList::get(ssal_block_number).ok() {
+                tracing::info!("{:?}\n{:?}", ssal_block_number, rollup_block_number);
+                // tracing::info!("{:?}", sequencer_list);
                 let leader_index = rollup_block_number % sequencer_list.len();
                 let (leader, followers) = sequencer_list.split_leader_from_followers(leader_index);
-                tracing::info!("{:?}", leader);
-                tracing::info!("{:?}", followers);
 
                 match send_build_block(
                     ssal_block_number,
@@ -68,7 +70,7 @@ async fn main() -> Result<(), Error> {
                 {
                     Ok(sequencer_status) => match sequencer_status {
                         SequencerStatus::Running => {
-                            match send_get_block(rollup_block_number, &leader, &followers, 3, 1)
+                            match send_get_block(rollup_block_number - 1, &leader, &followers, 3, 1)
                                 .await
                             {
                                 Ok(block) => tracing::info!("{:?}", block),
@@ -84,29 +86,6 @@ async fn main() -> Result<(), Error> {
         }
         sleep(Duration::from_secs(block_creation_time - 2)).await;
     }
-}
-
-fn cluster_manager(ssal_client: &SsalClient) {
-    let ssal_client = ssal_client.clone();
-    tokio::spawn(async move {
-        ssal_client
-            .sequencer_list_subscriber(handler)
-            .await
-            .unwrap();
-    });
-}
-
-async fn handler(
-    ssal_block_number: u64,
-    sequencer_list: (Vec<PublicKey>, Vec<Option<RpcAddress>>),
-) {
-    // Store the current SSAL block number.
-    SsalBlockNumber::from(ssal_block_number).put().unwrap();
-
-    // Store the sequencer list corresponding to the current block number.
-    SequencerList::from(sequencer_list)
-        .put(ssal_block_number.into())
-        .unwrap();
 }
 
 async fn send_build_block(
@@ -125,7 +104,7 @@ async fn send_build_block(
     for retry_count in 0..retry {
         tracing::info!(
             "[{}] Trying the leader.. retry count: {}",
-            stringify!(GetBlock),
+            stringify!(BuildBlock),
             retry_count,
         );
         if let Some(rpc_response) = send_to_leader(&leader, rpc_method.clone()).await.ok() {
@@ -137,7 +116,7 @@ async fn send_build_block(
     for retry_count in 0..retry {
         tracing::info!(
             "[{}] Trying the followers.. retry count: {}",
-            stringify!(GetBlock),
+            stringify!(BuildBlock),
             retry_count
         );
         if let Some(rpc_response) = send_to_followers(followers, rpc_method.clone()).await.ok() {
