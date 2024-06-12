@@ -4,11 +4,9 @@ use jsonrpsee::{
     core::client::ClientT,
     http_client::{HttpClient, HttpClientBuilder},
 };
+use serde::{de::DeserializeOwned, ser::Serialize};
 
-use crate::{
-    method::{RpcMethod, RpcParam},
-    Error, ErrorKind,
-};
+use crate::{types::RpcParameter, Error, ErrorKind};
 
 pub struct RpcClient {
     http_client: HttpClient,
@@ -24,12 +22,14 @@ impl RpcClient {
         Ok(Self { http_client })
     }
 
-    pub async fn request<T>(&self, method: T) -> Result<<T as RpcMethod>::Response, Error>
+    pub async fn request<P, R>(&self, id: &'static str, parameter: P) -> Result<R, Error>
     where
-        T: RpcMethod + Into<RpcParam<T>> + Send,
+        P: Serialize + Send,
+        R: DeserializeOwned,
     {
+        let parameter = RpcParameter::from(parameter);
         self.http_client
-            .request::<<T as RpcMethod>::Response, RpcParam<T>>(T::method_name(), method.into())
+            .request(id, parameter)
             .await
             .map_err(|error| (ErrorKind::RpcRequest, error).into())
     }
