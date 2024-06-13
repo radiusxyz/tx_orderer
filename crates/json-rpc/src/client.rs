@@ -6,7 +6,7 @@ use jsonrpsee::{
 };
 use serde::{de::DeserializeOwned, ser::Serialize};
 
-use crate::{types::RpcParameter, Error, ErrorKind};
+use crate::{types::Parameter, Error, ErrorKind};
 
 pub struct RpcClient {
     http_client: HttpClient,
@@ -22,14 +22,14 @@ impl RpcClient {
         Ok(Self { http_client })
     }
 
-    pub async fn request<P, R>(&self, id: &'static str, parameter: P) -> Result<R, Error>
+    pub async fn request<P, R>(&self, method: &'static str, parameter: P) -> Result<R, Error>
     where
         P: Serialize + Send,
         R: DeserializeOwned,
     {
-        let parameter = RpcParameter::from(parameter);
+        let parameter = Parameter::from(parameter);
         self.http_client
-            .request(id, parameter)
+            .request(method, parameter)
             .await
             .map_err(|error| (ErrorKind::RpcRequest, error).into())
     }

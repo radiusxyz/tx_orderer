@@ -1,12 +1,15 @@
-use jsonrpsee::core::traits::ToRpcParams;
+use jsonrpsee::{core::traits::ToRpcParams, types::Params};
 use serde::ser::Serialize;
 use serde_json::value::RawValue;
 
-pub struct RpcParameter<P>(P)
+pub type RpcParameter = Params<'static>;
+
+/// Wrapper for the RPC request parameter.
+pub(crate) struct Parameter<P>(P)
 where
     P: Serialize + Send;
 
-impl<P> From<P> for RpcParameter<P>
+impl<P> From<P> for Parameter<P>
 where
     P: Serialize + Send,
 {
@@ -15,7 +18,7 @@ where
     }
 }
 
-impl<P> ToRpcParams for RpcParameter<P>
+impl<P> ToRpcParams for Parameter<P>
 where
     P: Serialize + Send,
 {

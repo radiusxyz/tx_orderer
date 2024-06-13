@@ -3,15 +3,12 @@ use std::{future::Future, sync::Arc};
 use hyper::{header, Method};
 use jsonrpsee::{
     server::{middleware::http::ProxyGetRequestLayer, Server, ServerHandle},
-    types::Params,
     IntoResponse, RpcModule,
 };
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::{Error, ErrorKind};
-
-pub type Parameter = Params<'static>;
+use crate::{types::RpcParameter, Error, ErrorKind};
 
 pub struct RpcServer<C>
 where
@@ -32,16 +29,16 @@ where
 
     pub fn register_rpc_method<H, F, R>(
         mut self,
-        id: &'static str,
+        method: &'static str,
         handler: H,
     ) -> Result<Self, Error>
     where
-        H: Fn(Parameter, Arc<C>) -> F + Clone + Send + Sync + 'static,
+        H: Fn(RpcParameter, Arc<C>) -> F + Clone + Send + Sync + 'static,
         F: Future<Output = R> + Send + 'static,
         R: IntoResponse + 'static,
     {
         self.rpc_module
-            .register_async_method(id, handler)
+            .register_async_method(method, handler)
             .map_err(|error| (ErrorKind::RegisterRpcMethod, error))?;
         Ok(self)
     }
