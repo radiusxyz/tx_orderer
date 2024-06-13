@@ -1,5 +1,4 @@
 mod client;
-mod rpc;
+pub mod rpc;
 
 pub use client::SeederClient;
-pub use rpc::*;
