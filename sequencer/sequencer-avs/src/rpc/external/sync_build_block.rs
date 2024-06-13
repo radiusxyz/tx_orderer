@@ -7,29 +7,35 @@ pub struct SyncBuildBlock {
     pub previous_block_height: u64,
 }
 
-#[async_trait]
-impl RpcMethod for SyncBuildBlock {
-    type Response = ();
+impl SyncBuildBlock {
+    pub const METHOD_NAME: &'static str = stringify!(SyncBuildBlock);
 
-    fn method_name() -> &'static str {
-        stringify!(SyncBuildBlock)
-    }
-
-    async fn handler(self) -> Result<Self::Response, RpcError> {
+    pub async fn handler(parameter: RpcParameter, context: Arc<()>) -> Result<(), RpcError> {
+        let parameter = parameter.parse::<Self>()?;
         match ClusterMetadata::get() {
             Ok(cluster_metadata) => {
-                tracing::info!("{}: {:?}", Self::method_name(), self);
-                update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
+                tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
+
+                update_cluster_metadata(
+                    parameter.ssal_block_number,
+                    parameter.rollup_block_number,
+                )?;
+
                 block_builder::init(
                     cluster_metadata.rollup_block_number(),
-                    self.previous_block_height,
+                    parameter.previous_block_height,
                     false,
                 );
+
                 Ok(())
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                    update_cluster_metadata(self.ssal_block_number, self.rollup_block_number)?;
+                    update_cluster_metadata(
+                        parameter.ssal_block_number,
+                        parameter.rollup_block_number,
+                    )?;
+
                     Ok(())
                 } else {
                     Err(error.into())

@@ -1,22 +1,9 @@
 use super::prelude::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Deregister {
-    pub public_key: PublicKey,
-}
-
-#[async_trait]
-impl RpcMethod for Deregister {
-    type Response = ();
-
-    fn method_name() -> &'static str {
-        stringify!(Deregister)
-    }
-
-    async fn handler(self) -> Result<Self::Response, RpcError> {
-        tracing::info!("{:?}", self);
-        database()
-            .delete(&self.public_key)
-            .map_err(|error| error.into())
-    }
+pub async fn handler(parameter: RpcParameter, _context: Arc<()>) -> Result<(), RpcError> {
+    let parameter = parameter.parse::<Deregister>()?;
+    tracing::info!("{:?}", parameter);
+    database()
+        .delete(&parameter.public_key)
+        .map_err(|error| error.into())
 }

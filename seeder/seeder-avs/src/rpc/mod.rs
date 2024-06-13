@@ -1,16 +1,12 @@
-mod deregister;
-mod get_address_list;
-mod register;
+pub mod deregister;
+pub mod get_address_list;
+pub mod register;
 mod prelude {
-    pub use async_trait::async_trait;
+    pub use std::sync::Arc;
+
     pub use database::database;
-    pub use json_rpc::{RpcError, RpcMethod};
-    pub use serde::{Deserialize, Serialize};
-    pub use ssal::ethereum::types::*;
+    pub use json_rpc::{types::*, RpcError};
+    pub use ssal::ethereum::{seeder::rpc::*, types::*};
 
     pub use crate::util::health_check;
 }
-
-pub use deregister::Deregister;
-pub use get_address_list::GetAddressList;
-pub use register::Register;

@@ -16,7 +16,6 @@ name = "sequencer-avs"
 path = "src/bin/sequencer.rs"
 
 [dependencies]
-async-trait = { workspace = true }
 block-commitment = { workspace = true }
 database = { workspace = true, features = ["singleton"] }
 json-rpc = { workspace = true }

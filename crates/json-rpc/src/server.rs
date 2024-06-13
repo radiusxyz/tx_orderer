@@ -1,45 +1,44 @@
-use std::fmt::Debug;
+use std::{future::Future, sync::Arc};
 
 use hyper::{header, Method};
 use jsonrpsee::{
     server::{middleware::http::ProxyGetRequestLayer, Server, ServerHandle},
-    types::{ErrorCode, ErrorObjectOwned},
-    RpcModule,
+    IntoResponse, RpcModule,
 };
-use serde::{de::DeserializeOwned, ser::Serialize};
 use tower::ServiceBuilder;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::{method::RpcMethod, Error, ErrorKind};
+use crate::{types::RpcParameter, Error, ErrorKind};
 
-pub struct RpcServer {
-    rpc_module: RpcModule<()>,
+pub struct RpcServer<C>
+where
+    C: Send + Sync + 'static,
+{
+    rpc_module: RpcModule<C>,
 }
 
-impl RpcServer {
-    pub fn new() -> Self {
+impl<C> RpcServer<C>
+where
+    C: Send + Sync + 'static,
+{
+    pub fn new(context: C) -> Self {
         Self {
-            rpc_module: RpcModule::new(()),
+            rpc_module: RpcModule::new(context),
         }
     }
 
-    pub fn register_rpc_method<R>(mut self) -> Result<Self, Error>
+    pub fn register_rpc_method<H, F, R>(
+        mut self,
+        method: &'static str,
+        handler: H,
+    ) -> Result<Self, Error>
     where
-        R: RpcMethod + Send,
-        R::Response: Clone + Debug + DeserializeOwned + Serialize + 'static,
+        H: Fn(RpcParameter, Arc<C>) -> F + Clone + Send + Sync + 'static,
+        F: Future<Output = R> + Send + 'static,
+        R: IntoResponse + 'static,
     {
         self.rpc_module
-            .register_async_method(R::method_name(), |parameter, _state| async move {
-                let rpc_parameter: R = parameter.parse()?;
-                match rpc_parameter.handler().await {
-                    Ok(response) => Ok(response),
-                    Err(error) => Err(ErrorObjectOwned::owned::<u8>(
-                        ErrorCode::InternalError.code(),
-                        error,
-                        None,
-                    )),
-                }
-            })
+            .register_async_method(method, handler)
             .map_err(|error| (ErrorKind::RegisterRpcMethod, error))?;
         Ok(self)
     }

@@ -5,19 +5,18 @@ pub struct SendTransaction {
     pub transaction: Transaction,
 }
 
-#[async_trait]
-impl RpcMethod for SendTransaction {
-    type Response = OrderCommitment;
+impl SendTransaction {
+    pub const METHOD_NAME: &'static str = stringify!(SendTransaction);
 
-    fn method_name() -> &'static str {
-        stringify!(SendTransaction)
-    }
-
-    async fn handler(self) -> Result<Self::Response, RpcError> {
+    pub async fn handler(
+        parameter: RpcParameter,
+        context: Arc<()>,
+    ) -> Result<OrderCommitment, RpcError> {
+        let parameter = parameter.parse::<Self>()?;
         match ClusterMetadata::get() {
             Ok(cluster_metadata) => match cluster_metadata.is_leader() {
-                true => self.leader(cluster_metadata).await,
-                false => self.follower(cluster_metadata).await,
+                true => parameter.leader_handler(cluster_metadata).await,
+                false => parameter.follower_handler(cluster_metadata).await,
             },
             Err(error) => {
                 // Return `Error::Uninitialized` to the user if the sequencer has not
@@ -29,13 +28,11 @@ impl RpcMethod for SendTransaction {
             }
         }
     }
-}
 
-impl SendTransaction {
-    async fn leader(
+    async fn leader_handler(
         self,
         cluster_metadata: ClusterMetadata,
-    ) -> Result<<Self as RpcMethod>::Response, RpcError> {
+    ) -> Result<OrderCommitment, RpcError> {
         // Issue order commitment
         let order_commitment =
             BlockMetadata::issue_order_commitment(cluster_metadata.rollup_block_number())?;
@@ -50,15 +47,18 @@ impl SendTransaction {
         Ok(order_commitment)
     }
 
-    async fn follower(
+    async fn follower_handler(
         self,
         cluster_metadata: ClusterMetadata,
-    ) -> Result<<Self as RpcMethod>::Response, RpcError> {
+    ) -> Result<OrderCommitment, RpcError> {
         let (_leader_public_key, leader_rpc_address) = cluster_metadata.leader();
         match leader_rpc_address {
             Some(rpc_address) => {
                 let client = RpcClient::new(rpc_address, 5)?;
-                client.request(self).await.map_err(|error| error.into())
+                client
+                    .request(Self::METHOD_NAME, self)
+                    .await
+                    .map_err(|error| error.into())
             }
             None => Err(Error::EmptyLeaderAddress.into()),
         }

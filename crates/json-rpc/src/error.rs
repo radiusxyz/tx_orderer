@@ -1,3 +1,5 @@
+use jsonrpsee::types::{ErrorCode, ErrorObjectOwned};
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ErrorKind {
     BuildClient,
@@ -101,5 +103,11 @@ where
 impl Into<String> for RpcError {
     fn into(self) -> String {
         self.0.to_string()
+    }
+}
+
+impl Into<ErrorObjectOwned> for RpcError {
+    fn into(self) -> ErrorObjectOwned {
+        ErrorObjectOwned::owned::<u8>(ErrorCode::InternalError.code(), self, None)
     }
 }

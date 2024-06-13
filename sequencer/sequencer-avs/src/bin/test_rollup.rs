@@ -1,7 +1,7 @@
 use std::{env, time::Duration};
 
 use database::Database;
-use json_rpc::{RpcClient, RpcMethod};
+use json_rpc::RpcClient;
 use sequencer_avs::{
     config::Config, error::Error, rpc::external::*, task::cluster_manager, types::*,
 };
@@ -95,7 +95,7 @@ async fn send_build_block(
     followers: &Vec<(PublicKey, Option<RpcAddress>)>,
     retry: usize,
     retry_interval: u64,
-) -> Result<<BuildBlock as RpcMethod>::Response, Error> {
+) -> Result<(), Error> {
     let rpc_method = BuildBlock {
         ssal_block_number,
         rollup_block_number,

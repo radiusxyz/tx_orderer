@@ -3,6 +3,7 @@ use std::env;
 use database::Database;
 use json_rpc::RpcServer;
 use seeder_avs::{config::Config, error::Error, rpc::*};
+use ssal::ethereum::seeder::rpc::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -18,10 +19,10 @@ async fn main() -> Result<(), Error> {
 
     Database::new(config.database_path())?.init();
 
-    let rpc_server_handle = RpcServer::new()
-        .register_rpc_method::<Register>()?
-        .register_rpc_method::<Deregister>()?
-        .register_rpc_method::<GetAddressList>()?
+    let rpc_server_handle = RpcServer::new(())
+        .register_rpc_method(Register::METHOD_NAME, register::handler)?
+        .register_rpc_method(Deregister::METHOD_NAME, deregister::handler)?
+        .register_rpc_method(GetAddressList::METHOD_NAME, get_address_list::handler)?
         .init(config.seeder_rpc_address())
         .await?;
 

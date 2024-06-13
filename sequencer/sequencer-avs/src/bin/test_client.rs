@@ -71,7 +71,10 @@ async fn transaction_sender(sequencer_list: SequencerList) {
 
                 let rpc_client = RpcClient::new(rpc_address.clone(), 3).unwrap();
                 let rpc_method = SendTransaction { transaction };
-                let response = rpc_client.request(rpc_method).await.unwrap();
+                let response: OrderCommitment = rpc_client
+                    .request(SendTransaction::METHOD_NAME, rpc_method)
+                    .await
+                    .unwrap();
                 tracing::info!("{:?}", response);
             });
 
@@ -79,26 +82,3 @@ async fn transaction_sender(sequencer_list: SequencerList) {
         }
     }
 }
-
-// fn cluster_manager(ssal_client: &SsalClient) {
-//     let ssal_client = ssal_client.clone();
-//     tokio::spawn(async move {
-//         ssal_client
-//             .sequencer_list_subscriber(handler)
-//             .await
-//             .unwrap()
-//     });
-// }
-
-// async fn handler(
-//     ssal_block_number: u64,
-//     sequencer_list: (Vec<PublicKey>, Vec<Option<RpcAddress>>),
-// ) {
-//     // Store the current SSAL block number.
-//     SsalBlockNumber::from(ssal_block_number).put().unwrap();
-
-//     // Store the sequencer list corresponding to the current block number.
-//     SequencerList::from(sequencer_list)
-//         .put(ssal_block_number.into())
-//         .unwrap();
-// }

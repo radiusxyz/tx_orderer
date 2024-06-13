@@ -26,7 +26,9 @@ pub fn init(
                 let rpc_method = rpc_method.clone();
                 tokio::spawn(async move {
                     let rpc_client = RpcClient::new(rpc_address, 1).unwrap();
-                    let _ = rpc_client.request(rpc_method).await;
+                    let _ = rpc_client
+                        .request::<SyncBuildBlock, ()>(SyncBuildBlock::METHOD_NAME, rpc_method)
+                        .await;
                 });
             }
         }

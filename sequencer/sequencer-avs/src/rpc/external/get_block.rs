@@ -5,16 +5,12 @@ pub struct GetBlock {
     pub rollup_block_number: RollupBlockNumber,
 }
 
-#[async_trait]
-impl RpcMethod for GetBlock {
-    type Response = Block;
+impl GetBlock {
+    pub const METHOD_NAME: &'static str = stringify!(GetBlock);
 
-    fn method_name() -> &'static str {
-        stringify!(GetBlock)
-    }
-
-    async fn handler(self) -> Result<Self::Response, RpcError> {
-        let block = Block::get(self.rollup_block_number)?;
+    pub async fn handler(parameter: RpcParameter, context: Arc<()>) -> Result<Block, RpcError> {
+        let parameter = parameter.parse::<Self>()?;
+        let block = Block::get(parameter.rollup_block_number)?;
         Ok(block)
     }
 }
