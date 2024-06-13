@@ -21,7 +21,7 @@ impl Transaction {
         transaction_order: u64,
     ) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number, transaction_order);
-        database().get(&key)
+        database()?.get(&key)
     }
 
     pub fn put(
@@ -30,7 +30,7 @@ impl Transaction {
         transaction_order: u64,
     ) -> Result<(), database::Error> {
         let key = (Self::ID, rollup_block_number, transaction_order);
-        database().put(&key, self)
+        database()?.put(&key, self)
     }
 
     pub fn new(

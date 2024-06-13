@@ -5,10 +5,6 @@ use serde::ser::Serialize;
 
 use crate::{Error, ErrorKind};
 
-/// A locking mechanism for values stored in the database.
-///
-/// This struct provides automatic persistence when mutated. When the `Lock` goes out of scope,
-/// the held value is automatically serialized and stored back to the database within the associated transaction.
 pub struct Lock<'db, V>
 where
     V: Debug + Serialize,

@@ -13,11 +13,11 @@ impl ClusterMetadata {
     const ID: &'static str = stringify!(ClusterMetadata);
 
     pub fn get() -> Result<Self, database::Error> {
-        database().get(&Self::ID)
+        database()?.get(&Self::ID)
     }
 
     pub fn put(&self) -> Result<(), database::Error> {
-        database().put(&Self::ID, self)
+        database()?.put(&Self::ID, self)
     }
 
     pub fn new(

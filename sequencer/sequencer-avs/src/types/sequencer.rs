@@ -20,12 +20,12 @@ impl SequencerList {
 
     pub fn get(ssal_block_number: SsalBlockNumber) -> Result<Self, database::Error> {
         let key = (Self::ID, ssal_block_number);
-        database().get(&key)
+        database()?.get(&key)
     }
 
     pub fn put(&self, ssal_block_number: SsalBlockNumber) -> Result<(), database::Error> {
         let key = (Self::ID, ssal_block_number);
-        database().put(&key, self)
+        database()?.put(&key, self)
     }
 
     pub fn new(public_key_list: Vec<PublicKey>, address_list: Vec<Option<RpcAddress>>) -> Self {
@@ -94,11 +94,11 @@ impl Me {
     const ID: &'static str = stringify!(Me);
 
     pub fn get() -> Result<Self, database::Error> {
-        database().get(&Self::ID)
+        database()?.get(&Self::ID)
     }
 
     pub fn put(&self) -> Result<(), database::Error> {
-        database().put(&Self::ID, self)
+        database()?.put(&Self::ID, self)
     }
 
     pub fn as_public_key(&self) -> &PublicKey {

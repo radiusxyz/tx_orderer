@@ -1,6 +1,6 @@
 use std::{mem::MaybeUninit, sync::Once};
 
-use crate::Database;
+use crate::{error::Error, Database};
 
 static mut DATABASE: MaybeUninit<Database> = MaybeUninit::uninit();
 static INIT: Once = Once::new();
@@ -15,10 +15,12 @@ impl crate::Database {
     }
 }
 
-pub fn database() -> &'static Database {
-    if INIT.is_completed() {
-        unsafe { DATABASE.assume_init_ref() }
-    } else {
-        panic!("Database has not been initialized.");
+pub fn database() -> Result<&'static Database, Error> {
+    match INIT.is_completed() {
+        true => unsafe { Ok(DATABASE.assume_init_ref()) },
+        false => Err(Error::custom(
+            crate::ErrorKind::Initialize,
+            "Database has not been initialized. Make sure to call `init()` on a `Database` instance",
+        )),
     }
 }

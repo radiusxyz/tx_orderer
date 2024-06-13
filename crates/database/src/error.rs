@@ -10,12 +10,14 @@ pub enum ErrorKind {
     SerializeValue,
     DeserializeValue,
     KeyDoesNotExist,
+    Initialize,
 }
 
 pub(crate) enum ErrorSource {
     Bincode(bincode::Error),
     RocksDB(rocksdb::Error),
     NoneType,
+    Custom(String),
 }
 
 impl From<bincode::Error> for ErrorSource {
@@ -36,6 +38,7 @@ impl std::fmt::Display for ErrorSource {
             Self::Bincode(error) => write!(f, "{}", error),
             Self::RocksDB(error) => write!(f, "{}", error),
             Self::NoneType => write!(f, "The value returned None"),
+            Self::Custom(error) => write!(f, "{}", error),
         }
     }
 }
@@ -74,5 +77,15 @@ where
 impl Error {
     pub fn kind(&self) -> ErrorKind {
         self.kind
+    }
+
+    pub fn custom<E>(kind: ErrorKind, error: E) -> Self
+    where
+        E: std::fmt::Display,
+    {
+        Self {
+            kind,
+            source: ErrorSource::Custom(error.to_string()),
+        }
     }
 }

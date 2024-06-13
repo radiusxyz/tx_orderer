@@ -62,11 +62,11 @@ impl SsalBlockNumber {
     const ID: &'static str = stringify!(SsalBlockNumber);
 
     pub fn get() -> Result<Self, database::Error> {
-        database().get(&Self::ID)
+        database()?.get(&Self::ID)
     }
 
     pub fn put(&self) -> Result<(), database::Error> {
-        database().put(&Self::ID, self)
+        database()?.put(&Self::ID, self)
     }
 }
 
@@ -86,19 +86,19 @@ impl BlockMetadata {
 
     pub fn get(rollup_block_number: RollupBlockNumber) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number);
-        database().get(&key)
+        database()?.get(&key)
     }
 
     pub fn put(&self, rollup_block_number: RollupBlockNumber) -> Result<(), database::Error> {
         let key = (Self::ID, rollup_block_number);
-        database().put(&key, self)
+        database()?.put(&key, self)
     }
 
     pub fn issue_order_commitment(
         rollup_block_number: RollupBlockNumber,
     ) -> Result<OrderCommitment, database::Error> {
         let key = (Self::ID, rollup_block_number);
-        let mut block_metadata: Lock<Self> = database().get_mut(&key)?;
+        let mut block_metadata: Lock<Self> = database()?.get_mut(&key)?;
         block_metadata.block_height += 1;
         let order_commitment =
             OrderCommitment::new(rollup_block_number, block_metadata.block_height);
@@ -119,12 +119,12 @@ impl Block {
 
     pub fn get(rollup_block_number: RollupBlockNumber) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number);
-        database().get(&key)
+        database()?.get(&key)
     }
 
     pub fn put(&self, rollup_block_number: RollupBlockNumber) -> Result<(), database::Error> {
         let key = (Self::ID, rollup_block_number);
-        database().put(&key, self)
+        database()?.put(&key, self)
     }
 
     pub fn new(capacity: usize) -> Self {
@@ -154,11 +154,11 @@ impl BlockCommitment {
 
     pub fn get(rollup_block_number: RollupBlockNumber) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number);
-        database().get(&key)
+        database()?.get(&key)
     }
 
     pub fn put(&self, rollup_block_number: RollupBlockNumber) -> Result<(), database::Error> {
         let key = (Self::ID, rollup_block_number);
-        database().put(&key, self)
+        database()?.put(&key, self)
     }
 }
