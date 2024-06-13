@@ -9,9 +9,13 @@ pub async fn handler(
         .sequencer_list
         .iter()
         .map(|sequencer_public_key| {
-            database()
-                .get::<PublicKey, RpcAddress>(sequencer_public_key)
-                .ok()
+            if let Some(database) = database().ok() {
+                database
+                    .get::<PublicKey, RpcAddress>(sequencer_public_key)
+                    .ok()
+            } else {
+                None
+            }
         })
         .collect();
     Ok(sequencer_list)
