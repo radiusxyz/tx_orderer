@@ -1,4 +1,4 @@
-use json_rpc::{RpcClient, RpcMethod};
+use json_rpc::RpcClient;
 
 use crate::ethereum::{seeder::rpc::*, types::*, Error, ErrorKind};
 
@@ -15,24 +15,21 @@ impl SeederClient {
         &self,
         public_key: PublicKey,
         sequencer_rpc_address: RpcAddress,
-    ) -> Result<<Register as RpcMethod>::Response, Error> {
+    ) -> Result<(), Error> {
         let rpc_method = Register {
             public_key,
             sequencer_rpc_address,
         };
         self.0
-            .request(rpc_method)
+            .request(Register::METHOD_NAME, rpc_method)
             .await
             .map_err(|error| (ErrorKind::RegisterSequencer, error).into())
     }
 
-    pub async fn deregister(
-        &self,
-        public_key: PublicKey,
-    ) -> Result<<Deregister as RpcMethod>::Response, Error> {
+    pub async fn deregister(&self, public_key: PublicKey) -> Result<(), Error> {
         let rpc_method = Deregister { public_key };
         self.0
-            .request(rpc_method)
+            .request(Deregister::METHOD_NAME, rpc_method)
             .await
             .map_err(|error| (ErrorKind::DeregisterSequencer, error).into())
     }
@@ -40,10 +37,10 @@ impl SeederClient {
     pub async fn get_address_list(
         &self,
         sequencer_list: Vec<PublicKey>,
-    ) -> Result<<GetAddressList as RpcMethod>::Response, Error> {
+    ) -> Result<Vec<Option<RpcAddress>>, Error> {
         let rpc_method = GetAddressList { sequencer_list };
         self.0
-            .request(rpc_method)
+            .request(GetAddressList::METHOD_NAME, rpc_method)
             .await
             .map_err(|error| (ErrorKind::GetAddressList, error).into())
     }
