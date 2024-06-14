@@ -16,6 +16,7 @@ pub enum ErrorKind {
 
 pub enum ErrorSource {
     Boxed(Box<dyn std::error::Error>),
+    Custom(String),
     JsonRPC(json_rpc::Error),
     Provider(ethers::providers::ProviderError),
     Contract(ethers::contract::ContractError<ethers::providers::Provider<ethers::providers::Http>>),
@@ -25,6 +26,7 @@ impl std::fmt::Display for ErrorSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Boxed(error) => write!(f, "{}", error),
+            Self::Custom(error) => write!(f, "{}", error),
             Self::JsonRPC(error) => write!(f, "{}", error),
             Self::Provider(error) => write!(f, "{}", error),
             Self::Contract(error) => write!(f, "{}", error),
@@ -99,6 +101,16 @@ impl Error {
         Self {
             kind,
             source: ErrorSource::Boxed(Box::new(error)),
+        }
+    }
+
+    pub fn custom<E>(kind: ErrorKind, error: E) -> Self
+    where
+        E: std::fmt::Display,
+    {
+        Self {
+            kind,
+            source: ErrorSource::Custom(error.to_string()),
         }
     }
 }
