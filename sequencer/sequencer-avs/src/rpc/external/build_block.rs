@@ -35,6 +35,7 @@ impl BuildBlock {
                 );
 
                 block_builder::init(
+                    cluster_metadata.ssal_block_number(),
                     cluster_metadata.rollup_block_number(),
                     previous_block_height,
                     true,
@@ -44,6 +45,7 @@ impl BuildBlock {
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
+                    tracing::info!("1");
                     // After updating the cluster metadata, the previous block height remains unchanged.
                     // Calling `update_cluster_metadata()` before running the syncer makes it safe to
                     // sync the previous block height.

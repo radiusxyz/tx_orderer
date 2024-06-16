@@ -22,6 +22,7 @@ impl SyncBuildBlock {
                 )?;
 
                 block_builder::init(
+                    cluster_metadata.ssal_block_number(),
                     cluster_metadata.rollup_block_number(),
                     parameter.previous_block_height,
                     false,
