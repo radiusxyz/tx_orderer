@@ -1,3 +1,9 @@
+use std::pin::Pin;
+
+use futures::{
+    future::{select_ok, Fuse},
+    FutureExt,
+};
 use jsonrpsee::{
     core::client::ClientT,
     http_client::{HttpClient, HttpClientBuilder},
@@ -66,5 +72,30 @@ impl RpcClient {
         }
 
         self.request_inner(method, parameter).await
+    }
+
+    pub async fn fetch<P, R>(
+        rpc_addresses: Vec<impl AsRef<str>>,
+        timeout: u64,
+        method: &'static str,
+        parameter: P,
+    ) -> Result<R, Error>
+    where
+        P: Clone + Serialize + Send,
+        R: DeserializeOwned,
+    {
+        let rpc_client_list: Vec<RpcClient> = rpc_addresses
+            .iter()
+            .filter_map(|rpc_address| RpcClient::new(rpc_address.as_ref(), timeout).ok())
+            .collect();
+        let fused_futures: Vec<Pin<Box<Fuse<_>>>> = rpc_client_list
+            .iter()
+            .map(|client| Box::pin(client.request::<P, R>(method, parameter.clone()).fuse()))
+            .collect();
+
+        let (rpc_response, _): (R, Vec<_>) = select_ok(fused_futures)
+            .await
+            .map_err(|_| Error::custom(ErrorKind::Fetch, "None of the requests returned `Ok`"))?;
+        Ok(rpc_response)
     }
 }
