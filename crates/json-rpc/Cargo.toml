@@ -7,6 +7,7 @@ edition = "2021"
 doctest = false
 
 [dependencies]
+futures = { workspace = true }
 hyper = "0.14.27"
 jsonrpsee = { version = "0.22", features = ["full"] }
 serde = { workspace = true }
