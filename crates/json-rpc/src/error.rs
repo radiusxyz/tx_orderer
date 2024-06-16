@@ -8,6 +8,7 @@ pub enum ErrorKind {
     ParseParameter,
     RpcMiddleware,
     BuildServer,
+    Fetch,
 }
 
 enum ErrorSource {
@@ -15,6 +16,7 @@ enum ErrorSource {
     RpcMethod(jsonrpsee::core::RegisterMethodError),
     RpcMiddleware(jsonrpsee::server::middleware::http::InvalidPath),
     RpcServer(std::io::Error),
+    Custom(String),
 }
 
 impl std::fmt::Display for ErrorSource {
@@ -24,6 +26,7 @@ impl std::fmt::Display for ErrorSource {
             Self::RpcMethod(error) => write!(f, "{}", error),
             Self::RpcMiddleware(error) => write!(f, "{}", error),
             Self::RpcServer(error) => write!(f, "{}", error),
+            Self::Custom(error) => write!(f, "{}", error),
         }
     }
 }
@@ -86,6 +89,16 @@ where
 impl Error {
     pub fn kind(&self) -> ErrorKind {
         self.kind
+    }
+
+    pub fn custom<E>(kind: ErrorKind, error: E) -> Self
+    where
+        E: std::fmt::Display,
+    {
+        Self {
+            kind,
+            source: ErrorSource::Custom(error.to_string()),
+        }
     }
 }
 
