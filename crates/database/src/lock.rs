@@ -62,6 +62,7 @@ where
                 .commit()
                 .map_err(|error| (ErrorKind::Commit, error))?;
         }
+
         Ok(())
     }
 }

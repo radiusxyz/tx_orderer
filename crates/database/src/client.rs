@@ -26,6 +26,7 @@ impl Database {
         let transaction_database =
             TransactionDB::open(&database_options, &transaction_database_options, path)
                 .map_err(|error| (ErrorKind::Open, error))?;
+
         Ok(Self {
             client: Arc::new(transaction_database),
         })
@@ -46,6 +47,7 @@ impl Database {
 
         let value: V = bincode::deserialize(value_slice.as_ref())
             .map_err(|error| (ErrorKind::DeserializeValue, error))?;
+
         Ok(value)
     }
 
@@ -65,6 +67,7 @@ impl Database {
         let value: V = bincode::deserialize(&value_vec)
             .map_err(|error| (ErrorKind::DeserializeValue, error))?;
         let locked_value = Lock::new(Some(transaction), key_vec, value);
+
         Ok(locked_value)
     }
 
@@ -84,6 +87,7 @@ impl Database {
         transaction
             .commit()
             .map_err(|error| (ErrorKind::Commit, error))?;
+
         Ok(())
     }
 
@@ -100,6 +104,7 @@ impl Database {
         transaction
             .commit()
             .map_err(|error| (ErrorKind::Commit, error))?;
+
         Ok(())
     }
 }
