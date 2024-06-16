@@ -86,7 +86,7 @@ impl RpcClient {
         R: DeserializeOwned,
     {
         let rpc_client_list: Vec<RpcClient> = rpc_addresses
-            .iter()
+            .into_iter()
             .filter_map(|rpc_address| RpcClient::new(rpc_address.as_ref(), timeout).ok())
             .collect();
         let fused_futures: Vec<Pin<Box<Fuse<_>>>> = rpc_client_list
