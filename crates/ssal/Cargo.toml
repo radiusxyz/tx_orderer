@@ -8,7 +8,9 @@ doctest = false
 
 [dependencies]
 ethers = { version = "2.0", features = ["abigen", "ws"], optional = true }
+futures = { workspace = true }
 json-rpc = { workspace = true, optional = true }
+pin-project = "1.1.5"
 serde = { workspace = true, optional = true }
 
 [features]

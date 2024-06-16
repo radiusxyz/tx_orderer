@@ -1,7 +1,6 @@
 use std::{future::Future, str::FromStr, sync::Arc};
 
 use ethers::{
-    contract::abigen,
     core::k256::ecdsa::SigningKey,
     middleware::SignerMiddleware,
     providers::{Middleware, Provider, StreamExt, Ws},
@@ -9,9 +8,11 @@ use ethers::{
     types::{Chain, H160},
 };
 
-use crate::ethereum::{seeder::SeederClient, types::*, Error, ErrorKind};
-
-abigen!(Ssal, "src/ethereum/contract/Ssal.json");
+use crate::ethereum::{
+    seeder::SeederClient,
+    types::{internal::*, *},
+    Error, ErrorKind,
+};
 
 pub struct SsalClient {
     signer: Arc<SignerMiddleware<Provider<Ws>, Wallet<SigningKey>>>,

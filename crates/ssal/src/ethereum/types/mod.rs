@@ -1,3 +1,4 @@
+mod event;
 mod public_key;
 mod rpc_address;
 mod prelude {
@@ -6,7 +7,10 @@ mod prelude {
     pub use crate::ethereum::{Error, ErrorKind};
 }
 
+pub use event::*;
 pub use public_key::*;
 pub use rpc_address::*;
 
-ethers::contract::abigen!(Ssal, "src/ethereum/contract/Ssal.json");
+pub(crate) mod internal {
+    ethers::contract::abigen!(Ssal, "src/ethereum/contract/Ssal.json");
+}
