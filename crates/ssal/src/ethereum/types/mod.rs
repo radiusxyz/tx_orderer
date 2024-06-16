@@ -8,6 +8,5 @@ mod prelude {
 
 pub use public_key::*;
 pub use rpc_address::*;
-pub use signature::*;
 
 ethers::contract::abigen!(Ssal, "src/ethereum/contract/Ssal.json");
