@@ -26,6 +26,7 @@ impl RpcClient {
             .request_timeout(Duration::from_secs(timeout))
             .build(endpoint)
             .map_err(|error| (ErrorKind::BuildClient, error))?;
+
         Ok(Self {
             http_client,
             retry: 0,
@@ -96,6 +97,7 @@ impl RpcClient {
         let (rpc_response, _): (R, Vec<_>) = select_ok(fused_futures)
             .await
             .map_err(|_| Error::custom(ErrorKind::Fetch, "None of the requests returned `Ok`"))?;
+
         Ok(rpc_response)
     }
 }

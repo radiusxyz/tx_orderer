@@ -40,6 +40,7 @@ where
         self.rpc_module
             .register_async_method(method, handler)
             .map_err(|error| (ErrorKind::RegisterRpcMethod, error))?;
+
         Ok(self)
     }
 
