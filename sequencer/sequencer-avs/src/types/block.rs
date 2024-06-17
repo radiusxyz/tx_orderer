@@ -112,10 +112,10 @@ impl BlockMetadata {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Block(Vec<Transaction>);
+pub struct RollupBlock(Vec<UserTransaction>);
 
-impl Block {
-    const ID: &'static str = stringify!(Block);
+impl RollupBlock {
+    const ID: &'static str = stringify!(RollupBlock);
 
     pub fn get(rollup_block_number: RollupBlockNumber) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number);
@@ -131,7 +131,7 @@ impl Block {
         Self(Vec::with_capacity(capacity))
     }
 
-    pub fn push(&mut self, transaction: Transaction) {
+    pub fn push(&mut self, transaction: UserTransaction) {
         self.0.push(transaction)
     }
 

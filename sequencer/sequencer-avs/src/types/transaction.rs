@@ -1,19 +1,19 @@
 use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Transaction {
+pub struct UserTransaction {
     encrypted_transaction: EncryptedTransaction,
     time_lock_puzzle: TimeLockPuzzle,
     nonce: Nonce,
 }
 
-impl AsRef<[u8]> for Transaction {
+impl AsRef<[u8]> for UserTransaction {
     fn as_ref(&self) -> &[u8] {
         self.encrypted_transaction.as_ref()
     }
 }
 
-impl Transaction {
+impl UserTransaction {
     const ID: &'static str = stringify!(Transaction);
 
     pub fn get(
