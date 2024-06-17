@@ -1,18 +1,12 @@
 use std::{future::Future, str::FromStr, sync::Arc};
 
-use ethers::{
-    contract::{stream::EventStreamMeta, LogMeta},
-    providers::{Middleware, Provider, StreamExt, Ws},
-    types::{Block, BlockNumber, Log, H160, H256},
-};
+use ethers::providers::{Middleware, Provider, StreamExt, Ws};
 
-use crate::ethereum::{types::internal::*, Error, ErrorKind};
+use crate::ethereum::{types::*, Error, ErrorKind};
 
 pub struct SsalListener {
     client: Arc<Provider<Ws>>,
     contract: Ssal<Provider<Ws>>,
-    // ssal_rpc_address: String,
-    // contract_address: H160,
 }
 
 impl SsalListener {
@@ -58,7 +52,7 @@ impl SsalListener {
 
     pub async fn event_subscriber<H, C, F, R>(&self, handler: H, context: C) -> Result<(), Error>
     where
-        H: Fn(C) -> F,
+        H: Fn(SsalEvents, C) -> F,
         C: Clone + Send + Sync,
         F: Future<Output = R> + Send,
         R: Send + 'static,
@@ -80,12 +74,12 @@ impl SsalListener {
 
         let events = self.contract.events().from_block(latest_block_number);
         let mut event_stream = events
-            .subscribe_with_meta()
+            .subscribe()
             .await
             .map_err(|error| Error::boxed(ErrorKind::EventStream, error))?;
 
         while let Some(Ok(event)) = event_stream.next().await {
-            handler(context.clone()).await;
+            handler(event, context.clone()).await;
         }
 
         Err(Error::custom(
@@ -95,51 +89,37 @@ impl SsalListener {
     }
 }
 
-// use std::{
-//     future::Future,
-//     pin::Pin,
-//     str::FromStr,
-//     sync::Arc,
-//     task::{Context, Poll},
-// };
+// #[pin_project(project = StreamInner)]
+// pub enum SsalEventStream<'a> {
+//     BlockStream(SubscriptionStream<'a, Ws, Block<H256>>),
+//     EventStream(EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>),
+// }
 
-// use ethers::{
-//     contract::{stream::EventStreamMeta, LogMeta},
-//     providers::{Middleware, Provider, SubscriptionStream, Ws},
-//     types::{Block, BlockNumber, Log, H160, H256},
-// };
-// use futures::stream::{select_all, Stream, StreamExt, TryStreamExt};
-// use pin_project::pin_project;
+// impl<'a> From<SubscriptionStream<'a, Ws, Block<H256>>> for SsalEventStream<'a> {
+//     fn from(value: SubscriptionStream<'a, Ws, Block<H256>>) -> Self {
+//         Self::BlockStream(value)
+//     }
+// }
 
-#[pin_project(project = StreamInner)]
-pub enum SsalEventStream<'a> {
-    BlockStream(SubscriptionStream<'a, Ws, Block<H256>>),
-    EventStream(EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>),
-}
+// impl<'a> From<EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>> for SsalEventStream<'a> {
+//     fn from(value: EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>) -> Self {
+//         Self::EventStream(value)
+//     }
+// }
 
-impl<'a> From<SubscriptionStream<'a, Ws, Block<H256>>> for SsalEventStream<'a> {
-    fn from(value: SubscriptionStream<'a, Ws, Block<H256>>) -> Self {
-        Self::BlockStream(value)
-    }
-}
+// impl<'a> Stream for SsalEventStream<'a> {
+//     type Item = SsalEventType;
 
-impl<'a> From<EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>> for SsalEventStream<'a> {
-    fn from(value: EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>) -> Self {
-        Self::EventStream(value)
-    }
-}
+//     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+//         match self.project() {
+//             StreamInner::BlockStream(block_stream) => block_stream
+//                 .poll_next_unpin(cx)
+//                 .map(|block| Some(SsalEventType)),
+//             StreamInner::EventStream(event_stream) => event_stream
+//                 .poll_next_unpin(cx) // Resolve
+//                 .map_ok(|(event, log), error| Some(SsalEventType)),
+//         }
+//     }
+// }
 
-impl<'a> Stream for SsalEventStream<'a> {
-    type Item = SsalEventType;
-
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        match self.project() {
-            StreamInner::BlockStream(block_stream) => block_stream
-                .poll_next_unpin(cx)
-                .map(|block| Some(SsalEventType)),
-            StreamInner::EventStream(event_stream) => event_stream
-                .poll_next_unpin(cx) // Resolve
-                .map_ok(|(event, log), error| Some(SsalEventType)),
-        }
-    }
-}
+// pub struct SsalEventType;

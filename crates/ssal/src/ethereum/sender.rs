@@ -1,22 +1,17 @@
-use std::{future::Future, str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc};
 
 use ethers::{
     core::k256::ecdsa::SigningKey,
     middleware::SignerMiddleware,
-    providers::{Middleware, Provider, StreamExt, Ws},
+    providers::{Http, Middleware, Provider},
     signers::{Signer, Wallet},
-    types::{Chain, H160},
 };
 
-use crate::ethereum::{
-    seeder::SeederClient,
-    types::{internal::*, *},
-    Error, ErrorKind,
-};
+use crate::ethereum::{seeder::SeederClient, types::*, Error, ErrorKind};
 
 pub struct SsalClient {
-    signer: Arc<SignerMiddleware<Provider<Ws>, Wallet<SigningKey>>>,
-    contract: Ssal<SignerMiddleware<Provider<Ws>, Wallet<SigningKey>>>,
+    signer: Arc<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
+    contract: Ssal<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
     cluster_id: [u8; 32],
     seeder_client: Arc<SeederClient>,
 }
@@ -45,19 +40,22 @@ impl SsalClient {
         seeder_rpc_address: impl AsRef<str>,
     ) -> Result<Self, Error> {
         // let provider = Provider::<Http>::try_from(ssal_rpc_address.as_ref())
-        let endpoint = format!("ws://{}", ssal_rpc_address.as_ref());
-        let provider = Provider::<Ws>::connect(endpoint)
-            .await
+        let endpoint = format!("http://{}", ssal_rpc_address.as_ref());
+        let provider = Provider::<Http>::try_from(endpoint)
             .map_err(|error| Error::boxed(ErrorKind::BuildSsalClient, error))?;
+
         let wallet = ssal_private_key
             .as_ref()
             .parse::<Wallet<SigningKey>>()
             .map_err(|error| Error::boxed(ErrorKind::ParsePrivateKey, error))?
             .with_chain_id(Chain::AnvilHardhat);
+
         let signer = Arc::new(SignerMiddleware::new(provider, wallet));
+
         let contract_address = H160::from_str(contract_address.as_ref())
             .map_err(|error| Error::boxed(ErrorKind::ParseContractAddress, error))?;
         let contract = Ssal::new(contract_address, signer.clone());
+
         let seeder_client = Arc::new(SeederClient::new(seeder_rpc_address.as_ref())?);
 
         Ok(Self {
@@ -68,8 +66,8 @@ impl SsalClient {
         })
     }
 
-    pub fn public_key(&self) -> PublicKey {
-        self.signer.address().into()
+    pub fn public_key(&self) -> H160 {
+        self.signer.address()
     }
 
     pub async fn get_latest_block_number(&self) -> Result<u64, Error> {
@@ -90,10 +88,11 @@ impl SsalClient {
         // The seeder must respond in order to minimize the hassle.
         self.seeder_client
             .register(
-                self.signer.address().into(),
-                sequencer_rpc_address.as_ref().into(),
+                self.signer.address(),
+                sequencer_rpc_address.as_ref().to_owned(),
             )
             .await?;
+
         self.contract
             .initialize_cluster(
                 self.signer.address(),
@@ -103,6 +102,7 @@ impl SsalClient {
             .send()
             .await
             .map_err(|error| Error::boxed(ErrorKind::InitializeCluster, error))?;
+
         Ok(())
     }
 
@@ -113,15 +113,17 @@ impl SsalClient {
         // The seeder must respond in order to minimize the hassle.
         self.seeder_client
             .register(
-                self.signer.address().into(),
-                sequencer_rpc_address.as_ref().into(),
+                self.signer.address(),
+                sequencer_rpc_address.as_ref().to_owned(),
             )
             .await?;
+
         self.contract
             .register_sequencer(self.cluster_id, self.signer.address())
             .send()
             .await
             .map_err(|error| Error::boxed(ErrorKind::RegisterSequencer, error))?;
+
         Ok(())
     }
 
@@ -131,13 +133,14 @@ impl SsalClient {
             .send()
             .await
             .map_err(|error| Error::boxed(ErrorKind::DeregisterSequencer, error))?;
+
         Ok(())
     }
 
     pub async fn get_sequencer_list(
         &self,
         block_number: u64,
-    ) -> Result<(Vec<PublicKey>, Vec<Option<RpcAddress>>), Error> {
+    ) -> Result<(Vec<H160>, Vec<Option<String>>), Error> {
         let sequencer_public_keys: [H160; 30] = self
             .contract
             .get_sequencers(self.cluster_id)
@@ -145,35 +148,16 @@ impl SsalClient {
             .call()
             .await
             .map_err(|error| Error::boxed(ErrorKind::GetSequencerList, error))?;
-        let sequencer_list: Vec<PublicKey> = sequencer_public_keys
+        let sequencer_list: Vec<H160> = sequencer_public_keys
             .into_iter()
-            .filter(|public_key| !public_key.is_zero())
-            .map(PublicKey::from)
+            .filter_map(|public_key| (!public_key.is_zero()).then_some(public_key))
             .collect();
 
         let address_list = self
             .seeder_client
             .get_address_list(sequencer_list.clone())
             .await?;
-        Ok((sequencer_list, address_list))
-    }
 
-    pub async fn block_number_subscriber<F, R, H>(&self, handler: H) -> Result<(), Error>
-    where
-        F: Future<Output = R>,
-        R: Send + 'static,
-        H: Fn(u64, SsalClient) -> F,
-    {
-        let mut block_stream = self
-            .signer
-            .subscribe_blocks()
-            .await
-            .map_err(|error| Error::boxed(ErrorKind::BlockSubscriber, error))?;
-        while let Some(block) = block_stream.next().await {
-            if let Some(block_number) = block.number {
-                handler(block_number.as_u64(), self.clone()).await;
-            }
-        }
-        Ok(())
+        Ok((sequencer_list, address_list))
     }
 }

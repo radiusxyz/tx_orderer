@@ -11,8 +11,6 @@ pub enum ErrorKind {
     RegisterSequencer,
     DeregisterSequencer,
     GetSequencerList,
-    BlockSubscriber,
-
     InitializeEventListener,
     BlockStream,
     EventStream,
