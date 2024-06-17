@@ -4,7 +4,7 @@ use crate::ethereum::types::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Deregister {
-    pub public_key: PublicKey,
+    pub public_key: H160,
 }
 
 impl Deregister {
@@ -13,7 +13,7 @@ impl Deregister {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetAddressList {
-    pub sequencer_list: Vec<PublicKey>,
+    pub sequencer_list: Vec<H160>,
 }
 
 impl GetAddressList {
@@ -22,8 +22,8 @@ impl GetAddressList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Register {
-    pub public_key: PublicKey,
-    pub sequencer_rpc_address: RpcAddress,
+    pub public_key: H160,
+    pub sequencer_rpc_address: String,
 }
 
 impl Register {
