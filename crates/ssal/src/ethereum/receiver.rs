@@ -27,10 +27,14 @@ impl SsalListener {
         Ok(Self { client, contract })
     }
 
-    pub async fn block_subscriber<H, C, F, R>(&self, handler: H, context: C) -> Result<(), Error>
+    pub async fn block_subscriber<CB, CTX, F, R>(
+        &self,
+        callback: CB,
+        context: CTX,
+    ) -> Result<(), Error>
     where
-        H: Fn(Block<H256>, C) -> F,
-        C: Clone + Send + Sync,
+        CB: Fn(Block<H256>, CTX) -> F,
+        CTX: Clone + Send + Sync,
         F: Future<Output = ()>,
         R: Send + 'static,
     {
@@ -41,7 +45,7 @@ impl SsalListener {
             .map_err(|error| (ErrorKind::BlockStream, error))?;
 
         while let Some(block) = block_stream.next().await {
-            handler(block, context.clone()).await;
+            callback(block, context.clone()).await;
         }
 
         Err(Error::custom(
@@ -50,10 +54,14 @@ impl SsalListener {
         ))
     }
 
-    pub async fn event_subscriber<H, C, F, R>(&self, handler: H, context: C) -> Result<(), Error>
+    pub async fn event_subscriber<CB, CTX, F, R>(
+        &self,
+        callback: CB,
+        context: CTX,
+    ) -> Result<(), Error>
     where
-        H: Fn(SsalEvents, C) -> F,
-        C: Clone + Send + Sync,
+        CB: Fn(SsalEvents, CTX) -> F,
+        CTX: Clone + Send + Sync,
         F: Future<Output = R> + Send,
         R: Send + 'static,
     {
@@ -79,7 +87,7 @@ impl SsalListener {
             .map_err(|error| Error::boxed(ErrorKind::EventStream, error))?;
 
         while let Some(Ok(event)) = event_stream.next().await {
-            handler(event, context.clone()).await;
+            callback(event, context.clone()).await;
         }
 
         Err(Error::custom(
