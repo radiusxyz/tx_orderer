@@ -9,6 +9,19 @@ pub struct SsalListener {
     contract: Ssal<Provider<Ws>>,
 }
 
+unsafe impl Send for SsalListener {}
+
+unsafe impl Sync for SsalListener {}
+
+impl Clone for SsalListener {
+    fn clone(&self) -> Self {
+        Self {
+            client: self.client.clone(),
+            contract: self.contract.clone(),
+        }
+    }
+}
+
 impl SsalListener {
     pub async fn init(
         ssal_rpc_address: impl AsRef<str>,
@@ -33,9 +46,9 @@ impl SsalListener {
         context: CTX,
     ) -> Result<(), Error>
     where
-        CB: Fn(Block<H256>, CTX) -> F,
+        CB: Fn(Block<H256>, CTX) -> F + Send,
         CTX: Clone + Send + Sync,
-        F: Future<Output = ()>,
+        F: Future<Output = R> + Send,
         R: Send + 'static,
     {
         let mut block_stream = self
@@ -60,7 +73,7 @@ impl SsalListener {
         context: CTX,
     ) -> Result<(), Error>
     where
-        CB: Fn(SsalEvents, CTX) -> F,
+        CB: Fn(SsalEvents, CTX) -> F + Send,
         CTX: Clone + Send + Sync,
         F: Future<Output = R> + Send,
         R: Send + 'static,
