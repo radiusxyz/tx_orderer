@@ -10,7 +10,7 @@ impl GetBlock {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<()>,
+        context: Arc<SsalClient>,
     ) -> Result<RollupBlock, RpcError> {
         let parameter = parameter.parse::<Self>()?;
         let block = RollupBlock::get(parameter.rollup_block_number)?;

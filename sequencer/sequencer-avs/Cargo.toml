@@ -18,6 +18,7 @@ path = "src/bin/sequencer.rs"
 [dependencies]
 block-commitment = { workspace = true }
 database = { workspace = true, features = ["singleton"] }
+haphazard = { workspace = true }
 json-rpc = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }

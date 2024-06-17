@@ -10,7 +10,7 @@ impl SendTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<()>,
+        context: Arc<SsalClient>,
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
         match ClusterMetadata::get() {

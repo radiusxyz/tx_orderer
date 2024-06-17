@@ -11,7 +11,7 @@ impl GetTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<()>,
+        context: Arc<SsalClient>,
     ) -> Result<UserTransaction, RpcError> {
         let parameter = parameter.parse::<Self>()?;
         let transaction =

@@ -10,7 +10,10 @@ pub struct SyncBuildBlock {
 impl SyncBuildBlock {
     pub const METHOD_NAME: &'static str = stringify!(SyncBuildBlock);
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<()>) -> Result<(), RpcError> {
+    pub async fn handler(
+        parameter: RpcParameter,
+        context: Arc<SsalClient>,
+    ) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
         match ClusterMetadata::get() {
             Ok(cluster_metadata) => {

@@ -2,9 +2,7 @@ use std::{env, io};
 
 use database::Database;
 use json_rpc::RpcServer;
-use sequencer_avs::{
-    config::Config, error::Error, rpc::external::*, task::cluster_manager, types::Me,
-};
+use sequencer_avs::{config::Config, error::Error, rpc::external::*, types::Me};
 use ssal::ethereum::SsalClient;
 
 #[tokio::main]
@@ -37,10 +35,10 @@ async fn main() -> Result<(), Error> {
     Me::from(ssal_client.public_key()).put()?;
 
     // Initialize the cluster manager
-    cluster_manager::init(&ssal_client);
+    // cluster_manager::init(&ssal_client);
 
     // Initialize JSON-RPC server.
-    let rpc_server_handle = RpcServer::new(())
+    let rpc_server_handle = RpcServer::new(ssal_client.clone())
         .register_rpc_method(BuildBlock::METHOD_NAME, BuildBlock::handler)?
         .register_rpc_method(SyncBuildBlock::METHOD_NAME, SyncBuildBlock::handler)?
         .register_rpc_method(GetBlock::METHOD_NAME, GetBlock::handler)?

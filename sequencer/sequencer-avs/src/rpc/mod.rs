@@ -4,6 +4,7 @@ pub mod util;
 pub mod prelude {
     pub use std::sync::Arc;
 
+    pub use ::ssal::ethereum::SsalClient;
     pub use database::{database, Database, Lock};
     pub use json_rpc::{types::*, RpcClient, RpcError};
     pub use serde::{Deserialize, Serialize};

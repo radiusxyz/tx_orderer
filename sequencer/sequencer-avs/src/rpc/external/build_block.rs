@@ -11,7 +11,7 @@ impl BuildBlock {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<()>,
+        context: Arc<SsalClient>,
     ) -> Result<SequencerStatus, RpcError> {
         let parameter = parameter.parse::<Self>()?;
         match ClusterMetadata::get() {

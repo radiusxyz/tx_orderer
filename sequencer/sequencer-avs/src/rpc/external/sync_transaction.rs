@@ -9,7 +9,10 @@ pub struct SyncTransaction {
 impl SyncTransaction {
     pub const METHOD_NAME: &'static str = stringify!(SyncTransaction);
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<()>) -> Result<(), RpcError> {
+    pub async fn handler(
+        parameter: RpcParameter,
+        context: Arc<SsalClient>,
+    ) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
         parameter.transaction.put(
             parameter.order_commitment.rollup_block_number(),

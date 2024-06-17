@@ -109,38 +109,3 @@ impl SsalListener {
         ))
     }
 }
-
-// #[pin_project(project = StreamInner)]
-// pub enum SsalEventStream<'a> {
-//     BlockStream(SubscriptionStream<'a, Ws, Block<H256>>),
-//     EventStream(EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>),
-// }
-
-// impl<'a> From<SubscriptionStream<'a, Ws, Block<H256>>> for SsalEventStream<'a> {
-//     fn from(value: SubscriptionStream<'a, Ws, Block<H256>>) -> Self {
-//         Self::BlockStream(value)
-//     }
-// }
-
-// impl<'a> From<EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>> for SsalEventStream<'a> {
-//     fn from(value: EventStreamMeta<'a, Ws, (SsalEvents, LogMeta), Log>) -> Self {
-//         Self::EventStream(value)
-//     }
-// }
-
-// impl<'a> Stream for SsalEventStream<'a> {
-//     type Item = SsalEventType;
-
-//     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-//         match self.project() {
-//             StreamInner::BlockStream(block_stream) => block_stream
-//                 .poll_next_unpin(cx)
-//                 .map(|block| Some(SsalEventType)),
-//             StreamInner::EventStream(event_stream) => event_stream
-//                 .poll_next_unpin(cx) // Resolve
-//                 .map_ok(|(event, log), error| Some(SsalEventType)),
-//         }
-//     }
-// }
-
-// pub struct SsalEventType;

@@ -12,9 +12,9 @@ pub fn init(
         let sequencer_list = SequencerList::get(ssal_block_number).unwrap();
 
         // Build block.
-        let mut block = Block::new(block_height as usize);
+        let mut block = RollupBlock::new(block_height as usize);
         for transaction_order in 0..block_height {
-            match Transaction::get(rollup_block_number, transaction_order) {
+            match UserTransaction::get(rollup_block_number, transaction_order) {
                 Ok(transaction) => block.push(transaction),
                 Err(error) => {
                     if error.kind() == database::ErrorKind::KeyDoesNotExist {
@@ -25,16 +25,16 @@ pub fn init(
                         };
 
                         // Get the first OK response from the sequencer list.
-                        let transaction: Transaction = RpcClient::fetch(
-                            sequencer_list.address(),
-                            3,
-                            GetTransaction::METHOD_NAME,
-                            rpc_method,
-                        )
-                        .await
-                        .unwrap();
+                        // let transaction: UserTransaction = RpcClient::fetch(
+                        //     sequencer_list.address(),
+                        //     3,
+                        //     GetTransaction::METHOD_NAME,
+                        //     rpc_method,
+                        // )
+                        // .await
+                        // .unwrap();
 
-                        block.push(transaction);
+                        // block.push(transaction);
                     } else {
                         // Unlikely.
                         tracing::error!("{}", error);
