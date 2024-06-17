@@ -3,20 +3,15 @@ use super::prelude::*;
 pub async fn handler(
     parameter: RpcParameter,
     _context: Arc<()>,
-) -> Result<Vec<Option<RpcAddress>>, RpcError> {
+) -> Result<Vec<Option<String>>, RpcError> {
     let parameter = parameter.parse::<GetAddressList>()?;
-    let sequencer_list: Vec<Option<RpcAddress>> = parameter
+    let database = database()?;
+
+    let sequencer_list: Vec<Option<String>> = parameter
         .sequencer_list
         .iter()
-        .map(|sequencer_public_key| {
-            if let Some(database) = database().ok() {
-                database
-                    .get::<PublicKey, RpcAddress>(sequencer_public_key)
-                    .ok()
-            } else {
-                None
-            }
-        })
+        .map(|sequencer_public_key| database.get::<H160, String>(sequencer_public_key).ok())
         .collect();
+
     Ok(sequencer_list)
 }
