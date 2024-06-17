@@ -2,7 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendTransaction {
-    pub transaction: Transaction,
+    pub transaction: UserTransaction,
 }
 
 impl SendTransaction {

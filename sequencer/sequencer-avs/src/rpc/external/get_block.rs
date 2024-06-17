@@ -8,9 +8,12 @@ pub struct GetBlock {
 impl GetBlock {
     pub const METHOD_NAME: &'static str = stringify!(GetBlock);
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<()>) -> Result<Block, RpcError> {
+    pub async fn handler(
+        parameter: RpcParameter,
+        context: Arc<()>,
+    ) -> Result<RollupBlock, RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        let block = Block::get(parameter.rollup_block_number)?;
+        let block = RollupBlock::get(parameter.rollup_block_number)?;
         Ok(block)
     }
 }
