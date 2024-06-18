@@ -1,2 +1,2 @@
-database_path = "/Users/kanet/databases/seeder-avs"
+database_path = "/home/kanet/databases/seeder_avs"
 seeder_rpc_address = "127.0.0.1:3000"
