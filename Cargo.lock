@@ -2041,11 +2041,12 @@ dependencies = [
 name = "json-rpc"
 version = "0.1.0"
 dependencies = [
- "async-trait",
+ "futures",
  "hyper 0.14.28",
  "jsonrpsee",
  "serde",
  "serde_json",
+ "tokio",
  "tower",
  "tower-http",
 ]
@@ -3527,7 +3528,6 @@ dependencies = [
 name = "seeder-avs"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "database",
  "json-rpc",
  "reqwest 0.12.4",
@@ -3582,9 +3582,9 @@ checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 name = "sequencer-avs"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "block-commitment",
  "database",
+ "futures",
  "json-rpc",
  "rand",
  "serde",
@@ -3826,7 +3826,9 @@ name = "ssal"
 version = "0.1.0"
 dependencies = [
  "ethers",
+ "futures",
  "json-rpc",
+ "pin-project",
  "serde",
 ]
 
