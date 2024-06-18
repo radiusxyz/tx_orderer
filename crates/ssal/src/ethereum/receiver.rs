@@ -1,6 +1,17 @@
-use std::{future::Future, str::FromStr, sync::Arc};
+use std::{
+    future::Future,
+    pin::Pin,
+    str::FromStr,
+    sync::Arc,
+    task::{Context, Poll},
+};
 
-use ethers::providers::{Middleware, Provider, StreamExt, Ws};
+use ethers::{
+    contract::{stream::EventStream, ContractError, LogMeta},
+    providers::{Middleware, Provider, StreamExt, SubscriptionStream, Ws},
+};
+use futures::{stream::select_all, Stream};
+use pin_project::pin_project;
 
 use crate::ethereum::{types::*, Error, ErrorKind};
 
@@ -40,43 +51,11 @@ impl SsalListener {
         Ok(Self { client, contract })
     }
 
-    pub async fn block_subscriber<CB, CTX, F, R>(
-        &self,
-        callback: CB,
-        context: CTX,
-    ) -> Result<(), Error>
+    pub async fn with_callback<CB, CTX, F>(&self, callback: CB, context: CTX) -> Result<(), Error>
     where
-        CB: Fn(Block<H256>, CTX) -> F + Send,
+        CB: Fn(SsalEventType, CTX) -> F + Send,
         CTX: Clone + Send + Sync,
-        F: Future<Output = R> + Send,
-        R: Send + 'static,
-    {
-        let mut block_stream = self
-            .client
-            .subscribe_blocks()
-            .await
-            .map_err(|error| (ErrorKind::BlockStream, error))?;
-
-        while let Some(block) = block_stream.next().await {
-            callback(block, context.clone()).await;
-        }
-
-        Err(Error::custom(
-            ErrorKind::WebsocketDisconnected,
-            "Block stream returned None",
-        ))
-    }
-
-    pub async fn event_subscriber<CB, CTX, F, R>(
-        &self,
-        callback: CB,
-        context: CTX,
-    ) -> Result<(), Error>
-    where
-        CB: Fn(SsalEvents, CTX) -> F + Send,
-        CTX: Clone + Send + Sync,
-        F: Future<Output = R> + Send,
-        R: Send + 'static,
+        F: Future<Output = ()> + Send,
     {
         let latest_block_number = self
             .client
@@ -93,19 +72,84 @@ impl SsalListener {
                 "Cannot get the block number of a pending block",
             ))?;
 
-        let events = self.contract.events().from_block(latest_block_number);
-        let mut event_stream = events
-            .subscribe()
+        let block_stream: SsalEventStream = self
+            .client
+            .subscribe_blocks()
             .await
-            .map_err(|error| Error::boxed(ErrorKind::EventStream, error))?;
+            .map_err(|error| (ErrorKind::BlockStream, error))?
+            .into();
 
-        while let Some(Ok(event)) = event_stream.next().await {
+        let events = self.contract.events().from_block(latest_block_number);
+        let event_stream: SsalEventStream = events
+            .subscribe_with_meta()
+            .await
+            .map_err(|error| Error::boxed(ErrorKind::EventStream, error))?
+            .into();
+
+        let mut ssal_event_stream = select_all(vec![block_stream, event_stream]);
+        while let Some(event) = ssal_event_stream.next().await {
             callback(event, context.clone()).await;
         }
 
-        Err(Error::custom(
-            ErrorKind::WebsocketDisconnected,
-            "Event stream returned None",
-        ))
+        Ok(())
+    }
+}
+
+#[pin_project(project = StreamInner)]
+enum SsalEventStream<'stream> {
+    Block(SubscriptionStream<'stream, Ws, Block<H256>>),
+    Event(
+        EventStream<
+            'stream,
+            SubscriptionStream<'stream, Ws, Log>,
+            (SsalEvents, LogMeta),
+            ContractError<Provider<Ws>>,
+        >,
+    ),
+}
+
+impl<'stream> From<SubscriptionStream<'stream, Ws, Block<H256>>> for SsalEventStream<'stream> {
+    fn from(value: SubscriptionStream<'stream, Ws, Block<H256>>) -> Self {
+        Self::Block(value)
+    }
+}
+
+impl<'stream>
+    From<
+        EventStream<
+            'stream,
+            SubscriptionStream<'stream, Ws, Log>,
+            (SsalEvents, LogMeta),
+            ContractError<Provider<Ws>>,
+        >,
+    > for SsalEventStream<'stream>
+{
+    fn from(
+        value: EventStream<
+            'stream,
+            SubscriptionStream<'stream, Ws, Log>,
+            (SsalEvents, LogMeta),
+            ContractError<Provider<Ws>>,
+        >,
+    ) -> Self {
+        Self::Event(value)
+    }
+}
+
+impl<'stream> Stream for SsalEventStream<'stream> {
+    type Item = SsalEventType;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        match self.project() {
+            StreamInner::Block(stream) => stream
+                .poll_next_unpin(cx)
+                .map(|output| output.map(SsalEventType::from)),
+            StreamInner::Event(stream) => stream.poll_next_unpin(cx).map(|output| {
+                output.map(|output| match output {
+                    Ok(response) => SsalEventType::from(response),
+                    Err(error) => SsalEventType::from(error),
+                })
+            }),
+        }
     }
 }
