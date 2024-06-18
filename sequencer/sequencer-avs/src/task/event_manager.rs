@@ -10,16 +10,19 @@ pub fn init(config: &Config, context: ()) {
 
     tokio::spawn(async move {
         loop {
-            let event_listener = SsalListener::init(&ssal_rpc_address, &contract_address)
-                .await
-                .unwrap();
+            let event_listener: Option<SsalListener> =
+                SsalListener::init(&ssal_rpc_address, &contract_address)
+                    .await
+                    .ok();
 
-            event_listener
-                .with_callback(event_handler, context.clone())
-                .await
-                .unwrap_or_else(|error| {
-                    tracing::error!("{}", error);
-                });
+            if let Some(event_listener) = event_listener {
+                event_listener
+                    .with_callback(event_handler, context.clone())
+                    .await
+                    .unwrap_or_else(|error| {
+                        tracing::error!("{}", error);
+                    });
+            }
 
             tracing::error!("SsalListener disconnected. Retrying..");
             sleep(Duration::from_secs(3)).await;
