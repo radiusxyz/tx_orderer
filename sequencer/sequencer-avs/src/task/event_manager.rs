@@ -3,7 +3,7 @@ use tokio::time::{sleep, Duration};
 
 use crate::{config::Config, error::Error, types::*};
 
-pub async fn init(config: &Config, context: &SsalClient) -> Result<(), Error> {
+pub fn init(config: &Config, context: ()) {
     let ssal_rpc_address = config.ssal_rpc_address.clone();
     let contract_address = config.contract_address.clone();
     let context = context.clone();
@@ -14,57 +14,37 @@ pub async fn init(config: &Config, context: &SsalClient) -> Result<(), Error> {
                 .await
                 .unwrap();
 
-            initialize_block_subscriber(event_listener.clone(), context.clone());
-
-            initialize_event_subscriber(event_listener.clone(), context.clone());
+            event_listener
+                .with_callback(event_handler, context.clone())
+                .await
+                .unwrap_or_else(|error| {
+                    tracing::error!("{}", error);
+                });
 
             tracing::error!("SsalListener disconnected. Retrying..");
             sleep(Duration::from_secs(3)).await;
         }
     });
-
-    Ok(())
 }
 
-fn initialize_block_subscriber(event_listener: SsalListener, context: SsalClient) {
-    tokio::spawn(async move {
-        event_listener
-            .block_subscriber(on_new_block, context.clone())
-            .await
-            .unwrap_or_else(|error| tracing::error!("{}", error));
-    });
-}
-
-fn initialize_event_subscriber(event_listener: SsalListener, context: SsalClient) {
-    let event_listener = event_listener.clone();
-
-    tokio::spawn(async move {
-        event_listener
-            .event_subscriber(on_new_event, context.clone())
-            .await
-            .unwrap_or_else(|error| tracing::error!("{}", error));
-    });
-}
-
-async fn on_new_block(block: Block<H256>, context: SsalClient) {
-    if let Some(block_number) = block.number {
-        let block_number = block_number.as_u64();
-        tracing::info!("{}", block_number);
-
-        match context.get_sequencer_list(block_number).await {
-            Ok(sequencer_list) => {
-                SsalBlockNumber::from(block_number)
-                    .put()
-                    .unwrap_or_else(|error| tracing::error!("{}", error));
-                SequencerList::from(sequencer_list)
-                    .put(block_number.into())
-                    .unwrap_or_else(|error| tracing::error!("{}", error))
-            }
-            Err(error) => tracing::error!("{}", error),
+async fn event_handler(event: SsalEventType, context: ()) {
+    match event {
+        SsalEventType::NewBlock(block) => on_new_block(block, ()).await,
+        SsalEventType::InitializeCluster((event, _log)) => {
+            on_initialize_cluster(event, context).await
         }
+        SsalEventType::ContractError(error) => {
+            tracing::warn!("{:?}", error)
+        }
+        _ => {}
     }
 }
 
-async fn on_new_event(event: SsalEvents, context: SsalClient) {
-    //
+async fn on_new_block(block: Block<H256>, context: ()) {
+    let block_number = block.number.unwrap();
+    tracing::info!("{}", block_number);
+}
+
+async fn on_initialize_cluster(event: InitializeClusterEventFilter, context: ()) {
+    tracing::info!("Cluster ID: {:?}", event.cluster_id)
 }
