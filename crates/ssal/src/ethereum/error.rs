@@ -1,28 +1,33 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ErrorKind {
     BuildSeederClient,
-    GetAddressList,
-    ParsePublicKey,
-    BuildSsalClient,
-    ParsePrivateKey,
-    ParseContractAddress,
-    GetBlockNumber,
     InitializeCluster,
     RegisterSequencer,
     DeregisterSequencer,
-    GetSequencerList,
-    InitializeEventListener,
+    RegisterBlockCommitment,
+    GetSequencerRpcUrl,
+
+    ParseRpcUrl,
+    ParseContractAddress,
+    ParseSequencerAddress,
+    ParseRollupAddress,
+    ParseClusterID,
+    Keystore,
+    ConnectEventListener,
     BlockStream,
-    EventStream,
-    WebsocketDisconnected,
+    InitializeClusterEventStream,
+    BlockCommitmentEventStream,
+    EventListener,
 }
 
 pub enum ErrorSource {
     Boxed(Box<dyn std::error::Error>),
     Custom(String),
     JsonRPC(json_rpc::Error),
-    Provider(ethers::providers::ProviderError),
-    Contract(ethers::contract::ContractError<ethers::providers::Provider<ethers::providers::Http>>),
+    LocalSigner(alloy::signers::local::LocalSignerError),
+    Hex(alloy::hex::FromHexError),
+    Contract(alloy::contract::Error),
+    Transport(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
 }
 
 impl std::fmt::Display for ErrorSource {
@@ -31,8 +36,10 @@ impl std::fmt::Display for ErrorSource {
             Self::Boxed(error) => write!(f, "{}", error),
             Self::Custom(error) => write!(f, "{}", error),
             Self::JsonRPC(error) => write!(f, "{}", error),
-            Self::Provider(error) => write!(f, "{}", error),
+            Self::LocalSigner(error) => write!(f, "{}", error),
+            Self::Hex(error) => write!(f, "{}", error),
             Self::Contract(error) => write!(f, "{}", error),
+            Self::Transport(error) => write!(f, "{}", error),
         }
     }
 }
@@ -43,21 +50,27 @@ impl From<json_rpc::Error> for ErrorSource {
     }
 }
 
-impl From<ethers::providers::ProviderError> for ErrorSource {
-    fn from(value: ethers::providers::ProviderError) -> Self {
-        Self::Provider(value)
+impl From<alloy::signers::local::LocalSignerError> for ErrorSource {
+    fn from(value: alloy::signers::local::LocalSignerError) -> Self {
+        Self::LocalSigner(value)
     }
 }
 
-impl From<ethers::contract::ContractError<ethers::providers::Provider<ethers::providers::Http>>>
-    for ErrorSource
-{
-    fn from(
-        value: ethers::contract::ContractError<
-            ethers::providers::Provider<ethers::providers::Http>,
-        >,
-    ) -> Self {
+impl From<alloy::hex::FromHexError> for ErrorSource {
+    fn from(value: alloy::hex::FromHexError) -> Self {
+        Self::Hex(value)
+    }
+}
+
+impl From<alloy::contract::Error> for ErrorSource {
+    fn from(value: alloy::contract::Error) -> Self {
         Self::Contract(value)
+    }
+}
+
+impl From<alloy::transports::RpcError<alloy::transports::TransportErrorKind>> for ErrorSource {
+    fn from(value: alloy::transports::RpcError<alloy::transports::TransportErrorKind>) -> Self {
+        Self::Transport(value)
     }
 }
 
@@ -65,6 +78,8 @@ pub struct Error {
     kind: ErrorKind,
     source: ErrorSource,
 }
+
+unsafe impl Send for Error {}
 
 impl std::fmt::Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

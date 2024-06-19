@@ -7,11 +7,12 @@ edition = "2021"
 doctest = false
 
 [dependencies]
-ethers = { version = "2.0", features = ["abigen", "ws"], optional = true }
+alloy = { version = "0.1.1", features = ["full", "signer-keystore"], optional = true }
 futures = { workspace = true }
 json-rpc = { workspace = true, optional = true }
 pin-project = "1.1.5"
+rand = { workspace = true }
 serde = { workspace = true, optional = true }
 
 [features]
-ethereum = ["ethers", "json-rpc", "serde"]
+ethereum = ["alloy", "json-rpc", "serde"]
