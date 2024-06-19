@@ -1,5 +1,5 @@
 pub mod deregister;
-pub mod get_address_list;
+pub mod get_sequencer_url_list;
 pub mod register;
 mod prelude {
     pub use std::sync::Arc;

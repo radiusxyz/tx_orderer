@@ -24,7 +24,7 @@ async fn main() -> Result<(), Error> {
         .register_rpc_method(Deregister::METHOD_NAME, deregister::handler)?
         .register_rpc_method(
             GetSequencerRpcUrlList::METHOD_NAME,
-            get_address_list::handler,
+            get_sequencer_url_list::handler,
         )?
         .init(config.seeder_rpc_address())
         .await?;
