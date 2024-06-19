@@ -8,7 +8,7 @@ database = { workspace = true, features = ["singleton"] }
 json-rpc = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
-ssal = { workspace = true, features = ["ethereum"] }
+ssal = { workspace = true, features = ["avs"] }
 tokio = { workspace = true, features = ["full"] }
 toml = { workspace = true }
 tracing = { workspace = true }
