@@ -4,8 +4,8 @@ use super::prelude::*;
 pub struct ClusterMetadata {
     ssal_block_number: SsalBlockNumber,
     rollup_block_number: RollupBlockNumber,
-    leader: (H160, Option<String>),
-    followers: Vec<(H160, Option<String>)>,
+    leader: (Address, Option<String>),
+    followers: Vec<(Address, Option<String>)>,
     is_leader: bool,
 }
 
@@ -23,8 +23,8 @@ impl ClusterMetadata {
     pub fn new(
         ssal_block_number: SsalBlockNumber,
         rollup_block_number: RollupBlockNumber,
-        leader: (H160, Option<String>),
-        followers: Vec<(H160, Option<String>)>,
+        leader: (Address, Option<String>),
+        followers: Vec<(Address, Option<String>)>,
         is_leader: bool,
     ) -> Self {
         Self {
@@ -44,19 +44,19 @@ impl ClusterMetadata {
         self.rollup_block_number
     }
 
-    pub fn leader(&self) -> &(H160, Option<String>) {
+    pub fn leader(&self) -> &(Address, Option<String>) {
         &self.leader
     }
 
-    pub fn into_leader(self) -> (H160, Option<String>) {
+    pub fn into_leader(self) -> (Address, Option<String>) {
         self.leader
     }
 
-    pub fn followers(&self) -> &Vec<(H160, Option<String>)> {
+    pub fn followers(&self) -> &Vec<(Address, Option<String>)> {
         &self.followers
     }
 
-    pub fn into_followers(self) -> Vec<(H160, Option<String>)> {
+    pub fn into_followers(self) -> Vec<(Address, Option<String>)> {
         self.followers
     }
 

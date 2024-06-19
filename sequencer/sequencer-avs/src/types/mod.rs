@@ -3,9 +3,9 @@ mod cluster;
 mod sequencer;
 mod transaction;
 mod prelude {
-    pub use ::ssal::ethereum::types::*;
     pub use database::{database, Lock};
     pub use serde::{Deserialize, Serialize};
+    pub use ssal::avs::types::*;
 
     pub use crate::types::*;
 }

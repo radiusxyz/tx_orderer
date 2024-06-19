@@ -1,4 +1,4 @@
-use ::ssal::ethereum::{types::*, SsalClient, SsalListener};
+use ssal::avs::{types::*, SsalClient, SsalEventListener};
 use tokio::time::{sleep, Duration};
 
 use crate::{config::Config, error::Error, types::*};

@@ -17,7 +17,7 @@ pub struct Config {
     pub ssal_rpc_address: String,
     pub ssal_private_key: String,
     pub contract_address: String,
-    pub cluster_id: [u8; 32],
+    pub cluster_id: String,
     pub seeder_rpc_address: String,
 }
 

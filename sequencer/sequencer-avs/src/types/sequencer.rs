@@ -7,10 +7,10 @@ pub enum SequencerStatus {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SequencerList(Vec<(H160, Option<String>)>);
+pub struct SequencerList(Vec<(Address, Option<String>)>);
 
-impl From<(Vec<H160>, Vec<Option<String>>)> for SequencerList {
-    fn from(value: (Vec<H160>, Vec<Option<String>>)) -> Self {
+impl From<(Vec<Address>, Vec<Option<String>>)> for SequencerList {
+    fn from(value: (Vec<Address>, Vec<Option<String>>)) -> Self {
         Self(std::iter::zip(value.0, value.1).collect())
     }
 }
@@ -28,7 +28,7 @@ impl SequencerList {
         database()?.put(&key, self)
     }
 
-    pub fn new(public_key_list: Vec<H160>, address_list: Vec<Option<String>>) -> Self {
+    pub fn new(public_key_list: Vec<Address>, address_list: Vec<Option<String>>) -> Self {
         Self(
             public_key_list
                 .into_iter()
@@ -41,39 +41,39 @@ impl SequencerList {
         self.0.len()
     }
 
-    pub fn iter(&self) -> core::slice::Iter<(H160, Option<String>)> {
+    pub fn iter(&self) -> core::slice::Iter<(Address, Option<String>)> {
         self.0.iter()
     }
 
-    pub fn into_iter(self) -> std::vec::IntoIter<(H160, Option<String>)> {
+    pub fn into_iter(self) -> std::vec::IntoIter<(Address, Option<String>)> {
         self.0.into_iter()
     }
 
     pub fn split_leader_from_followers(
         self,
         leader_index: usize,
-    ) -> ((H160, Option<String>), Vec<(H160, Option<String>)>) {
+    ) -> ((Address, Option<String>), Vec<(Address, Option<String>)>) {
         let mut inner = self.into_inner();
         let leader = inner.remove(leader_index);
         (leader, inner)
     }
 
-    fn into_inner(self) -> Vec<(H160, Option<String>)> {
+    fn into_inner(self) -> Vec<(Address, Option<String>)> {
         self.0
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Me(H160);
+pub struct Me(Address);
 
-impl std::cmp::PartialEq<H160> for Me {
-    fn eq(&self, other: &H160) -> bool {
+impl std::cmp::PartialEq<Address> for Me {
+    fn eq(&self, other: &Address) -> bool {
         &self.0 == other
     }
 }
 
-impl From<H160> for Me {
-    fn from(value: H160) -> Self {
+impl From<Address> for Me {
+    fn from(value: Address) -> Self {
         Self(value)
     }
 }
@@ -89,11 +89,11 @@ impl Me {
         database()?.put(&Self::ID, self)
     }
 
-    pub fn as_public_key(&self) -> &H160 {
+    pub fn as_public_key(&self) -> &Address {
         &self.0
     }
 
-    pub fn into_public_key(self) -> H160 {
+    pub fn into_public_key(self) -> Address {
         self.0
     }
 }

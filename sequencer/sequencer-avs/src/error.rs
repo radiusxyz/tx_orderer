@@ -4,7 +4,7 @@ pub enum Error {
     ParseConfig(toml::de::Error),
     Database(database::Error),
     JsonRPC(json_rpc::Error),
-    Ssal(ssal::ethereum::Error),
+    Ssal(ssal::avs::Error),
     Uninitialized,
     EmptyLeaderAddress,
     UnresponsiveFollowers,
@@ -33,8 +33,8 @@ impl From<json_rpc::Error> for Error {
     }
 }
 
-impl From<ssal::ethereum::Error> for Error {
-    fn from(value: ssal::ethereum::Error) -> Self {
+impl From<ssal::avs::Error> for Error {
+    fn from(value: ssal::avs::Error) -> Self {
         Self::Ssal(value)
     }
 }
