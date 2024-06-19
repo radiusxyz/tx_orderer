@@ -9,10 +9,10 @@ doctest = false
 [dependencies]
 alloy = { version = "0.1.1", features = ["full", "signer-keystore"], optional = true }
 futures = { workspace = true }
-json-rpc = { workspace = true, optional = true }
+json-rpc = { workspace = true }
 pin-project = "1.1.5"
 rand = { workspace = true }
-serde = { workspace = true, optional = true }
+serde = { workspace = true }
 
 [features]
-ethereum = ["alloy", "json-rpc", "serde"]
+avs = ["alloy"]

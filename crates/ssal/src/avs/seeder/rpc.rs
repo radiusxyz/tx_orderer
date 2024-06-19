@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::ethereum::types::*;
+use crate::avs::types::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Register {

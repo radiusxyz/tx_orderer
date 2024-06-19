@@ -15,7 +15,7 @@ use futures::{stream::select_all, Future, Stream, StreamExt, TryStreamExt};
 use pin_project::pin_project;
 
 use super::types::Ssal::{self, BlockCommitmentEvent, InitializeClusterEvent};
-use crate::ethereum::{types::SsalEventType, Error, ErrorKind};
+use crate::avs::{types::SsalEventType, Error, ErrorKind};
 
 pub struct SsalEventListener {
     provider: RootProvider<PubSubFrontend>,

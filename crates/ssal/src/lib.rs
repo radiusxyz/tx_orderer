@@ -1,2 +1,2 @@
-#[cfg(feature = "ethereum")]
-pub mod ethereum;
+#[cfg(feature = "avs")]
+pub mod avs;

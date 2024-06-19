@@ -11,7 +11,7 @@ use alloy::{
     transports::http::{Client, Http},
 };
 
-use crate::ethereum::{seeder::SeederClient, types::*, Error, ErrorKind};
+use crate::avs::{seeder::SeederClient, types::*, Error, ErrorKind};
 
 pub struct SsalClient {
     provider: FillProvider<

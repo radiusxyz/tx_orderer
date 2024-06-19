@@ -9,7 +9,7 @@ sol!(
     #[allow(missing_docs)]
     #[sol(rpc)]
     Ssal,
-    "src/ethereum/contract/Ssal.json"
+    "src/avs/contract/Ssal.json"
 );
 
 pub enum SsalEventType {

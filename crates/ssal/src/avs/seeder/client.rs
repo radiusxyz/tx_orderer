@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use json_rpc::RpcClient;
 
-use crate::ethereum::{seeder::rpc::*, types::*, Error, ErrorKind};
+use crate::avs::{seeder::rpc::*, types::*, Error, ErrorKind};
 
 pub struct SeederClient(Arc<RpcClient>);
 
