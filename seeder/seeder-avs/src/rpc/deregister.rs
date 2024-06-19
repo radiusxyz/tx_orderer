@@ -5,6 +5,6 @@ pub async fn handler(parameter: RpcParameter, _context: Arc<()>) -> Result<(), R
     tracing::info!("{:?}", parameter);
 
     database()?
-        .delete(&parameter.public_key)
+        .delete(&parameter.sequencer_address)
         .map_err(|error| error.into())
 }

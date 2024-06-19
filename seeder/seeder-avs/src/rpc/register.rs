@@ -4,9 +4,9 @@ pub async fn handler(parameter: RpcParameter, _context: Arc<()>) -> Result<(), R
     let parameter = parameter.parse::<Register>()?;
     tracing::info!("{:?}", parameter);
 
-    health_check(&parameter.sequencer_rpc_address).await?;
+    health_check(&parameter.sequencer_rpc_url).await?;
 
     database()?
-        .put(&parameter.public_key, &parameter.sequencer_rpc_address)
+        .put(&parameter.sequencer_address, &parameter.sequencer_rpc_url)
         .map_err(|error| error.into())
 }

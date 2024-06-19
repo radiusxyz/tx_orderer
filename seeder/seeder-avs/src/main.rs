@@ -22,7 +22,10 @@ async fn main() -> Result<(), Error> {
     let rpc_server_handle = RpcServer::new(())
         .register_rpc_method(Register::METHOD_NAME, register::handler)?
         .register_rpc_method(Deregister::METHOD_NAME, deregister::handler)?
-        .register_rpc_method(GetAddressList::METHOD_NAME, get_address_list::handler)?
+        .register_rpc_method(
+            GetSequencerRpcUrlList::METHOD_NAME,
+            get_address_list::handler,
+        )?
         .init(config.seeder_rpc_address())
         .await?;
 
