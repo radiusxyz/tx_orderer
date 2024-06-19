@@ -1,5 +1,5 @@
 # Sequencer
-database_path = "/Users/kanet/databases/test-rollup"
+database_path = "/home/kanet/databases/test_rollup"
 sequencer_rpc_address = ""
 
 # SSAL

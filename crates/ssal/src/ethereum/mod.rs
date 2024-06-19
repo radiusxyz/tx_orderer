@@ -1,9 +1,9 @@
+mod client;
 mod error;
-mod receiver;
+mod event;
 pub mod seeder;
-mod sender;
 pub mod types;
 
+pub use client::SsalClient;
 pub use error::{Error, ErrorKind};
-pub use receiver::SsalListener;
-pub use sender::SsalClient;
+pub use event::SsalEventListener;

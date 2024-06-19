@@ -1,5 +1,5 @@
 # Sequencer
-database_path = "/Users/kanet/databases/sequencer_3"
+database_path = "/home/kanet/databases/sequencer_3"
 sequencer_rpc_address = "127.0.0.1:8003"
 
 # SSAL

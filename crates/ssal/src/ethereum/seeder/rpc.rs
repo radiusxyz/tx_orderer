@@ -3,8 +3,18 @@ use serde::{Deserialize, Serialize};
 use crate::ethereum::types::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Register {
+    pub sequencer_address: Address,
+    pub sequencer_rpc_url: String,
+}
+
+impl Register {
+    pub const METHOD_NAME: &'static str = stringify!(Register);
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Deregister {
-    pub public_key: H160,
+    pub sequencer_address: Address,
 }
 
 impl Deregister {
@@ -12,20 +22,10 @@ impl Deregister {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetAddressList {
-    pub sequencer_list: Vec<H160>,
+pub struct GetSequencerRpcUrlList {
+    pub sequencer_address_list: Vec<Address>,
 }
 
-impl GetAddressList {
+impl GetSequencerRpcUrlList {
     pub const METHOD_NAME: &'static str = stringify!(GetAddressList);
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Register {
-    pub public_key: H160,
-    pub sequencer_rpc_address: String,
-}
-
-impl Register {
-    pub const METHOD_NAME: &'static str = stringify!(Register);
 }

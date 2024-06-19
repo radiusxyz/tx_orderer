@@ -20,11 +20,10 @@ pub struct RpcClient {
 }
 
 impl RpcClient {
-    pub fn new(rpc_address: impl AsRef<str>, timeout: u64) -> Result<Self, Error> {
-        let endpoint = format!("http://{}", rpc_address.as_ref());
+    pub fn new(rpc_url: impl AsRef<str>, timeout: u64) -> Result<Self, Error> {
         let http_client = HttpClientBuilder::new()
             .request_timeout(Duration::from_secs(timeout))
-            .build(endpoint)
+            .build(rpc_url.as_ref())
             .map_err(|error| (ErrorKind::BuildClient, error))?;
 
         Ok(Self {
