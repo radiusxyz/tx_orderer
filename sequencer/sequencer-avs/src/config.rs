@@ -10,15 +10,17 @@ use crate::error::Error;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     // Sequencer
-    pub database_path: PathBuf,
-    pub sequencer_rpc_address: String,
-
+    database_path: PathBuf,
+    sequencer_rpc_url: String,
     // SSAL
-    pub ssal_rpc_address: String,
-    pub ssal_private_key: String,
-    pub contract_address: String,
-    pub cluster_id: String,
-    pub seeder_rpc_address: String,
+    ethereum_rpc_url: String,
+    ethereum_websocket_url: String,
+    keystore_path: String,
+    ssal_contract_address: String,
+    // TODO: Uncomment after EigenLayer integration
+    // pub avs_contract_address: String,
+    cluster_id: String,
+    seeder_rpc_address: String,
 }
 
 impl Config {
@@ -26,5 +28,37 @@ impl Config {
         let config_string = fs::read_to_string(path).map_err(Error::OpenConfig)?;
         let config: Self = toml::from_str(&config_string).map_err(Error::ParseConfig)?;
         Ok(config)
+    }
+
+    pub fn database_path(&self) -> &PathBuf {
+        &self.database_path
+    }
+
+    pub fn sequencer_rpc_url(&self) -> &String {
+        &self.sequencer_rpc_url
+    }
+
+    pub fn ethereum_rpc_url(&self) -> &String {
+        &self.ethereum_rpc_url
+    }
+
+    pub fn ethereum_websocket_url(&self) -> &String {
+        &self.ethereum_websocket_url
+    }
+
+    pub fn keystore_path(&self) -> &String {
+        &self.keystore_path
+    }
+
+    pub fn ssal_contract_address(&self) -> &String {
+        &self.ssal_contract_address
+    }
+
+    pub fn cluster_id(&self) -> &String {
+        &self.cluster_id
+    }
+
+    pub fn seeder_rpc_address(&self) -> &String {
+        &self.seeder_rpc_address
     }
 }
