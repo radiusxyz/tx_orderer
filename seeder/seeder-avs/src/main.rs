@@ -31,5 +31,6 @@ async fn main() -> Result<(), Error> {
 
     tracing::info!("Seeder server starting at {}", config.seeder_rpc_address());
     rpc_server_handle.stopped().await;
+
     Ok(())
 }
