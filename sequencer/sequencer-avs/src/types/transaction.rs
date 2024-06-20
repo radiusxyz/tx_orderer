@@ -17,20 +17,22 @@ impl UserTransaction {
     const ID: &'static str = stringify!(Transaction);
 
     pub fn get(
-        rollup_block_number: RollupBlockNumber,
+        database: &Database,
+        rollup_block_number: u64,
         transaction_order: u64,
     ) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number, transaction_order);
-        database()?.get(&key)
+        database.get(&key)
     }
 
     pub fn put(
         &self,
-        rollup_block_number: RollupBlockNumber,
+        database: &Database,
+        rollup_block_number: u64,
         transaction_order: u64,
     ) -> Result<(), database::Error> {
         let key = (Self::ID, rollup_block_number, transaction_order);
-        database()?.put(&key, self)
+        database.put(&key, self)
     }
 
     pub fn new(
@@ -93,19 +95,19 @@ impl Nonce {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitment {
-    rollup_block_number: RollupBlockNumber,
+    rollup_block_number: u64,
     transaction_order: u64,
 }
 
 impl OrderCommitment {
-    pub fn new(rollup_block_number: RollupBlockNumber, transaction_order: u64) -> Self {
+    pub fn new(rollup_block_number: u64, transaction_order: u64) -> Self {
         Self {
             rollup_block_number,
             transaction_order,
         }
     }
 
-    pub fn rollup_block_number(&self) -> RollupBlockNumber {
+    pub fn rollup_block_number(&self) -> u64 {
         self.rollup_block_number
     }
 

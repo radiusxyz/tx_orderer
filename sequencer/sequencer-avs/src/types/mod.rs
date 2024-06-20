@@ -3,7 +3,7 @@ mod cluster;
 mod sequencer;
 mod transaction;
 mod prelude {
-    pub use database::{database, Lock};
+    pub use database::{Database, Lock};
     pub use serde::{Deserialize, Serialize};
     pub use ssal::avs::types::*;
 
