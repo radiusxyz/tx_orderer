@@ -5,6 +5,7 @@ pub enum ErrorKind {
     RegisterSequencer,
     DeregisterSequencer,
     RegisterBlockCommitment,
+    GetSequencerAddress,
     GetSequencerRpcUrl,
     ParseRpcUrl,
     ParseSsalContractAddress,

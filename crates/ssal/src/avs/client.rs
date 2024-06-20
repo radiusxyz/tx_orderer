@@ -1,4 +1,4 @@
-use std::{path::Path, str::FromStr};
+use std::{iter::zip, path::Path, str::FromStr};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
@@ -182,5 +182,36 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::RegisterBlockCommitment, error))?;
 
         Ok(())
+    }
+
+    pub async fn get_sequencer_list(
+        &self,
+        cluster_id: impl AsRef<str>,
+    ) -> Result<Vec<(Address, Option<String>)>, Error> {
+        let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
+            .map_err(|error| (ErrorKind::ParseClusterID, error))?;
+
+        let sequencer_address_list: [Address; 30] = self
+            .ssal_contract
+            .getSequencers(cluster_id)
+            .call()
+            .await
+            .map_err(|error| (ErrorKind::GetSequencerAddress, error))?
+            ._0;
+
+        // Filter sequencer address whose value is zero (== [0; 20])
+        let sequencer_address_list: Vec<Address> = sequencer_address_list
+            .into_iter()
+            .filter(|sequencer_address| !sequencer_address.is_zero())
+            .collect();
+
+        let sequencer_rpc_url_list = self
+            .seeder_client
+            .get_sequencer_rpc_urls(sequencer_address_list.clone())
+            .await?;
+
+        let sequencer_list = zip(sequencer_address_list, sequencer_rpc_url_list).collect();
+
+        Ok(sequencer_list)
     }
 }
