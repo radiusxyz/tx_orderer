@@ -6,9 +6,9 @@ pub enum ErrorKind {
     DeregisterSequencer,
     RegisterBlockCommitment,
     GetSequencerRpcUrl,
-
     ParseRpcUrl,
-    ParseContractAddress,
+    ParseSsalContractAddress,
+    ParseAvsContractAddress,
     ParseSequencerAddress,
     ParseRollupAddress,
     ParseClusterID,

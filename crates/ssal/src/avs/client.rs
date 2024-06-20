@@ -13,8 +13,19 @@ use alloy::{
 
 use crate::avs::{seeder::SeederClient, types::*, Error, ErrorKind};
 
-pub struct SsalClient {
-    provider: FillProvider<
+type EthereumProvider = FillProvider<
+    JoinFill<
+        JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
+        WalletFiller<EthereumWallet>,
+    >,
+    RootProvider<Http<Client>>,
+    Http<Client>,
+    Ethereum,
+>;
+
+type SsalContract = Ssal::SsalInstance<
+    Http<Client>,
+    FillProvider<
         JoinFill<
             JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
             WalletFiller<EthereumWallet>,
@@ -23,18 +34,13 @@ pub struct SsalClient {
         Http<Client>,
         Ethereum,
     >,
-    ssal_contract: Ssal::SsalInstance<
-        Http<Client>,
-        FillProvider<
-            JoinFill<
-                JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
-                WalletFiller<EthereumWallet>,
-            >,
-            RootProvider<Http<Client>>,
-            Http<Client>,
-            Ethereum,
-        >,
-    >,
+>;
+
+pub struct SsalClient {
+    provider: EthereumProvider,
+    ssal_contract: SsalContract,
+    // TODO: Uncomment after EigenLayer integration
+    // avs_contract: AvsContract,
     seeder_client: SeederClient,
 }
 
@@ -77,7 +83,7 @@ impl SsalClient {
             .on_http(url);
 
         let ssal_contract_address = Address::from_str(ssal_contract_address.as_ref())
-            .map_err(|error| (ErrorKind::ParseContractAddress, error))?;
+            .map_err(|error| (ErrorKind::ParseSsalContractAddress, error))?;
         let ssal_contract = Ssal::SsalInstance::new(ssal_contract_address, provider.clone());
 
         // TODO: Uncomment after EigenLayer integration

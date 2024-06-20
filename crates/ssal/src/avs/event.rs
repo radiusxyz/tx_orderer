@@ -38,7 +38,7 @@ impl SsalEventListener {
             .map_err(|error| (ErrorKind::ConnectEventListener, error))?;
 
         let ssal_contract_address = Address::from_str(ssal_contract_address.as_ref())
-            .map_err(|error| Error::boxed(ErrorKind::ParseContractAddress, error))?;
+            .map_err(|error| Error::boxed(ErrorKind::ParseSsalContractAddress, error))?;
 
         // TODO: Uncomment after EigenLayer integration
         // let avs_contract_address = Address::from_str(avs_contract_address.as_ref())
