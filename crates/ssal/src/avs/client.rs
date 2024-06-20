@@ -5,7 +5,7 @@ use alloy::{
     primitives::FixedBytes,
     providers::{
         fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
-        Identity, ProviderBuilder, RootProvider,
+        Identity, ProviderBuilder, RootProvider, WalletProvider,
     },
     signers::local::LocalSigner,
     transports::http::{Client, Http},
@@ -97,6 +97,12 @@ impl SsalClient {
             ssal_contract,
             seeder_client,
         })
+    }
+
+    pub fn address(&self) -> Address {
+        // # Safety
+        // The function does not panic because we will always end up with an address.
+        self.provider.signer_addresses().next().unwrap()
     }
 
     pub async fn initialize_cluster(
