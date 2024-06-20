@@ -43,6 +43,10 @@ impl SequencerList {
         self.0.len()
     }
 
+    pub fn into_inner(self) -> Vec<(Address, Option<String>)> {
+        self.0
+    }
+
     pub fn into_iter_without(
         self,
         sequencer_address: Address,

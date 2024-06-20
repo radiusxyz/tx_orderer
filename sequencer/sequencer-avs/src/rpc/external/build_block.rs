@@ -16,7 +16,7 @@ impl BuildBlock {
         let parameter = parameter.parse::<Self>()?;
         let database = context.database();
 
-        match ClusterMetadata::get(&database) {
+        match ClusterMetadata::get_mut(&database) {
             Ok(cluster_metadata) => {
                 tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
                 // After updating the cluster metadata, the previous block height remains unchanged.

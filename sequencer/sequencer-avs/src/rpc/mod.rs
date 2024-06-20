@@ -4,7 +4,7 @@ pub mod util;
 pub mod prelude {
     pub use std::sync::Arc;
 
-    pub use database::Database;
+    pub use database::{Database, Lock};
     pub use json_rpc::{types::*, RpcClient, RpcError};
     pub use serde::{Deserialize, Serialize};
 

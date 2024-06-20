@@ -15,9 +15,27 @@ impl SendTransaction {
         let parameter = parameter.parse::<Self>()?;
         let database = context.database();
 
-        match ClusterMetadata::get(&database) {
+        match ClusterMetadata::get_mut(&database) {
             Ok(cluster_metadata) => match cluster_metadata.is_leader {
-                true => parameter.leader_handler(&database, cluster_metadata).await,
+                true => {
+                    // Issue an order commitment.
+                    let order_commitment = cluster_metadata.issue_order_commitment();
+
+                    // Save the user transaction into the database.
+                    parameter.transaction.put(
+                        &database,
+                        cluster_metadata.rollup_block_number,
+                        cluster_metadata.transaction_order,
+                    )?;
+                    cluster_metadata.commit()?;
+
+                    // TODO: Send the user transaction to followers.
+                    context
+                        .cluster_manager()
+                        .sync_user_transaction(parameter.transaction, order_commitment);
+
+                    Ok(order_commitment)
+                }
                 false => parameter.follower_handler(cluster_metadata).await,
             },
             Err(error) => {
@@ -29,27 +47,6 @@ impl SendTransaction {
                 }
             }
         }
-    }
-
-    async fn leader_handler(
-        self,
-        database: &Database,
-        cluster_metadata: ClusterMetadata,
-    ) -> Result<OrderCommitment, RpcError> {
-        // Issue order commitment
-        let order_commitment =
-            BlockMetadata::issue_order_commitment(database, cluster_metadata.rollup_block_number)?;
-
-        self.transaction.put(
-            database,
-            order_commitment.rollup_block_number(),
-            order_commitment.transaction_order(),
-        )?;
-
-        // Spawn a transaction syncer task.
-        syncer::sync_user_transaction(self.transaction, order_commitment.clone(), cluster_metadata);
-
-        Ok(order_commitment)
     }
 
     async fn follower_handler(

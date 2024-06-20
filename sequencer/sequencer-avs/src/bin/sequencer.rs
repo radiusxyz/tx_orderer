@@ -3,7 +3,7 @@ use std::{env, io};
 use database::Database;
 use json_rpc::RpcServer;
 use sequencer_avs::{
-    config::Config, error::Error, rpc::external::*, state::AppState, task::event_listener_manager,
+    config::Config, error::Error, rpc::external::*, state::AppState, task::event_manager,
 };
 use ssal::avs::SsalClient;
 
@@ -40,7 +40,7 @@ async fn main() -> Result<(), Error> {
     let app_state = AppState::new(config, database, ssal_client);
 
     // Initialize the event manager.
-    event_listener_manager::init(app_state.clone());
+    event_manager::init(app_state.clone());
 
     // Initialize JSON-RPC server.
     let rpc_server_handle =
