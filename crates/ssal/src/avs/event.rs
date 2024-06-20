@@ -93,7 +93,7 @@ impl SsalEventListener {
         Ok(())
     }
 
-    pub async fn init<CB, CTX, F>(self, callback: Option<CB>, context: CTX) -> Result<(), Error>
+    pub async fn init<CB, CTX, F>(self, callback: CB, context: CTX) -> Result<(), Error>
     where
         CB: Fn(SsalEventType, CTX) -> F,
         CTX: Clone + Send + Sync,
@@ -103,11 +103,9 @@ impl SsalEventListener {
         self.push_block_stream(&mut stream_list).await?;
         self.push_ssal_event_stream(&mut stream_list).await?;
 
-        if let Some(callback) = callback {
-            let mut event_stream = select_all(stream_list);
-            while let Some(event) = event_stream.next().await {
-                callback(event, context.clone()).await;
-            }
+        let mut event_stream = select_all(stream_list);
+        while let Some(event) = event_stream.next().await {
+            callback(event, context.clone()).await;
         }
 
         Err(Error::custom(
