@@ -42,13 +42,13 @@ pub fn init(
                 }
             }
         }
-        block.put(rollup_block_number).unwrap();
+        // block.put(rollup_block_number).unwrap();
 
-        // TODO: Change the seed to getting it from the contract.
-        let block_commitment = block.commitment([0; 32]);
-        block_commitment.put(rollup_block_number).unwrap();
+        // // TODO: Change the seed to getting it from the contract.
+        // let block_commitment = block.commitment([0; 32]);
+        // block_commitment.put(rollup_block_number).unwrap();
 
-        // TODO: Implement register_block_commitment() in the contract.
-        if register_block_commitment {}
+        // // TODO: Implement register_block_commitment() in the contract.
+        // if register_block_commitment {}
     });
 }

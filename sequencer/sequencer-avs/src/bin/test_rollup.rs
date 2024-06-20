@@ -1,11 +1,11 @@
 use std::{env, time::Duration};
 
-use ::ssal::ethereum::{types::*, SsalClient};
 use database::Database;
 use json_rpc::RpcClient;
 use sequencer_avs::{
     config::Config, error::Error, rpc::external::*, task::cluster_manager, types::*,
 };
+use ssal::avs::{types::*, SsalClient};
 use tokio::time::sleep;
 
 #[tokio::main]

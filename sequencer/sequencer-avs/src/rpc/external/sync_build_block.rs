@@ -2,40 +2,36 @@ use crate::rpc::{prelude::*, util::update_cluster_metadata};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncBuildBlock {
-    pub ssal_block_number: SsalBlockNumber,
-    pub rollup_block_number: RollupBlockNumber,
+    pub ssal_block_number: u64,
+    pub rollup_block_number: u64,
     pub previous_block_height: u64,
 }
 
 impl SyncBuildBlock {
     pub const METHOD_NAME: &'static str = stringify!(SyncBuildBlock);
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        context: Arc<SsalClient>,
-    ) -> Result<(), RpcError> {
+    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        match ClusterMetadata::get() {
+        let database = context.database();
+
+        match ClusterMetadata::get(&database) {
             Ok(cluster_metadata) => {
                 tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
 
                 update_cluster_metadata(
+                    &database,
                     parameter.ssal_block_number,
                     parameter.rollup_block_number,
                 )?;
 
-                block_builder::init(
-                    cluster_metadata.ssal_block_number(),
-                    cluster_metadata.rollup_block_number(),
-                    parameter.previous_block_height,
-                    false,
-                );
+                builder::build_block();
 
                 Ok(())
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
                     update_cluster_metadata(
+                        &database,
                         parameter.ssal_block_number,
                         parameter.rollup_block_number,
                     )?;

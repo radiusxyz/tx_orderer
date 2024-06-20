@@ -10,12 +10,14 @@ impl SendTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<SsalClient>,
+        context: Arc<AppState>,
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        match ClusterMetadata::get() {
-            Ok(cluster_metadata) => match cluster_metadata.is_leader() {
-                true => parameter.leader_handler(cluster_metadata).await,
+        let database = context.database();
+
+        match ClusterMetadata::get(&database) {
+            Ok(cluster_metadata) => match cluster_metadata.is_leader {
+                true => parameter.leader_handler(&database, cluster_metadata).await,
                 false => parameter.follower_handler(cluster_metadata).await,
             },
             Err(error) => {
@@ -31,19 +33,22 @@ impl SendTransaction {
 
     async fn leader_handler(
         self,
+        database: &Database,
         cluster_metadata: ClusterMetadata,
     ) -> Result<OrderCommitment, RpcError> {
         // Issue order commitment
         let order_commitment =
-            BlockMetadata::issue_order_commitment(cluster_metadata.rollup_block_number())?;
+            BlockMetadata::issue_order_commitment(database, cluster_metadata.rollup_block_number)?;
 
         self.transaction.put(
+            database,
             order_commitment.rollup_block_number(),
             order_commitment.transaction_order(),
         )?;
 
         // Spawn a transaction syncer task.
-        transaction_syncer::init(self.transaction, order_commitment.clone(), cluster_metadata);
+        syncer::sync_user_transaction(self.transaction, order_commitment.clone(), cluster_metadata);
+
         Ok(order_commitment)
     }
 
@@ -51,16 +56,16 @@ impl SendTransaction {
         self,
         cluster_metadata: ClusterMetadata,
     ) -> Result<OrderCommitment, RpcError> {
-        let (_leader_public_key, leader_rpc_address) = cluster_metadata.leader();
-        match leader_rpc_address {
-            Some(rpc_address) => {
-                let client = RpcClient::new(rpc_address, 5)?;
-                client
-                    .request(Self::METHOD_NAME, self)
-                    .await
-                    .map_err(|error| error.into())
-            }
-            None => Err(Error::EmptyLeaderAddress.into()),
+        let (_leader_address, leader_rpc_url) = cluster_metadata.leader();
+
+        if let Some(rpc_url) = leader_rpc_url {
+            let client = RpcClient::new(rpc_url, 5)?;
+            client
+                .request(Self::METHOD_NAME, self)
+                .await
+                .map_err(|error| error.into())
+        } else {
+            Err(Error::EmptyLeaderAddress.into())
         }
     }
 }

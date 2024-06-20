@@ -5,52 +5,54 @@ use json_rpc::RpcClient;
 use sequencer_avs::{
     config::Config, error::Error, rpc::external::SendTransaction, task::cluster_manager, types::*,
 };
-use ssal::ethereum::SsalClient;
+use ssal::avs::SsalClient;
 use tokio::time::{sleep, Duration};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    tracing_subscriber::fmt().init();
+    Ok(())
 
-    let arguments: Vec<String> = env::args().skip(1).collect();
-    let config_path = arguments
-        .get(0)
-        .expect("Provide the config file path.")
-        .to_owned();
-    let block_margin: u64 = arguments
-        .get(1)
-        .expect("Provide the block margin.")
-        .parse()
-        .expect("Failed to parse the block margin argument to `u64`");
+    // tracing_subscriber::fmt().init();
 
-    // Load the configuration from the path.
-    let config = Config::load(config_path)?;
+    // let arguments: Vec<String> = env::args().skip(1).collect();
+    // let config_path = arguments
+    //     .get(0)
+    //     .expect("Provide the config file path.")
+    //     .to_owned();
+    // let block_margin: u64 = arguments
+    //     .get(1)
+    //     .expect("Provide the block margin.")
+    //     .parse()
+    //     .expect("Failed to parse the block margin argument to `u64`");
 
-    // Initialize the database as a global singleton called by `database::database()`.
-    Database::new(&config.database_path)?.init();
+    // // Load the configuration from the path.
+    // let config = Config::load(config_path)?;
 
-    // Initialize the SSAL client.
-    let ssal_client = SsalClient::new(
-        &config.ssal_rpc_address,
-        &config.ssal_private_key,
-        &config.contract_address,
-        config.cluster_id,
-        &config.seeder_rpc_address,
-    )
-    .await?;
+    // // Initialize the database as a global singleton called by `database::database()`.
+    // Database::new(&config.database_path)?.init();
 
-    // Initialize the cluster manager.
-    // cluster_manager::init(&ssal_client);
+    // // Initialize the SSAL client.
+    // let ssal_client = SsalClient::new(
+    //     &config.ssal_rpc_address,
+    //     &config.ssal_private_key,
+    //     &config.contract_address,
+    //     config.cluster_id,
+    //     &config.seeder_rpc_address,
+    // )
+    // .await?;
 
-    // Start sending the transaction.
-    loop {
-        if let Ok(current_ssal_block_number) = SsalBlockNumber::get() {
-            if let Ok(sequencer_list) = SequencerList::get(current_ssal_block_number - block_margin)
-            {
-                transaction_sender(sequencer_list).await;
-            }
-        }
-    }
+    // // Initialize the cluster manager.
+    // // cluster_manager::init(&ssal_client);
+
+    // // Start sending the transaction.
+    // loop {
+    //     if let Ok(current_ssal_block_number) = SsalBlockNumber::get() {
+    //         if let Ok(sequencer_list) = SequencerList::get(current_ssal_block_number - block_margin)
+    //         {
+    //             transaction_sender(sequencer_list).await;
+    //         }
+    //     }
+    // }
 }
 
 async fn transaction_sender(sequencer_list: SequencerList) {

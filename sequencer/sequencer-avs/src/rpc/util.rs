@@ -3,12 +3,13 @@ use crate::rpc::prelude::*;
 /// After the first updating cluster metadata, the sequencer will no longer return
 /// `SequencerStatus::Uninitialized` to both users and rollups.
 pub fn update_cluster_metadata(
+    database: &Database,
     ssal_block_number: SsalBlockNumber,
     rollup_block_number: RollupBlockNumber,
 ) -> Result<(), RpcError> {
     // Create a new block metadata.
     let block_metadata = BlockMetadata::default();
-    block_metadata.put(rollup_block_number)?;
+    block_metadata.put(database, rollup_block_number)?;
 
     // Get the sequencer list corresponding to the SSAL block number.
     let sequencer_list = SequencerList::get(ssal_block_number)?;

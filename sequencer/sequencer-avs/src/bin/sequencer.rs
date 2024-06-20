@@ -2,8 +2,10 @@ use std::{env, io};
 
 use database::Database;
 use json_rpc::RpcServer;
-use sequencer_avs::{config::Config, error::Error, rpc::external::*, types::Me};
-use ssal::ethereum::SsalClient;
+use sequencer_avs::{
+    config::Config, error::Error, rpc::external::*, state::AppState, task::event_listener_manager,
+};
+use ssal::avs::SsalClient;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -14,38 +16,42 @@ async fn main() -> Result<(), Error> {
         .get(0)
         .expect("Provide the config file path.")
         .to_owned();
+    let keystore_password = arguments
+        .get(1)
+        .expect("Provide the keystore password.")
+        .to_owned();
 
     // Load the configuration from the path.
     let config = Config::load(config_path)?;
 
-    // Initialize the database as a global singleton called by `database::database()`.
-    Database::new(&config.database_path)?.init();
+    // Initialize the database.
+    let database = Database::new(config.database_path())?;
 
     // Initialize the SSAL client.
     let ssal_client = SsalClient::new(
-        &config.ssal_rpc_address,
-        &config.ssal_private_key,
-        &config.contract_address,
-        config.cluster_id,
-        &config.seeder_rpc_address,
-    )
-    .await?;
+        config.ethereum_rpc_url(),
+        config.keystore_path(),
+        keystore_password,
+        config.ssal_contract_address(),
+        config.seeder_rpc_address(),
+    )?;
 
-    // Store my public key.
-    Me::from(ssal_client.public_key()).put()?;
+    // Initialize an application-wide state instance.
+    let app_state = AppState::new(config, database, ssal_client);
 
-    // Initialize the cluster manager
-    // cluster_manager::init(&ssal_client);
+    // Initialize the event manager.
+    event_listener_manager::init(app_state.clone());
 
     // Initialize JSON-RPC server.
-    let rpc_server_handle = RpcServer::new(ssal_client.clone())
-        .register_rpc_method(BuildBlock::METHOD_NAME, BuildBlock::handler)?
-        .register_rpc_method(SyncBuildBlock::METHOD_NAME, SyncBuildBlock::handler)?
-        .register_rpc_method(GetBlock::METHOD_NAME, GetBlock::handler)?
-        .register_rpc_method(SendTransaction::METHOD_NAME, SendTransaction::handler)?
-        .register_rpc_method(SyncTransaction::METHOD_NAME, SyncTransaction::handler)?
-        .init(&config.sequencer_rpc_address)
-        .await?;
+    let rpc_server_handle =
+        RpcServer::new(app_state.clone()) // RpcServer context is a redundant `Arc` wrapping over `AppState`, but it's okay for now.
+            .register_rpc_method(BuildBlock::METHOD_NAME, BuildBlock::handler)?
+            .register_rpc_method(SyncBuildBlock::METHOD_NAME, SyncBuildBlock::handler)?
+            .register_rpc_method(GetBlock::METHOD_NAME, GetBlock::handler)?
+            .register_rpc_method(SendTransaction::METHOD_NAME, SendTransaction::handler)?
+            .register_rpc_method(SyncTransaction::METHOD_NAME, SyncTransaction::handler)?
+            .init("0.0.0.0:7234")
+            .await?;
 
     tokio::spawn(async move {
         rpc_server_handle.stopped().await;
@@ -56,42 +62,42 @@ async fn main() -> Result<(), Error> {
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
 
-        match input.trim() {
-            "1" => initialize(&config, &ssal_client).await,
-            "2" => register(&config, &ssal_client).await,
-            "3" => deregister(&ssal_client).await,
-            _ => continue,
-        }
+        // match input.trim() {
+        //     "1" => initialize(&config, &ssal_client).await,
+        //     "2" => register(&config, &ssal_client).await,
+        //     "3" => deregister(&ssal_client).await,
+        //     _ => continue,
+        // }
     }
 }
 
-async fn initialize(config: &Config, ssal_client: &SsalClient) {
-    println!("Rollup Public Key:");
-    let mut rollup_public_key = String::new();
-    io::stdin().read_line(&mut rollup_public_key).unwrap();
+// async fn initialize(config: &Config, ssal_client: &SsalClient) {
+//     println!("Rollup Public Key:");
+//     let mut rollup_public_key = String::new();
+//     io::stdin().read_line(&mut rollup_public_key).unwrap();
 
-    match ssal_client
-        .initialize_cluster(&config.sequencer_rpc_address, rollup_public_key.trim())
-        .await
-    {
-        Ok(_) => (),
-        Err(error) => tracing::error!("{}", error),
-    }
-}
+//     match ssal_client
+//         .initialize_cluster(&config.sequencer_rpc_address, rollup_public_key.trim())
+//         .await
+//     {
+//         Ok(_) => (),
+//         Err(error) => tracing::error!("{}", error),
+//     }
+// }
 
-async fn register(config: &Config, ssal_client: &SsalClient) {
-    match ssal_client
-        .register_sequencer(&config.sequencer_rpc_address)
-        .await
-    {
-        Ok(_) => (),
-        Err(error) => tracing::error!("{}", error),
-    }
-}
+// async fn register(config: &Config, ssal_client: &SsalClient) {
+//     match ssal_client
+//         .register_sequencer(&config.sequencer_rpc_address)
+//         .await
+//     {
+//         Ok(_) => (),
+//         Err(error) => tracing::error!("{}", error),
+//     }
+// }
 
-async fn deregister(ssal_client: &SsalClient) {
-    match ssal_client.deregister_sequencer().await {
-        Ok(_) => (),
-        Err(error) => tracing::error!("{}", error),
-    }
-}
+// async fn deregister(ssal_client: &SsalClient) {
+//     match ssal_client.deregister_sequencer().await {
+//         Ok(_) => (),
+//         Err(error) => tracing::error!("{}", error),
+//     }
+// }

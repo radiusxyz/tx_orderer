@@ -1,9 +1,9 @@
-use crate::rpc::{prelude::*, util::update_cluster_metadata};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BuildBlock {
-    pub ssal_block_number: SsalBlockNumber,
-    pub rollup_block_number: RollupBlockNumber,
+    pub ssal_block_number: u64,
+    pub rollup_block_number: u64,
 }
 
 impl BuildBlock {
@@ -11,30 +11,38 @@ impl BuildBlock {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<SsalClient>,
+        context: Arc<AppState>,
     ) -> Result<SequencerStatus, RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        match ClusterMetadata::get() {
+        let database = context.database();
+
+        match ClusterMetadata::get(&database) {
             Ok(cluster_metadata) => {
                 tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
                 // After updating the cluster metadata, the previous block height remains unchanged.
                 // Calling `update_cluster_metadata()` before running the syncer makes it safe to
                 // sync the previous block height.
-                update_cluster_metadata(
+                let updated_cluster_metadata = ClusterMetadata::new(
                     parameter.ssal_block_number,
                     parameter.rollup_block_number,
-                )?;
+                    cluster_metadata.sequencer_list.clone(),
+                    // TODO: select a leader
+                    false,
+                )
+                .put(&database)?;
 
                 let previous_block_height =
-                    BlockMetadata::get(cluster_metadata.rollup_block_number())?.block_height();
+                    BlockMetadata::get(&database, cluster_metadata.rollup_block_number())?
+                        .block_height();
 
-                block_syncer::init(
-                    parameter.ssal_block_number,
-                    parameter.rollup_block_number,
+                syncer::sync_build_block(
+                    ssal_block_number,
+                    rollup_block_number,
                     previous_block_height,
+                    cluster_metadata,
                 );
 
-                block_builder::init(
+                builder::build_block(
                     cluster_metadata.ssal_block_number(),
                     cluster_metadata.rollup_block_number(),
                     previous_block_height,
@@ -50,11 +58,12 @@ impl BuildBlock {
                     // Calling `update_cluster_metadata()` before running the syncer makes it safe to
                     // sync the previous block height.
                     update_cluster_metadata(
+                        &database,
                         parameter.ssal_block_number,
                         parameter.rollup_block_number,
                     )?;
 
-                    block_syncer::init(
+                    syncer::sync_build_block(
                         parameter.ssal_block_number,
                         parameter.rollup_block_number,
                         0,

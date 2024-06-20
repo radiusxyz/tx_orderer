@@ -2,7 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlock {
-    pub rollup_block_number: RollupBlockNumber,
+    pub rollup_block_number: u64,
 }
 
 impl GetBlock {
@@ -10,10 +10,11 @@ impl GetBlock {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<SsalClient>,
+        context: Arc<AppState>,
     ) -> Result<RollupBlock, RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        let block = RollupBlock::get(parameter.rollup_block_number)?;
-        Ok(block)
+        let database = context.database();
+
+        RollupBlock::get(&database, parameter.rollup_block_number).map_err(|error| error.into())
     }
 }
