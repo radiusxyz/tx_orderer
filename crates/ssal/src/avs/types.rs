@@ -1,6 +1,7 @@
 pub use alloy::{
-    primitives::Address,
+    primitives::*,
     rpc::types::{Block, Log},
+    signers::Signer,
     sol,
     sol_types::SolEvent,
 };

@@ -5,6 +5,7 @@ pub enum ErrorKind {
     RegisterSequencer,
     DeregisterSequencer,
     RegisterBlockCommitment,
+    RespondToTask,
     GetSequencerAddress,
     GetSequencerRpcUrl,
     ParseRpcUrl,
@@ -21,6 +22,7 @@ pub enum ErrorKind {
     InitializeClusterEventStream,
     BlockCommitmentEventStream,
     EventListener,
+    SignTask,
 }
 
 pub enum ErrorSource {
@@ -31,6 +33,7 @@ pub enum ErrorSource {
     Hex(alloy::hex::FromHexError),
     Contract(alloy::contract::Error),
     Transport(alloy::transports::RpcError<alloy::transports::TransportErrorKind>),
+    Signer(alloy::signers::Error),
 }
 
 impl std::fmt::Display for ErrorSource {
@@ -43,6 +46,7 @@ impl std::fmt::Display for ErrorSource {
             Self::Hex(error) => write!(f, "{}", error),
             Self::Contract(error) => write!(f, "{}", error),
             Self::Transport(error) => write!(f, "{}", error),
+            Self::Signer(error) => write!(f, "{}", error),
         }
     }
 }
@@ -74,6 +78,12 @@ impl From<alloy::contract::Error> for ErrorSource {
 impl From<alloy::transports::RpcError<alloy::transports::TransportErrorKind>> for ErrorSource {
     fn from(value: alloy::transports::RpcError<alloy::transports::TransportErrorKind>) -> Self {
         Self::Transport(value)
+    }
+}
+
+impl From<alloy::signers::Error> for ErrorSource {
+    fn from(value: alloy::signers::Error) -> Self {
+        Self::Signer(value)
     }
 }
 

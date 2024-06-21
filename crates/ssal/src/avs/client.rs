@@ -2,12 +2,12 @@ use std::{iter::zip, path::Path, str::FromStr};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
-    primitives::{Bytes, FixedBytes},
+    primitives::{eip191_hash_message, Bytes, FixedBytes},
     providers::{
         fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
         Identity, ProviderBuilder, RootProvider, WalletProvider,
     },
-    signers::local::LocalSigner,
+    signers::{k256::ecdsa::SigningKey, local::LocalSigner, Signer},
     transports::http::{Client, Http},
 };
 
@@ -51,6 +51,7 @@ type AvsContract = Avs::AvsInstance<
 
 pub struct SsalClient {
     provider: EthereumProvider,
+    signer: LocalSigner<SigningKey>,
     ssal_contract: SsalContract,
     avs_contract: AvsContract,
     seeder_client: SeederClient,
@@ -64,6 +65,7 @@ impl Clone for SsalClient {
     fn clone(&self) -> Self {
         Self {
             provider: self.provider.clone(),
+            signer: self.signer.clone(),
             ssal_contract: self.ssal_contract.clone(),
             avs_contract: self.avs_contract.clone(),
             seeder_client: self.seeder_client.clone(),
@@ -87,7 +89,7 @@ impl SsalClient {
 
         let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
             .map_err(|error| (ErrorKind::Keystore, error))?;
-        let wallet = EthereumWallet::from(signer);
+        let wallet = EthereumWallet::from(signer.clone());
 
         let provider = ProviderBuilder::new()
             .with_recommended_fillers()
@@ -106,16 +108,25 @@ impl SsalClient {
 
         Ok(Self {
             provider,
+            signer,
             ssal_contract,
             avs_contract,
             seeder_client,
         })
     }
 
+    pub fn provider(&self) -> EthereumProvider {
+        self.provider.clone()
+    }
+
     pub fn address(&self) -> Address {
         // # Safety
         // The function does not panic because we will always end up with an address.
         self.provider.signer_addresses().next().unwrap()
+    }
+
+    pub fn signer(&self) -> &LocalSigner<SigningKey> {
+        &self.signer
     }
 
     pub async fn initialize_cluster(
@@ -188,24 +199,48 @@ impl SsalClient {
         &self,
         block_commitment: impl AsRef<str>,
         block_number: u64,
-        rollup_id: impl AsRef<str>,
+        rollup_id: u32,
         cluster_id: impl AsRef<str>,
     ) -> Result<(), Error> {
         let block_commitment = Bytes::from_str(block_commitment.as_ref())
             .map_err(|error| (ErrorKind::ParseBlockCommitment, error))?;
-
-        let rollup_id = FixedBytes::from_str(rollup_id.as_ref())
-            .map_err(|error| (ErrorKind::ParseRollupId, error))?;
 
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
             .map_err(|error| (ErrorKind::ParseClusterId, error))?;
 
         let _transaction = self
             .avs_contract
-            .createNewTask(block_commitment, block_number as u32, rollup_id, cluster_id)
+            .createNewTask(block_commitment, block_number, rollup_id, cluster_id)
             .send()
             .await
             .map_err(|error| (ErrorKind::RegisterBlockCommitment, error))?;
+
+        Ok(())
+    }
+
+    pub async fn respond_to_task(
+        &self,
+        task: Avs::Task,
+        task_index: u32,
+        block_commitment: impl AsRef<str>,
+    ) -> Result<(), Error> {
+        let block_commitment = Bytes::from_str(block_commitment.as_ref())
+            .map_err(|error| (ErrorKind::ParseBlockCommitment, error))?;
+
+        let message_hash = eip191_hash_message(block_commitment);
+
+        let signature = self
+            .signer
+            .sign_hash(&message_hash)
+            .await
+            .map_err(|error| (ErrorKind::SignTask, error))?;
+
+        let _transaction = self
+            .avs_contract
+            .respondToTask(task, task_index, signature.as_bytes().into())
+            .send()
+            .await
+            .map_err(|error| (ErrorKind::RespondToTask, error))?;
 
         Ok(())
     }

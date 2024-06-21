@@ -7,7 +7,7 @@ edition = "2021"
 doctest = false
 
 [dependencies]
-alloy = { version = "0.1.1", features = ["full", "signer-keystore"], optional = true }
+alloy = { version = "0.1.1", features = ["full", "signer-keystore", "signer-local"], optional = true }
 futures = { workspace = true }
 json-rpc = { workspace = true }
 pin-project = "1.1.5"
