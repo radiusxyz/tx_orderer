@@ -9,14 +9,12 @@ pub struct SyncUserTransaction {
 impl SyncUserTransaction {
     pub const METHOD_NAME: &'static str = stringify!(SyncUserTransaction);
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
+    pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        let database = context.database();
 
         parameter.transaction.put(
-            &database,
-            parameter.order_commitment.rollup_block_number(),
-            parameter.order_commitment.transaction_order(),
+            parameter.order_commitment.rollup_block_number,
+            parameter.order_commitment.transaction_order,
         )?;
 
         Ok(())

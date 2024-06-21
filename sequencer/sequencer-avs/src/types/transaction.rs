@@ -16,23 +16,18 @@ impl AsRef<[u8]> for UserTransaction {
 impl UserTransaction {
     const ID: &'static str = stringify!(Transaction);
 
-    pub fn get(
-        database: &Database,
-        rollup_block_number: u64,
-        transaction_order: u64,
-    ) -> Result<Self, database::Error> {
+    pub fn get(rollup_block_number: u64, transaction_order: u64) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number, transaction_order);
-        database.get(&key)
+        database()?.get(&key)
     }
 
     pub fn put(
         &self,
-        database: &Database,
         rollup_block_number: u64,
         transaction_order: u64,
     ) -> Result<(), database::Error> {
         let key = (Self::ID, rollup_block_number, transaction_order);
-        database.put(&key, self)
+        database()?.put(&key, self)
     }
 
     pub fn new(
@@ -93,10 +88,10 @@ impl Nonce {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct OrderCommitment {
-    rollup_block_number: u64,
-    transaction_order: u64,
+    pub rollup_block_number: u64,
+    pub transaction_order: u64,
 }
 
 impl OrderCommitment {
@@ -105,13 +100,5 @@ impl OrderCommitment {
             rollup_block_number,
             transaction_order,
         }
-    }
-
-    pub fn rollup_block_number(&self) -> u64 {
-        self.rollup_block_number
-    }
-
-    pub fn transaction_order(&self) -> u64 {
-        self.transaction_order
     }
 }

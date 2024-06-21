@@ -25,7 +25,7 @@ async fn main() -> Result<(), Error> {
     let config = Config::load(config_path)?;
 
     // Initialize the database.
-    let database = Database::new(config.database_path())?;
+    Database::new(config.database_path())?.init();
 
     // Initialize the SSAL client.
     let ssal_client = SsalClient::new(
@@ -37,7 +37,7 @@ async fn main() -> Result<(), Error> {
     )?;
 
     // Initialize an application-wide state instance.
-    let app_state = AppState::new(config, database, ssal_client);
+    let app_state = AppState::new(config, ssal_client);
 
     // Initialize the event manager.
     event_manager::init(app_state.clone());
@@ -53,51 +53,7 @@ async fn main() -> Result<(), Error> {
             .init("0.0.0.0:7234")
             .await?;
 
-    tokio::spawn(async move {
-        rpc_server_handle.stopped().await;
-    });
+    rpc_server_handle.stopped().await;
 
-    loop {
-        println!("1. Initialize a cluster\n2. Register the sequencer\n3. Deregister the sequencer");
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input).unwrap();
-
-        // match input.trim() {
-        //     "1" => initialize(&config, &ssal_client).await,
-        //     "2" => register(&config, &ssal_client).await,
-        //     "3" => deregister(&ssal_client).await,
-        //     _ => continue,
-        // }
-    }
+    Ok(())
 }
-
-// async fn initialize(config: &Config, ssal_client: &SsalClient) {
-//     println!("Rollup Public Key:");
-//     let mut rollup_public_key = String::new();
-//     io::stdin().read_line(&mut rollup_public_key).unwrap();
-
-//     match ssal_client
-//         .initialize_cluster(&config.sequencer_rpc_address, rollup_public_key.trim())
-//         .await
-//     {
-//         Ok(_) => (),
-//         Err(error) => tracing::error!("{}", error),
-//     }
-// }
-
-// async fn register(config: &Config, ssal_client: &SsalClient) {
-//     match ssal_client
-//         .register_sequencer(&config.sequencer_rpc_address)
-//         .await
-//     {
-//         Ok(_) => (),
-//         Err(error) => tracing::error!("{}", error),
-//     }
-// }
-
-// async fn deregister(ssal_client: &SsalClient) {
-//     match ssal_client.deregister_sequencer().await {
-//         Ok(_) => (),
-//         Err(error) => tracing::error!("{}", error),
-//     }
-// }

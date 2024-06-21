@@ -29,14 +29,14 @@ impl From<Vec<(Address, Option<String>)>> for SequencerList {
 impl SequencerList {
     const ID: &'static str = stringify!(SequencerList);
 
-    pub fn get(database: &Database, ssal_block_number: u64) -> Result<Self, database::Error> {
+    pub fn get(ssal_block_number: u64) -> Result<Self, database::Error> {
         let key = (Self::ID, ssal_block_number);
-        database.get(&key)
+        database()?.get(&key)
     }
 
-    pub fn put(&self, database: &Database, ssal_block_number: u64) -> Result<(), database::Error> {
+    pub fn put(&self, ssal_block_number: u64) -> Result<(), database::Error> {
         let key = (Self::ID, ssal_block_number);
-        database.put(&key, self)
+        database()?.put(&key, self)
     }
 
     pub fn len(&self) -> usize {
@@ -58,5 +58,9 @@ impl SequencerList {
             .into_iter()
             .filter(move |(address, _rpc_url)| *address != sequencer_address)
             .map(|sequencer| sequencer)
+    }
+
+    pub fn get_sequencer(&self, index: usize) -> Option<&(Address, Option<String>)> {
+        self.0.get(index)
     }
 }

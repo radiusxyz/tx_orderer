@@ -10,11 +10,10 @@ impl GetBlock {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<AppState>,
+        _context: Arc<AppState>,
     ) -> Result<RollupBlock, RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        let database = context.database();
 
-        RollupBlock::get(&database, parameter.rollup_block_number).map_err(|error| error.into())
+        RollupBlock::get(parameter.rollup_block_number).map_err(|error| error.into())
     }
 }

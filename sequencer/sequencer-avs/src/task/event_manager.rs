@@ -1,5 +1,5 @@
 use ssal::avs::{
-    types::{Block, Ssal::BlockCommitmentEvent, SsalEventType},
+    types::{Avs::NewTaskCreated, Block, SsalEventType},
     SsalEventListener,
 };
 use tokio::time::{sleep, Duration};

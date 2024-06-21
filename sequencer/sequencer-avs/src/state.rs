@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use database::Database;
 use ssal::avs::SsalClient;
 
-use crate::{config::Config, manager::ClusterManager};
+use crate::{config::Config, types::Cluster};
 
 pub struct AppState {
     inner: Arc<AppStateInner>,
@@ -11,9 +10,8 @@ pub struct AppState {
 
 struct AppStateInner {
     config: Config,
-    database: Database,
     ssal_client: SsalClient,
-    cluster_manager: ClusterManager,
+    cluster: Cluster,
 }
 
 unsafe impl Send for AppState {}
@@ -33,15 +31,11 @@ impl AppState {
         &self.inner.config
     }
 
-    pub fn database(&self) -> Database {
-        self.inner.database.clone()
-    }
-
     pub fn ssal_client(&self) -> SsalClient {
         self.inner.ssal_client.clone()
     }
 
-    pub fn cluster_manager(&self) -> ClusterManager {
-        self.inner.cluster_manager.clone()
+    pub fn cluster(&self) -> Cluster {
+        self.inner.cluster.clone()
     }
 }

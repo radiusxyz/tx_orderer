@@ -11,16 +11,11 @@ impl GetTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<AppState>,
+        _context: Arc<AppState>,
     ) -> Result<UserTransaction, RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        let database = context.database();
 
-        UserTransaction::get(
-            &database,
-            parameter.rollup_block_number,
-            parameter.transaction_order,
-        )
-        .map_err(|error| error.into())
+        UserTransaction::get(parameter.rollup_block_number, parameter.transaction_order)
+            .map_err(|error| error.into())
     }
 }

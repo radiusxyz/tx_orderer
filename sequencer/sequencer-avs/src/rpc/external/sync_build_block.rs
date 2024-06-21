@@ -12,12 +12,10 @@ impl SyncBuildBlock {
 
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        let database = context.database();
+        tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
 
-        match ClusterMetadata::get(&database) {
+        match ClusterMetadata::get_mut() {
             Ok(cluster_metadata) => {
-                tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
-
                 update_cluster_metadata(
                     &database,
                     parameter.ssal_block_number,
