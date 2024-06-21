@@ -14,22 +14,23 @@ use alloy::{
 use futures::{stream::select_all, Future, Stream, StreamExt, TryStreamExt};
 use pin_project::pin_project;
 
-use super::types::Ssal::{self, BlockCommitmentEvent, InitializeClusterEvent};
+use super::types::{
+    Avs::{self, NewTaskCreated},
+    Ssal::{self, InitializeClusterEvent},
+};
 use crate::avs::{types::SsalEventType, Error, ErrorKind};
 
 pub struct SsalEventListener {
     provider: RootProvider<PubSubFrontend>,
     ssal_contract_address: Address,
-    // TODO: Uncomment after EigenLayer integration
-    // avs_event_filter: Filter,
+    avs_contract_address: Address,
 }
 
 impl SsalEventListener {
     pub async fn connect(
         ethereum_websocket_url: impl AsRef<str>,
         ssal_contract_address: impl AsRef<str>,
-        // TODO: Uncomment after EigenLayer integration
-        // avs_contract_address: impl AsRef<str>,
+        avs_contract_address: impl AsRef<str>,
     ) -> Result<Self, Error> {
         let websocket = WsConnect::new(ethereum_websocket_url.as_ref());
         let provider = ProviderBuilder::new()
@@ -40,15 +41,13 @@ impl SsalEventListener {
         let ssal_contract_address = Address::from_str(ssal_contract_address.as_ref())
             .map_err(|error| Error::boxed(ErrorKind::ParseSsalContractAddress, error))?;
 
-        // TODO: Uncomment after EigenLayer integration
-        // let avs_contract_address = Address::from_str(avs_contract_address.as_ref())
-        //     .map_err(|error| Error::boxed(ErrorKind::ParseContractAddress, error))?;
+        let avs_contract_address = Address::from_str(avs_contract_address.as_ref())
+            .map_err(|error| Error::boxed(ErrorKind::ParseAvsContractAddress, error))?;
 
         Ok(Self {
             provider,
             ssal_contract_address,
-            // TODO: Uncomment after EigenLayer integration
-            // avs_contract_address,
+            avs_contract_address,
         })
     }
 
@@ -80,8 +79,14 @@ impl SsalEventListener {
             .into();
         stream.push(initialize_cluster_event_stream);
 
-        let block_commitment_event_stream: EventStream = ssal_contract
-            .BlockCommitmentEvent_filter()
+        Ok(())
+    }
+
+    async fn push_avs_event_stream(&self, stream: &mut Vec<EventStream>) -> Result<(), Error> {
+        let avs_contract = Avs::AvsInstance::new(self.avs_contract_address, self.provider.clone());
+
+        let block_commitment_event_stream: EventStream = avs_contract
+            .NewTaskCreated_filter()
             .subscribe()
             .await
             .map_err(|error| (ErrorKind::BlockCommitmentEventStream, error))?
@@ -102,6 +107,7 @@ impl SsalEventListener {
         let mut stream_list = Vec::<EventStream>::new();
         self.push_block_stream(&mut stream_list).await?;
         self.push_ssal_event_stream(&mut stream_list).await?;
+        self.push_avs_event_stream(&mut stream_list).await?;
 
         let mut event_stream = select_all(stream_list);
         while let Some(event) = event_stream.next().await {
@@ -121,7 +127,7 @@ type InitializeClusterEventStream =
     Pin<Box<dyn Stream<Item = Result<(InitializeClusterEvent, Log), sol_types::Error>> + Send>>;
 
 type BlockCommitmentEventStream =
-    Pin<Box<dyn Stream<Item = Result<(BlockCommitmentEvent, Log), sol_types::Error>> + Send>>;
+    Pin<Box<dyn Stream<Item = Result<(NewTaskCreated, Log), sol_types::Error>> + Send>>;
 
 #[allow(unused)]
 #[pin_project(project = StreamType)]

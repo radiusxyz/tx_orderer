@@ -2,7 +2,7 @@ use std::{iter::zip, path::Path, str::FromStr};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
-    primitives::FixedBytes,
+    primitives::{Bytes, FixedBytes},
     providers::{
         fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
         Identity, ProviderBuilder, RootProvider, WalletProvider,
@@ -36,11 +36,23 @@ type SsalContract = Ssal::SsalInstance<
     >,
 >;
 
+type AvsContract = Avs::AvsInstance<
+    Http<Client>,
+    FillProvider<
+        JoinFill<
+            JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
+            WalletFiller<EthereumWallet>,
+        >,
+        RootProvider<Http<Client>>,
+        Http<Client>,
+        Ethereum,
+    >,
+>;
+
 pub struct SsalClient {
     provider: EthereumProvider,
     ssal_contract: SsalContract,
-    // TODO: Uncomment after EigenLayer integration
-    // avs_contract: AvsContract,
+    avs_contract: AvsContract,
     seeder_client: SeederClient,
 }
 
@@ -53,6 +65,7 @@ impl Clone for SsalClient {
         Self {
             provider: self.provider.clone(),
             ssal_contract: self.ssal_contract.clone(),
+            avs_contract: self.avs_contract.clone(),
             seeder_client: self.seeder_client.clone(),
         }
     }
@@ -64,8 +77,7 @@ impl SsalClient {
         keystore_path: impl AsRef<Path>,
         keystore_password: impl AsRef<[u8]>,
         ssal_contract_address: impl AsRef<str>,
-        // TODO: Uncomment after EigenLayer integration
-        // avs_contract_address: impl AsRef<str>,
+        avs_contract_address: impl AsRef<str>,
         seeder_rpc_url: impl AsRef<str>,
     ) -> Result<Self, Error> {
         let url = ethereum_rpc_url
@@ -86,15 +98,16 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::ParseSsalContractAddress, error))?;
         let ssal_contract = Ssal::SsalInstance::new(ssal_contract_address, provider.clone());
 
-        // TODO: Uncomment after EigenLayer integration
-        // let avs_contract_address = Address::from_str(avs_contract_address.as_ref())
-        //     .map_err(|error| (ErrorKind::ParseContractAddress, error))?;
+        let avs_contract_address = Address::from_str(avs_contract_address.as_ref())
+            .map_err(|error| (ErrorKind::ParseAvsContractAddress, error))?;
+        let avs_contract = Avs::AvsInstance::new(avs_contract_address, provider.clone());
 
         let seeder_client = SeederClient::new(seeder_rpc_url)?;
 
         Ok(Self {
             provider,
             ssal_contract,
+            avs_contract,
             seeder_client,
         })
     }
@@ -137,7 +150,7 @@ impl SsalClient {
         sequencer_address: impl AsRef<str>,
     ) -> Result<(), Error> {
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
-            .map_err(|error| (ErrorKind::ParseClusterID, error))?;
+            .map_err(|error| (ErrorKind::ParseClusterId, error))?;
         let sequencer_address = Address::from_str(sequencer_address.as_ref())
             .map_err(|error| (ErrorKind::ParseSequencerAddress, error))?;
 
@@ -157,7 +170,7 @@ impl SsalClient {
         sequencer_address: impl AsRef<str>,
     ) -> Result<(), Error> {
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
-            .map_err(|error| (ErrorKind::ParseClusterID, error))?;
+            .map_err(|error| (ErrorKind::ParseClusterId, error))?;
         let sequencer_address = Address::from_str(sequencer_address.as_ref())
             .map_err(|error| (ErrorKind::ParseSequencerAddress, error))?;
 
@@ -173,16 +186,23 @@ impl SsalClient {
 
     pub async fn register_block_commitment(
         &self,
-        cluster_id: impl AsRef<str>,
+        block_commitment: impl AsRef<str>,
         block_number: u64,
-        block_commitment: String,
+        rollup_id: impl AsRef<str>,
+        cluster_id: impl AsRef<str>,
     ) -> Result<(), Error> {
+        let block_commitment = Bytes::from_str(block_commitment.as_ref())
+            .map_err(|error| (ErrorKind::ParseBlockCommitment, error))?;
+
+        let rollup_id = FixedBytes::from_str(rollup_id.as_ref())
+            .map_err(|error| (ErrorKind::ParseRollupId, error))?;
+
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
-            .map_err(|error| (ErrorKind::ParseClusterID, error))?;
+            .map_err(|error| (ErrorKind::ParseClusterId, error))?;
 
         let _transaction = self
-            .ssal_contract
-            .registerBlockCommitment(cluster_id, block_number, block_commitment)
+            .avs_contract
+            .createNewTask(block_commitment, block_number as u32, rollup_id, cluster_id)
             .send()
             .await
             .map_err(|error| (ErrorKind::RegisterBlockCommitment, error))?;
@@ -195,7 +215,7 @@ impl SsalClient {
         cluster_id: impl AsRef<str>,
     ) -> Result<Vec<(Address, Option<String>)>, Error> {
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
-            .map_err(|error| (ErrorKind::ParseClusterID, error))?;
+            .map_err(|error| (ErrorKind::ParseClusterId, error))?;
 
         let sequencer_address_list: [Address; 30] = self
             .ssal_contract
