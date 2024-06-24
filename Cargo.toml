@@ -3,6 +3,7 @@ members = [
     "crates/block-commitment",
     "crates/database",
     "crates/json-rpc",
+    "crates/operator",
     "crates/ssal",
     "seeder/seeder-avs",
     "sequencer/sequencer-avs",
@@ -16,6 +17,7 @@ block-commitment = { path = "crates/block-commitment" }
 database = { path = "crates/database" }
 futures = "0.3.30"
 json-rpc = { path = "crates/json-rpc" }
+operator = { path = "crates/operator" }
 rand = "0.8.5"
 reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0.197", features = ["derive"] }
