@@ -15,7 +15,7 @@ async fn main() -> Result<(), Error> {
     let operator = EigenLayerOperator::register(
         "http://127.0.0.1:8545",
         "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
-        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
+        "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
         "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
         "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
         "0x50EEf481cae4250d252Ae577A09bF514f224C6C4",
@@ -27,9 +27,9 @@ async fn main() -> Result<(), Error> {
         "http://127.0.0.1:8545",
         "/home/kanet/Projects/sequencer-framework/sequencer/sequencer-avs/keys/sequencer_1",
         "sequencer_1",
-        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
-        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
-        "http://127.0.0.1:8545",
+        "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
+        "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
+        "http://127.0.0.1:3000",
         operator,
     )?;
 
@@ -39,8 +39,8 @@ async fn main() -> Result<(), Error> {
 
     let ssal_event_listener = SsalEventListener::connect(
         "ws://127.0.0.1:8545",
-        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
-        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
+        "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
+        "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
     )
     .await?;
 
