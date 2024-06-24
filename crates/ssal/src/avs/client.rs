@@ -277,4 +277,16 @@ impl SsalClient {
 
         Ok(sequencer_list)
     }
+
+    pub async fn is_registered(&self) {
+        let output: bool = self
+            .avs_contract
+            .operatorRegistered(self.address())
+            .call()
+            .await
+            .unwrap()
+            ._0;
+
+        println!("{:?}", output);
+    }
 }
