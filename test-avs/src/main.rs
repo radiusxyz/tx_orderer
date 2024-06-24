@@ -14,12 +14,11 @@ async fn main() -> Result<(), Error> {
 
     let operator = EigenLayerOperator::register(
         "http://127.0.0.1:8545",
-        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+        "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
         "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
         "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
         "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
         "0x50EEf481cae4250d252Ae577A09bF514f224C6C4",
-        true,
     )
     .await?;
 
@@ -32,10 +31,6 @@ async fn main() -> Result<(), Error> {
         "http://127.0.0.1:3000",
         operator,
     )?;
-
-    assert!(
-        ssal_client.address() == Address::from_str("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")?
-    );
 
     let ssal_event_listener = SsalEventListener::connect(
         "ws://127.0.0.1:8545",
@@ -63,6 +58,7 @@ async fn main() -> Result<(), Error> {
             "2" => register_sequencer(&ssal_client).await?,
             "3" => deregister_sequencer(&ssal_client).await?,
             "4" => register_block_commitment(&ssal_client).await?,
+            "5" => is_registered(&ssal_client).await?,
             _ => continue,
         }
     }
@@ -120,6 +116,12 @@ async fn register_block_commitment(client: &SsalClient) -> Result<(), Error> {
     client
         .register_block_commitment(block_commitment, block_number, rollup_id, cluster_id)
         .await?;
+
+    Ok(())
+}
+
+async fn is_registered(client: &SsalClient) -> Result<(), Error> {
+    client.is_registered().await;
 
     Ok(())
 }
