@@ -1,13 +1,10 @@
 use std::{io::stdin, str::FromStr};
 
-use chrono::Utc;
-use eigen_client_elcontracts::{
-    reader::ELChainReader,
-    writer::{ELChainWriter, Operator},
+use operator::EigenLayerOperator;
+use ssal::avs::{
+    types::{Address, SsalEventType},
+    SsalClient, SsalEventListener,
 };
-use eigen_utils::binding::ECDSAStakeRegistry::{self, SignatureWithSaltAndExpiry};
-use rand::RngCore;
-use ssal::avs::{types::*, SsalClient, SsalEventListener};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -15,97 +12,35 @@ type Error = Box<dyn std::error::Error>;
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
 
+    let operator = EigenLayerOperator::register(
+        "http://127.0.0.1:8545",
+        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
+        "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+        "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "0x50EEf481cae4250d252Ae577A09bF514f224C6C4",
+        true,
+    )
+    .await?;
+
     let ssal_client = SsalClient::new(
         "http://127.0.0.1:8545",
         "/home/kanet/Projects/sequencer-framework/sequencer/sequencer-avs/keys/sequencer_1",
         "sequencer_1",
-        "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
-        "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
-        "http://127.0.0.1:3000",
+        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
+        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
+        "http://127.0.0.1:8545",
+        operator,
     )?;
 
-    // Register Operator
-    let default_slasher = Address::ZERO; // We don't need slasher for our example.
-    let default_strategy = Address::ZERO; // We don't need strategy for our example.
-    let delegation_manager_contract_address =
-        Address::from_str("0x9E545E3C0baAB3E08CdfD552C960A1050f373042")?;
-    let avs_directory_contract_address =
-        Address::from_str("0x95401dc811bb5740090279Ba06cfA8fcF6113778")?;
-
-    let elcontracts_reader_instance = ELChainReader::new(
-        default_slasher,
-        delegation_manager_contract_address,
-        avs_directory_contract_address,
-        "http::/127.0.0.1:8545".parse()?,
+    assert!(
+        ssal_client.address() == Address::from_str("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")?
     );
 
-    let elcontracts_writer_instance = ELChainWriter::new(
-        delegation_manager_contract_address,
-        default_strategy,
-        elcontracts_reader_instance.clone(),
-        "http://127.0.0.1:8545".parse()?,
-        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d".to_owned(),
-    );
-
-    let operator = Operator::new(
-        ssal_client.address(),
-        ssal_client.address(),
-        Address::ZERO,
-        0u32,
-        None,
-    );
-
-    let _tx_hash = elcontracts_writer_instance
-        .register_as_operator(operator)
-        .await;
-
-    let mut salt = [0u8; 32];
-    rand::rngs::OsRng.fill_bytes(&mut salt);
-    let salt = FixedBytes::from_slice(&salt);
-    let now = Utc::now().timestamp();
-    let expiry: U256 = U256::from(now + 3600);
-    let digest_hash = elcontracts_reader_instance
-        .calculate_operator_avs_registration_digest_hash(
-            ssal_client.address(),
-            Address::from_str("0x95401dc811bb5740090279Ba06cfA8fcF6113778")?,
-            salt,
-            expiry,
-        )
-        .await
-        .expect("not able to calculate operator ");
-
-    let signature = ssal_client.signer().sign_hash(&digest_hash).await?;
-
-    let operator_signature = SignatureWithSaltAndExpiry {
-        signature: signature.as_bytes().into(),
-        salt,
-        expiry: expiry,
-    };
-
-    let contract_ecdsa_stake_registry = ECDSAStakeRegistry::new(
-        Address::from_str("0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9")?,
-        ssal_client.provider(),
-    );
-    println!("initialize new ecdsa ");
-
-    // If you wish to run on holesky, please deploy the stake registry contract(it's not deployed right now)
-    // and uncomment the gas and gas_price
-    let registeroperator_details = contract_ecdsa_stake_registry
-        .registerOperatorWithSignature(ssal_client.address(), operator_signature);
-    let _tx = registeroperator_details
-        // .gas(300000)
-        // .gas_price(20000000000)
-        .send()
-        .await?
-        .get_receipt()
-        .await?;
-
-    tracing::info!("Operator registered succesfully");
-
-    let event_listener = SsalEventListener::connect(
+    let ssal_event_listener = SsalEventListener::connect(
         "ws://127.0.0.1:8545",
-        "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
-        "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
+        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
+        "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
     )
     .await?;
 
@@ -113,7 +48,10 @@ async fn main() -> Result<(), Error> {
         let ssal_client = ssal_client.clone();
 
         async move {
-            event_listener.init(callback, ssal_client).await.unwrap();
+            ssal_event_listener
+                .init(callback, ssal_client)
+                .await
+                .unwrap();
         }
     });
 
@@ -190,12 +128,12 @@ async fn callback(event: SsalEventType, context: SsalClient) {
     match event {
         SsalEventType::NewBlock(block) => {
             let _block_number = block.header.number.unwrap();
-            let _sequencer_list = context
-                .get_sequencer_list(
-                    "0x38a941d2d4959baae54ba9c14502abe54ffd4ad0db290295f453ef9d7d5a3f2d",
-                )
-                .await
-                .unwrap();
+            // let _sequencer_list = context
+            //     .get_sequencer_list(
+            //         "0x38a941d2d4959baae54ba9c14502abe54ffd4ad0db290295f453ef9d7d5a3f2d",
+            //     )
+            //     .await
+            //     .unwrap();
 
             // tracing::info!(
             //     "Block Number: {}\nSequencer List: {:?}",

@@ -4,11 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.38"
-eigen-client-elcontracts = {git = "https://github.com/supernovahs/eigensdk-rs", rev = "e700fa2"}
-eigen-types = {git = "https://github.com/supernovahs/eigensdk-rs", rev = "e700fa2"}
-eigen-utils = {git = "https://github.com/supernovahs/eigensdk-rs", rev = "e700fa2"}
-
+operator = { workspace = true }
 rand = { workspace = true }
 ssal = { workspace = true, features = ["avs"] }
 tokio = { workspace = true, features = ["full"] }
