@@ -1,10 +1,6 @@
-use std::{io::stdin, str::FromStr};
+use std::io::stdin;
 
-use operator::EigenLayerOperator;
-use ssal::avs::{
-    types::{Address, SsalEventType},
-    SsalClient, SsalEventListener,
-};
+use ssal::avs::{types::SsalEventType, SsalClient, SsalEventListener};
 
 type Error = Box<dyn std::error::Error>;
 
@@ -12,25 +8,20 @@ type Error = Box<dyn std::error::Error>;
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
 
-    let operator = EigenLayerOperator::register(
-        "http://127.0.0.1:8545",
-        "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
-        "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
-        "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-        "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-        "0x50EEf481cae4250d252Ae577A09bF514f224C6C4",
-    )
-    .await?;
-
     let ssal_client = SsalClient::new(
         "http://127.0.0.1:8545",
-        "/home/kanet/Projects/sequencer-framework/sequencer/sequencer-avs/keys/sequencer_1",
-        "sequencer_1",
+        // "/home/kanet/Projects/sequencer-framework/sequencer/sequencer-avs/keys/sequencer_1",
+        // "sequencer_1",
+        "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
         "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
+        "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "0x9E545E3C0baAB3E08CdfD552C960A1050f373042",
+        "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
         "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
         "http://127.0.0.1:3000",
-        operator,
     )?;
+
+    ssal_client.register_as_operator().await?;
 
     let ssal_event_listener = SsalEventListener::connect(
         "ws://127.0.0.1:8545",
@@ -58,7 +49,6 @@ async fn main() -> Result<(), Error> {
             "2" => register_sequencer(&ssal_client).await?,
             "3" => deregister_sequencer(&ssal_client).await?,
             "4" => register_block_commitment(&ssal_client).await?,
-            "5" => is_registered(&ssal_client).await?,
             _ => continue,
         }
     }
@@ -116,12 +106,6 @@ async fn register_block_commitment(client: &SsalClient) -> Result<(), Error> {
     client
         .register_block_commitment(block_commitment, block_number, rollup_id, cluster_id)
         .await?;
-
-    Ok(())
-}
-
-async fn is_registered(client: &SsalClient) -> Result<(), Error> {
-    client.is_registered().await;
 
     Ok(())
 }
