@@ -2,14 +2,14 @@ use std::{iter::zip, path::Path, str::FromStr};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
-    primitives::{eip191_hash_message, Bytes, FixedBytes},
     providers::{
         fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
         Identity, ProviderBuilder, RootProvider, WalletProvider,
     },
-    signers::{k256::ecdsa::SigningKey, local::LocalSigner, Signer},
+    signers::{k256::ecdsa::SigningKey, local::LocalSigner},
     transports::http::{Client, Http},
 };
+use operator::EigenLayerOperator;
 
 use crate::avs::{seeder::SeederClient, types::*, Error, ErrorKind};
 
@@ -55,6 +55,7 @@ pub struct SsalClient {
     ssal_contract: SsalContract,
     avs_contract: AvsContract,
     seeder_client: SeederClient,
+    operator: EigenLayerOperator,
 }
 
 unsafe impl Send for SsalClient {}
@@ -69,6 +70,7 @@ impl Clone for SsalClient {
             ssal_contract: self.ssal_contract.clone(),
             avs_contract: self.avs_contract.clone(),
             seeder_client: self.seeder_client.clone(),
+            operator: self.operator.clone(),
         }
     }
 }
@@ -81,6 +83,7 @@ impl SsalClient {
         ssal_contract_address: impl AsRef<str>,
         avs_contract_address: impl AsRef<str>,
         seeder_rpc_url: impl AsRef<str>,
+        operator: EigenLayerOperator,
     ) -> Result<Self, Error> {
         let url = ethereum_rpc_url
             .as_ref()
@@ -112,6 +115,7 @@ impl SsalClient {
             ssal_contract,
             avs_contract,
             seeder_client,
+            operator,
         })
     }
 
@@ -230,7 +234,7 @@ impl SsalClient {
         let message_hash = eip191_hash_message(block_commitment);
 
         let signature = self
-            .signer
+            .operator
             .sign_hash(&message_hash)
             .await
             .map_err(|error| (ErrorKind::SignTask, error))?;

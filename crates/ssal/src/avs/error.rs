@@ -120,6 +120,15 @@ where
     }
 }
 
+impl From<(ErrorKind, Box<dyn std::error::Error>)> for Error {
+    fn from(value: (ErrorKind, Box<dyn std::error::Error>)) -> Self {
+        Self {
+            kind: value.0,
+            source: ErrorSource::Boxed(value.1),
+        }
+    }
+}
+
 impl Error {
     pub fn kind(&self) -> ErrorKind {
         self.kind

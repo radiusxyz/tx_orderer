@@ -10,9 +10,10 @@ doctest = false
 alloy = { version = "0.1.1", features = ["full", "signer-keystore", "signer-local"], optional = true }
 futures = { workspace = true }
 json-rpc = { workspace = true }
+operator = { workspace = true, optional = true }
 pin-project = "1.1.5"
 rand = { workspace = true }
 serde = { workspace = true }
 
 [features]
-avs = ["alloy"]
+avs = ["alloy", "operator"]
