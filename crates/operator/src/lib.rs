@@ -33,7 +33,6 @@ impl EigenLayerOperator {
         avs_directory_contract_address: impl AsRef<str>,
         delegation_manager_contract_address: impl AsRef<str>,
         stake_registry_contract_address: impl AsRef<str>,
-        is_registered: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let wallet = LocalWallet::from_str(signing_key.as_ref())?;
 
@@ -45,6 +44,7 @@ impl EigenLayerOperator {
         let avs_contract_address = Address::from_str(avs_contract_address.as_ref())?;
         let avs_directory_contract_address =
             Address::from_str(avs_directory_contract_address.as_ref())?;
+
         let delegation_manager_contract_address =
             Address::from_str(delegation_manager_contract_address.as_ref())?;
         let stake_registry_contract_address =
@@ -74,15 +74,15 @@ impl EigenLayerOperator {
             None,
         );
 
+        println!("1");
+
         // In case you are running holesky. Comment the below register_as_operator call after the first
         // call . Since we can register only once per operator.
-        if !is_registered {
-            let _tx_hash = elcontracts_writer_instance
-                .register_as_operator(operator)
-                .await?;
-        }
+        let _tx_hash = elcontracts_writer_instance
+            .register_as_operator(operator)
+            .await?;
 
-        println!("Registered successfully..");
+        println!("2");
 
         let mut salt = [0u8; 32];
         rand::rngs::OsRng.fill_bytes(&mut salt);
@@ -98,7 +98,11 @@ impl EigenLayerOperator {
             )
             .await?;
 
+        println!("3");
+
         let signature = wallet.sign_hash(&digest_hash).await?;
+
+        println!("4");
 
         let operator_signature = SignatureWithSaltAndExpiry {
             signature: signature.as_bytes().into(),
@@ -107,19 +111,20 @@ impl EigenLayerOperator {
         };
 
         let contract_ecdsa_stake_registry =
-            ECDSAStakeRegistry::new(stake_registry_contract_address, provider);
+            ECDSAStakeRegistry::new(stake_registry_contract_address, provider.clone());
 
         // If you wish to run on holesky, please deploy the stake registry contract(it's not deployed right now)
         // and uncomment the gas and gas_price
         let registeroperator_details = contract_ecdsa_stake_registry
             .registerOperatorWithSignature(wallet.clone().address(), operator_signature);
+
         let _tx = registeroperator_details
             // .gas(300000)
             // .gas_price(20000000000)
             .send()
             .await?
             .get_receipt()
-            .await?;
+            .await;
 
         Ok(Self { wallet })
     }
