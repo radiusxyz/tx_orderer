@@ -92,7 +92,7 @@ impl SsalClient {
 
         let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
             .map_err(|error| (ErrorKind::Keystore, error))?;
-        let wallet = EthereumWallet::from(signer.clone());
+        let wallet = EthereumWallet::new(signer.clone());
 
         let provider = ProviderBuilder::new()
             .with_recommended_fillers()
@@ -124,9 +124,7 @@ impl SsalClient {
     }
 
     pub fn address(&self) -> Address {
-        // # Safety
-        // The function does not panic because we will always end up with an address.
-        self.provider.signer_addresses().next().unwrap()
+        self.provider.wallet().default_signer().address()
     }
 
     pub fn signer(&self) -> &LocalSigner<SigningKey> {
