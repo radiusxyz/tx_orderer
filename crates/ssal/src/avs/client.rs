@@ -9,7 +9,9 @@ use alloy::{
     signers::{k256::ecdsa::SigningKey, local::LocalSigner},
     transports::http::{Client, Http},
 };
-use operator::EigenLayerOperator;
+use chrono::Utc;
+use DelegationManager::OperatorDetails;
+use StakeRegistry::SignatureWithSaltAndExpiry;
 
 use crate::avs::{seeder::SeederClient, types::*, Error, ErrorKind};
 
@@ -24,6 +26,45 @@ type EthereumProvider = FillProvider<
 >;
 
 type SsalContract = Ssal::SsalInstance<
+    Http<Client>,
+    FillProvider<
+        JoinFill<
+            JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
+            WalletFiller<EthereumWallet>,
+        >,
+        RootProvider<Http<Client>>,
+        Http<Client>,
+        Ethereum,
+    >,
+>;
+
+type DelegationManagerContract = DelegationManager::DelegationManagerInstance<
+    Http<Client>,
+    FillProvider<
+        JoinFill<
+            JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
+            WalletFiller<EthereumWallet>,
+        >,
+        RootProvider<Http<Client>>,
+        Http<Client>,
+        Ethereum,
+    >,
+>;
+
+type StakeRegistryContract = StakeRegistry::StakeRegistryInstance<
+    Http<Client>,
+    FillProvider<
+        JoinFill<
+            JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
+            WalletFiller<EthereumWallet>,
+        >,
+        RootProvider<Http<Client>>,
+        Http<Client>,
+        Ethereum,
+    >,
+>;
+
+type AvsDirectoryContract = AvsDirectory::AvsDirectoryInstance<
     Http<Client>,
     FillProvider<
         JoinFill<
@@ -53,9 +94,11 @@ pub struct SsalClient {
     provider: EthereumProvider,
     signer: LocalSigner<SigningKey>,
     ssal_contract: SsalContract,
+    delegation_manager_contract: DelegationManagerContract,
+    stake_registry_contract: StakeRegistryContract,
+    avs_directory_contract: AvsDirectoryContract,
     avs_contract: AvsContract,
     seeder_client: SeederClient,
-    operator: EigenLayerOperator,
 }
 
 unsafe impl Send for SsalClient {}
@@ -68,9 +111,11 @@ impl Clone for SsalClient {
             provider: self.provider.clone(),
             signer: self.signer.clone(),
             ssal_contract: self.ssal_contract.clone(),
+            delegation_manager_contract: self.delegation_manager_contract.clone(),
+            stake_registry_contract: self.stake_registry_contract.clone(),
+            avs_directory_contract: self.avs_directory_contract.clone(),
             avs_contract: self.avs_contract.clone(),
             seeder_client: self.seeder_client.clone(),
-            operator: self.operator.clone(),
         }
     }
 }
@@ -78,20 +123,26 @@ impl Clone for SsalClient {
 impl SsalClient {
     pub fn new(
         ethereum_rpc_url: impl AsRef<str>,
-        keystore_path: impl AsRef<Path>,
-        keystore_password: impl AsRef<[u8]>,
+        // keystore_path: impl AsRef<Path>,
+        // keystore_password: impl AsRef<[u8]>,
+        signing_key: impl AsRef<str>,
         ssal_contract_address: impl AsRef<str>,
+        delegation_manager_contract_address: impl AsRef<str>,
+        stake_registry_contract_address: impl AsRef<str>,
+        avs_directory_contract_address: impl AsRef<str>,
         avs_contract_address: impl AsRef<str>,
         seeder_rpc_url: impl AsRef<str>,
-        operator: EigenLayerOperator,
     ) -> Result<Self, Error> {
         let url = ethereum_rpc_url
             .as_ref()
             .parse()
             .map_err(|error| Error::boxed(ErrorKind::ParseRpcUrl, error))?;
 
-        let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
-            .map_err(|error| (ErrorKind::Keystore, error))?;
+        // let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
+        //     .map_err(|error| (ErrorKind::Keystore, error))?;
+
+        let signer = LocalSigner::from_str(signing_key.as_ref())
+            .map_err(|error| (ErrorKind::ParseSigningKey, error))?;
         let wallet = EthereumWallet::new(signer.clone());
 
         let provider = ProviderBuilder::new()
@@ -103,6 +154,24 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::ParseSsalContractAddress, error))?;
         let ssal_contract = Ssal::SsalInstance::new(ssal_contract_address, provider.clone());
 
+        let delegation_manager_contract_address =
+            Address::from_str(delegation_manager_contract_address.as_ref())
+                .map_err(|error| (ErrorKind::ParseDelegationManagerContractAddress, error))?;
+        let delegation_manager_contract =
+            DelegationManager::new(delegation_manager_contract_address, provider.clone());
+
+        let stake_registry_contract_address =
+            Address::from_str(stake_registry_contract_address.as_ref())
+                .map_err(|error| (ErrorKind::ParseStakeRegistryContractAddress, error))?;
+        let stake_registry_contract =
+            StakeRegistry::new(stake_registry_contract_address, provider.clone());
+
+        let avs_directory_contract_address =
+            Address::from_str(avs_directory_contract_address.as_ref())
+                .map_err(|error| (ErrorKind::ParseAvsDirectoryContractAddress, error))?;
+        let avs_directory_contract =
+            AvsDirectory::new(avs_directory_contract_address, provider.clone());
+
         let avs_contract_address = Address::from_str(avs_contract_address.as_ref())
             .map_err(|error| (ErrorKind::ParseAvsContractAddress, error))?;
         let avs_contract = Avs::AvsInstance::new(avs_contract_address, provider.clone());
@@ -113,9 +182,11 @@ impl SsalClient {
             provider,
             signer,
             ssal_contract,
+            delegation_manager_contract,
+            stake_registry_contract,
+            avs_directory_contract,
             avs_contract,
             seeder_client,
-            operator,
         })
     }
 
@@ -129,6 +200,66 @@ impl SsalClient {
 
     pub fn signer(&self) -> &LocalSigner<SigningKey> {
         &self.signer
+    }
+
+    pub async fn register_as_operator(&self) -> Result<(), Error> {
+        let operator_details = OperatorDetails {
+            earningsReceiver: self.address(),
+            delegationApprover: Address::ZERO,
+            stakerOptOutWindowBlocks: 0,
+        };
+
+        let _register_as_operator = self
+            .delegation_manager_contract
+            .registerAsOperator(operator_details, String::from(""))
+            .send()
+            .await
+            .map_err(|error| (ErrorKind::RegisterAsOperator, error))?
+            .get_receipt()
+            .await
+            .map_err(|error| (ErrorKind::RegisterAsOperator, error))?;
+
+        let salt = FixedBytes::from_slice(&[0u8; 32]);
+        let now = Utc::now().timestamp();
+        let expiry: U256 = U256::from(now + 3600);
+        let digest_hash = self
+            .avs_directory_contract
+            .calculateOperatorAVSRegistrationDigestHash(
+                self.address(),
+                *self.avs_contract.address(),
+                salt,
+                expiry,
+            )
+            .call()
+            .await
+            .map_err(|error| (ErrorKind::CalculateDigestHash, error))?
+            ._0;
+
+        let signature = self
+            .signer()
+            .sign_hash(&digest_hash)
+            .await
+            .map_err(|error| (ErrorKind::OperatorSignature, error))?;
+
+        let operator_signature = SignatureWithSaltAndExpiry {
+            signature: signature.as_bytes().into(),
+            salt,
+            expiry,
+        };
+
+        let register_operator_with_signature = self
+            .stake_registry_contract
+            .registerOperatorWithSignature(self.address(), operator_signature)
+            .send()
+            .await
+            .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?
+            .get_receipt()
+            .await
+            .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?;
+
+        println!("{:?}", register_operator_with_signature);
+
+        Ok(())
     }
 
     pub async fn initialize_cluster(
@@ -231,18 +362,18 @@ impl SsalClient {
 
         let message_hash = eip191_hash_message(block_commitment);
 
-        let signature = self
-            .operator
-            .sign_hash(&message_hash)
-            .await
-            .map_err(|error| (ErrorKind::SignTask, error))?;
+        // let signature = self
+        //     .operator
+        //     .sign_hash(&message_hash)
+        //     .await
+        //     .map_err(|error| (ErrorKind::SignTask, error))?;
 
-        let _transaction = self
-            .avs_contract
-            .respondToTask(task, task_index, signature.as_bytes().into())
-            .send()
-            .await
-            .map_err(|error| (ErrorKind::RespondToTask, error))?;
+        // let _transaction = self
+        //     .avs_contract
+        //     .respondToTask(task, task_index, signature.as_bytes().into())
+        //     .send()
+        //     .await
+        //     .map_err(|error| (ErrorKind::RespondToTask, error))?;
 
         Ok(())
     }
@@ -276,17 +407,5 @@ impl SsalClient {
         let sequencer_list = zip(sequencer_address_list, sequencer_rpc_url_list).collect();
 
         Ok(sequencer_list)
-    }
-
-    pub async fn is_registered(&self) {
-        let output: bool = self
-            .avs_contract
-            .operatorRegistered(self.address())
-            .call()
-            .await
-            .unwrap()
-            ._0;
-
-        println!("{:?}", output);
     }
 }

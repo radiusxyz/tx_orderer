@@ -16,6 +16,27 @@ sol!(
 sol!(
     #[allow(missing_docs)]
     #[sol(rpc)]
+    DelegationManager,
+    "src/avs/contract/DelegationManager.json"
+);
+
+sol!(
+    #[allow(missing_docs)]
+    #[sol(rpc)]
+    StakeRegistry,
+    "src/avs/contract/ECDSAStakeRegistry.json"
+);
+
+sol!(
+    #[allow(missing_docs)]
+    #[sol(rpc)]
+    AvsDirectory,
+    "src/avs/contract/IAVSDirectory.json"
+);
+
+sol!(
+    #[allow(missing_docs)]
+    #[sol(rpc)]
     Avs,
     "src/avs/contract/Avs.json"
 );
