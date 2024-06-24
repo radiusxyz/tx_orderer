@@ -1,4 +1,4 @@
-use std::{iter::zip, path::Path, str::FromStr};
+use std::{iter::zip, str::FromStr};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
@@ -219,7 +219,8 @@ impl SsalClient {
             .await
             .map_err(|error| (ErrorKind::RegisterAsOperator, error))?;
 
-        let salt = FixedBytes::from_slice(&[0u8; 32]);
+        let salt = [0u8; 32];
+        let salt = FixedBytes::from_slice(&salt);
         let now = Utc::now().timestamp();
         let expiry: U256 = U256::from(now + 3600);
         let digest_hash = self
@@ -247,7 +248,7 @@ impl SsalClient {
             expiry,
         };
 
-        let register_operator_with_signature = self
+        let _register_operator_with_signature = self
             .stake_registry_contract
             .registerOperatorWithSignature(self.address(), operator_signature)
             .send()
@@ -256,8 +257,6 @@ impl SsalClient {
             .get_receipt()
             .await
             .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?;
-
-        println!("{:?}", register_operator_with_signature);
 
         Ok(())
     }
@@ -355,25 +354,24 @@ impl SsalClient {
         &self,
         task: Avs::Task,
         task_index: u32,
-        block_commitment: impl AsRef<str>,
+        block_commitment: String,
     ) -> Result<(), Error> {
-        let block_commitment = Bytes::from_str(block_commitment.as_ref())
-            .map_err(|error| (ErrorKind::ParseBlockCommitment, error))?;
-
+        // let message_bytes = Bytes::from_str(block_commitment.as_str())
+        //     .map_err(|error| (ErrorKind::ParseMessageToBytes, error))?;
         let message_hash = eip191_hash_message(block_commitment);
 
-        // let signature = self
-        //     .operator
-        //     .sign_hash(&message_hash)
-        //     .await
-        //     .map_err(|error| (ErrorKind::SignTask, error))?;
+        let signature = self
+            .signer()
+            .sign_hash(&message_hash)
+            .await
+            .map_err(|error| (ErrorKind::SignTask, error))?;
 
-        // let _transaction = self
-        //     .avs_contract
-        //     .respondToTask(task, task_index, signature.as_bytes().into())
-        //     .send()
-        //     .await
-        //     .map_err(|error| (ErrorKind::RespondToTask, error))?;
+        let _transaction = self
+            .avs_contract
+            .respondToTask(task, task_index, signature.as_bytes().into())
+            .send()
+            .await
+            .map_err(|error| (ErrorKind::RespondToTask, error))?;
 
         Ok(())
     }

@@ -13,6 +13,7 @@ pub enum ErrorKind {
     ParseBlockCommitment,
     ParseClusterId,
     ParseRollupId,
+    ParseMessageToBytes,
     RegisterAsOperator,
     CalculateDigestHash,
     OperatorSignature,
