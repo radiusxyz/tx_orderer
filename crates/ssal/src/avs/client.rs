@@ -1,4 +1,4 @@
-use std::{iter::zip, str::FromStr};
+use std::{iter::zip, path::Path, str::FromStr};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
@@ -94,11 +94,11 @@ pub struct SsalClient {
     provider: EthereumProvider,
     signer: LocalSigner<SigningKey>,
     ssal_contract: SsalContract,
+    seeder_client: SeederClient,
     delegation_manager_contract: DelegationManagerContract,
     stake_registry_contract: StakeRegistryContract,
     avs_directory_contract: AvsDirectoryContract,
     avs_contract: AvsContract,
-    seeder_client: SeederClient,
 }
 
 unsafe impl Send for SsalClient {}
@@ -111,11 +111,11 @@ impl Clone for SsalClient {
             provider: self.provider.clone(),
             signer: self.signer.clone(),
             ssal_contract: self.ssal_contract.clone(),
+            seeder_client: self.seeder_client.clone(),
             delegation_manager_contract: self.delegation_manager_contract.clone(),
             stake_registry_contract: self.stake_registry_contract.clone(),
             avs_directory_contract: self.avs_directory_contract.clone(),
             avs_contract: self.avs_contract.clone(),
-            seeder_client: self.seeder_client.clone(),
         }
     }
 }
@@ -123,9 +123,8 @@ impl Clone for SsalClient {
 impl SsalClient {
     pub fn new(
         ethereum_rpc_url: impl AsRef<str>,
-        // keystore_path: impl AsRef<Path>,
-        // keystore_password: impl AsRef<[u8]>,
-        signing_key: impl AsRef<str>,
+        keystore_path: impl AsRef<Path>,
+        keystore_password: impl AsRef<[u8]>,
         ssal_contract_address: impl AsRef<str>,
         delegation_manager_contract_address: impl AsRef<str>,
         stake_registry_contract_address: impl AsRef<str>,
@@ -138,11 +137,9 @@ impl SsalClient {
             .parse()
             .map_err(|error| Error::boxed(ErrorKind::ParseRpcUrl, error))?;
 
-        // let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
-        //     .map_err(|error| (ErrorKind::Keystore, error))?;
+        let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
+            .map_err(|error| (ErrorKind::Keystore, error))?;
 
-        let signer = LocalSigner::from_str(signing_key.as_ref())
-            .map_err(|error| (ErrorKind::ParseSigningKey, error))?;
         let wallet = EthereumWallet::new(signer.clone());
 
         let provider = ProviderBuilder::new()
@@ -182,11 +179,11 @@ impl SsalClient {
             provider,
             signer,
             ssal_contract,
+            seeder_client,
             delegation_manager_contract,
             stake_registry_contract,
             avs_directory_contract,
             avs_contract,
-            seeder_client,
         })
     }
 
@@ -356,9 +353,13 @@ impl SsalClient {
         task_index: u32,
         block_commitment: String,
     ) -> Result<(), Error> {
-        // let message_bytes = Bytes::from_str(block_commitment.as_str())
-        //     .map_err(|error| (ErrorKind::ParseMessageToBytes, error))?;
-        let message_hash = eip191_hash_message(block_commitment);
+        let message_bytes = Bytes::from_str(block_commitment.as_str())
+            .map_err(|error| (ErrorKind::ParseMessageToBytes, error))?;
+        let message_k256 = keccak256(message_bytes);
+        println!("Pre-Hash: {:?}", message_k256);
+
+        let message_hash = eip191_hash_message(message_k256);
+        println!("Post-Hash: {:?}", message_hash);
 
         let signature = self
             .signer()
