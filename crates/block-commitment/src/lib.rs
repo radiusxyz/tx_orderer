@@ -38,7 +38,7 @@ pub trait CommitmentScheme {
     fn to_string(&self) -> String;
 }
 
-pub fn get_block_commitment<T>(block: &Vec<T>, seed: [u8; 32]) -> Vec<u8>
+pub fn calculate_block_commitment<T>(block: &Vec<T>, seed: [u8; 32]) -> String
 where
     T: AsRef<[u8]>,
 {
@@ -57,5 +57,5 @@ where
         .collect();
 
     let commitment = Commitment::<Bn254, 1024>::commit(&prover_param, &message);
-    commitment.to_string().into_bytes()
+    commitment.to_string()
 }
