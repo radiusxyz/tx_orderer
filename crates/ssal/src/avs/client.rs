@@ -351,11 +351,9 @@ impl SsalClient {
         &self,
         task: Avs::Task,
         task_index: u32,
-        block_commitment: String,
+        block_commitment: Bytes,
     ) -> Result<(), Error> {
-        let message_bytes = Bytes::from_str(block_commitment.as_str())
-            .map_err(|error| (ErrorKind::ParseMessageToBytes, error))?;
-        let message_k256 = keccak256(message_bytes);
+        let message_k256 = keccak256(block_commitment);
         println!("Pre-Hash: {:?}", message_k256);
 
         let message_hash = eip191_hash_message(message_k256);
