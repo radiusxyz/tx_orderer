@@ -1,10 +1,10 @@
 use json_rpc::RpcClient;
 
-use crate::{rpc::external::GetTransaction, types::*};
+use crate::{rpc::internal::GetTransaction, types::*};
 
 pub fn init(
-    ssal_block_number: SsalBlockNumber,
-    rollup_block_number: RollupBlockNumber,
+    ssal_block_number: u64,
+    rollup_block_number: u64,
     block_height: u64,
     register_block_commitment: bool,
 ) {

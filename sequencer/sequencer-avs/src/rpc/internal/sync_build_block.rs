@@ -1,4 +1,4 @@
-use crate::rpc::{prelude::*, util::update_cluster_metadata};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncBuildBlock {
@@ -16,24 +16,12 @@ impl SyncBuildBlock {
 
         match ClusterMetadata::get_mut() {
             Ok(cluster_metadata) => {
-                update_cluster_metadata(
-                    &database,
-                    parameter.ssal_block_number,
-                    parameter.rollup_block_number,
-                )?;
-
-                builder::build_block();
-
+                // TODO:
                 Ok(())
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                    update_cluster_metadata(
-                        &database,
-                        parameter.ssal_block_number,
-                        parameter.rollup_block_number,
-                    )?;
-
+                    // TODO:
                     Ok(())
                 } else {
                     Err(error.into())

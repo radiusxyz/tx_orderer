@@ -90,13 +90,13 @@ impl ClusterMetadata {
 }
 
 pub struct Cluster {
-    inner: Arc<Mutex<ClusterInner>>,
+    inner: Arc<ClusterInner>,
 }
 
 struct ClusterInner {
     my_address: Address,
     leader_index: usize,
-    sequencer_list: Vec<(Address, Option<RpcClient>)>,
+    sequencer_list: Mutex<Arc<Vec<(Address, Option<RpcClient>)>>>,
 }
 
 unsafe impl Send for Cluster {}

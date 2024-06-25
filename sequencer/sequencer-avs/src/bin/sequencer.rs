@@ -10,6 +10,7 @@ use ssal::avs::SsalClient;
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
+    std::panic::set_hook(Box::new(|panic_info| tracing::error!("{}", panic_info)));
 
     let arguments: Vec<String> = env::args().skip(1).collect();
     let config_path = arguments

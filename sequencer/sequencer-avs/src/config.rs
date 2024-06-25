@@ -12,15 +12,19 @@ pub struct Config {
     // Sequencer
     database_path: PathBuf,
     sequencer_rpc_url: String,
-    // SSAL
+    // Ethereum
     ethereum_rpc_url: String,
     ethereum_websocket_url: String,
     keystore_path: String,
+    // SSAL
     ssal_contract_address: String,
-    // TODO: Uncomment after EigenLayer integration
-    // pub avs_contract_address: String,
     cluster_id: String,
     seeder_rpc_address: String,
+    // EigenLayer AVS
+    delegation_manager_contract_address: String,
+    stake_registry_contract_address: String,
+    avs_directory_contract_address: String,
+    avs_contract_address: String,
 }
 
 impl Config {
@@ -60,5 +64,25 @@ impl Config {
 
     pub fn seeder_rpc_address(&self) -> &String {
         &self.seeder_rpc_address
+    }
+
+    pub fn delegation_manager_contract_address(&self) -> &String {
+        &self.delegation_manager_contract_address
+    }
+
+    pub fn stake_registry_contract_address(&self) -> &String {
+        &self.stake_registry_contract_address
+    }
+
+    pub fn avs_directory_contract_address(&self) -> &String {
+        &self.avs_directory_contract_address
+    }
+
+    pub fn avs_contract_address(&self) -> &String {
+        &self.avs_contract_address
+    }
+
+    pub fn avs_contact_address(&self) -> &String {
+        &self.avs_contract_address
     }
 }
