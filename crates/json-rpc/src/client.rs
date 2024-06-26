@@ -15,22 +15,33 @@ use crate::{types::Parameter, Error, ErrorKind};
 
 pub struct RpcClient {
     http_client: HttpClient,
+    timeout: u64,
     retry: u8,
     retry_interval: u64,
 }
 
 impl RpcClient {
-    pub fn new(rpc_url: impl AsRef<str>, timeout: u64) -> Result<Self, Error> {
+    pub const DEFAULT_TIMEOUT: u64 = 3;
+    pub const DEFAULT_RETRY: u8 = 0;
+    pub const DEFAULT_RETRY_INTERVAL: u64 = 0;
+
+    pub fn new(rpc_url: impl AsRef<str>) -> Result<Self, Error> {
         let http_client = HttpClientBuilder::new()
-            .request_timeout(Duration::from_secs(timeout))
+            .request_timeout(Duration::from_secs(Self::DEFAULT_TIMEOUT))
             .build(rpc_url.as_ref())
             .map_err(|error| (ErrorKind::BuildClient, error))?;
 
         Ok(Self {
             http_client,
-            retry: 0,
-            retry_interval: 0,
+            timeout: Self::DEFAULT_TIMEOUT,
+            retry: Self::DEFAULT_RETRY,
+            retry_interval: Self::DEFAULT_RETRY_INTERVAL,
         })
+    }
+
+    pub fn timeout(mut self, value: u64) -> Self {
+        self.timeout = value;
+        self
     }
 
     pub fn max_retry(mut self, value: u8) -> Self {
@@ -76,7 +87,6 @@ impl RpcClient {
 
     pub async fn fetch<P, R>(
         rpc_addresses: Vec<impl AsRef<str>>,
-        timeout: u64,
         method: &'static str,
         parameter: P,
     ) -> Result<R, Error>
@@ -86,7 +96,7 @@ impl RpcClient {
     {
         let rpc_client_list: Vec<RpcClient> = rpc_addresses
             .into_iter()
-            .filter_map(|rpc_address| RpcClient::new(rpc_address.as_ref(), timeout).ok())
+            .filter_map(|rpc_address| RpcClient::new(rpc_address.as_ref()).ok())
             .collect();
         let fused_futures: Vec<Pin<Box<Fuse<_>>>> = rpc_client_list
             .iter()

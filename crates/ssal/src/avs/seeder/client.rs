@@ -18,7 +18,7 @@ impl Clone for SeederClient {
 
 impl SeederClient {
     pub fn new(seeder_rpc_url: impl AsRef<str>) -> Result<Self, Error> {
-        let client = RpcClient::new(seeder_rpc_url, 5)
+        let client = RpcClient::new(seeder_rpc_url)
             .map_err(|error| (ErrorKind::BuildSeederClient, error))?;
 
         Ok(Self(Arc::new(client)))
