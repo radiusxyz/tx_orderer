@@ -49,26 +49,26 @@ impl RpcClient {
         self
     }
 
-    async fn request_inner<P, R>(&self, method: &'static str, parameter: P) -> Result<R, Error>
+    async fn request_inner<P, R>(&self, name: &'static str, method: P) -> Result<R, Error>
     where
         P: Clone + Serialize + Send,
         R: DeserializeOwned,
     {
-        let parameter = Parameter::from(parameter);
+        let method = Parameter::from(method);
         self.http_client
-            .request(method, parameter)
+            .request(name, method)
             .await
             .map_err(|error| (ErrorKind::RpcRequest, error).into())
     }
 
-    pub async fn request<P, R>(&self, method: &'static str, parameter: P) -> Result<R, Error>
+    pub async fn request<P, R>(&self, name: &'static str, method: P) -> Result<R, Error>
     where
         P: Clone + Serialize + Send,
         R: DeserializeOwned,
     {
         if self.retry != 0 {
             for _ in 0..self.retry {
-                if let Some(response) = self.request_inner(method, parameter.clone()).await.ok() {
+                if let Some(response) = self.request_inner(name, method.clone()).await.ok() {
                     return Ok(response);
                 } else {
                     sleep(Duration::from_secs(self.retry_interval)).await;
@@ -76,6 +76,6 @@ impl RpcClient {
             }
         }
 
-        self.request_inner(method, parameter).await
+        self.request_inner(name, method).await
     }
 }
