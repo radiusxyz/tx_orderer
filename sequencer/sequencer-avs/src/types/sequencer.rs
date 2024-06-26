@@ -1,8 +1,3 @@
-use std::{
-    iter::{Filter, Map},
-    vec::IntoIter,
-};
-
 use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -45,22 +40,5 @@ impl SequencerList {
 
     pub fn into_inner(self) -> Vec<(Address, Option<String>)> {
         self.0
-    }
-
-    pub fn into_iter_without(
-        self,
-        sequencer_address: Address,
-    ) -> Map<
-        Filter<IntoIter<(Address, Option<String>)>, impl FnMut(&(Address, Option<String>)) -> bool>,
-        impl FnMut((Address, Option<String>)) -> (Address, Option<String>),
-    > {
-        self.0
-            .into_iter()
-            .filter(move |(address, _rpc_url)| *address != sequencer_address)
-            .map(|sequencer| sequencer)
-    }
-
-    pub fn get_sequencer(&self, index: usize) -> Option<&(Address, Option<String>)> {
-        self.0.get(index)
     }
 }

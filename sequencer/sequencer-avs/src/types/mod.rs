@@ -7,7 +7,7 @@ mod prelude {
     pub use serde::{Deserialize, Serialize};
     pub use ssal::avs::types::*;
 
-    pub use crate::types::*;
+    pub use crate::{error::Error, types::*};
 }
 
 pub use block::*;

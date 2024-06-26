@@ -5,6 +5,12 @@ use super::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RollupBlock(Vec<UserTransaction>);
 
+impl From<Vec<UserTransaction>> for RollupBlock {
+    fn from(value: Vec<UserTransaction>) -> Self {
+        Self(value)
+    }
+}
+
 impl RollupBlock {
     const ID: &'static str = stringify!(RollupBlock);
 
@@ -21,14 +27,16 @@ impl RollupBlock {
     pub fn new(capacity: usize) -> Self {
         Self(Vec::with_capacity(capacity))
     }
-
-    pub fn push(&mut self, transaction: UserTransaction) {
-        self.0.push(transaction)
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BlockCommitment(String);
+
+impl AsRef<str> for BlockCommitment {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
 
 impl From<String> for BlockCommitment {
     fn from(value: String) -> Self {
