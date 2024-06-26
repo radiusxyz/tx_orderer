@@ -15,13 +15,45 @@ impl SyncBuildBlock {
         tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
 
         match ClusterMetadata::get_mut() {
-            Ok(cluster_metadata) => {
-                // TODO:
+            Ok(mut cluster_metadata) => {
+                let previous_rollup_block_number = cluster_metadata.rollup_block_number;
+                let previous_block_height = cluster_metadata.transaction_order;
+
+                let cluster = cluster_metadata
+                    .update(
+                        context.ssal_client().address(),
+                        context.config().cluster_id(),
+                        parameter.ssal_block_number,
+                        parameter.rollup_block_number,
+                    )
+                    .await?;
+                context.update_cluster(cluster.clone()).await;
+                cluster_metadata.commit()?;
+
+                builder::build_block(
+                    context.ssal_client(),
+                    cluster,
+                    previous_rollup_block_number,
+                    previous_block_height,
+                    false,
+                );
+
                 Ok(())
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                    // TODO:
+                    let mut cluster_metadata = ClusterMetadata::default();
+                    let cluster = cluster_metadata
+                        .update(
+                            context.ssal_client().address(),
+                            context.config().cluster_id(),
+                            parameter.ssal_block_number,
+                            parameter.rollup_block_number,
+                        )
+                        .await?;
+                    context.update_cluster(cluster.clone()).await;
+                    cluster_metadata.put()?;
+
                     Ok(())
                 } else {
                     Err(error.into())

@@ -1,13 +1,13 @@
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SyncUserTransaction {
+pub struct SyncTransaction {
     pub transaction: UserTransaction,
     pub order_commitment: OrderCommitment,
 }
 
-impl SyncUserTransaction {
-    pub const METHOD_NAME: &'static str = stringify!(SyncUserTransaction);
+impl SyncTransaction {
+    pub const METHOD_NAME: &'static str = stringify!(SyncTransaction);
 
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
