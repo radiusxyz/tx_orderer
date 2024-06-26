@@ -22,7 +22,7 @@ impl SendTransaction {
                         cluster_metadata.issue_order_commitment(&parameter.transaction)?;
 
                     syncer::sync_user_transaction(
-                        context.cluster(),
+                        context.cluster().await?,
                         parameter.transaction,
                         order_commitment,
                     );
@@ -31,8 +31,8 @@ impl SendTransaction {
                 }
                 false => context
                     .cluster()
+                    .await?
                     .leader()
-                    .await
                     .request(Self::METHOD_NAME, parameter)
                     .await
                     .map_err(|error| error.into()),

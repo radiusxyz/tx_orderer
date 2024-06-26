@@ -21,45 +21,55 @@ impl BuildBlock {
                 let previous_rollup_block_number = cluster_metadata.rollup_block_number;
                 let previous_block_height = cluster_metadata.transaction_order;
 
-                cluster_metadata
+                let cluster = cluster_metadata
                     .update(
-                        context.cluster(),
                         context.ssal_client().address(),
+                        context.config().cluster_id(),
                         parameter.ssal_block_number,
                         parameter.rollup_block_number,
                     )
                     .await?;
+                context.update_cluster(cluster.clone()).await;
                 cluster_metadata.commit()?;
 
                 syncer::sync_build_block(
-                    context.cluster(),
+                    cluster.clone(),
                     parameter.ssal_block_number,
                     parameter.rollup_block_number,
                     previous_block_height,
                 );
 
-                builder::build_block(previous_rollup_block_number, previous_block_height, true);
+                builder::build_block(
+                    context.ssal_client(),
+                    cluster,
+                    previous_rollup_block_number,
+                    previous_block_height,
+                    true,
+                );
 
                 Ok(SequencerStatus::Running)
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
+                    let previous_block_height = 0;
                     let mut cluster_metadata = ClusterMetadata::default();
-                    cluster_metadata
+
+                    let cluster = cluster_metadata
                         .update(
-                            context.cluster(),
                             context.ssal_client().address(),
+                            context.config().cluster_id(),
                             parameter.ssal_block_number,
                             parameter.rollup_block_number,
                         )
                         .await?;
+                    context.update_cluster(cluster.clone()).await;
                     cluster_metadata.put()?;
 
                     syncer::sync_build_block(
-                        context.cluster(),
+                        cluster,
                         parameter.ssal_block_number,
                         parameter.rollup_block_number,
-                        0,
+                        previous_block_height,
                     );
 
                     Ok(SequencerStatus::Uninitialized)
