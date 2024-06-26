@@ -12,6 +12,8 @@ pub struct Config {
     // Sequencer
     database_path: PathBuf,
     sequencer_rpc_url: String,
+    external_port: u16,
+    internal_port: u16,
     // Ethereum
     ethereum_rpc_url: String,
     ethereum_websocket_url: String,
@@ -19,7 +21,7 @@ pub struct Config {
     // SSAL
     ssal_contract_address: String,
     cluster_id: String,
-    seeder_rpc_address: String,
+    seeder_rpc_url: String,
     // EigenLayer AVS
     delegation_manager_contract_address: String,
     stake_registry_contract_address: String,
@@ -42,6 +44,14 @@ impl Config {
         &self.sequencer_rpc_url
     }
 
+    pub fn external_port(&self) -> u16 {
+        self.external_port
+    }
+
+    pub fn internal_port(&self) -> u16 {
+        self.internal_port
+    }
+
     pub fn ethereum_rpc_url(&self) -> &String {
         &self.ethereum_rpc_url
     }
@@ -62,8 +72,8 @@ impl Config {
         &self.cluster_id
     }
 
-    pub fn seeder_rpc_address(&self) -> &String {
-        &self.seeder_rpc_address
+    pub fn seeder_rpc_url(&self) -> &String {
+        &self.seeder_rpc_url
     }
 
     pub fn delegation_manager_contract_address(&self) -> &String {
