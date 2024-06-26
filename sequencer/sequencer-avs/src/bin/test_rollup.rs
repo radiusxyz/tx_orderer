@@ -1,10 +1,20 @@
-use std::{env, time::Duration};
+use std::{env, pin::Pin, time::Duration};
 
 use database::{database, Database};
+use futures::{
+    future::{select_ok, Fuse},
+    FutureExt,
+};
 use json_rpc::RpcClient;
 use sequencer_avs::{
-    config::Config, error::Error, rpc::external::*, state::AppState, task::TraceExt, types::*,
+    config::Config,
+    error::Error,
+    rpc::{external::*, internal::*},
+    state::AppState,
+    task::TraceExt,
+    types::*,
 };
+use serde::{de::DeserializeOwned, ser::Serialize};
 use ssal::avs::{types::*, SsalClient, SsalEventListener};
 use tokio::time::sleep;
 
@@ -69,28 +79,20 @@ async fn main() -> Result<(), Error> {
     // Initialize the event manager.
     event_manager(app_state.clone());
 
-    // Load the database instance.
-    let database = database()?;
-
-    let previous_ssal_block_number = 0;
     let mut rollup_block_number: u64 = 0;
     loop {
-        let current_ssal_block_number = database
-            .get::<&'static str, u64>(&SSAL_BLOCK_NUMBER_KEY)
-            .ok_or_trace();
-
-        if let Some(ssal_block_number) = current_ssal_block_number {
-            let sequencer_list = SequencerList::get(ssal_block_number - block_margin).ok_or_trace();
-
-            if let Some(sequencer_list) = sequencer_list {
-                let leader_index = rollup_block_number
-                    .checked_rem(sequencer_list.len() as u64)
-                    .ok_or(Error::EmptySequencerList)
-                    .ok_or_trace();
+        sleep(Duration::from_secs(block_creation_time)).await;
+        match request_build_block(block_margin, rollup_block_number).await {
+            Ok((sequencer_status, ssal_block_number)) => {
+                tracing::info!("[{}]: {:?}", BuildBlock::METHOD_NAME, sequencer_status);
+                database()?.put(&rollup_block_number, &ssal_block_number)?;
+                rollup_block_number += 1;
+            }
+            Err(error) => {
+                tracing::error!("[{}]: {}", BuildBlock::METHOD_NAME, error);
+                continue;
             }
         }
-
-        sleep(Duration::from_secs(block_creation_time)).await;
     }
 }
 
@@ -134,38 +136,146 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                         .ok_or_trace();
                 }
 
-                database()
-                    .unwrap()
-                    .put(&SSAL_BLOCK_NUMBER_KEY, &block_number)
-                    .unwrap();
+                let database = database().ok_or_trace();
+                if let Some(database) = database {
+                    database
+                        .put(&SSAL_BLOCK_NUMBER_KEY, &block_number)
+                        .ok_or_trace();
+                }
             }
         }
         SsalEventType::BlockCommitment((event, _log)) => {
             if &event.clusterID.to_string() == context.config().cluster_id() {
-                request_block(event.blockNumber).await.ok_or_trace();
+                match get_block(event.blockNumber).await {
+                    Ok(_rollup_block) => {
+                        tracing::info!("[{}]: Fetched the block", GetBlock::METHOD_NAME);
+                    }
+                    Err(error) => tracing::error!("[{}]: {}", GetBlock::METHOD_NAME, error),
+                }
             }
         }
         _ => {}
     }
 }
 
-async fn request_block(rollup_block_number: u64) -> Result<(), Error> {
-    let sequencer_list = SequencerList::get(rollup_block_number).ok_or_trace();
+async fn get_block(rollup_block_number: u64) -> Result<RollupBlock, Error> {
+    let database = database()?;
+    let ssal_block_number: u64 = database.get(&rollup_block_number)?;
+    let sequencer_list = SequencerList::get(ssal_block_number).ok_or_trace();
 
-    if let Some(sequencer_list) = sequencer_list {}
+    if let Some(sequencer_list) = sequencer_list {
+        let rpc_method = GetBlock {
+            rollup_block_number,
+        };
 
-    Ok(())
+        // Get `RollupBlock` from any sequencer in the list.
+        return fetch::<GetBlock, RollupBlock>(
+            sequencer_list.into_inner(),
+            GetBlock::METHOD_NAME,
+            rpc_method,
+        )
+        .await;
+    } else {
+        return Err(Error::EmptySequencerList);
+    }
 }
 
-async fn request_build_block(block_margin: u64, rollup_block_number: u64) -> Result<(), Error> {
+async fn fetch<P, R>(
+    sequencer_list: Vec<(Address, Option<String>)>,
+    method: &'static str,
+    parameter: P,
+) -> Result<R, Error>
+where
+    P: Clone + Serialize + Send,
+    R: DeserializeOwned,
+{
+    let rpc_client_list: Vec<RpcClient> = sequencer_list
+        .into_iter()
+        .filter_map(|(_address, rpc_url)| match rpc_url {
+            Some(rpc_url) => RpcClient::new(rpc_url).ok(),
+            None => None,
+        })
+        .collect();
+
+    let fused_futures: Vec<Pin<Box<Fuse<_>>>> = rpc_client_list
+        .iter()
+        .map(|rpc_client| Box::pin(rpc_client.request::<P, R>(method, parameter.clone()).fuse()))
+        .collect();
+
+    let (rpc_response, _): (R, Vec<_>) = select_ok(fused_futures)
+        .await
+        .map_err(|_| Error::FetchResponse)?;
+
+    Ok(rpc_response)
+}
+
+async fn request_build_block(
+    block_margin: u64,
+    rollup_block_number: u64,
+) -> Result<(SequencerStatus, u64), Error> {
     let ssal_block_number =
         database()?.get::<&'static str, u64>(&SSAL_BLOCK_NUMBER_KEY)? - block_margin;
-    let sequencer_list = SequencerList::get(ssal_block_number)?;
+    let mut sequencer_list = SequencerList::get(ssal_block_number)?.into_inner();
 
-    let rpc_method = BuildBlock {
-        ssal_block_number,
-        rollup_block_number,
-    };
+    let leader_index = rollup_block_number.checked_rem(sequencer_list.len() as u64);
+    if let Some(leader_index) = leader_index {
+        let rpc_method = BuildBlock {
+            ssal_block_number,
+            rollup_block_number,
+        };
 
-    Ok(())
+        // Remove leader from the sequencer_list, making the sequencer list a list of followers.
+        let (_leader_address, leader_rpc_url) = sequencer_list.remove(leader_index as usize);
+
+        // Try the leader.
+        if let Some(rpc_url) = leader_rpc_url {
+            let rpc_client = RpcClient::new(rpc_url)?.max_retry(2).retry_interval(1);
+            let rpc_response: Option<SequencerStatus> = rpc_client
+                .request(BuildBlock::METHOD_NAME, rpc_method.clone())
+                .await
+                .ok();
+
+            if let Some(sequencer_status) = rpc_response {
+                Ok((sequencer_status, ssal_block_number))
+            } else {
+                // Try the followers.
+                tracing::warn!(
+                    "[{}] The leader is unresponsive. Trying the followers..",
+                    BuildBlock::METHOD_NAME
+                );
+
+                for (address, rpc_url) in sequencer_list.into_iter() {
+                    if let Some(rpc_url) = rpc_url {
+                        let rpc_client = RpcClient::new(rpc_url)?;
+                        let rpc_response: Option<SequencerStatus> = rpc_client
+                            .request(BuildBlock::METHOD_NAME, rpc_method.clone())
+                            .await
+                            .ok();
+
+                        if let Some(sequencer_status) = rpc_response {
+                            tracing::info!("[{}]: {:?}", BuildBlock::METHOD_NAME, sequencer_status);
+
+                            return Ok((sequencer_status, ssal_block_number));
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        tracing::warn!(
+                            "[{}]: Empty RPC URL (address: {})",
+                            BuildBlock::METHOD_NAME,
+                            address,
+                        );
+                    }
+                }
+
+                Err(Error::ClusterDown)
+            }
+        } else {
+            // Simply return without trying the followers because followers do not
+            // have the leader RPC URL either, therefore, not building any block.
+            Err(Error::EmptyLeaderRpcUrl)
+        }
+    } else {
+        Err(Error::EmptySequencerList)
+    }
 }
