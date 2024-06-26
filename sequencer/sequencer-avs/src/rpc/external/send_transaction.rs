@@ -22,24 +22,20 @@ impl SendTransaction {
                         cluster_metadata.issue_order_commitment(&parameter.transaction)?;
 
                     syncer::sync_user_transaction(
-                        context.cluster().rpc_client_list().await,
+                        context.cluster(),
                         parameter.transaction,
                         order_commitment,
                     );
 
                     Ok(order_commitment)
                 }
-                false => {
-                    let leader_rpc_client = context.cluster().leader_rpc_client().await;
-                    if let Some(rpc_client) = leader_rpc_client {
-                        rpc_client
-                            .request(Self::METHOD_NAME, parameter)
-                            .await
-                            .map_err(|error| error.into())
-                    } else {
-                        Err(Error::EmptyLeaderAddress.into())
-                    }
-                }
+                false => context
+                    .cluster()
+                    .leader()
+                    .await
+                    .request(Self::METHOD_NAME, parameter)
+                    .await
+                    .map_err(|error| error.into()),
             },
             Err(error) => {
                 // Return `Error::Uninitialized` to the user if the sequencer has not
