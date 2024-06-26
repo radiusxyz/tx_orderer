@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use jsonrpsee::{
     core::client::ClientT,
     http_client::{HttpClient, HttpClientBuilder},
@@ -8,10 +10,25 @@ use tokio::time::{sleep, Duration};
 use crate::{types::Parameter, Error, ErrorKind};
 
 pub struct RpcClient {
-    http_client: HttpClient,
+    http_client: Arc<HttpClient>,
     timeout: u64,
     retry: u8,
     retry_interval: u64,
+}
+
+unsafe impl Send for RpcClient {}
+
+unsafe impl Sync for RpcClient {}
+
+impl Clone for RpcClient {
+    fn clone(&self) -> Self {
+        Self {
+            http_client: self.http_client.clone(),
+            timeout: self.timeout,
+            retry: self.retry,
+            retry_interval: self.retry_interval,
+        }
+    }
 }
 
 impl RpcClient {
@@ -26,7 +43,7 @@ impl RpcClient {
             .map_err(|error| (ErrorKind::BuildClient, error))?;
 
         Ok(Self {
-            http_client,
+            http_client: Arc::new(http_client),
             timeout: Self::DEFAULT_TIMEOUT,
             retry: Self::DEFAULT_RETRY,
             retry_interval: Self::DEFAULT_RETRY_INTERVAL,
