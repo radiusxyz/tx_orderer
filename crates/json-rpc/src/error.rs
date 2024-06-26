@@ -8,7 +8,6 @@ pub enum ErrorKind {
     ParseParameter,
     RpcMiddleware,
     BuildServer,
-    Fetch,
 }
 
 enum ErrorSource {
