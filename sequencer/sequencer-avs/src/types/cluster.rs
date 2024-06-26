@@ -85,7 +85,7 @@ impl ClusterMetadata {
 
         // Separate the leader from followers.
         let (leader_address, leader_rpc_url) = sequencer_list.remove(leader_index);
-        let leader_rpc_url = leader_rpc_url.ok_or(Error::EmptyLeaderAddress)?;
+        let leader_rpc_url = leader_rpc_url.ok_or(Error::EmptyLeaderRpcUrl)?;
 
         // Build the leader RPC client.
         let leader = RpcClient::new(leader_rpc_url)?;

@@ -8,7 +8,7 @@ pub enum Error {
     Uninitialized,
     EmptySequencerList,
     LeaderIndexOutofBound,
-    EmptyLeaderAddress,
+    EmptyLeaderRpcUrl,
     FetchResponse,
 }
 
