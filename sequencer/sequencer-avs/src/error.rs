@@ -6,9 +6,10 @@ pub enum Error {
     JsonRPC(json_rpc::Error),
     Ssal(ssal::avs::Error),
     Uninitialized,
+    EmptySequencerList,
+    LeaderIndexOutofBound,
     EmptyLeaderAddress,
-    UnresponsiveFollowers,
-    ClusterDown,
+    FetchResponse,
 }
 
 unsafe impl Send for Error {}
