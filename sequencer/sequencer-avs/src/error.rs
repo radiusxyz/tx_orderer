@@ -10,6 +10,7 @@ pub enum Error {
     LeaderIndexOutofBound,
     EmptyLeaderRpcUrl,
     FetchResponse,
+    ClusterDown,
 }
 
 unsafe impl Send for Error {}
