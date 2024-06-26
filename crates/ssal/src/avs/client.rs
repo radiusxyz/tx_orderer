@@ -1,4 +1,4 @@
-use std::{iter::zip, path::Path, str::FromStr};
+use std::{iter::zip, path::Path, str::FromStr, sync::Arc};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
@@ -91,6 +91,10 @@ type AvsContract = Avs::AvsInstance<
 >;
 
 pub struct SsalClient {
+    inner: Arc<SsalClientInner>,
+}
+
+struct SsalClientInner {
     provider: EthereumProvider,
     signer: LocalSigner<SigningKey>,
     ssal_contract: SsalContract,
@@ -108,14 +112,7 @@ unsafe impl Sync for SsalClient {}
 impl Clone for SsalClient {
     fn clone(&self) -> Self {
         Self {
-            provider: self.provider.clone(),
-            signer: self.signer.clone(),
-            ssal_contract: self.ssal_contract.clone(),
-            seeder_client: self.seeder_client.clone(),
-            delegation_manager_contract: self.delegation_manager_contract.clone(),
-            stake_registry_contract: self.stake_registry_contract.clone(),
-            avs_directory_contract: self.avs_directory_contract.clone(),
-            avs_contract: self.avs_contract.clone(),
+            inner: self.inner.clone(),
         }
     }
 }
@@ -125,12 +122,12 @@ impl SsalClient {
         ethereum_rpc_url: impl AsRef<str>,
         keystore_path: impl AsRef<Path>,
         keystore_password: impl AsRef<[u8]>,
+        seeder_rpc_url: impl AsRef<str>,
         ssal_contract_address: impl AsRef<str>,
         delegation_manager_contract_address: impl AsRef<str>,
         stake_registry_contract_address: impl AsRef<str>,
         avs_directory_contract_address: impl AsRef<str>,
         avs_contract_address: impl AsRef<str>,
-        seeder_rpc_url: impl AsRef<str>,
     ) -> Result<Self, Error> {
         let url = ethereum_rpc_url
             .as_ref()
@@ -146,6 +143,8 @@ impl SsalClient {
             .with_recommended_fillers()
             .wallet(wallet)
             .on_http(url);
+
+        let seeder_client = SeederClient::new(seeder_rpc_url)?;
 
         let ssal_contract_address = Address::from_str(ssal_contract_address.as_ref())
             .map_err(|error| (ErrorKind::ParseSsalContractAddress, error))?;
@@ -173,9 +172,7 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::ParseAvsContractAddress, error))?;
         let avs_contract = Avs::AvsInstance::new(avs_contract_address, provider.clone());
 
-        let seeder_client = SeederClient::new(seeder_rpc_url)?;
-
-        Ok(Self {
+        let inner = SsalClientInner {
             provider,
             signer,
             ssal_contract,
@@ -184,19 +181,23 @@ impl SsalClient {
             stake_registry_contract,
             avs_directory_contract,
             avs_contract,
+        };
+
+        Ok(Self {
+            inner: Arc::new(inner),
         })
     }
 
     pub fn provider(&self) -> EthereumProvider {
-        self.provider.clone()
+        self.inner.provider.clone()
     }
 
     pub fn address(&self) -> Address {
-        self.provider.wallet().default_signer().address()
+        self.inner.provider.wallet().default_signer().address()
     }
 
     pub fn signer(&self) -> &LocalSigner<SigningKey> {
-        &self.signer
+        &self.inner.signer
     }
 
     pub async fn register_as_operator(&self) -> Result<(), Error> {
@@ -207,6 +208,7 @@ impl SsalClient {
         };
 
         let _register_as_operator = self
+            .inner
             .delegation_manager_contract
             .registerAsOperator(operator_details, String::from(""))
             .send()
@@ -221,10 +223,11 @@ impl SsalClient {
         let now = Utc::now().timestamp();
         let expiry: U256 = U256::from(now + 3600);
         let digest_hash = self
+            .inner
             .avs_directory_contract
             .calculateOperatorAVSRegistrationDigestHash(
                 self.address(),
-                *self.avs_contract.address(),
+                *self.inner.avs_contract.address(),
                 salt,
                 expiry,
             )
@@ -246,6 +249,7 @@ impl SsalClient {
         };
 
         let _register_operator_with_signature = self
+            .inner
             .stake_registry_contract
             .registerOperatorWithSignature(self.address(), operator_signature)
             .send()
@@ -270,11 +274,13 @@ impl SsalClient {
         let rollup_address = Address::from_str(rollup_address.as_ref())
             .map_err(|error| (ErrorKind::ParseRollupAddress, error))?;
 
-        self.seeder_client
+        self.inner
+            .seeder_client
             .register(sequencer_address, sequencer_rpc_url)
             .await?;
 
         let _transaction = self
+            .inner
             .ssal_contract
             .initializeCluster(sequencer_address, rollup_address)
             .send()
@@ -295,6 +301,7 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::ParseSequencerAddress, error))?;
 
         let _transaction = self
+            .inner
             .ssal_contract
             .registerSequencer(cluster_id, sequencer_address)
             .send()
@@ -315,6 +322,7 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::ParseSequencerAddress, error))?;
 
         let _transaction = self
+            .inner
             .ssal_contract
             .deregisterSequencer(cluster_id, sequencer_address)
             .send()
@@ -338,6 +346,7 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::ParseClusterId, error))?;
 
         let _transaction = self
+            .inner
             .avs_contract
             .createNewTask(block_commitment, block_number, rollup_id, cluster_id)
             .send()
@@ -366,6 +375,7 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::SignTask, error))?;
 
         let _transaction = self
+            .inner
             .avs_contract
             .respondToTask(task, task_index, signature.as_bytes().into())
             .send()
@@ -383,6 +393,7 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::ParseClusterId, error))?;
 
         let sequencer_address_list: [Address; 30] = self
+            .inner
             .ssal_contract
             .getSequencers(cluster_id)
             .call()
@@ -397,6 +408,7 @@ impl SsalClient {
             .collect();
 
         let sequencer_rpc_url_list = self
+            .inner
             .seeder_client
             .get_sequencer_rpc_urls(sequencer_address_list.clone())
             .await?;
