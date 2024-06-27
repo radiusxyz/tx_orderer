@@ -26,10 +26,10 @@ async fn main() -> Result<(), Error> {
             GetSequencerRpcUrlList::METHOD_NAME,
             get_sequencer_url_list::handler,
         )?
-        .init(config.seeder_rpc_address())
+        .init(config.seeder_rpc_url())
         .await?;
 
-    tracing::info!("Seeder server starting at {}", config.seeder_rpc_address());
+    tracing::info!("Seeder server starting at {}", config.seeder_rpc_url());
     rpc_server_handle.stopped().await;
 
     Ok(())
