@@ -1,6 +1,7 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ErrorKind {
     BuildSeederClient,
+    KeyFile,
     ParseRpcUrl,
     ParseSigningKey,
     ParseSsalContractAddress,
@@ -37,6 +38,7 @@ pub enum ErrorKind {
 pub enum ErrorSource {
     Boxed(Box<dyn std::error::Error>),
     Custom(String),
+    IO(std::io::Error),
     JsonRPC(json_rpc::Error),
     LocalSigner(alloy::signers::local::LocalSignerError),
     Hex(alloy::hex::FromHexError),
@@ -50,6 +52,7 @@ impl std::fmt::Display for ErrorSource {
         match self {
             Self::Boxed(error) => write!(f, "{}", error),
             Self::Custom(error) => write!(f, "{}", error),
+            Self::IO(error) => write!(f, "{}", error),
             Self::JsonRPC(error) => write!(f, "{}", error),
             Self::LocalSigner(error) => write!(f, "{}", error),
             Self::Hex(error) => write!(f, "{}", error),
@@ -57,6 +60,12 @@ impl std::fmt::Display for ErrorSource {
             Self::Transport(error) => write!(f, "{}", error),
             Self::Signer(error) => write!(f, "{}", error),
         }
+    }
+}
+
+impl From<std::io::Error> for ErrorSource {
+    fn from(value: std::io::Error) -> Self {
+        Self::IO(value)
     }
 }
 
