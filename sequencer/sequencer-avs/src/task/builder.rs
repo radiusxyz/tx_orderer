@@ -74,7 +74,7 @@ pub fn build_block(
                 .register_block_commitment(block_commitment, rollup_block_number, 0, cluster.id())
                 .await
             {
-                Ok(_) => tracing::info!("Successfully registered the block commitment."),
+                Ok(_) => tracing::info!("Successfully registered the block commitment.\nRollup block number: {}\nBlock height: {}", rollup_block_number, block_height),
                 Err(error) => tracing::error!("{}", error),
             }
         }

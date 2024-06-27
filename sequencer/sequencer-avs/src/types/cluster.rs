@@ -97,11 +97,9 @@ impl ClusterMetadata {
             .filter_map(|(_, rpc_url)| RpcClient::new(rpc_url.unwrap()).ok())
             .collect();
 
-        // Update the cluster.
-
         self.ssal_block_number = ssal_block_number;
         self.rollup_block_number = rollup_block_number;
-        self.transaction_order = 1;
+        self.transaction_order = 0;
         self.is_leader = my_address == leader_address;
 
         Ok(Cluster::new(cluster_id.to_owned(), leader, followers))
