@@ -205,6 +205,19 @@ impl SsalClient {
         &self.inner.signer
     }
 
+    pub async fn is_operator(&self) -> Result<bool, Error> {
+        let is_operator = self
+            .inner
+            .delegation_manager_contract
+            .isOperator(self.address())
+            .call()
+            .await
+            .map_err(|error| (ErrorKind::IsOperator, error))?
+            ._0;
+
+        Ok(is_operator)
+    }
+
     pub async fn register_as_operator(&self) -> Result<(), Error> {
         let operator_details = OperatorDetails {
             earningsReceiver: self.address(),
@@ -265,6 +278,32 @@ impl SsalClient {
             .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?;
 
         Ok(())
+    }
+
+    pub async fn is_registered(
+        &self,
+        cluster_id: impl AsRef<str>,
+        sequencer_address: Address,
+    ) -> Result<bool, Error> {
+        let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
+            .map_err(|error| (ErrorKind::ParseClusterId, error))?;
+
+        let sequencer_address_list = self
+            .inner
+            .ssal_contract
+            .getSequencers(cluster_id)
+            .call()
+            .await
+            .map_err(|error| (ErrorKind::IsRegistered, error))?
+            ._0;
+
+        for address in sequencer_address_list {
+            if address == sequencer_address {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
     }
 
     pub async fn initialize_cluster(
