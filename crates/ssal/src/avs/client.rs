@@ -264,8 +264,8 @@ impl SsalClient {
 
     pub async fn initialize_cluster(
         &self,
-        sequencer_rpc_url: impl AsRef<str>,
         sequencer_address: impl AsRef<str>,
+        sequencer_rpc_url: impl AsRef<str>,
         rollup_address: impl AsRef<str>,
     ) -> Result<(), Error> {
         let sequencer_rpc_url = sequencer_rpc_url.as_ref().to_owned();
@@ -294,11 +294,17 @@ impl SsalClient {
         &self,
         cluster_id: impl AsRef<str>,
         sequencer_address: impl AsRef<str>,
+        sequencer_rpc_url: impl AsRef<str>,
     ) -> Result<(), Error> {
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
             .map_err(|error| (ErrorKind::ParseClusterId, error))?;
         let sequencer_address = Address::from_str(sequencer_address.as_ref())
             .map_err(|error| (ErrorKind::ParseSequencerAddress, error))?;
+
+        self.inner
+            .seeder_client
+            .register(sequencer_address, sequencer_rpc_url.as_ref().to_owned())
+            .await?;
 
         let _transaction = self
             .inner
