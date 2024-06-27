@@ -11,6 +11,7 @@ pub enum Error {
     EmptyLeaderRpcUrl,
     FetchResponse,
     ClusterDown,
+    InvalidSequencerPort,
 }
 
 unsafe impl Send for Error {}
