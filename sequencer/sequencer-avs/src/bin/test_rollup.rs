@@ -7,12 +7,7 @@ use futures::{
 };
 use json_rpc::RpcClient;
 use sequencer_avs::{
-    config::Config,
-    error::Error,
-    rpc::{external::*, internal::*},
-    state::AppState,
-    task::TraceExt,
-    types::*,
+    config::Config, error::Error, rpc::internal::*, state::AppState, task::TraceExt, types::*,
 };
 use serde::{de::DeserializeOwned, ser::Serialize};
 use ssal::avs::{types::*, SsalClient, SsalEventListener};
@@ -30,17 +25,13 @@ async fn main() -> Result<(), Error> {
         .get(0)
         .expect("Provide the config file path.")
         .to_owned();
-    let keystore_password = arguments
-        .get(1)
-        .expect("Provide the keystore password.")
-        .to_owned();
     let block_margin: u64 = arguments
-        .get(2)
+        .get(1)
         .expect("Provide the block margin.")
         .parse()
         .expect("Failed to parse the block margin argument to `u64`");
     let block_creation_time: u64 = arguments
-        .get(3)
+        .get(2)
         .expect("Provide the block creation time.")
         .parse()
         .expect("Failed to parse the block creation time argument to `u64`");
@@ -62,8 +53,7 @@ async fn main() -> Result<(), Error> {
     // Initialize the SSAL client.
     let ssal_client = SsalClient::new(
         config.ethereum_rpc_url(),
-        config.keystore_path(),
-        keystore_password,
+        config.key_path(),
         config.seeder_rpc_url(),
         config.ssal_contract_address(),
         config.delegation_manager_contract_address(),
@@ -84,7 +74,13 @@ async fn main() -> Result<(), Error> {
         sleep(Duration::from_secs(block_creation_time)).await;
         match request_build_block(block_margin, rollup_block_number).await {
             Ok((sequencer_status, ssal_block_number)) => {
-                tracing::info!("[{}]: {:?}", BuildBlock::METHOD_NAME, sequencer_status);
+                tracing::info!(
+                    "[{}]: {:?}\nEthereum block number: {}\nRollup block number: {}",
+                    BuildBlock::METHOD_NAME,
+                    sequencer_status,
+                    ssal_block_number,
+                    rollup_block_number,
+                );
                 database()?.put(&rollup_block_number, &ssal_block_number)?;
                 rollup_block_number += 1;
             }
@@ -148,7 +144,11 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
             if &event.clusterID.to_string() == context.config().cluster_id() {
                 match get_block(event.blockNumber).await {
                     Ok(_rollup_block) => {
-                        tracing::info!("[{}]: Fetched the block", GetBlock::METHOD_NAME);
+                        tracing::info!(
+                            "[{}]: Fetched the block({})",
+                            GetBlock::METHOD_NAME,
+                            event.blockNumber,
+                        );
                     }
                     Err(error) => tracing::error!("[{}]: {}", GetBlock::METHOD_NAME, error),
                 }
