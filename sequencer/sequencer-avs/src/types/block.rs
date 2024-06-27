@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -30,16 +28,16 @@ impl RollupBlock {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct BlockCommitment(String);
+pub struct BlockCommitment(Vec<u8>);
 
-impl AsRef<str> for BlockCommitment {
-    fn as_ref(&self) -> &str {
-        self.0.as_str()
+impl AsRef<[u8]> for BlockCommitment {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
     }
 }
 
-impl From<String> for BlockCommitment {
-    fn from(value: String) -> Self {
+impl From<Vec<u8>> for BlockCommitment {
+    fn from(value: Vec<u8>) -> Self {
         Self(value)
     }
 }
@@ -57,8 +55,7 @@ impl BlockCommitment {
         database()?.put(&key, self)
     }
 
-    pub fn to_bytes(&self) -> Result<Bytes, ssal::avs::Error> {
-        Bytes::from_str(self.0.as_str())
-            .map_err(|error| (ssal::avs::ErrorKind::ParseBlockCommitment, error).into())
+    pub fn to_bytes(&self) -> Bytes {
+        Bytes::from_iter(&self.0)
     }
 }

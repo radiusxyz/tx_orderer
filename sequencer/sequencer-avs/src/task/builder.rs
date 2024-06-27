@@ -1,5 +1,6 @@
 use std::pin::Pin;
 
+use block_commitment::calculate_block_commitment;
 use futures::{
     future::{select_ok, Fuse},
     FutureExt,
@@ -20,36 +21,42 @@ pub fn build_block(
     cluster: Cluster,
     rollup_block_number: u64,
     block_height: u64,
-    submit_block_commitment: bool,
+    register_block_commitment: bool,
 ) {
     tokio::spawn(async move {
         let mut block: Vec<UserTransaction> = Vec::with_capacity(block_height as usize);
         let followers = cluster.followers();
 
-        for transaction_order in 0..block_height {
-            match UserTransaction::get(rollup_block_number, transaction_order) {
-                Ok(transaction) => block.push(transaction),
-                Err(error) => {
-                    if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                        // Fetch the missing transaction from other sequencers.
-                        let rpc_method = GetTransaction {
-                            rollup_block_number,
-                            transaction_order,
-                        };
+        if block_height != 0 {
+            for transaction_order in 1..block_height + 1 {
+                match UserTransaction::get(rollup_block_number, transaction_order) {
+                    Ok(transaction) => block.push(transaction),
+                    Err(error) => {
+                        if error.kind() == database::ErrorKind::KeyDoesNotExist {
+                            // Fetch the missing transaction from other sequencers.
+                            let rpc_method = GetTransaction {
+                                rollup_block_number,
+                                transaction_order,
+                            };
 
-                        // Stops building the block if the transaction is missing cluster-wide.
-                        let transaction = fetch::<GetTransaction, UserTransaction>(
-                            followers,
-                            GetTransaction::METHOD_NAME,
-                            rpc_method,
-                        )
-                        .await
-                        .unwrap();
+                            // Stops building the block if the transaction is missing cluster-wide.
+                            let fetched_transaction = fetch::<GetTransaction, UserTransaction>(
+                                followers,
+                                GetTransaction::METHOD_NAME,
+                                rpc_method,
+                            )
+                            .await
+                            .ok();
 
-                        block.push(transaction);
-                    } else {
-                        // Very unlikely, but we want to see the log.
-                        tracing::error!("{}", error);
+                            if let Some(transaction) = fetched_transaction {
+                                block.push(transaction);
+                            } else {
+                                break;
+                            }
+                        } else {
+                            // Very unlikely, but we want to see the log.
+                            tracing::error!("{}", error);
+                        }
                     }
                 }
             }
@@ -58,16 +65,18 @@ pub fn build_block(
         // Calculate the block_commitment.
         // TODO: Get the seed from SSAL.
         let seed = [0u8; 32];
-        let block_commitment: BlockCommitment =
-            block_commitment::calculate_block_commitment(&block, seed).into();
+        let block_commitment: BlockCommitment = calculate_block_commitment(&block, seed).into();
         block_commitment.put(rollup_block_number).ok_or_trace();
 
         // Register the block commitment.
-        if submit_block_commitment {
-            ssal_client
+        if register_block_commitment {
+            match ssal_client
                 .register_block_commitment(block_commitment, rollup_block_number, 0, cluster.id())
                 .await
-                .ok_or_trace();
+            {
+                Ok(_) => tracing::info!("Successfully registered the block commitment."),
+                Err(error) => tracing::error!("{}", error),
+            }
         }
 
         RollupBlock::from(block).put(rollup_block_number).unwrap();

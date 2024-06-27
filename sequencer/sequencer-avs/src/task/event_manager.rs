@@ -63,18 +63,29 @@ async fn on_new_block(block: Block, context: AppState) {
 async fn on_block_commitment(event: NewTaskCreated, context: AppState) {
     let cluster_id = event.clusterID.to_string();
     if &cluster_id == context.config().cluster_id() {
-        let block_commitment = BlockCommitment::get(event.blockNumber).ok_or_trace();
+        let block_commitment = BlockCommitment::get(event.blockNumber).ok();
 
         if let Some(block_commitment) = block_commitment {
-            let block_commitment_bytes = block_commitment.to_bytes().ok_or_trace();
-
-            if let Some(block_commitment_bytes) = block_commitment_bytes {
-                context
-                    .ssal_client()
-                    .respond_to_task(event.task, event.taskIndex, block_commitment_bytes)
-                    .await
-                    .ok_or_trace();
+            match context
+                .ssal_client()
+                .respond_to_task(event.task, event.taskIndex, block_commitment.to_bytes())
+                .await
+            {
+                Ok(()) => tracing::info!(
+                    "Successfully submitted the block commitment (block number: {})",
+                    event.blockNumber,
+                ),
+                Err(error) => tracing::error!(
+                    "Failed to respond to the block commitment (block number: {}): {}",
+                    event.blockNumber,
+                    error,
+                ),
             }
+        } else {
+            tracing::error!(
+                "Failed to get the block commitment (block number: {})",
+                event.blockNumber,
+            );
         }
     }
 }
