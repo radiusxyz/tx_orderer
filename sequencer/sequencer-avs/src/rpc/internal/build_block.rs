@@ -13,7 +13,6 @@ impl BuildBlock {
         parameter: RpcParameter,
         context: Arc<AppState>,
     ) -> Result<SequencerStatus, RpcError> {
-        tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
         let parameter = parameter.parse::<Self>()?;
 
         match ClusterMetadata::get_mut() {

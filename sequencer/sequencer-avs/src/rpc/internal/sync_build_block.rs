@@ -12,7 +12,6 @@ impl SyncBuildBlock {
 
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        tracing::info!("{}: {:?}", Self::METHOD_NAME, parameter);
 
         match ClusterMetadata::get_mut() {
             Ok(mut cluster_metadata) => {
