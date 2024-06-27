@@ -1,11 +1,7 @@
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-    ops::Neg,
-};
+use std::ops::Neg;
 
 use ark_ec::{msm::VariableBaseMSM, AffineCurve, PairingEngine, ProjectiveCurve};
-use ark_ff::{Field, PrimeField};
+use ark_ff::{Field, PrimeField, ToBytes};
 
 use crate::{
     param::{ProverParam, VerifierParam},
@@ -25,8 +21,9 @@ impl<E: PairingEngine, const N: usize> CommitmentScheme for Commitment<E, N> {
 
         let scalars: Vec<<E::Fr as PrimeField>::BigInt> =
             inputs.iter().map(|x| x.into_repr()).collect();
+
         Self {
-            commitment: VariableBaseMSM::multi_scalar_mul(&pp.g[0..inputs.len()], scalars.as_ref()),
+            inner: VariableBaseMSM::multi_scalar_mul(&pp.g[0..inputs.len()], scalars.as_ref()),
         }
     }
 
@@ -52,10 +49,7 @@ impl<E: PairingEngine, const N: usize> CommitmentScheme for Commitment<E, N> {
     ) -> bool {
         let input_inverse = input.inverse().unwrap();
 
-        let com = self
-            .commitment
-            .mul(&input_inverse.into_repr())
-            .into_affine();
+        let com = self.inner.mul(&input_inverse.into_repr()).into_affine();
         let proof = witness.mul(input_inverse.neg().into_repr()).into_affine();
         let pairing_prod_inputs = vec![
             (com.into(), vp.h[N - pos - 1].into()),
@@ -64,10 +58,10 @@ impl<E: PairingEngine, const N: usize> CommitmentScheme for Commitment<E, N> {
         E::product_of_pairings(pairing_prod_inputs.iter()) == vp.t
     }
 
-    fn to_string(&self) -> String {
-        let mut hasher = DefaultHasher::new();
-        self.commitment.hash(&mut hasher);
-        // println!("Hash is {:x}!", hasher.finish());
-        hasher.finish().to_string()
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut buffer = Vec::<u8>::new();
+        self.inner.write(&mut buffer).unwrap();
+
+        buffer
     }
 }

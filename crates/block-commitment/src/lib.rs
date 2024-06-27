@@ -10,7 +10,7 @@ use param::{ProverParam, StructuredReferenceString};
 use sha2::{Digest, Sha224};
 
 pub struct Commitment<E: PairingEngine, const N: usize> {
-    commitment: E::G1Projective,
+    pub inner: E::G1Projective,
 }
 
 pub trait CommitmentScheme {
@@ -35,10 +35,10 @@ pub trait CommitmentScheme {
         witness: &Self::Witness,
     ) -> bool;
 
-    fn to_string(&self) -> String;
+    fn to_bytes(&self) -> Vec<u8>;
 }
 
-pub fn calculate_block_commitment<T>(block: &Vec<T>, seed: [u8; 32]) -> String
+pub fn calculate_block_commitment<T>(block: &Vec<T>, seed: [u8; 32]) -> Vec<u8>
 where
     T: AsRef<[u8]>,
 {
@@ -57,5 +57,6 @@ where
         .collect();
 
     let commitment = Commitment::<Bn254, 1024>::commit(&prover_param, &message);
-    commitment.to_string()
+
+    commitment.to_bytes()
 }
