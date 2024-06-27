@@ -1,4 +1,4 @@
-use std::{iter::zip, path::Path, str::FromStr, sync::Arc};
+use std::{fs, iter::zip, path::Path, str::FromStr, sync::Arc};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
@@ -120,8 +120,7 @@ impl Clone for SsalClient {
 impl SsalClient {
     pub fn new(
         ethereum_rpc_url: impl AsRef<str>,
-        keystore_path: impl AsRef<Path>,
-        keystore_password: impl AsRef<[u8]>,
+        key_path: impl AsRef<Path>,
         seeder_rpc_url: impl AsRef<str>,
         ssal_contract_address: impl AsRef<str>,
         delegation_manager_contract_address: impl AsRef<str>,
@@ -134,8 +133,14 @@ impl SsalClient {
             .parse()
             .map_err(|error| Error::boxed(ErrorKind::ParseRpcUrl, error))?;
 
-        let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
-            .map_err(|error| (ErrorKind::Keystore, error))?;
+        let signing_key =
+            fs::read_to_string(key_path).map_err(|error| (ErrorKind::KeyFile, error))?;
+        let signer = LocalSigner::from_str(&signing_key)
+            .map_err(|error| (ErrorKind::ParseSigningKey, error))?;
+
+        // TODO: Implement the keystore.
+        // let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
+        //     .map_err(|error| (ErrorKind::Keystore, error))?;
 
         let wallet = EthereumWallet::new(signer.clone());
 
@@ -264,25 +269,22 @@ impl SsalClient {
 
     pub async fn initialize_cluster(
         &self,
-        sequencer_address: impl AsRef<str>,
-        sequencer_rpc_url: impl AsRef<str>,
         rollup_address: impl AsRef<str>,
+        sequencer_rpc_url: impl AsRef<str>,
     ) -> Result<(), Error> {
-        let sequencer_rpc_url = sequencer_rpc_url.as_ref().to_owned();
-        let sequencer_address = Address::from_str(sequencer_address.as_ref())
-            .map_err(|error| (ErrorKind::ParseSequencerAddress, error))?;
         let rollup_address = Address::from_str(rollup_address.as_ref())
             .map_err(|error| (ErrorKind::ParseRollupAddress, error))?;
+        let sequencer_rpc_url = sequencer_rpc_url.as_ref().to_owned();
 
         self.inner
             .seeder_client
-            .register(sequencer_address, sequencer_rpc_url)
+            .register(self.address(), sequencer_rpc_url)
             .await?;
 
         let _transaction = self
             .inner
             .ssal_contract
-            .initializeCluster(sequencer_address, rollup_address)
+            .initializeCluster(self.address(), rollup_address)
             .send()
             .await
             .map_err(|error| (ErrorKind::InitializeCluster, error))?;
@@ -293,23 +295,21 @@ impl SsalClient {
     pub async fn register_sequencer(
         &self,
         cluster_id: impl AsRef<str>,
-        sequencer_address: impl AsRef<str>,
         sequencer_rpc_url: impl AsRef<str>,
     ) -> Result<(), Error> {
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
             .map_err(|error| (ErrorKind::ParseClusterId, error))?;
-        let sequencer_address = Address::from_str(sequencer_address.as_ref())
-            .map_err(|error| (ErrorKind::ParseSequencerAddress, error))?;
+        let sequencer_rpc_url = sequencer_rpc_url.as_ref().to_owned();
 
         self.inner
             .seeder_client
-            .register(sequencer_address, sequencer_rpc_url.as_ref().to_owned())
+            .register(self.address(), sequencer_rpc_url)
             .await?;
 
         let _transaction = self
             .inner
             .ssal_contract
-            .registerSequencer(cluster_id, sequencer_address)
+            .registerSequencer(cluster_id, self.address())
             .send()
             .await
             .map_err(|error| (ErrorKind::RegisterSequencer, error))?;
@@ -317,20 +317,14 @@ impl SsalClient {
         Ok(())
     }
 
-    pub async fn deregister_sequencer(
-        &self,
-        cluster_id: impl AsRef<str>,
-        sequencer_address: impl AsRef<str>,
-    ) -> Result<(), Error> {
+    pub async fn deregister_sequencer(&self, cluster_id: impl AsRef<str>) -> Result<(), Error> {
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
             .map_err(|error| (ErrorKind::ParseClusterId, error))?;
-        let sequencer_address = Address::from_str(sequencer_address.as_ref())
-            .map_err(|error| (ErrorKind::ParseSequencerAddress, error))?;
 
         let _transaction = self
             .inner
             .ssal_contract
-            .deregisterSequencer(cluster_id, sequencer_address)
+            .deregisterSequencer(cluster_id, self.address())
             .send()
             .await
             .map_err(|error| (ErrorKind::DeregisterSequencer, error))?;
