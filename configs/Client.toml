@@ -1,12 +1,10 @@
 # Sequencer
-database_path = "~/.radius/database/test_client"
-sequencer_rpc_url = "http://127.0.0.1"
-external_port = 8000
-internal_port = 7234
+database_path = "/home/kanet/.radius/database/test_client"
+sequencer_rpc_url = "http://127.0.0.1:8001"
 # Ethereum
 ethereum_rpc_url = "http://127.0.0.1:8545"
 ethereum_websocket_url = "ws://127.0.0.1:8545"
-keystore_path = "~/.radius/keystore/test_client"
+key_path = "/home/kanet/Projects/sequencer-framework/keys/test_client"
 # SSAL
 ssal_contract_address = "0x67d269191c92Caf3cD7723F116c85e6E9bf55933"
 cluster_id = "0x38a941d2d4959baae54ba9c14502abe54ffd4ad0db290295f453ef9d7d5a3f2d"
