@@ -16,7 +16,6 @@ impl SyncBuildBlock {
         match ClusterMetadata::get_mut() {
             Ok(mut cluster_metadata) => {
                 let previous_rollup_block_number = cluster_metadata.rollup_block_number;
-                let previous_block_height = cluster_metadata.transaction_order;
 
                 let cluster = cluster_metadata
                     .update(
@@ -33,7 +32,7 @@ impl SyncBuildBlock {
                     context.ssal_client(),
                     cluster,
                     previous_rollup_block_number,
-                    previous_block_height,
+                    parameter.previous_block_height,
                     false,
                 );
 

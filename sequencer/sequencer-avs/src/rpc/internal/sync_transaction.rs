@@ -12,6 +12,10 @@ impl SyncTransaction {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        let mut cluster_metadata = ClusterMetadata::get_mut()?;
+        cluster_metadata.transaction_order += 1;
+        cluster_metadata.commit()?;
+
         parameter.transaction.put(
             parameter.order_commitment.rollup_block_number,
             parameter.order_commitment.transaction_order,

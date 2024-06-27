@@ -18,7 +18,9 @@ impl BuildBlock {
         match ClusterMetadata::get_mut() {
             Ok(mut cluster_metadata) => {
                 let previous_rollup_block_number = cluster_metadata.rollup_block_number;
+                tracing::info!("{}", previous_rollup_block_number);
                 let previous_block_height = cluster_metadata.transaction_order;
+                tracing::info!("{}", previous_block_height);
 
                 let cluster = cluster_metadata
                     .update(

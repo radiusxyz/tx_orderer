@@ -21,6 +21,8 @@ impl SendTransaction {
                     let order_commitment =
                         cluster_metadata.issue_order_commitment(&parameter.transaction)?;
 
+                    cluster_metadata.commit()?;
+
                     syncer::sync_user_transaction(
                         context.cluster().await?,
                         parameter.transaction,
