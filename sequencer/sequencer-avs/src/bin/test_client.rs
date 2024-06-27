@@ -22,12 +22,8 @@ async fn main() -> Result<(), Error> {
         .get(0)
         .expect("Provide the config file path.")
         .to_owned();
-    let keystore_password = arguments
-        .get(1)
-        .expect("Provide the keystore password.")
-        .to_owned();
     let block_margin: u64 = arguments
-        .get(2)
+        .get(1)
         .expect("Provide the block margin.")
         .parse()
         .expect("Failed to parse the block margin argument to `u64`");
@@ -49,8 +45,7 @@ async fn main() -> Result<(), Error> {
     // Initialize the SSAL client.
     let ssal_client = SsalClient::new(
         config.ethereum_rpc_url(),
-        config.keystore_path(),
-        keystore_password,
+        config.key_path(),
         config.seeder_rpc_url(),
         config.ssal_contract_address(),
         config.delegation_manager_contract_address(),
