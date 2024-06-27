@@ -334,13 +334,12 @@ impl SsalClient {
 
     pub async fn register_block_commitment(
         &self,
-        block_commitment: impl AsRef<str>,
+        block_commitment: impl AsRef<[u8]>,
         block_number: u64,
         rollup_id: u32,
         cluster_id: impl AsRef<str>,
     ) -> Result<(), Error> {
-        let block_commitment = Bytes::from_str(block_commitment.as_ref())
-            .map_err(|error| (ErrorKind::ParseBlockCommitment, error))?;
+        let block_commitment = Bytes::from_iter(block_commitment.as_ref());
 
         let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
             .map_err(|error| (ErrorKind::ParseClusterId, error))?;
@@ -363,11 +362,7 @@ impl SsalClient {
         block_commitment: Bytes,
     ) -> Result<(), Error> {
         let message_k256 = keccak256(block_commitment);
-        println!("Pre-Hash: {:?}", message_k256);
-
         let message_hash = eip191_hash_message(message_k256);
-        println!("Post-Hash: {:?}", message_hash);
-
         let signature = self
             .signer()
             .sign_hash(&message_hash)
