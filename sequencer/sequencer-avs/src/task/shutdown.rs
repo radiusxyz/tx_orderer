@@ -10,7 +10,7 @@ pub fn init(ssal_client: SsalClient) {
 
     tokio::spawn(async move {
         loop {
-            sleep(Duration::from_secs(1)).await;
+            sleep(Duration::from_secs(10)).await;
             let current_block_number = ssal_client.get_block_number().await.ok_or_trace();
 
             if let Some(block_number) = current_block_number {
