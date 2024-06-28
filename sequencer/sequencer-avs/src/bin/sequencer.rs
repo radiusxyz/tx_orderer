@@ -83,7 +83,7 @@ async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Erro
             internal::Deregister::METHOD_NAME,
             internal::Deregister::handler,
         )?
-        .init("0.0.0.0:7234")
+        .init("127.0.0.1:7234")
         .await?;
 
     tokio::spawn(async move {
