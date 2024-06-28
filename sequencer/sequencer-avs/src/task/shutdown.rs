@@ -1,26 +1,38 @@
-use ssal::avs::types::Address;
+use ssal::avs::SsalClient;
 use tokio::time::{sleep, Duration};
 
-use crate::types::SequencerList;
+use crate::{task::TraceExt, types::SequencerList};
 
 const MARGIN: u64 = 3;
 
-pub fn init(my_address: Address, block_number_at_request: u64) {
+pub fn init(ssal_client: SsalClient) {
+    tracing::warn!("Shutdown in progress..");
+
     tokio::spawn(async move {
         loop {
-            let sequencer_list = SequencerList::get(block_number_at_request - MARGIN).ok();
-            if let Some(sequencer_list) = sequencer_list {
-                match sequencer_list
-                    .into_inner()
-                    .into_iter()
-                    .find(|(address, _rpc_url)| *address == my_address)
-                {
-                    Some(_) => continue,
-                    None => break,
+            sleep(Duration::from_secs(1)).await;
+            let current_block_number = ssal_client.get_block_number().await.ok_or_trace();
+
+            if let Some(block_number) = current_block_number {
+                let sequencer_list = SequencerList::get(block_number - MARGIN).ok();
+
+                if let Some(sequencer_list) = sequencer_list {
+                    match sequencer_list
+                        .into_inner()
+                        .into_iter()
+                        .find(|(address, _rpc_url)| *address == ssal_client.address())
+                    {
+                        Some(_) => continue,
+                        None => {
+                            tracing::info!(
+                                "Shutting down the sequencer at block_number: {}",
+                                block_number
+                            );
+                            break;
+                        }
+                    }
                 }
             }
-
-            sleep(Duration::from_secs(5)).await;
         }
 
         std::process::exit(0);
