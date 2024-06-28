@@ -3,7 +3,7 @@ use tokio::time::{sleep, Duration};
 
 use crate::{task::TraceExt, types::SequencerList};
 
-const MARGIN: u64 = 3;
+const MARGIN: u64 = 7;
 
 pub fn init(ssal_client: SsalClient) {
     tracing::warn!("Shutdown in progress..");
