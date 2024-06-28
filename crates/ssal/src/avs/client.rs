@@ -1,4 +1,4 @@
-use std::{fs, iter::zip, path::Path, str::FromStr, sync::Arc};
+use std::{iter::zip, str::FromStr, sync::Arc};
 
 use alloy::{
     network::{Ethereum, EthereumWallet},
@@ -120,7 +120,7 @@ impl Clone for SsalClient {
 impl SsalClient {
     pub fn new(
         ethereum_rpc_url: impl AsRef<str>,
-        key_path: impl AsRef<Path>,
+        signing_key: impl AsRef<str>,
         seeder_rpc_url: impl AsRef<str>,
         ssal_contract_address: impl AsRef<str>,
         delegation_manager_contract_address: impl AsRef<str>,
@@ -133,14 +133,8 @@ impl SsalClient {
             .parse()
             .map_err(|error| Error::boxed(ErrorKind::ParseRpcUrl, error))?;
 
-        let signing_key =
-            fs::read_to_string(key_path).map_err(|error| (ErrorKind::KeyFile, error))?;
-        let signer = LocalSigner::from_str(&signing_key)
+        let signer = LocalSigner::from_str(signing_key.as_ref())
             .map_err(|error| (ErrorKind::ParseSigningKey, error))?;
-
-        // TODO: Implement the keystore.
-        // let signer = LocalSigner::decrypt_keystore(keystore_path, keystore_password)
-        //     .map_err(|error| (ErrorKind::Keystore, error))?;
 
         let wallet = EthereumWallet::new(signer.clone());
 

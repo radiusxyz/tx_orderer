@@ -1,7 +1,6 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ErrorKind {
     BuildSeederClient,
-    KeyFile,
     ParseRpcUrl,
     ParseSigningKey,
     ParseSsalContractAddress,

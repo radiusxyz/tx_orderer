@@ -41,7 +41,7 @@ async fn main() -> Result<(), Error> {
     // Initialize the SSAL client.
     let ssal_client = SsalClient::new(
         config.ethereum_rpc_url(),
-        config.key_path(),
+        config.signing_key(),
         config.seeder_rpc_url(),
         config.ssal_contract_address(),
         config.delegation_manager_contract_address(),

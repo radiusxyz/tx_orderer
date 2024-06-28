@@ -15,7 +15,7 @@ pub struct Config {
     // Ethereum
     ethereum_rpc_url: String,
     ethereum_websocket_url: String,
-    key_path: PathBuf,
+    signing_key: String,
     // SSAL
     ssal_contract_address: String,
     cluster_id: String,
@@ -59,8 +59,8 @@ impl Config {
         &self.ethereum_websocket_url
     }
 
-    pub fn key_path(&self) -> &PathBuf {
-        &self.key_path
+    pub fn signing_key(&self) -> &String {
+        &self.signing_key
     }
 
     pub fn ssal_contract_address(&self) -> &String {
