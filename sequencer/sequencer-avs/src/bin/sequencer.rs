@@ -5,12 +5,13 @@ use json_rpc::RpcServer;
 use sequencer_avs::{
     config::Config,
     error::Error,
-    rpc::{external::*, internal::*},
+    rpc::{cluster, external, internal},
     state::AppState,
     task::event_manager,
     types::*,
 };
 use ssal::avs::SsalClient;
+use tokio::task::JoinHandle;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -54,6 +55,46 @@ async fn main() -> Result<(), Error> {
     let app_state = AppState::new(config, ssal_client, None);
 
     // Check if the sequencer has failed previously.
+    check_failover(&app_state).await?;
+
+    // Initialize the SSAL event manager.
+    event_manager::init(app_state.clone());
+    tracing::info!("Successfully initialized the event listener.");
+
+    // Initialize the internal RPC server.
+    initialize_internal_rpc_server(&app_state).await?;
+
+    // Initialize the cluster RPC server.
+    let server_handle = initialize_cluster_rpc_server(&app_state).await?;
+
+    // Initialize the sequencer registration for both EigenLayer and SSAL.
+    register_as_operator(&app_state).await?;
+    register_sequencer(&app_state).await?;
+
+    server_handle.await.unwrap();
+
+    Ok(())
+}
+
+async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Error> {
+    // Initialize the internal RPC server.
+    let internal_rpc_server = RpcServer::new(app_state.clone())
+        .register_rpc_method(
+            internal::Deregister::METHOD_NAME,
+            internal::Deregister::handler,
+        )?
+        .init("0.0.0.0:7234")
+        .await?;
+
+    tokio::spawn(async move {
+        internal_rpc_server.stopped().await;
+    });
+
+    Ok(())
+}
+
+async fn check_failover(app_state: &AppState) -> Result<(), Error> {
+    // Check if the sequencer has failed previously.
     match ClusterMetadata::get_mut().ok() {
         Some(mut cluster_metadata) => {
             tracing::warn!("Found a saved cluster metadata. Recovering the previous state..");
@@ -78,36 +119,6 @@ async fn main() -> Result<(), Error> {
         }
         None => tracing::info!("Initializing the sequencer.."),
     }
-
-    // Initialize the SSAL event manager.
-    event_manager::init(app_state.clone());
-    tracing::info!("Successfully initialized the event listener.");
-
-    // Initialize JSON-RPC server.
-    // TODO: Split into internal and external servers for the firewall implementation.
-    let sequencer_rpc_server = RpcServer::new(app_state.clone())
-        .register_rpc_method(BuildBlock::METHOD_NAME, BuildBlock::handler)?
-        .register_rpc_method(SendTransaction::METHOD_NAME, SendTransaction::handler)?
-        .register_rpc_method(SyncBuildBlock::METHOD_NAME, SyncBuildBlock::handler)?
-        .register_rpc_method(SyncTransaction::METHOD_NAME, SyncTransaction::handler)?
-        .register_rpc_method(GetBlock::METHOD_NAME, GetBlock::handler)?
-        .register_rpc_method(GetTransaction::METHOD_NAME, GetTransaction::handler)?
-        .init(format!("0.0.0.0:{}", app_state.config().sequencer_port()?))
-        .await?;
-
-    let server_handle = tokio::spawn(async move {
-        sequencer_rpc_server.stopped().await;
-    });
-    tracing::info!(
-        "Successfully started the RPC server: {}",
-        format!("0.0.0.0:{}", app_state.config().sequencer_port()?)
-    );
-
-    // Initialize the sequencer registration for both EigenLayer and SSAL.
-    register_as_operator(&app_state).await?;
-    register_sequencer(&app_state).await?;
-
-    server_handle.await.unwrap();
 
     Ok(())
 }
@@ -153,4 +164,42 @@ async fn register_sequencer(app_state: &AppState) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+async fn initialize_cluster_rpc_server(app_state: &AppState) -> Result<JoinHandle<()>, Error> {
+    let sequencer_rpc_server = RpcServer::new(app_state.clone())
+        .register_rpc_method(
+            cluster::BuildBlock::METHOD_NAME,
+            cluster::BuildBlock::handler,
+        )?
+        .register_rpc_method(
+            external::SendTransaction::METHOD_NAME,
+            external::SendTransaction::handler,
+        )?
+        .register_rpc_method(
+            cluster::SyncBuildBlock::METHOD_NAME,
+            cluster::SyncBuildBlock::handler,
+        )?
+        .register_rpc_method(
+            cluster::SyncTransaction::METHOD_NAME,
+            cluster::SyncTransaction::handler,
+        )?
+        .register_rpc_method(cluster::GetBlock::METHOD_NAME, cluster::GetBlock::handler)?
+        .register_rpc_method(
+            cluster::GetTransaction::METHOD_NAME,
+            cluster::GetTransaction::handler,
+        )?
+        .init(format!("0.0.0.0:{}", app_state.config().sequencer_port()?))
+        .await?;
+
+    tracing::info!(
+        "Successfully started the RPC server: {}",
+        format!("0.0.0.0:{}", app_state.config().sequencer_port()?)
+    );
+
+    let server_handle = tokio::spawn(async move {
+        sequencer_rpc_server.stopped().await;
+    });
+
+    Ok(server_handle)
 }
