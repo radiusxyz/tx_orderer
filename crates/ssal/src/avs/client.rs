@@ -4,7 +4,7 @@ use alloy::{
     network::{Ethereum, EthereumWallet},
     providers::{
         fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
-        Identity, ProviderBuilder, RootProvider, WalletProvider,
+        Identity, Provider, ProviderBuilder, RootProvider, WalletProvider,
     },
     signers::{k256::ecdsa::SigningKey, local::LocalSigner},
     transports::http::{Client, Http},
@@ -203,6 +203,14 @@ impl SsalClient {
 
     pub fn signer(&self) -> &LocalSigner<SigningKey> {
         &self.inner.signer
+    }
+
+    pub async fn get_block_number(&self) -> Result<u64, Error> {
+        self.inner
+            .provider
+            .get_block_number()
+            .await
+            .map_err(|error| (ErrorKind::GetBlockNumber, error).into())
     }
 
     pub async fn is_operator(&self) -> Result<bool, Error> {

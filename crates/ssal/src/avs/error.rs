@@ -15,6 +15,7 @@ pub enum ErrorKind {
     ParseClusterId,
     ParseRollupId,
     ParseMessageToBytes,
+    GetBlockNumber,
     IsOperator,
     RegisterAsOperator,
     CalculateDigestHash,
