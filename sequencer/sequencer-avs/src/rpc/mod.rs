@@ -1,3 +1,4 @@
+pub mod cluster;
 pub mod external;
 pub mod internal;
 pub mod prelude {
