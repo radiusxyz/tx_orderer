@@ -12,7 +12,7 @@ use ssal::avs::SsalClient;
 use super::TraceExt;
 use crate::{
     error::Error,
-    rpc::internal::GetTransaction,
+    rpc::cluster::GetTransaction,
     types::{BlockCommitment, Cluster, RollupBlock, UserTransaction},
 };
 

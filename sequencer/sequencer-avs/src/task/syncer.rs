@@ -1,5 +1,5 @@
 use crate::{
-    rpc::internal::{SyncBuildBlock, SyncTransaction},
+    rpc::cluster::{SyncBuildBlock, SyncTransaction},
     types::*,
 };
 
