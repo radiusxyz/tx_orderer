@@ -7,7 +7,7 @@ use futures::{
 };
 use json_rpc::RpcClient;
 use sequencer_avs::{
-    config::Config, error::Error, rpc::internal::*, state::AppState, task::TraceExt, types::*,
+    config::Config, error::Error, rpc::cluster::*, state::AppState, task::TraceExt, types::*,
 };
 use serde::{de::DeserializeOwned, ser::Serialize};
 use ssal::avs::{types::*, SsalClient, SsalEventListener};
