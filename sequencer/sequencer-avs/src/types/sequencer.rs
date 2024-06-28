@@ -34,6 +34,11 @@ impl SequencerList {
         database()?.put(&key, self)
     }
 
+    pub fn delete(&self, ssal_block_number: u64) -> Result<(), database::Error> {
+        let key = (Self::ID, ssal_block_number);
+        database()?.delete(&key)
+    }
+
     pub fn len(&self) -> usize {
         self.0.len()
     }
