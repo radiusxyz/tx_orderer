@@ -75,6 +75,7 @@ async fn main() -> Result<(), Error> {
 
         if let Some(ssal_block_number) = current_ssal_block_number {
             let sequencer_list = SequencerList::get(ssal_block_number - block_margin).ok_or_trace();
+
             if let Some(sequencer_list) = sequencer_list {
                 send_transaction(sequencer_list, &mut seed)
                     .await
@@ -155,6 +156,8 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                     SequencerList::from(sequencer_list)
                         .put(block_number)
                         .ok_or_trace();
+
+                    SequencerList::delete(block_number.wrapping_sub(100)).ok_or_trace();
                 }
 
                 database()

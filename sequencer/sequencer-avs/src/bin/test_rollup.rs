@@ -130,14 +130,14 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                     SequencerList::from(sequencer_list)
                         .put(block_number)
                         .ok_or_trace();
+
+                    SequencerList::delete(block_number.wrapping_sub(100)).ok_or_trace();
                 }
 
-                let database = database().ok_or_trace();
-                if let Some(database) = database {
-                    database
-                        .put(&SSAL_BLOCK_NUMBER_KEY, &block_number)
-                        .ok_or_trace();
-                }
+                database()
+                    .unwrap()
+                    .put(&SSAL_BLOCK_NUMBER_KEY, &block_number)
+                    .unwrap();
             }
         }
         SsalEventType::BlockCommitment((event, _log)) => {
