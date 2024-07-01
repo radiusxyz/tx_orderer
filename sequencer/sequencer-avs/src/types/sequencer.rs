@@ -22,7 +22,7 @@ impl From<Vec<(Address, Option<String>)>> for SequencerList {
 }
 
 impl SequencerList {
-    const ID: &'static str = stringify!(SequencerList);
+    pub const ID: &'static str = stringify!(SequencerList);
 
     pub fn get(ssal_block_number: u64) -> Result<Self, database::Error> {
         let key = (Self::ID, ssal_block_number);
@@ -34,7 +34,7 @@ impl SequencerList {
         database()?.put(&key, self)
     }
 
-    pub fn delete(&self, ssal_block_number: u64) -> Result<(), database::Error> {
+    pub fn delete(ssal_block_number: u64) -> Result<(), database::Error> {
         let key = (Self::ID, ssal_block_number);
         database()?.delete(&key)
     }

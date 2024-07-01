@@ -43,7 +43,7 @@ impl From<Vec<u8>> for BlockCommitment {
 }
 
 impl BlockCommitment {
-    const ID: &'static str = stringify!(BlockCommitment);
+    pub const ID: &'static str = stringify!(BlockCommitment);
 
     pub fn get(rollup_block_number: u64) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number);

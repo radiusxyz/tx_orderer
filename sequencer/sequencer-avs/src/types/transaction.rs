@@ -14,7 +14,7 @@ impl AsRef<[u8]> for UserTransaction {
 }
 
 impl UserTransaction {
-    const ID: &'static str = stringify!(Transaction);
+    pub const ID: &'static str = stringify!(Transaction);
 
     pub fn get(rollup_block_number: u64, transaction_order: u64) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number, transaction_order);

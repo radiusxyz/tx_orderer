@@ -24,7 +24,7 @@ impl Default for ClusterMetadata {
 }
 
 impl ClusterMetadata {
-    const ID: &'static str = stringify!(ClusterMetadata);
+    pub const ID: &'static str = stringify!(ClusterMetadata);
 
     pub fn get() -> Result<Self, database::Error> {
         database()?.get(&Self::ID)
