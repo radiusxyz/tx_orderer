@@ -14,7 +14,6 @@ json-rpc = { workspace = true }
 pin-project = "1.1.5"
 rand = { workspace = true }
 serde = { workspace = true }
-tokio = { workspace = true, features = ["time"] }
 
 [features]
 avs = ["alloy"]
