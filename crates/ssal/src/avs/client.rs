@@ -238,6 +238,8 @@ impl SsalClient {
             .await
             .map_err(|error| (ErrorKind::RegisterAsOperator, error))?;
 
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
         let salt = [0u8; 32];
         let salt = FixedBytes::from_slice(&salt);
         let now = Utc::now().timestamp();
