@@ -2,8 +2,8 @@
 database_path = "~/.radius/database/test_rollup_1"
 sequencer_rpc_url = ""
 # Ethereum
-ethereum_rpc_url = "https://holesky.drpc.org"
-ethereum_websocket_url = "wss://holesky.drpc.org"
+ethereum_rpc_url = "https://ethereum-holesky-rpc.publicnode.com"
+ethereum_websocket_url = "wss://ethereum-holesky-rpc.publicnode.com"
 signing_key = "0a24b6d6c5d0372acefa4de97e831354f1e7fcc8b0e8866837745a23c062cfd4"
 # SSAL
 ssal_contract_address = "0x54B23E63935a09647148c864ecFE292517deb249"
