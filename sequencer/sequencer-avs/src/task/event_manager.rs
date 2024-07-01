@@ -1,5 +1,7 @@
+use std::fs;
+
 use ssal::avs::{
-    types::{Avs::NewTaskCreated, Block, SsalEventType},
+    types::{Avs::NewTaskCreated, Block, Ssal::InitializeClusterEvent, SsalEventType},
     SsalEventListener,
 };
 use tokio::time::{sleep, Duration};
@@ -36,12 +38,16 @@ pub fn init(context: AppState) {
 
 async fn event_callback(event_type: SsalEventType, context: AppState) {
     match event_type {
+        SsalEventType::InitializeCluster((event, _log)) => on_initialize_cluster(event, ()).await,
         SsalEventType::NewBlock(event) => on_new_block(event, context.clone()).await,
         SsalEventType::BlockCommitment((event, _log)) => {
             on_block_commitment(event, context.clone()).await;
         }
-        _ => {}
     }
+}
+
+async fn on_initialize_cluster(event: InitializeClusterEvent, _context: ()) {
+    fs::write("~/.radius/cluster_id", event.clusterID.to_string()).ok_or_trace();
 }
 
 async fn on_new_block(block: Block, context: AppState) {
