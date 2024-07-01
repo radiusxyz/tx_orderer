@@ -1,9 +1,10 @@
 use ssal::avs::SsalClient;
 use tokio::time::{sleep, Duration};
 
-use crate::{task::TraceExt, types::SequencerList};
-
-const MARGIN: u64 = 7;
+use crate::{
+    task::TraceExt,
+    types::{SequencerList, BLOCK_MARGIN},
+};
 
 pub fn init(ssal_client: SsalClient) {
     tracing::warn!("Shutdown in progress..");
@@ -14,7 +15,7 @@ pub fn init(ssal_client: SsalClient) {
             let current_block_number = ssal_client.get_block_number().await.ok_or_trace();
 
             if let Some(block_number) = current_block_number {
-                let sequencer_list = SequencerList::get(block_number - MARGIN).ok();
+                let sequencer_list = SequencerList::get(block_number - BLOCK_MARGIN).ok();
 
                 if let Some(sequencer_list) = sequencer_list {
                     match sequencer_list
