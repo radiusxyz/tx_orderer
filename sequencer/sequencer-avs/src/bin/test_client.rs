@@ -1,6 +1,6 @@
 use std::env;
 
-use database::{database, Database};
+use database::Database;
 use json_rpc::RpcClient;
 use rand::{rngs::ThreadRng, seq::SliceRandom};
 use sequencer_avs::{
@@ -9,8 +9,6 @@ use sequencer_avs::{
 };
 use ssal::avs::{types::SsalEventType, SsalClient, SsalEventListener};
 use tokio::time::{sleep, Duration};
-
-const SSAL_BLOCK_NUMBER_KEY: &'static str = "0";
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -22,11 +20,6 @@ async fn main() -> Result<(), Error> {
         .get(0)
         .expect("Provide the config file path.")
         .to_owned();
-    let block_margin: u64 = arguments
-        .get(1)
-        .expect("Provide the block margin.")
-        .parse()
-        .expect("Failed to parse the block margin argument to `u64`");
 
     // Load the configuration from the path.
     let config = Config::load(&config_path)?;
@@ -64,17 +57,15 @@ async fn main() -> Result<(), Error> {
     // Initialize the random seed.
     let mut seed = rand::thread_rng();
 
-    // Load the database instance.
-    let database = database()?;
-
     // Start sending the transaction.
     loop {
-        let current_ssal_block_number = database
-            .get::<&'static str, u64>(&SSAL_BLOCK_NUMBER_KEY)
-            .ok_or_trace();
+        // let current_ssal_block_number = database
+        //     .get::<&'static str, u64>(&SSAL_BLOCK_NUMBER_KEY)
+        //     .ok_or_trace();
+        let current_ssal_block_number = SsalBlockNumber::get().ok_or_trace();
 
         if let Some(ssal_block_number) = current_ssal_block_number {
-            let sequencer_list = SequencerList::get(ssal_block_number - block_margin).ok_or_trace();
+            let sequencer_list = SequencerList::get(ssal_block_number - BLOCK_MARGIN).ok_or_trace();
 
             if let Some(sequencer_list) = sequencer_list {
                 send_transaction(sequencer_list, &mut seed)
@@ -156,15 +147,9 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                     SequencerList::from(sequencer_list)
                         .put(block_number)
                         .ok_or_trace();
-
-                    SequencerList::delete(block_number.wrapping_sub(SequencerList::DELETE_MARGIN))
-                        .ok_or_trace();
                 }
 
-                database()
-                    .unwrap()
-                    .put(&SSAL_BLOCK_NUMBER_KEY, &block_number)
-                    .unwrap();
+                SsalBlockNumber::from(block_number).put().unwrap();
             }
         }
         _ => {}

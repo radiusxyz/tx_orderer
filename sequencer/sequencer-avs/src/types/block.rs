@@ -1,5 +1,40 @@
 use super::prelude::*;
 
+pub const BLOCK_MARGIN: u64 = 7;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SsalBlockNumber(u64);
+
+impl std::ops::Sub<u64> for SsalBlockNumber {
+    type Output = u64;
+
+    fn sub(self, rhs: u64) -> Self::Output {
+        self.0 - rhs
+    }
+}
+
+impl From<u64> for SsalBlockNumber {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+impl SsalBlockNumber {
+    pub const ID: &'static str = stringify!(SsalBlockNumber);
+
+    pub fn get() -> Result<Self, database::Error> {
+        database()?.get(&Self::ID)
+    }
+
+    pub fn put(&self) -> Result<(), database::Error> {
+        database()?.put(&Self::ID, self)
+    }
+
+    pub fn into_inner(self) -> u64 {
+        self.0
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RollupBlock(Vec<UserTransaction>);
 

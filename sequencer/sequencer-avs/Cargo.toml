@@ -20,10 +20,6 @@ name = "sequencer-init"
 path = "src/bin/sequencer_init.rs"
 
 [[bin]]
-name = "test-rollup-and-client"
-path = "src/bin/test_rollup_and_client.rs"
-
-[[bin]]
 name = "deregister"
 path = "src/bin/shutdown.rs"
 

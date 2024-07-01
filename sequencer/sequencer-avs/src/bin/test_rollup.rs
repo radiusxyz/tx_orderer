@@ -13,8 +13,6 @@ use serde::{de::DeserializeOwned, ser::Serialize};
 use ssal::avs::{types::*, SsalClient, SsalEventListener};
 use tokio::time::sleep;
 
-const SSAL_BLOCK_NUMBER_KEY: &'static str = "0";
-
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
@@ -25,13 +23,8 @@ async fn main() -> Result<(), Error> {
         .get(0)
         .expect("Provide the config file path.")
         .to_owned();
-    let block_margin: u64 = arguments
-        .get(1)
-        .expect("Provide the block margin.")
-        .parse()
-        .expect("Failed to parse the block margin argument to `u64`");
     let block_creation_time: u64 = arguments
-        .get(2)
+        .get(1)
         .expect("Provide the block creation time.")
         .parse()
         .expect("Failed to parse the block creation time argument to `u64`");
@@ -72,7 +65,7 @@ async fn main() -> Result<(), Error> {
     let mut rollup_block_number: u64 = 0;
     loop {
         sleep(Duration::from_secs(block_creation_time)).await;
-        match request_build_block(block_margin, rollup_block_number).await {
+        match request_build_block(rollup_block_number).await {
             Ok((sequencer_status, ssal_block_number)) => {
                 tracing::info!(
                     "[{}]: {:?}\nEthereum block number: {}\nRollup block number: {}",
@@ -130,15 +123,9 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                     SequencerList::from(sequencer_list)
                         .put(block_number)
                         .ok_or_trace();
-
-                    SequencerList::delete(block_number.wrapping_sub(SequencerList::DELETE_MARGIN))
-                        .ok_or_trace();
                 }
 
-                database()
-                    .unwrap()
-                    .put(&SSAL_BLOCK_NUMBER_KEY, &block_number)
-                    .unwrap();
+                SsalBlockNumber::from(block_number).put().unwrap();
             }
         }
         SsalEventType::BlockCommitment((event, _log)) => {
@@ -210,12 +197,10 @@ where
     Ok(rpc_response)
 }
 
-async fn request_build_block(
-    block_margin: u64,
-    rollup_block_number: u64,
-) -> Result<(SequencerStatus, u64), Error> {
-    let ssal_block_number =
-        database()?.get::<&'static str, u64>(&SSAL_BLOCK_NUMBER_KEY)? - block_margin;
+async fn request_build_block(rollup_block_number: u64) -> Result<(SequencerStatus, u64), Error> {
+    // let ssal_block_number =
+    //     database()?.get::<&'static str, u64>(&SSAL_BLOCK_NUMBER_KEY)? - block_margin;
+    let ssal_block_number = SsalBlockNumber::get()?.into_inner() - BLOCK_MARGIN;
     let mut sequencer_list = SequencerList::get(ssal_block_number)?.into_inner();
 
     let leader_index = rollup_block_number.checked_rem(sequencer_list.len() as u64);

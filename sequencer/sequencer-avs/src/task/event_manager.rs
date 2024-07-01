@@ -74,9 +74,6 @@ async fn on_new_block(block: Block, context: AppState) {
             SequencerList::from(sequencer_list)
                 .put(block_number)
                 .ok_or_trace();
-
-            SequencerList::delete(block_number.wrapping_sub(SequencerList::DELETE_MARGIN))
-                .ok_or_trace();
         }
     }
 }
