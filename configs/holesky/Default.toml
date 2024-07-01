@@ -1,0 +1,16 @@
+# Sequencer
+database_path = "~/.radius/database/default_sequencer"
+sequencer_rpc_url = ""
+# Ethereum
+ethereum_rpc_url = "https://holesky.drpc.org"
+ethereum_websocket_url = "wss://holesky.drpc.org"
+signing_key = ""
+# SSAL
+ssal_contract_address = "0x54B23E63935a09647148c864ecFE292517deb249"
+cluster_id = "0x38a941d2d4959baae54ba9c14502abe54ffd4ad0db290295f453ef9d7d5a3f2d"
+seeder_rpc_url = "http://52.79.222.106:3000"
+# EigenLayer AVS
+delegation_manager_contract_address = "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A"
+stake_registry_contract_address = "0xe8eF3B92EBF4a7b56743abbbB36bf1A824131f23"
+avs_directory_contract_address = "0x135dda560e946695d6f155dacafc6f1f25c1f5af"
+avs_contract_address = "0xa792026107B80f8F37d6ceCa8c01aC926B825Ce8"

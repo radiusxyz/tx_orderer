@@ -1,0 +1,2 @@
+database_path = "~/radius/database/seeder_avs"
+seeder_rpc_url = "127.0.0.1:3000"

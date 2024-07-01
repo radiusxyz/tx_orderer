@@ -1,10 +1,10 @@
 # Sequencer
-database_path = "/home/kanet/.radius/database/sequencer_1"
-sequencer_rpc_url = "http://127.0.0.1:8001"
+database_path = "~/.radius/database/default_sequencer"
+sequencer_rpc_url = "http://127.0.0.1:8000"
 # Ethereum
 ethereum_rpc_url = "http://127.0.0.1:8545"
 ethereum_websocket_url = "ws://127.0.0.1:8545"
-key_path = "/home/kanet/Projects/sequencer-framework/keys/sequencer_1"
+signing_key = ""
 # SSAL
 ssal_contract_address = "0x67d269191c92Caf3cD7723F116c85e6E9bf55933"
 cluster_id = "0x38a941d2d4959baae54ba9c14502abe54ffd4ad0db290295f453ef9d7d5a3f2d"
