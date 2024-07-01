@@ -23,6 +23,7 @@ impl From<Vec<(Address, Option<String>)>> for SequencerList {
 
 impl SequencerList {
     pub const ID: &'static str = stringify!(SequencerList);
+    pub const DELETE_MARGIN: u64 = 100;
 
     pub fn get(ssal_block_number: u64) -> Result<Self, database::Error> {
         let key = (Self::ID, ssal_block_number);

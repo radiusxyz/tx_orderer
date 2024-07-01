@@ -157,7 +157,8 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                         .put(block_number)
                         .ok_or_trace();
 
-                    SequencerList::delete(block_number.wrapping_sub(100)).ok_or_trace();
+                    SequencerList::delete(block_number.wrapping_sub(SequencerList::DELETE_MARGIN))
+                        .ok_or_trace();
                 }
 
                 database()
