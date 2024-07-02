@@ -29,6 +29,7 @@ pub enum ErrorKind {
     RegisterBlockCommitment,
     RespondToTask,
     GetSequencerAddress,
+    EmptySequencerList,
     GetSequencerRpcUrl,
     Keystore,
     ConnectEventListener,
