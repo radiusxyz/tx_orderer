@@ -56,7 +56,7 @@ async fn on_initialize_cluster(event: InitializeClusterEvent, context: AppState)
     tracing::info!("Cluster ID: {}", cluster_id);
 
     let cluster_id_path =
-        PathBuf::from(context.config().database_path().parent().unwrap()).join("cluster_id");
+        PathBuf::from(context.config().database_path().parent().unwrap()).join(cluster_id);
     fs::write(cluster_id_path, event.clusterID.to_string())
         .await
         .ok_or_trace();
