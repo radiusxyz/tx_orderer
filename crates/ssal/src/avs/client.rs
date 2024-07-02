@@ -241,6 +241,23 @@ impl SsalClient {
         println!("{:?}", register_as_operator.block_number);
         println!("{:?}", register_as_operator.transaction_hash);
 
+        Ok(())
+    }
+
+    pub async fn is_avs(&self) -> Result<bool, Error> {
+        let is_avs = self
+            .inner
+            .stake_registry_contract
+            .operatorRegistered(self.address())
+            .call()
+            .await
+            .map_err(|error| (ErrorKind::IsAvs, error))?
+            ._0;
+
+        Ok(is_avs)
+    }
+
+    pub async fn register_avs(&self) -> Result<(), Error> {
         let salt = [0u8; 32];
         let salt = FixedBytes::from_slice(&salt);
         let now = Utc::now().timestamp();
@@ -279,25 +296,13 @@ impl SsalClient {
             .gas_price(20000000000)
             .send()
             .await
-            .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?
+            .map_err(|error| (ErrorKind::RegisterOnAvs, error))?
             .get_receipt()
             .await
-            .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?;
+            .map_err(|error| (ErrorKind::RegisterOnAvs, error))?;
 
         println!("{:?}", register_operator_with_signature.block_number);
         println!("{:?}", register_operator_with_signature.transaction_hash);
-
-        Ok(())
-    }
-
-    pub async fn deregister_operator(&self) -> Result<(), Error> {
-        let _ = self
-            .inner
-            .stake_registry_contract
-            .deregisterOperator()
-            .send()
-            .await
-            .map_err(|error| (ErrorKind::DeregisterOperator, error))?;
 
         Ok(())
     }
