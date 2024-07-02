@@ -20,6 +20,7 @@ pub enum ErrorKind {
     CalculateDigestHash,
     OperatorSignature,
     RegisterOperatorWithSignature,
+    DeregisterOperator,
     IsRegistered,
     InitializeCluster,
     RegisterSequencer,

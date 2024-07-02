@@ -272,12 +272,26 @@ impl SsalClient {
             .inner
             .stake_registry_contract
             .registerOperatorWithSignature(self.address(), operator_signature)
+            .gas(300000)
+            .gas_price(20000000000)
             .send()
             .await
             .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?
             .get_receipt()
             .await
             .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?;
+
+        Ok(())
+    }
+
+    pub async fn deregister_operator(&self) -> Result<(), Error> {
+        let _ = self
+            .inner
+            .stake_registry_contract
+            .deregisterOperator()
+            .send()
+            .await
+            .map_err(|error| (ErrorKind::DeregisterOperator, error))?;
 
         Ok(())
     }
