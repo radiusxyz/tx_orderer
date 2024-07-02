@@ -1,8 +1,10 @@
 use std::{env, io::stdin};
 
-use database::Database;
-use sequencer_avs::{config::Config, error::Error, state::AppState, task::event_manager};
-use ssal::avs::SsalClient;
+use sequencer_avs::{config::Config, error::Error};
+use ssal::avs::{
+    types::{Ssal::InitializeClusterEvent, SsalEventType},
+    SsalClient, SsalEventListener,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -22,13 +24,6 @@ async fn main() -> Result<(), Error> {
         config_path,
     );
 
-    // Initialize the database.
-    Database::new(config.database_path())?.init();
-    tracing::info!(
-        "Succesfully initialized the database at {:?}.",
-        config.database_path(),
-    );
-
     // Initialize the SSAL client.
     let ssal_client = SsalClient::new(
         config.ethereum_rpc_url(),
@@ -42,19 +37,37 @@ async fn main() -> Result<(), Error> {
     )?;
     tracing::info!("Successfully initialized the SSAL client.");
 
-    // Initialize an application-wide state instance.
-    let app_state = AppState::new(config, ssal_client, None);
-
-    // Initialize the SSAL event manager.
-    event_manager::init(app_state.clone());
-    tracing::info!("Successfully initialized the event listener.");
-
+    println!("Rollup Address:");
     let mut rollup_address = String::new();
     stdin().read_line(&mut rollup_address).unwrap();
-    app_state
-        .ssal_client()
-        .initialize_cluster(rollup_address)
+    ssal_client
+        .initialize_cluster(rollup_address.trim())
         .await?;
 
-    loop {}
+    let event_listener = SsalEventListener::connect(
+        config.ethereum_websocket_url(),
+        config.ssal_contract_address(),
+        config.avs_contract_address(),
+    )
+    .await?;
+
+    event_listener.init(callback, (config, config_path)).await?;
+
+    Ok(())
+}
+
+async fn callback(event_type: SsalEventType, context: (Config, String)) {
+    match event_type {
+        SsalEventType::InitializeCluster((event, _log)) => {
+            on_initialize_cluster(event, context).await
+        }
+        _ => {}
+    }
+}
+
+async fn on_initialize_cluster(event: InitializeClusterEvent, context: (Config, String)) {
+    let cluster_id = event.clusterID.to_string();
+    tracing::info!("Initialized a new cluster (ID = {})", cluster_id);
+    context.0.save(context.1, cluster_id);
+    std::process::exit(0);
 }

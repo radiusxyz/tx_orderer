@@ -16,15 +16,14 @@ name = "sequencer-avs"
 path = "src/bin/sequencer.rs"
 
 [[bin]]
-name = "sequencer-init"
-path = "src/bin/sequencer_init.rs"
+name = "initialize-cluster"
+path = "src/bin/initialize_cluster.rs"
 
 [[bin]]
 name = "deregister"
 path = "src/bin/shutdown.rs"
 
 [dependencies]
-# clap = { version = "4.5.7", features = ["derive"] }
 block-commitment = { workspace = true }
 database = { workspace = true, features = ["singleton"] }
 futures = { workspace = true }
