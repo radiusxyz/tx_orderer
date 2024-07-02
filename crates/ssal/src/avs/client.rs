@@ -227,7 +227,7 @@ impl SsalClient {
             stakerOptOutWindowBlocks: 0,
         };
 
-        let _register_as_operator = self
+        let register_as_operator = self
             .inner
             .delegation_manager_contract
             .registerAsOperator(operator_details, String::from(""))
@@ -237,6 +237,9 @@ impl SsalClient {
             .get_receipt()
             .await
             .map_err(|error| (ErrorKind::RegisterAsOperator, error))?;
+
+        println!("{:?}", register_as_operator.block_number);
+        println!("{:?}", register_as_operator.transaction_hash);
 
         let salt = [0u8; 32];
         let salt = FixedBytes::from_slice(&salt);
@@ -268,7 +271,7 @@ impl SsalClient {
             expiry,
         };
 
-        let _register_operator_with_signature = self
+        let register_operator_with_signature = self
             .inner
             .stake_registry_contract
             .registerOperatorWithSignature(self.address(), operator_signature)
@@ -280,6 +283,9 @@ impl SsalClient {
             .get_receipt()
             .await
             .map_err(|error| (ErrorKind::RegisterOperatorWithSignature, error))?;
+
+        println!("{:?}", register_operator_with_signature.block_number);
+        println!("{:?}", register_operator_with_signature.transaction_hash);
 
         Ok(())
     }
