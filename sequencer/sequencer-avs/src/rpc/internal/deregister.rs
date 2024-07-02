@@ -12,8 +12,6 @@ impl Deregister {
             .deregister_sequencer(context.config().cluster_id())
             .await?;
 
-        context.ssal_client().deregister_operator().await?;
-
         shutdown::init(context.ssal_client());
 
         Ok(())
