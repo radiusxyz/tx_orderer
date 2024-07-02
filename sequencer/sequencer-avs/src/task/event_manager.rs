@@ -1,13 +1,8 @@
-use std::path::PathBuf;
-
 use ssal::avs::{
-    types::{Avs::NewTaskCreated, Block, Ssal::InitializeClusterEvent, SsalEventType},
+    types::{Avs::NewTaskCreated, Block, SsalEventType},
     SsalEventListener,
 };
-use tokio::{
-    fs,
-    time::{sleep, Duration},
-};
+use tokio::time::{sleep, Duration};
 
 use crate::{
     state::AppState,
@@ -41,25 +36,12 @@ pub fn init(context: AppState) {
 
 async fn event_callback(event_type: SsalEventType, context: AppState) {
     match event_type {
-        SsalEventType::InitializeCluster((event, _log)) => {
-            on_initialize_cluster(event, context.clone()).await
-        }
         SsalEventType::NewBlock(event) => on_new_block(event, context.clone()).await,
         SsalEventType::BlockCommitment((event, _log)) => {
             on_block_commitment(event, context.clone()).await;
         }
+        _ => {}
     }
-}
-
-async fn on_initialize_cluster(event: InitializeClusterEvent, context: AppState) {
-    let cluster_id = event.clusterID.to_string();
-    tracing::info!("Cluster ID: {}", cluster_id);
-
-    let cluster_id_path =
-        PathBuf::from(context.config().database_path().parent().unwrap()).join(cluster_id);
-    fs::write(cluster_id_path, event.clusterID.to_string())
-        .await
-        .ok_or_trace();
 }
 
 async fn on_new_block(block: Block, context: AppState) {

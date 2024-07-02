@@ -333,19 +333,9 @@ impl SsalClient {
         Ok(false)
     }
 
-    pub async fn initialize_cluster(
-        &self,
-        rollup_address: impl AsRef<str>,
-        sequencer_rpc_url: impl AsRef<str>,
-    ) -> Result<(), Error> {
+    pub async fn initialize_cluster(&self, rollup_address: impl AsRef<str>) -> Result<(), Error> {
         let rollup_address = Address::from_str(rollup_address.as_ref())
             .map_err(|error| (ErrorKind::ParseRollupAddress, error))?;
-        let sequencer_rpc_url = sequencer_rpc_url.as_ref().to_owned();
-
-        self.inner
-            .seeder_client
-            .register(self.address(), sequencer_rpc_url)
-            .await?;
 
         let _transaction = self
             .inner
