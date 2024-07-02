@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     // Sequencer
     database_path: PathBuf,
@@ -32,6 +32,13 @@ impl Config {
         let config_string = fs::read_to_string(path).map_err(Error::OpenConfig)?;
         let config: Self = toml::from_str(&config_string).map_err(Error::ParseConfig)?;
         Ok(config)
+    }
+
+    /// AD HOC
+    pub fn save(mut self, path: impl AsRef<Path>, cluster_id: String) {
+        self.cluster_id = cluster_id;
+        let config = toml::to_string(&self).unwrap();
+        fs::write(path, config).unwrap();
     }
 
     pub fn database_path(&self) -> &PathBuf {
