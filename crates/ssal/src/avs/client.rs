@@ -458,13 +458,6 @@ impl SsalClient {
             .filter(|sequencer_address| !sequencer_address.is_zero())
             .collect();
 
-        if sequencer_address_list.is_empty() {
-            return Err(Error::custom(
-                ErrorKind::EmptySequencerList,
-                "Register at least one sequencer",
-            ));
-        }
-
         let sequencer_rpc_url_list = self
             .inner
             .seeder_client
