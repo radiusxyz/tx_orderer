@@ -69,6 +69,7 @@ async fn main() -> Result<(), Error> {
 
     // Initialize the sequencer registration for both EigenLayer and SSAL.
     register_as_operator(&app_state).await?;
+    register_on_avs(&app_state).await?;
     register_sequencer(&app_state).await?;
 
     server_handle.await.unwrap();
@@ -133,6 +134,20 @@ async fn register_as_operator(app_state: &AppState) -> Result<(), Error> {
         false => {
             app_state.ssal_client().register_as_operator().await?;
             tracing::info!("Successfully registered as an operator.");
+        }
+    }
+
+    Ok(())
+}
+
+async fn register_on_avs(app_state: &AppState) -> Result<(), Error> {
+    match app_state.ssal_client().is_avs().await? {
+        true => {
+            tracing::info!("Already registered on AVS. Skipping the AVS registration.");
+        }
+        false => {
+            app_state.ssal_client().register_avs().await?;
+            tracing::info!("Successfully registered on AVS.");
         }
     }
 
