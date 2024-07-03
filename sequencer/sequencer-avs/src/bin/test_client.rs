@@ -74,7 +74,7 @@ async fn main() -> Result<(), Error> {
             }
         }
 
-        sleep(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(600)).await;
     }
 }
 
