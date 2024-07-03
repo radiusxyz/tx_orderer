@@ -477,4 +477,8 @@ impl SsalClient {
 
         Ok(sequencer_list)
     }
+
+    pub fn seeder_client(&self) -> SeederClient {
+        self.inner.seeder_client.clone()
+    }
 }
