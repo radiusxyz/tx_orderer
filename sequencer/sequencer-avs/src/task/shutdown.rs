@@ -25,6 +25,12 @@ pub fn init(ssal_client: SsalClient) {
                     {
                         Some(_) => continue,
                         None => {
+                            ssal_client
+                                .seeder_client()
+                                .deregister(ssal_client.address())
+                                .await
+                                .ok_or_trace();
+
                             tracing::info!(
                                 "Shutting down the sequencer at block_number: {}",
                                 block_number

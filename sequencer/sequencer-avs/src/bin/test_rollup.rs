@@ -111,6 +111,10 @@ fn event_manager(context: AppState) {
 
 async fn event_callback(event_type: SsalEventType, context: AppState) {
     match event_type {
+        SsalEventType::InitializeCluster((event, _log)) => {
+            // TODO: Create a new config from here for the rest of the main block to progress.
+            tracing::info!("New cluster has been initialized by {}", event.clusterID);
+        }
         SsalEventType::NewBlock(block) => {
             if let Some(block_number) = block.header.number {
                 let sequencer_list = context
@@ -142,7 +146,6 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                 }
             }
         }
-        _ => {}
     }
 }
 
