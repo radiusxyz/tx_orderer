@@ -345,14 +345,11 @@ impl SsalClient {
         Ok(false)
     }
 
-    pub async fn initialize_cluster(&self, rollup_address: impl AsRef<str>) -> Result<(), Error> {
-        let rollup_address = Address::from_str(rollup_address.as_ref())
-            .map_err(|error| (ErrorKind::ParseRollupAddress, error))?;
-
+    pub async fn initialize_cluster(&self) -> Result<(), Error> {
         let _transaction = self
             .inner
             .ssal_contract
-            .initializeCluster(self.address(), rollup_address)
+            .initializeCluster()
             .send()
             .await
             .map_err(|error| (ErrorKind::InitializeCluster, error))?;
