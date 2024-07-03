@@ -146,7 +146,7 @@ async fn register_on_avs(app_state: &AppState) -> Result<(), Error> {
             tracing::info!("Already registered on AVS. Skipping the AVS registration.");
         }
         false => {
-            app_state.ssal_client().register_avs().await?;
+            app_state.ssal_client().register_on_avs().await?;
             tracing::info!("Successfully registered on AVS.");
         }
     }
