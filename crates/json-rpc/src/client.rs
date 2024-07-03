@@ -32,7 +32,7 @@ impl Clone for RpcClient {
 }
 
 impl RpcClient {
-    pub const DEFAULT_TIMEOUT: u64 = 3;
+    pub const DEFAULT_TIMEOUT: u64 = 5;
     pub const DEFAULT_RETRY: u8 = 0;
     pub const DEFAULT_RETRY_INTERVAL: u64 = 0;
 
