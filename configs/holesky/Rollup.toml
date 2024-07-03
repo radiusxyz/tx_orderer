@@ -1,5 +1,5 @@
 # Sequencer
-database_path = "~/.radius/database/test_rollup_1"
+database_path = "./radius/database/test_rollup_1"
 sequencer_rpc_url = ""
 # Ethereum
 ethereum_rpc_url = "https://ethereum-holesky-rpc.publicnode.com"
