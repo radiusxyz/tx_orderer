@@ -1,4 +1,4 @@
-use std::{env, io::stdin};
+use std::env;
 
 use sequencer_avs::{config::Config, error::Error};
 use ssal::avs::{
@@ -37,12 +37,7 @@ async fn main() -> Result<(), Error> {
     )?;
     tracing::info!("Successfully initialized the SSAL client.");
 
-    println!("Rollup Address:");
-    let mut rollup_address = String::new();
-    stdin().read_line(&mut rollup_address).unwrap();
-    ssal_client
-        .initialize_cluster(rollup_address.trim())
-        .await?;
+    ssal_client.initialize_cluster().await?;
 
     let event_listener = SsalEventListener::connect(
         config.ethereum_websocket_url(),
