@@ -241,7 +241,13 @@ impl SsalClient {
         println!("{:?}", register_as_operator.block_number);
         println!("{:?}", register_as_operator.transaction_hash);
 
-        Ok(())
+        match self.is_operator().await? {
+            true => Ok(()),
+            false => Err(Error::custom(
+                ErrorKind::RegisterAsOperator,
+                "Failed to register as an operator",
+            )),
+        }
     }
 
     pub async fn is_avs(&self) -> Result<bool, Error> {
@@ -257,7 +263,7 @@ impl SsalClient {
         Ok(is_avs)
     }
 
-    pub async fn register_avs(&self) -> Result<(), Error> {
+    pub async fn register_on_avs(&self) -> Result<(), Error> {
         let salt = [0u8; 32];
         let salt = FixedBytes::from_slice(&salt);
         let now = Utc::now().timestamp();
@@ -304,7 +310,13 @@ impl SsalClient {
         println!("{:?}", register_operator_with_signature.block_number);
         println!("{:?}", register_operator_with_signature.transaction_hash);
 
-        Ok(())
+        match self.is_avs().await? {
+            true => Ok(()),
+            false => Err(Error::custom(
+                ErrorKind::RegisterOnAvs,
+                "Failed to register on AVS",
+            )),
+        }
     }
 
     pub async fn is_registered(
