@@ -307,8 +307,8 @@ impl SsalClient {
             .await
             .map_err(|error| (ErrorKind::RegisterOnAvs, error))?;
 
-        println!("{:?}", register_operator_with_signature.block_number);
-        println!("{:?}", register_operator_with_signature.transaction_hash);
+        // println!("{:?}", register_operator_with_signature.block_number);
+        // println!("{:?}", register_operator_with_signature.transaction_hash);
 
         match self.is_avs().await? {
             true => Ok(()),
