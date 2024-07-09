@@ -59,18 +59,13 @@ async fn main() -> Result<(), Error> {
 
     // Start sending the transaction.
     loop {
-        // let current_ssal_block_number = database
-        //     .get::<&'static str, u64>(&SSAL_BLOCK_NUMBER_KEY)
-        //     .ok_or_trace();
         let current_ssal_block_number = SsalBlockNumber::get().ok_or_trace();
 
         if let Some(ssal_block_number) = current_ssal_block_number {
-            let sequencer_list = SequencerList::get(ssal_block_number - BLOCK_MARGIN).ok_or_trace();
+            let sequencer_list = SequencerList::get(ssal_block_number - BLOCK_MARGIN).ok();
 
             if let Some(sequencer_list) = sequencer_list {
-                send_transaction(sequencer_list, &mut seed)
-                    .await
-                    .ok_or_trace();
+                send_transaction(sequencer_list, &mut seed).await.ok();
             }
         }
 

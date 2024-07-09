@@ -16,10 +16,6 @@ name = "sequencer-avs"
 path = "src/bin/sequencer.rs"
 
 [[bin]]
-name = "initialize-cluster"
-path = "src/bin/initialize_cluster.rs"
-
-[[bin]]
 name = "deregister"
 path = "src/bin/shutdown.rs"
 

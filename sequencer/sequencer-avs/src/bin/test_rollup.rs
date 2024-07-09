@@ -30,18 +30,10 @@ async fn main() -> Result<(), Error> {
         .expect("Failed to parse the block creation time argument to `u64`");
 
     // Load the configuration from the path.
-    let config = Config::load(&config_path)?;
-    tracing::info!(
-        "Successfully loaded the configuration file at {}",
-        config_path,
-    );
+    let mut config = Config::load(&config_path)?;
 
     // Initialize the database.
     Database::new(config.database_path())?.init();
-    tracing::info!(
-        "Succesfully initialized the database at {:?}",
-        config.database_path(),
-    );
 
     // Initialize the SSAL client.
     let ssal_client = SsalClient::new(
@@ -54,7 +46,17 @@ async fn main() -> Result<(), Error> {
         config.avs_directory_contract_address(),
         config.avs_contract_address(),
     )?;
-    tracing::info!("Successfully initialized the SSAL client");
+
+    if config.cluster_id() == "" {
+        // Initialize the new proposer set ID.
+        let proposer_set_id = ssal_client.initialize_proposer_set().await?;
+        tracing::info!(
+            "Successfully initialized the proposer set with ID: {}",
+            proposer_set_id
+        );
+
+        config.set_proposer_set_id(proposer_set_id);
+    }
 
     // Initialize an application-wide state instance.
     let app_state = AppState::new(config, ssal_client, None);
@@ -67,18 +69,12 @@ async fn main() -> Result<(), Error> {
         sleep(Duration::from_secs(block_creation_time)).await;
         match request_build_block(rollup_block_number).await {
             Ok((sequencer_status, ssal_block_number)) => {
-                tracing::info!(
-                    "[{}]: {:?}\nEthereum block number: {}\nRollup block number: {}",
-                    BuildBlock::METHOD_NAME,
-                    sequencer_status,
-                    ssal_block_number,
-                    rollup_block_number,
-                );
+                tracing::info!("{:?}", sequencer_status);
                 database()?.put(&rollup_block_number, &ssal_block_number)?;
                 rollup_block_number += 1;
             }
-            Err(error) => {
-                tracing::error!("[{}]: {}", BuildBlock::METHOD_NAME, error);
+            Err(_error) => {
+                // tracing::error!("[{}]: {}", BuildBlock::METHOD_NAME, error);
                 continue;
             }
         }
@@ -111,10 +107,6 @@ fn event_manager(context: AppState) {
 
 async fn event_callback(event_type: SsalEventType, context: AppState) {
     match event_type {
-        SsalEventType::InitializeCluster((event, _log)) => {
-            // TODO: Create a new config from here for the rest of the main block to progress.
-            tracing::info!("New cluster has been initialized by {}", event.clusterID);
-        }
         SsalEventType::NewBlock(block) => {
             if let Some(block_number) = block.header.number {
                 let sequencer_list = context
@@ -146,6 +138,7 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                 }
             }
         }
+        _ => {}
     }
 }
 
@@ -228,12 +221,7 @@ async fn request_build_block(rollup_block_number: u64) -> Result<(SequencerStatu
                 Ok((sequencer_status, ssal_block_number))
             } else {
                 // Try the followers.
-                tracing::warn!(
-                    "[{}] The leader is unresponsive. Trying the followers..",
-                    BuildBlock::METHOD_NAME
-                );
-
-                for (address, rpc_url) in sequencer_list.into_iter() {
+                for (_address, rpc_url) in sequencer_list.into_iter() {
                     if let Some(rpc_url) = rpc_url {
                         let rpc_client = RpcClient::new(rpc_url)?;
                         let rpc_response: Option<SequencerStatus> = rpc_client
@@ -242,18 +230,10 @@ async fn request_build_block(rollup_block_number: u64) -> Result<(SequencerStatu
                             .ok();
 
                         if let Some(sequencer_status) = rpc_response {
-                            tracing::info!("[{}]: {:?}", BuildBlock::METHOD_NAME, sequencer_status);
-
                             return Ok((sequencer_status, ssal_block_number));
                         } else {
                             continue;
                         }
-                    } else {
-                        tracing::warn!(
-                            "[{}]: Empty RPC URL (address: {})",
-                            BuildBlock::METHOD_NAME,
-                            address,
-                        );
                     }
                 }
 
