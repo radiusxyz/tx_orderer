@@ -74,6 +74,10 @@ impl Config {
         &self.ssal_contract_address
     }
 
+    pub fn set_proposer_set_id(&mut self, proposer_set_id: String) {
+        self.cluster_id = proposer_set_id;
+    }
+
     pub fn cluster_id(&self) -> &String {
         &self.cluster_id
     }
