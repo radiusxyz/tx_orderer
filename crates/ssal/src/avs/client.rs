@@ -10,6 +10,7 @@ use alloy::{
     transports::http::{Client, Http},
 };
 use chrono::Utc;
+use futures::StreamExt;
 use DelegationManager::OperatorDetails;
 use StakeRegistry::SignatureWithSaltAndExpiry;
 
@@ -227,7 +228,7 @@ impl SsalClient {
             stakerOptOutWindowBlocks: 0,
         };
 
-        let register_as_operator = self
+        let _register_as_operator = self
             .inner
             .delegation_manager_contract
             .registerAsOperator(operator_details, String::from(""))
@@ -237,9 +238,6 @@ impl SsalClient {
             .get_receipt()
             .await
             .map_err(|error| (ErrorKind::RegisterAsOperator, error))?;
-
-        println!("{:?}", register_as_operator.block_number);
-        println!("{:?}", register_as_operator.transaction_hash);
 
         match self.is_operator().await? {
             true => Ok(()),
@@ -294,7 +292,7 @@ impl SsalClient {
             expiry,
         };
 
-        let register_operator_with_signature = self
+        let _register_operator_with_signature = self
             .inner
             .stake_registry_contract
             .registerOperatorWithSignature(self.address(), operator_signature)
@@ -304,8 +302,8 @@ impl SsalClient {
             .await
             .map_err(|error| (ErrorKind::RegisterOnAvs, error))?
             .get_receipt()
-            .await
-            .map_err(|error| (ErrorKind::RegisterOnAvs, error))?;
+            .await;
+        // .map_err(|error| (ErrorKind::RegisterOnAvs, error))?;
 
         // println!("{:?}", register_operator_with_signature.block_number);
         // println!("{:?}", register_operator_with_signature.transaction_hash);
@@ -345,16 +343,32 @@ impl SsalClient {
         Ok(false)
     }
 
-    pub async fn initialize_cluster(&self) -> Result<(), Error> {
+    pub async fn initialize_proposer_set(&self) -> Result<String, Error> {
+        let mut event_stream = self
+            .inner
+            .ssal_contract
+            .InitializeClusterEvent_filter()
+            .watch()
+            .await
+            .map_err(|error| (ErrorKind::InitializeClusterEventStream, error))?
+            .into_stream();
+
         let _transaction = self
             .inner
             .ssal_contract
             .initializeCluster()
             .send()
             .await
-            .map_err(|error| (ErrorKind::InitializeCluster, error))?;
+            .map_err(|error| (ErrorKind::InitializeProposerSet, error))?;
 
-        Ok(())
+        while let Some(Ok((event, _log))) = event_stream.next().await {
+            return Ok(event.clusterID.to_string());
+        }
+
+        Err(Error::custom(
+            ErrorKind::InitializeProposerSet,
+            "Failed to initialize a proposer set",
+        ))
     }
 
     pub async fn register_sequencer(

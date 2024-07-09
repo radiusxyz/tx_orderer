@@ -23,7 +23,7 @@ pub enum ErrorKind {
     RegisterOnAvs,
     DeregisterOperator,
     IsRegistered,
-    InitializeCluster,
+    InitializeProposerSet,
     RegisterSequencer,
     DeregisterSequencer,
     RegisterBlockCommitment,
