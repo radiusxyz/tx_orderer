@@ -35,8 +35,7 @@ impl Config {
     }
 
     /// AD HOC
-    pub fn save(mut self, path: impl AsRef<Path>, cluster_id: String) {
-        self.cluster_id = cluster_id;
+    pub fn save(&self, path: impl AsRef<Path>) {
         let config = toml::to_string(&self).unwrap();
         fs::write(path, config).unwrap();
     }
