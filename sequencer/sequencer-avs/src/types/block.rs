@@ -60,6 +60,10 @@ impl RollupBlock {
     pub fn new(capacity: usize) -> Self {
         Self(Vec::with_capacity(capacity))
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

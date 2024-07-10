@@ -13,6 +13,8 @@ use serde::{de::DeserializeOwned, ser::Serialize};
 use ssal::avs::{types::*, SsalClient, SsalEventListener};
 use tokio::time::sleep;
 
+const ROLLUP_BLOCK_NUMBER: &'static str = "rbn";
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
@@ -56,6 +58,7 @@ async fn main() -> Result<(), Error> {
         );
 
         config.set_proposer_set_id(proposer_set_id);
+        config.save(&config_path);
     }
 
     // Initialize an application-wide state instance.
@@ -64,17 +67,26 @@ async fn main() -> Result<(), Error> {
     // Initialize the event manager.
     event_manager(app_state.clone());
 
-    let mut rollup_block_number: u64 = 0;
+    let mut rollup_block_number = match database()?
+        .get::<&'static str, u64>(&ROLLUP_BLOCK_NUMBER)
+        .ok()
+    {
+        Some(block_number) => {
+            tracing::info!("Recovering the previous block number..");
+            block_number
+        }
+        None => 0 as u64,
+    };
+
     loop {
         sleep(Duration::from_secs(block_creation_time)).await;
         match request_build_block(rollup_block_number).await {
-            Ok((sequencer_status, ssal_block_number)) => {
-                tracing::info!("{:?}", sequencer_status);
+            Ok((_sequencer_status, ssal_block_number)) => {
                 database()?.put(&rollup_block_number, &ssal_block_number)?;
                 rollup_block_number += 1;
+                database()?.put(&ROLLUP_BLOCK_NUMBER, &rollup_block_number)?;
             }
             Err(_error) => {
-                // tracing::error!("[{}]: {}", BuildBlock::METHOD_NAME, error);
                 continue;
             }
         }
@@ -127,11 +139,11 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
         SsalEventType::BlockCommitment((event, _log)) => {
             if &event.clusterID.to_string() == context.config().cluster_id() {
                 match get_block(event.blockNumber).await {
-                    Ok(_rollup_block) => {
+                    Ok(rollup_block) => {
                         tracing::info!(
-                            "[{}]: Fetched the block({})",
-                            GetBlock::METHOD_NAME,
+                            "Fetched the block\n\tnumber: {}\n\tlength: {}",
                             event.blockNumber,
+                            rollup_block.len(),
                         );
                     }
                     Err(error) => tracing::error!("[{}]: {}", GetBlock::METHOD_NAME, error),
