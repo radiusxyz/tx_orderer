@@ -141,7 +141,7 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
                 match get_block(event.blockNumber).await {
                     Ok(rollup_block) => {
                         tracing::info!(
-                            "Fetched the block\n\tnumber: {}\n\tlength: {}",
+                            "Fetched the block\nnumber: {}\nlength: {}",
                             event.blockNumber,
                             rollup_block.len(),
                         );
