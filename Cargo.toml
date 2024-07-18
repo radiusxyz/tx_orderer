@@ -4,8 +4,8 @@ members = [
     "crates/database",
     "crates/json-rpc",
     "crates/ssal",
-    "seeder/seeder-avs",
-    "sequencer/sequencer-avs",
+    "seeder",
+    "sequencer",
 ]
 resolver = "2"
 

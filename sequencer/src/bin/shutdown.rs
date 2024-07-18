@@ -1,5 +1,5 @@
 use json_rpc::RpcClient;
-use sequencer_avs::{error::Error, rpc::internal::Deregister};
+use sequencer::{error::Error, rpc::internal::Deregister};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Error> {

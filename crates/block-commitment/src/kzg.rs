@@ -66,7 +66,7 @@ where
         "degree is too large"
     );
     let (num_leading_zeros, witness_coeffs) =
-        skip_leading_zeros_and_convert_to_bigints(witness_polynomial);
+        skip_leading_zeros_and_convert_to_big_int_list(witness_polynomial);
 
     let witness_comm_time = start_timer!(|| "Computing commitment to witness polynomial");
     let mut w = VariableBaseMSM::multi_scalar_mul(
@@ -81,7 +81,7 @@ where
         let blinding_evaluation = blinding_p.evaluate(&point);
         end_timer!(blinding_eval_time);
 
-        let random_witness_coeffs = convert_to_bigints(&hiding_witness_polynomial.coeffs());
+        let random_witness_coeffs = convert_to_big_int_list(&hiding_witness_polynomial.coeffs());
         let witness_comm_time =
             start_timer!(|| "Computing commitment to random witness polynomial");
         w += &VariableBaseMSM::multi_scalar_mul(&powers.powers_of_gamma_g, &random_witness_coeffs);
@@ -134,17 +134,17 @@ where
     proof
 }
 
-fn skip_leading_zeros_and_convert_to_bigints<F: PrimeField, P: UVPolynomial<F>>(
+fn skip_leading_zeros_and_convert_to_big_int_list<F: PrimeField, P: UVPolynomial<F>>(
     p: &P,
 ) -> (usize, Vec<F::BigInt>) {
     // Less verbose for the same performance.
     let num_leading_zeros = p.coeffs().iter().filter(|coeff| coeff.is_zero()).count();
-    let coeffs = convert_to_bigints(&p.coeffs()[num_leading_zeros..]);
+    let coeffs = convert_to_big_int_list(&p.coeffs()[num_leading_zeros..]);
     (num_leading_zeros, coeffs)
 }
 
-fn convert_to_bigints<F: PrimeField>(p: &[F]) -> Vec<F::BigInt> {
-    let to_bigint_time = start_timer!(|| "Converting polynomial coeffs to bigints");
+fn convert_to_big_int_list<F: PrimeField>(p: &[F]) -> Vec<F::BigInt> {
+    let to_bigint_time = start_timer!(|| "Converting polynomial coeffs to big int list");
     let coeffs = ark_std::cfg_iter!(p)
         .map(|s| s.into_repr())
         .collect::<Vec<_>>();

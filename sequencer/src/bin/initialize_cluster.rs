@@ -1,6 +1,6 @@
 use std::env;
 
-use sequencer_avs::{config::Config, error::Error};
+use sequencer::{config::Config, error::Error};
 use ssal::avs::{
     types::{Ssal::InitializeClusterEvent, SsalEventType},
     SsalClient, SsalEventListener,

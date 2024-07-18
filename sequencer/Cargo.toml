@@ -1,18 +1,18 @@
 [package]
-name = "sequencer-avs"
+name = "sequencer"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "test-client-avs"
+name = "test-client"
 path = "src/bin/test_client.rs"
 
 [[bin]]
-name = "test-rollup-avs"
+name = "test-rollup"
 path = "src/bin/test_rollup.rs"
 
 [[bin]]
-name = "sequencer-avs"
+name = "sequencer"
 path = "src/bin/sequencer.rs"
 
 [[bin]]

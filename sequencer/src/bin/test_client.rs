@@ -3,7 +3,7 @@ use std::env;
 use database::Database;
 use json_rpc::RpcClient;
 use rand::{rngs::ThreadRng, seq::SliceRandom};
-use sequencer_avs::{
+use sequencer::{
     config::Config, error::Error, rpc::external::SendTransaction, state::AppState, task::TraceExt,
     types::*,
 };

@@ -6,7 +6,7 @@ use futures::{
     FutureExt,
 };
 use json_rpc::RpcClient;
-use sequencer_avs::{
+use sequencer::{
     config::Config, error::Error, rpc::cluster::*, state::AppState, task::TraceExt, types::*,
 };
 use serde::{de::DeserializeOwned, ser::Serialize};

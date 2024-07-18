@@ -2,7 +2,7 @@ use std::env;
 
 use database::Database;
 use json_rpc::RpcServer;
-use seeder_avs::{config::Config, error::Error, rpc::*};
+use seeder::{config::Config, error::Error, rpc::*};
 use ssal::avs::seeder::rpc::*;
 
 #[tokio::main]
