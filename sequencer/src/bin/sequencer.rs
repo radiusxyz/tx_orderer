@@ -220,6 +220,14 @@ async fn initialize_cluster_rpc_server(app_state: &AppState) -> Result<JoinHandl
             cluster::GetTransaction::METHOD_NAME,
             cluster::GetTransaction::handler,
         )?
+        .register_rpc_method(
+            cluster::GetRawTransaction::METHOD_NAME,
+            cluster::GetRawTransaction::handler,
+        )?
+        .register_rpc_method(
+            cluster::GetEncryptedTransaction::METHOD_NAME,
+            cluster::GetEncryptedTransaction::handler,
+        )?
         .init(format!("0.0.0.0:{}", app_state.config().sequencer_port()?))
         .await?;
 

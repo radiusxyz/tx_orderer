@@ -1,20 +1,20 @@
 use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct UserTransaction {
+pub struct UserEncryptedTransaction {
     encrypted_transaction: EncryptedTransaction,
     time_lock_puzzle: TimeLockPuzzle,
     nonce: Nonce,
 }
 
-impl AsRef<[u8]> for UserTransaction {
+impl AsRef<[u8]> for UserEncryptedTransaction {
     fn as_ref(&self) -> &[u8] {
         self.encrypted_transaction.as_ref()
     }
 }
 
-impl UserTransaction {
-    pub const ID: &'static str = stringify!(Transaction);
+impl UserEncryptedTransaction {
+    pub const ID: &'static str = stringify!(EncryptedTransaction);
 
     pub fn get(rollup_block_number: u64, transaction_order: u64) -> Result<Self, database::Error> {
         let key = (Self::ID, rollup_block_number, transaction_order);
@@ -75,30 +75,6 @@ impl TimeLockPuzzle {
             t,
             g: g.as_ref().to_owned(),
             n: n.as_ref().to_owned(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Nonce(String);
-
-impl Nonce {
-    pub fn new(value: impl AsRef<str>) -> Self {
-        Self(value.as_ref().to_owned())
-    }
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct OrderCommitment {
-    pub rollup_block_number: u64,
-    pub transaction_order: u64,
-}
-
-impl OrderCommitment {
-    pub fn new(rollup_block_number: u64, transaction_order: u64) -> Self {
-        Self {
-            rollup_block_number,
-            transaction_order,
         }
     }
 }

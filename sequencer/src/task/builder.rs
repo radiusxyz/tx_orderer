@@ -12,46 +12,75 @@ use ssal::avs::SsalClient;
 use super::TraceExt;
 use crate::{
     error::Error,
-    rpc::cluster::GetTransaction,
-    types::{BlockCommitment, Cluster, RollupBlock, UserTransaction},
+    rpc::cluster::{GetEncryptedTransaction, GetRawTransaction},
+    types::{
+        BlockCommitment, Cluster, RollupBlock, UserEncryptedTransaction, UserRawTransaction,
+        UserTransaction,
+    },
 };
 
 pub fn build_block(
     ssal_client: SsalClient,
     cluster: Cluster,
     rollup_block_number: u64,
-    block_height: u64,
+    block_length: u64,
     register_block_commitment: bool,
 ) {
     tokio::spawn(async move {
-        let mut block: Vec<UserTransaction> = Vec::with_capacity(block_height as usize);
+        let mut block: Vec<UserTransaction> = Vec::with_capacity(block_length as usize);
         let followers = cluster.followers();
 
-        if block_height != 0 {
-            for transaction_order in 1..block_height + 1 {
-                match UserTransaction::get(rollup_block_number, transaction_order) {
-                    Ok(transaction) => block.push(transaction),
-                    Err(error) => {
+        // TODO(jaemin): include the raw tx added by decrypting encrypted tx
+        if block_length != 0 {
+            for transaction_order in 1..=block_length {
+                match (
+                    UserEncryptedTransaction::get(rollup_block_number, transaction_order),
+                    UserRawTransaction::get(rollup_block_number, transaction_order),
+                ) {
+                    (Err(_), Ok(transaction)) => block.push(UserTransaction::Raw(transaction)),
+                    (Ok(transaction), Err(_)) => {
+                        block.push(UserTransaction::Encrypted(transaction))
+                    }
+                    (Ok(encrypted_transaction), Ok(_)) => {
+                        block.push(UserTransaction::Encrypted(encrypted_transaction))
+                    }
+                    (Err(error), Err(_)) => {
                         if error.kind() == database::ErrorKind::KeyDoesNotExist {
                             // Fetch the missing transaction from other sequencers.
-                            let rpc_method = GetTransaction {
+                            let rpc_method = GetEncryptedTransaction {
                                 rollup_block_number,
                                 transaction_order,
                             };
 
                             // Stops building the block if the transaction is missing cluster-wide.
-                            let fetched_transaction = fetch::<GetTransaction, UserTransaction>(
-                                followers,
-                                GetTransaction::METHOD_NAME,
-                                rpc_method,
-                            )
-                            .await
-                            .ok();
-
-                            if let Some(transaction) = fetched_transaction {
-                                block.push(transaction);
+                            if let Ok(transaction) =
+                                fetch::<GetEncryptedTransaction, UserEncryptedTransaction>(
+                                    followers,
+                                    GetEncryptedTransaction::METHOD_NAME,
+                                    GetEncryptedTransaction {
+                                        rollup_block_number,
+                                        transaction_order,
+                                    },
+                                )
+                                .await
+                            {
+                                block.push(UserTransaction::Encrypted(transaction));
                             } else {
-                                break;
+                                if let Ok(transaction) =
+                                    fetch::<GetRawTransaction, UserRawTransaction>(
+                                        followers,
+                                        GetRawTransaction::METHOD_NAME,
+                                        GetRawTransaction {
+                                            rollup_block_number,
+                                            transaction_order,
+                                        },
+                                    )
+                                    .await
+                                {
+                                    block.push(UserTransaction::Raw(transaction));
+                                } else {
+                                    break;
+                                }
                             }
                         } else {
                             // Very unlikely, but we want to see the log.
@@ -74,7 +103,7 @@ pub fn build_block(
                 .register_block_commitment(block_commitment, rollup_block_number, 0, cluster.id())
                 .await
             {
-                Ok(_) => tracing::info!("Successfully registered the block commitment.\nRollup block number: {}\nBlock height: {}", rollup_block_number, block_height),
+                Ok(_) => tracing::info!("Successfully registered the block commitment.\nRollup block number: {}\nBlock height: {}", rollup_block_number, block_length),
                 Err(error) => tracing::error!("{}", error),
             }
         }
