@@ -7,13 +7,13 @@ pub fn sync_build_block(
     cluster: Cluster,
     ssal_block_number: u64,
     rollup_block_number: u64,
-    previous_block_height: u64,
+    previous_block_length: u64,
 ) {
     tokio::spawn(async move {
         let rpc_method = SyncBuildBlock {
             ssal_block_number,
             rollup_block_number,
-            previous_block_height,
+            previous_block_length,
         };
 
         for rpc_client in cluster.followers() {

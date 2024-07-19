@@ -4,7 +4,7 @@ use crate::rpc::prelude::*;
 pub struct SyncBuildBlock {
     pub ssal_block_number: u64,
     pub rollup_block_number: u64,
-    pub previous_block_height: u64,
+    pub previous_block_length: u64,
 }
 
 impl SyncBuildBlock {
@@ -32,7 +32,7 @@ impl SyncBuildBlock {
                     context.ssal_client(),
                     cluster,
                     previous_rollup_block_number,
-                    parameter.previous_block_height,
+                    parameter.previous_block_length,
                     false,
                 );
 

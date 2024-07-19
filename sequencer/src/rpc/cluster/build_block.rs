@@ -19,8 +19,8 @@ impl BuildBlock {
             Ok(mut cluster_metadata) => {
                 let previous_rollup_block_number = cluster_metadata.rollup_block_number;
                 tracing::info!("{}", previous_rollup_block_number);
-                let previous_block_height = cluster_metadata.transaction_order;
-                tracing::info!("{}", previous_block_height);
+                let previous_block_length = cluster_metadata.transaction_order;
+                tracing::info!("{}", previous_block_length);
 
                 let cluster = cluster_metadata
                     .update(
@@ -37,14 +37,14 @@ impl BuildBlock {
                     cluster.clone(),
                     parameter.ssal_block_number,
                     parameter.rollup_block_number,
-                    previous_block_height,
+                    previous_block_length,
                 );
 
                 builder::build_block(
                     context.ssal_client(),
                     cluster,
                     previous_rollup_block_number,
-                    previous_block_height,
+                    previous_block_length,
                     true,
                 );
 
