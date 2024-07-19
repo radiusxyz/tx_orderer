@@ -52,7 +52,7 @@ impl BuildBlock {
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                    let previous_block_height = 0;
+                    let previous_block_length = 0;
                     let mut cluster_metadata = ClusterMetadata::default();
 
                     let cluster = cluster_metadata
@@ -70,7 +70,7 @@ impl BuildBlock {
                         cluster,
                         parameter.ssal_block_number,
                         parameter.rollup_block_number,
-                        previous_block_height,
+                        previous_block_length,
                     );
 
                     Ok(SequencerStatus::Uninitialized)
