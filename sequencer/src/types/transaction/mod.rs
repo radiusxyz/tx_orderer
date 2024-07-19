@@ -1,8 +1,8 @@
 mod encrypted;
 mod raw;
 
-pub use encrypted::UserEncryptedTransaction;
-pub use raw::UserRawTransaction;
+pub use encrypted::*;
+pub use raw::*;
 
 use super::prelude::*;
 
