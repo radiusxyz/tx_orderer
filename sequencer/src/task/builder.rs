@@ -22,6 +22,7 @@ use crate::{
 pub fn build_block(
     ssal_client: SsalClient,
     cluster: Cluster,
+    rollup_id: u32,
     rollup_block_number: u64,
     block_length: u64,
     register_block_commitment: bool,
@@ -34,8 +35,12 @@ pub fn build_block(
         if block_length != 0 {
             for transaction_order in 1..=block_length {
                 match (
-                    UserEncryptedTransaction::get(rollup_block_number, transaction_order),
-                    UserRawTransaction::get(rollup_block_number, transaction_order),
+                    UserEncryptedTransaction::get(
+                        rollup_id,
+                        rollup_block_number,
+                        transaction_order,
+                    ),
+                    UserRawTransaction::get(rollup_id, rollup_block_number, transaction_order),
                 ) {
                     (Err(_), Ok(transaction)) => block.push(UserTransaction::Raw(transaction)),
                     (Ok(transaction), Err(_)) => {
@@ -48,6 +53,7 @@ pub fn build_block(
                         if error.kind() == database::ErrorKind::KeyDoesNotExist {
                             // Fetch the missing transaction from other sequencers.
                             let rpc_method = GetTransaction {
+                                rollup_id,
                                 rollup_block_number,
                                 transaction_order,
                             };
@@ -76,12 +82,14 @@ pub fn build_block(
         // TODO: Get the seed from SSAL.
         let seed = [0u8; 32];
         let block_commitment: BlockCommitment = calculate_block_commitment(&block, seed).into();
-        block_commitment.put(rollup_block_number).ok_or_trace();
+        block_commitment
+            .put(rollup_id, rollup_block_number)
+            .ok_or_trace();
 
         // Register the block commitment.
         if register_block_commitment {
             match ssal_client
-                .register_block_commitment(block_commitment, rollup_block_number, 0, cluster.id())
+                .register_block_commitment(block_commitment, rollup_block_number, rollup_id, cluster.id())
                 .await
             {
                 Ok(_) => tracing::info!("Successfully registered the block commitment.\nRollup block number: {}\nBlock height: {}", rollup_block_number, block_length),
@@ -89,7 +97,9 @@ pub fn build_block(
             }
         }
 
-        RollupBlock::from(block).put(rollup_block_number).unwrap();
+        RollupBlock::from(block)
+            .put(rollup_id, rollup_block_number)
+            .unwrap();
     });
 }
 

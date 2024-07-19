@@ -63,7 +63,7 @@ async fn on_new_block(block: Block, context: AppState) {
 async fn on_block_commitment(event: NewTaskCreated, context: AppState) {
     let cluster_id = event.clusterID.to_string();
     if &cluster_id == context.config().cluster_id() {
-        let block_commitment = BlockCommitment::get(event.blockNumber).ok();
+        let block_commitment = BlockCommitment::get(event.rollupID, event.blockNumber).ok();
 
         if let Some(block_commitment) = block_commitment {
             match context
@@ -72,18 +72,21 @@ async fn on_block_commitment(event: NewTaskCreated, context: AppState) {
                 .await
             {
                 Ok(()) => tracing::info!(
-                    "Successfully submitted the block commitment (block number: {})",
+                    "Successfully submitted the block commitment (rollup: {}, block number: {})",
+                    event.rollupID,
                     event.blockNumber,
                 ),
                 Err(error) => tracing::error!(
-                    "Failed to respond to the block commitment (block number: {}): {}",
+                    "Failed to respond to the block commitment (rollup: {}. block number: {}): {}",
+                    event.rollupID,
                     event.blockNumber,
                     error,
                 ),
             }
         } else {
             tracing::error!(
-                "Failed to get the block commitment (block number: {})",
+                "Failed to get the block commitment (rollup: {}. block number: {})",
+                event.rollupID,
                 event.blockNumber,
             );
         }

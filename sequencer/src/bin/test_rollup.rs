@@ -65,7 +65,7 @@ async fn main() -> Result<(), Error> {
     let mut rollup_block_number: u64 = 0;
     loop {
         sleep(Duration::from_secs(block_creation_time)).await;
-        match request_build_block(rollup_block_number).await {
+        match request_build_block(0, rollup_block_number).await {
             Ok((sequencer_status, ssal_block_number)) => {
                 tracing::info!(
                     "[{}]: {:?}\nEthereum block number: {}\nRollup block number: {}",
@@ -134,7 +134,7 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
         }
         SsalEventType::BlockCommitment((event, _log)) => {
             if &event.clusterID.to_string() == context.config().cluster_id() {
-                match get_block(event.blockNumber).await {
+                match get_block(event.rollupID, event.blockNumber).await {
                     Ok(_rollup_block) => {
                         tracing::info!(
                             "[{}]: Fetched the block({})",
@@ -149,13 +149,14 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
     }
 }
 
-async fn get_block(rollup_block_number: u64) -> Result<RollupBlock, Error> {
+async fn get_block(rollup_id: u32, rollup_block_number: u64) -> Result<RollupBlock, Error> {
     let database = database()?;
     let ssal_block_number: u64 = database.get(&rollup_block_number)?;
     let sequencer_list = SequencerList::get(ssal_block_number).ok_or_trace();
 
     if let Some(sequencer_list) = sequencer_list {
         let rpc_method = GetBlock {
+            rollup_id,
             rollup_block_number,
         };
 
@@ -200,7 +201,10 @@ where
     Ok(rpc_response)
 }
 
-async fn request_build_block(rollup_block_number: u64) -> Result<(SequencerStatus, u64), Error> {
+async fn request_build_block(
+    rollup_id: u32,
+    rollup_block_number: u64,
+) -> Result<(SequencerStatus, u64), Error> {
     // let ssal_block_number =
     //     database()?.get::<&'static str, u64>(&SSAL_BLOCK_NUMBER_KEY)? - block_margin;
     let ssal_block_number = SsalBlockNumber::get()?.into_inner() - BLOCK_MARGIN;
@@ -209,6 +213,7 @@ async fn request_build_block(rollup_block_number: u64) -> Result<(SequencerStatu
     let leader_index = rollup_block_number.checked_rem(sequencer_list.len() as u64);
     if let Some(leader_index) = leader_index {
         let rpc_method = BuildBlock {
+            rollup_id,
             ssal_block_number,
             rollup_block_number,
         };

@@ -2,6 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlock {
+    pub rollup_id: u32,
     pub rollup_block_number: u64,
 }
 
@@ -14,6 +15,7 @@ impl GetBlock {
     ) -> Result<RollupBlock, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        RollupBlock::get(parameter.rollup_block_number).map_err(|error| error.into())
+        RollupBlock::get(parameter.rollup_id, parameter.rollup_block_number)
+            .map_err(|error| error.into())
     }
 }

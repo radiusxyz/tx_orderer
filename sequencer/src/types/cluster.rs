@@ -54,10 +54,11 @@ impl ClusterMetadata {
 
     pub fn issue_order_commitment(
         &mut self,
+        rollup_id: u32,
         user_transaction: &UserTransaction,
     ) -> Result<OrderCommitment, database::Error> {
         self.transaction_order += 1;
-        user_transaction.put(self.rollup_block_number, self.transaction_order)?;
+        user_transaction.put(rollup_id, self.rollup_block_number, self.transaction_order)?;
 
         Ok(OrderCommitment::new(
             self.rollup_block_number,

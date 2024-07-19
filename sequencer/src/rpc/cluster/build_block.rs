@@ -2,6 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BuildBlock {
+    pub rollup_id: u32,
     pub ssal_block_number: u64,
     pub rollup_block_number: u64,
 }
@@ -35,6 +36,7 @@ impl BuildBlock {
 
                 syncer::sync_build_block(
                     cluster.clone(),
+                    parameter.rollup_id,
                     parameter.ssal_block_number,
                     parameter.rollup_block_number,
                     previous_block_length,
@@ -43,6 +45,7 @@ impl BuildBlock {
                 builder::build_block(
                     context.ssal_client(),
                     cluster,
+                    parameter.rollup_id,
                     previous_rollup_block_number,
                     previous_block_length,
                     true,
@@ -68,6 +71,7 @@ impl BuildBlock {
 
                     syncer::sync_build_block(
                         cluster,
+                        parameter.rollup_id,
                         parameter.ssal_block_number,
                         parameter.rollup_block_number,
                         previous_block_length,

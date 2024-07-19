@@ -68,7 +68,7 @@ async fn main() -> Result<(), Error> {
             let sequencer_list = SequencerList::get(ssal_block_number - BLOCK_MARGIN).ok_or_trace();
 
             if let Some(sequencer_list) = sequencer_list {
-                send_transaction(sequencer_list, &mut seed)
+                send_transaction(sequencer_list, &mut seed, 0)
                     .await
                     .ok_or_trace();
             }
@@ -81,6 +81,7 @@ async fn main() -> Result<(), Error> {
 async fn send_transaction(
     sequencer_list: SequencerList,
     seed: &mut ThreadRng,
+    rollup_id: u32,
 ) -> Result<(), Error> {
     let sequencer_list = sequencer_list.into_inner();
     let sequencer = sequencer_list.choose(seed);
@@ -97,7 +98,10 @@ async fn send_transaction(
                 ).into();
 
             let rpc_client = RpcClient::new(rpc_url)?;
-            let rpc_method = SendTransaction { transaction };
+            let rpc_method = SendTransaction {
+                rollup_id,
+                transaction,
+            };
             let order_commitment: OrderCommitment = rpc_client
                 .request(SendTransaction::METHOD_NAME, rpc_method)
                 .await?;
