@@ -12,7 +12,7 @@ use ssal::avs::SsalClient;
 use super::TraceExt;
 use crate::{
     error::Error,
-    rpc::cluster::{GetEncryptedTransaction, GetRawTransaction},
+    rpc::cluster::GetTransaction,
     types::{
         BlockCommitment, Cluster, RollupBlock, UserEncryptedTransaction, UserRawTransaction,
         UserTransaction,
@@ -47,40 +47,21 @@ pub fn build_block(
                     (Err(error), Err(_)) => {
                         if error.kind() == database::ErrorKind::KeyDoesNotExist {
                             // Fetch the missing transaction from other sequencers.
-                            let rpc_method = GetEncryptedTransaction {
+                            let rpc_method = GetTransaction {
                                 rollup_block_number,
                                 transaction_order,
                             };
 
                             // Stops building the block if the transaction is missing cluster-wide.
-                            if let Ok(transaction) =
-                                fetch::<GetEncryptedTransaction, UserEncryptedTransaction>(
-                                    followers,
-                                    GetEncryptedTransaction::METHOD_NAME,
-                                    GetEncryptedTransaction {
-                                        rollup_block_number,
-                                        transaction_order,
-                                    },
-                                )
-                                .await
+                            match fetch::<GetTransaction, UserTransaction>(
+                                followers,
+                                GetTransaction::METHOD_NAME,
+                                rpc_method,
+                            )
+                            .await
                             {
-                                block.push(UserTransaction::Encrypted(transaction));
-                            } else {
-                                if let Ok(transaction) =
-                                    fetch::<GetRawTransaction, UserRawTransaction>(
-                                        followers,
-                                        GetRawTransaction::METHOD_NAME,
-                                        GetRawTransaction {
-                                            rollup_block_number,
-                                            transaction_order,
-                                        },
-                                    )
-                                    .await
-                                {
-                                    block.push(UserTransaction::Raw(transaction));
-                                } else {
-                                    break;
-                                }
+                                Ok(transaction) => block.push(transaction),
+                                _ => break,
                             }
                         } else {
                             // Very unlikely, but we want to see the log.
