@@ -1,13 +1,9 @@
 mod eth;
-mod get_block_external;
-mod get_transaction_external;
 mod send_transaction;
 
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-pub use get_block_external::GetBlockExternal;
-pub use get_transaction_external::GetTransactionExternal;
 pub use send_transaction::SendTransaction;
 use serde::de::DeserializeOwned;
 
