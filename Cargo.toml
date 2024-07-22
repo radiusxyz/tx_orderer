@@ -10,6 +10,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+async-trait = "0.1.73"
 block-commitment = { path = "crates/block-commitment" }
 database = { path = "crates/database" }
 futures = "0.3.30"
