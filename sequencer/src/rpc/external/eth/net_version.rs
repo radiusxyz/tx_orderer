@@ -8,4 +8,7 @@ use crate::{
     },
 };
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct EthNetVersion {}
+
 impl_rollup_rpc_forwarder!(EthNetVersion, "net_version", String);
