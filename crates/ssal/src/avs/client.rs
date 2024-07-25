@@ -401,7 +401,7 @@ impl SsalClient {
         &self,
         block_commitment: impl AsRef<[u8]>,
         block_number: u64,
-        rollup_id: u32,
+        full_node_id: u32,
         cluster_id: impl AsRef<str>,
     ) -> Result<(), Error> {
         let block_commitment = Bytes::from_iter(block_commitment.as_ref());
@@ -412,7 +412,7 @@ impl SsalClient {
         let _transaction = self
             .inner
             .avs_contract
-            .createNewTask(block_commitment, block_number, rollup_id, cluster_id)
+            .createNewTask(block_commitment, block_number, full_node_id, cluster_id)
             .send()
             .await
             .map_err(|error| (ErrorKind::RegisterBlockCommitment, error))?;

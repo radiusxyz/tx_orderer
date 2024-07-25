@@ -16,21 +16,31 @@ impl UserRawTransaction {
     pub const ID: &'static str = stringify!(RawTransaction);
 
     pub fn get(
-        rollup_id: u32,
+        full_node_id: u32,
         rollup_block_number: u64,
         transaction_order: u64,
     ) -> Result<Self, database::Error> {
-        let key = (Self::ID, rollup_id, rollup_block_number, transaction_order);
+        let key = (
+            Self::ID,
+            full_node_id,
+            rollup_block_number,
+            transaction_order,
+        );
         database()?.get(&key)
     }
 
     pub fn put(
         &self,
-        rollup_id: u32,
+        full_node_id: u32,
         rollup_block_number: u64,
         transaction_order: u64,
     ) -> Result<(), database::Error> {
-        let key = (Self::ID, rollup_id, rollup_block_number, transaction_order);
+        let key = (
+            Self::ID,
+            full_node_id,
+            rollup_block_number,
+            transaction_order,
+        );
         database()?.put(&key, self)
     }
 

@@ -47,13 +47,13 @@ impl From<Vec<UserTransaction>> for RollupBlock {
 impl RollupBlock {
     const ID: &'static str = stringify!(RollupBlock);
 
-    pub fn get(rollup_id: u32, rollup_block_number: u64) -> Result<Self, database::Error> {
-        let key = (Self::ID, rollup_id, rollup_block_number);
+    pub fn get(full_node_id: u32, rollup_block_number: u64) -> Result<Self, database::Error> {
+        let key = (Self::ID, full_node_id, rollup_block_number);
         database()?.get(&key)
     }
 
-    pub fn put(&self, rollup_id: u32, rollup_block_number: u64) -> Result<(), database::Error> {
-        let key = (Self::ID, rollup_id, rollup_block_number);
+    pub fn put(&self, full_node_id: u32, rollup_block_number: u64) -> Result<(), database::Error> {
+        let key = (Self::ID, full_node_id, rollup_block_number);
         database()?.put(&key, self)
     }
 
@@ -80,13 +80,13 @@ impl From<Vec<u8>> for BlockCommitment {
 impl BlockCommitment {
     pub const ID: &'static str = stringify!(BlockCommitment);
 
-    pub fn get(rollup_id: u32, rollup_block_number: u64) -> Result<Self, database::Error> {
-        let key = (Self::ID, rollup_id, rollup_block_number);
+    pub fn get(full_node_id: u32, rollup_block_number: u64) -> Result<Self, database::Error> {
+        let key = (Self::ID, full_node_id, rollup_block_number);
         database()?.get(&key)
     }
 
-    pub fn put(&self, rollup_id: u32, rollup_block_number: u64) -> Result<(), database::Error> {
-        let key = (Self::ID, rollup_id, rollup_block_number);
+    pub fn put(&self, full_node_id: u32, rollup_block_number: u64) -> Result<(), database::Error> {
+        let key = (Self::ID, full_node_id, rollup_block_number);
         database()?.put(&key, self)
     }
 

@@ -35,15 +35,15 @@ impl From<UserRawTransaction> for UserTransaction {
 
 impl UserTransaction {
     pub fn get(
-        rollup_id: u32,
+        full_node_id: u32,
         rollup_block_number: u64,
         transaction_order: u64,
     ) -> Result<Self, database::Error> {
         // Returns the `UserTransaction` corresponding to the specified `rollup_block_number` and `transaction_order`.
         // If both `encrypted` and `raw` transactions exist, it returns only the `encrypted` transaction.
         match (
-            UserEncryptedTransaction::get(rollup_id, rollup_block_number, transaction_order),
-            UserRawTransaction::get(rollup_id, rollup_block_number, transaction_order),
+            UserEncryptedTransaction::get(full_node_id, rollup_block_number, transaction_order),
+            UserRawTransaction::get(full_node_id, rollup_block_number, transaction_order),
         ) {
             (Ok(encrypted_transaction), _) => Ok(Self::Encrypted(encrypted_transaction)),
             (Err(_), Ok(raw_transaction)) => Ok(Self::Raw(raw_transaction)),
@@ -53,16 +53,16 @@ impl UserTransaction {
 
     pub fn put(
         &self,
-        rollup_id: u32,
+        full_node_id: u32,
         rollup_block_number: u64,
         transaction_order: u64,
     ) -> Result<(), database::Error> {
         match self {
             UserTransaction::Raw(raw_transaction) => {
-                raw_transaction.put(rollup_id, rollup_block_number, transaction_order)
+                raw_transaction.put(full_node_id, rollup_block_number, transaction_order)
             }
             UserTransaction::Encrypted(encrypted_transaction) => {
-                encrypted_transaction.put(rollup_id, rollup_block_number, transaction_order)
+                encrypted_transaction.put(full_node_id, rollup_block_number, transaction_order)
             }
         }
     }

@@ -2,7 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetTransaction {
-    pub rollup_id: u32,
+    pub full_node_id: u32,
     pub rollup_block_number: u64,
     pub transaction_order: u64,
 }
@@ -17,7 +17,7 @@ impl GetTransaction {
         let parameter = parameter.parse::<Self>()?;
 
         UserTransaction::get(
-            parameter.rollup_id,
+            parameter.full_node_id,
             parameter.rollup_block_number,
             parameter.transaction_order,
         )

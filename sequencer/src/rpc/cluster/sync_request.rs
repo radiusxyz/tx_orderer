@@ -2,7 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncRequest {
-    pub rollup_id: u32,
+    pub full_node_id: u32,
     pub transaction: UserTransaction,
     pub order_commitment: OrderCommitment,
 }
@@ -18,7 +18,7 @@ impl SyncRequest {
         cluster_metadata.commit()?;
 
         parameter.transaction.put(
-            parameter.rollup_id,
+            parameter.full_node_id,
             parameter.order_commitment.rollup_block_number,
             parameter.order_commitment.transaction_order,
         )?;

@@ -81,7 +81,7 @@ async fn main() -> Result<(), Error> {
 async fn send_transaction(
     sequencer_list: SequencerList,
     seed: &mut ThreadRng,
-    rollup_id: u32,
+    full_node_id: u32,
 ) -> Result<(), Error> {
     let sequencer_list = sequencer_list.into_inner();
     let sequencer = sequencer_list.choose(seed);
@@ -99,7 +99,7 @@ async fn send_transaction(
 
             let rpc_client = RpcClient::new(rpc_url)?;
             let rpc_method = SendTransaction {
-                rollup_id,
+                full_node_id,
                 transaction,
             };
             let order_commitment: OrderCommitment = rpc_client

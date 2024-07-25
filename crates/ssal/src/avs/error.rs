@@ -12,7 +12,7 @@ pub enum ErrorKind {
     ParseRollupAddress,
     ParseBlockCommitment,
     ParseClusterId,
-    ParseRollupId,
+    ParseFullNodeId,
     ParseMessageToBytes,
     GetBlockNumber,
     IsOperator,
