@@ -4,24 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "test-client"
-path = "src/bin/test_client.rs"
-
-[[bin]]
-name = "test-rollup"
-path = "src/bin/test_rollup.rs"
+name = "sequencer-client"
+path = "src/bin/sequencer_client.rs"
 
 [[bin]]
 name = "sequencer"
 path = "src/bin/sequencer.rs"
-
-[[bin]]
-name = "initialize-cluster"
-path = "src/bin/initialize_cluster.rs"
-
-[[bin]]
-name = "deregister"
-path = "src/bin/shutdown.rs"
 
 [dependencies]
 block-commitment = { workspace = true }
