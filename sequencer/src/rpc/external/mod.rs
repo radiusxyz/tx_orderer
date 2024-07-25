@@ -24,9 +24,9 @@ pub trait RollupRpcParameter: Clone + Debug + DeserializeOwned + Send + Serializ
 
 pub async fn forward_to_rollup_rpc_request<T: RollupRpcParameter>(
     rpc_parameter: T,
-    rollup_rpc_endpoint: String,
+    rollup_rpc_url: String,
 ) -> Result<T::Output, RpcError> {
-    let rpc_client = RpcClient::new(rollup_rpc_endpoint)?;
+    let rpc_client = RpcClient::new(rollup_rpc_url)?;
 
     rpc_client
         .request(T::METHOD_NAME, rpc_parameter.rpc_method())
@@ -49,9 +49,9 @@ macro_rules! impl_rollup_rpc_forwarder {
 
             async fn handler(self, context: Arc<AppState>) -> Result<Self::Output, RpcError> {
                 let parameter = self.rpc_method();
-                let eth_rpc_endpoint = context.config().ethereum_rpc_url().clone();
+                let eth_rpc_url = context.config().ethereum_rpc_url().clone();
 
-                Ok(forward_to_rollup_rpc_request(parameter, eth_rpc_endpoint).await?)
+                Ok(forward_to_rollup_rpc_request(parameter, eth_rpc_url).await?)
             }
         }
     };

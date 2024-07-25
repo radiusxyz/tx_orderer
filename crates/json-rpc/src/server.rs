@@ -44,7 +44,7 @@ where
         Ok(self)
     }
 
-    pub async fn init(self, rpc_endpoint: impl AsRef<str>) -> Result<ServerHandle, Error> {
+    pub async fn init(self, rpc_url: impl AsRef<str>) -> Result<ServerHandle, Error> {
         let cors = CorsLayer::new()
             .allow_methods([Method::GET, Method::POST])
             .allow_origin(Any)
@@ -57,7 +57,7 @@ where
 
         let server = Server::builder()
             .set_http_middleware(middleware)
-            .build(rpc_endpoint.as_ref())
+            .build(rpc_url.as_ref())
             .await
             .map_err(|error| (ErrorKind::BuildServer, error))?;
 
