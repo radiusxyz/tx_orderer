@@ -212,8 +212,8 @@ async fn initialize_cluster_rpc_server(app_state: &AppState) -> Result<JoinHandl
             cluster::SyncBuildBlock::handler,
         )?
         .register_rpc_method(
-            cluster::SyncTransaction::METHOD_NAME,
-            cluster::SyncTransaction::handler,
+            cluster::SyncRequest::METHOD_NAME,
+            cluster::SyncRequest::handler,
         )?
         .register_rpc_method(cluster::GetBlock::METHOD_NAME, cluster::GetBlock::handler)?
         .register_rpc_method(

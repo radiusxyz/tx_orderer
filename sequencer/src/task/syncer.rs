@@ -1,5 +1,5 @@
 use crate::{
-    rpc::cluster::{SyncBuildBlock, SyncTransaction},
+    rpc::cluster::{SyncBuildBlock, SyncRequest},
     types::*,
 };
 
@@ -38,7 +38,7 @@ pub fn sync_user_transaction(
     order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {
-        let rpc_method = SyncTransaction {
+        let rpc_method = SyncRequest {
             rollup_id,
             transaction,
             order_commitment,
@@ -50,7 +50,7 @@ pub fn sync_user_transaction(
 
             tokio::spawn(async move {
                 let _ = rpc_client
-                    .request::<SyncTransaction, ()>(SyncTransaction::METHOD_NAME, rpc_method)
+                    .request::<SyncRequest, ()>(SyncRequest::METHOD_NAME, rpc_method)
                     .await;
             });
         }
