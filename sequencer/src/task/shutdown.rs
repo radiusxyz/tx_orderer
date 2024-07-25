@@ -12,10 +12,10 @@ pub fn init(ssal_client: SsalClient) {
     tokio::spawn(async move {
         loop {
             sleep(Duration::from_secs(10)).await;
-            let current_block_number = ssal_client.get_block_number().await.ok_or_trace();
+            let current_block_height = ssal_client.get_block_height().await.ok_or_trace();
 
-            if let Some(block_number) = current_block_number {
-                let sequencer_list = SequencerList::get(block_number - BLOCK_MARGIN).ok();
+            if let Some(block_height) = current_block_height {
+                let sequencer_list = SequencerList::get(block_height - BLOCK_MARGIN).ok();
 
                 if let Some(sequencer_list) = sequencer_list {
                     match sequencer_list
@@ -32,8 +32,8 @@ pub fn init(ssal_client: SsalClient) {
                                 .ok_or_trace();
 
                             tracing::info!(
-                                "Shutting down the sequencer at block_number: {}",
-                                block_number
+                                "Shutting down the sequencer at block_height: {}",
+                                block_height
                             );
                             break;
                         }

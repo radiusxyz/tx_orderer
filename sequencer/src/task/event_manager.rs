@@ -6,7 +6,6 @@ use tokio::time::{sleep, Duration};
 
 use crate::{
     state::AppState,
-    task::TraceExt,
     types::{BlockCommitment, SequencerList},
 };
 
@@ -45,7 +44,7 @@ async fn event_callback(event_type: SsalEventType, context: AppState) {
 }
 
 async fn on_new_block(block: Block, context: AppState) {
-    if let Some(block_number) = block.header.number {
+    if let Some(block_height) = block.header.number {
         let sequencer_list = context
             .ssal_client()
             .get_sequencer_list(context.config().cluster_id())
@@ -54,7 +53,7 @@ async fn on_new_block(block: Block, context: AppState) {
 
         if let Some(sequencer_list) = sequencer_list {
             SequencerList::from(sequencer_list)
-                .put(block_number)
+                .put(block_height)
                 .ok_or_trace();
         }
     }

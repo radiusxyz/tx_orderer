@@ -1,10 +1,10 @@
-use crate::rpc::prelude::*;
+use crate::{models::ClusterMetadataModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BuildBlock {
-    pub full_node_id: u32,
-    pub ssal_block_number: u64,
-    pub rollup_block_number: u64,
+    pub rollup_id: RollupId,
+    pub ssal_block_height: u64,
+    pub rollup_block_height: u64,
 }
 
 impl BuildBlock {
@@ -16,10 +16,12 @@ impl BuildBlock {
     ) -> Result<SequencerStatus, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        match ClusterMetadata::get_mut() {
+        match ClusterMetadataModel::get_mut() {
             Ok(mut cluster_metadata) => {
-                let previous_rollup_block_number = cluster_metadata.rollup_block_number;
-                tracing::info!("{}", previous_rollup_block_number);
+                let previous_rollup_block_height = cluster_metadata.rollup_block_height;
+
+                tracing::info!("{}", previous_rollup_block_height);
+
                 let previous_block_length = cluster_metadata.transaction_order;
                 tracing::info!("{}", previous_block_length);
 
@@ -27,8 +29,8 @@ impl BuildBlock {
                     .update(
                         context.ssal_client().address(),
                         context.config().cluster_id(),
-                        parameter.ssal_block_number,
-                        parameter.rollup_block_number,
+                        parameter.ssal_block_height,
+                        parameter.rollup_block_height,
                     )
                     .await?;
                 context.update_cluster(cluster.clone()).await;
@@ -36,17 +38,17 @@ impl BuildBlock {
 
                 syncer::sync_build_block(
                     cluster.clone(),
-                    parameter.full_node_id,
-                    parameter.ssal_block_number,
-                    parameter.rollup_block_number,
+                    parameter.rollup_id,
+                    parameter.ssal_block_height,
+                    parameter.rollup_block_height,
                     previous_block_length,
                 );
 
                 builder::build_block(
                     context.ssal_client(),
                     cluster,
-                    parameter.full_node_id,
-                    previous_rollup_block_number,
+                    parameter.rollup_id,
+                    previous_rollup_block_height,
                     previous_block_length,
                     true,
                 );
@@ -56,14 +58,14 @@ impl BuildBlock {
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
                     let previous_block_length = 0;
-                    let mut cluster_metadata = ClusterMetadata::default();
+                    let mut cluster_metadata = ClusterMetadataModel::default();
 
                     let cluster = cluster_metadata
                         .update(
                             context.ssal_client().address(),
                             context.config().cluster_id(),
-                            parameter.ssal_block_number,
-                            parameter.rollup_block_number,
+                            parameter.ssal_block_height,
+                            parameter.rollup_block_height,
                         )
                         .await?;
                     context.update_cluster(cluster.clone()).await;
@@ -71,9 +73,9 @@ impl BuildBlock {
 
                     syncer::sync_build_block(
                         cluster,
-                        parameter.full_node_id,
-                        parameter.ssal_block_number,
-                        parameter.rollup_block_number,
+                        parameter.rollup_id,
+                        parameter.ssal_block_height,
+                        parameter.rollup_block_height,
                         previous_block_length,
                     );
 

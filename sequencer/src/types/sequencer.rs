@@ -1,4 +1,4 @@
-use super::prelude::*;
+use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum SequencerStatus {
@@ -18,33 +18,5 @@ impl From<(Vec<Address>, Vec<Option<String>>)> for SequencerList {
 impl From<Vec<(Address, Option<String>)>> for SequencerList {
     fn from(value: Vec<(Address, Option<String>)>) -> Self {
         Self(value)
-    }
-}
-
-impl SequencerList {
-    pub const ID: &'static str = stringify!(SequencerList);
-    pub const DELETE_MARGIN: u64 = 100;
-
-    pub fn get(ssal_block_number: u64) -> Result<Self, database::Error> {
-        let key = (Self::ID, ssal_block_number);
-        database()?.get(&key)
-    }
-
-    pub fn put(&self, ssal_block_number: u64) -> Result<(), database::Error> {
-        let key = (Self::ID, ssal_block_number);
-        database()?.put(&key, self)
-    }
-
-    pub fn delete(ssal_block_number: u64) -> Result<(), database::Error> {
-        let key = (Self::ID, ssal_block_number);
-        database()?.delete(&key)
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn into_inner(self) -> Vec<(Address, Option<String>)> {
-        self.0
     }
 }

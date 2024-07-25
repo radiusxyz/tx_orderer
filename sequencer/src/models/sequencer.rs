@@ -1,0 +1,29 @@
+use super::prelude::*;
+
+impl SequencerList {
+    pub const ID: &'static str = stringify!(SequencerList);
+    pub const DELETE_MARGIN: u64 = 100;
+
+    pub fn get(ssal_block_height: u64) -> Result<Self, database::Error> {
+        let key = (Self::ID, ssal_block_height);
+        database()?.get(&key)
+    }
+
+    pub fn put(&self, ssal_block_height: u64) -> Result<(), database::Error> {
+        let key = (Self::ID, ssal_block_height);
+        database()?.put(&key, self)
+    }
+
+    pub fn delete(ssal_block_height: u64) -> Result<(), database::Error> {
+        let key = (Self::ID, ssal_block_height);
+        database()?.delete(&key)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn into_inner(self) -> Vec<(Address, Option<String>)> {
+        self.0
+    }
+}

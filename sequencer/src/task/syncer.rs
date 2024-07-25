@@ -5,16 +5,16 @@ use crate::{
 
 pub fn sync_build_block(
     cluster: Cluster,
-    full_node_id: u32,
-    ssal_block_number: u64,
-    rollup_block_number: u64,
+    rollup_id: RollupId,
+    ssal_block_height: u64,
+    rollup_block_height: u64,
     previous_block_length: u64,
 ) {
     tokio::spawn(async move {
         let rpc_method = SyncBuildBlock {
-            full_node_id,
-            ssal_block_number,
-            rollup_block_number,
+            rollup_id,
+            ssal_block_height,
+            rollup_block_height,
             previous_block_length,
         };
 
@@ -33,13 +33,13 @@ pub fn sync_build_block(
 
 pub fn sync_user_transaction(
     cluster: Cluster,
-    full_node_id: u32,
-    transaction: UserTransaction,
+    rollup_id: RollupId,
+    transaction: Transaction,
     order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {
         let rpc_method = SyncRequest {
-            full_node_id,
+            rollup_id,
             transaction,
             order_commitment,
         };

@@ -1,11 +1,19 @@
-use super::prelude::*;
-
-pub const BLOCK_MARGIN: u64 = 7;
+use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SsalBlockNumber(u64);
+pub struct BlockHeight(u64);
 
-impl std::ops::Sub<u64> for SsalBlockNumber {
+impl BlockHeight {
+    pub fn new(value: u64) -> Self {
+        BlockHeight(value)
+    }
+
+    pub fn value(&self) -> u64 {
+        self.0
+    }
+}
+
+impl std::ops::Sub<u64> for BlockHeight {
     type Output = u64;
 
     fn sub(self, rhs: u64) -> Self::Output {
@@ -13,84 +21,29 @@ impl std::ops::Sub<u64> for SsalBlockNumber {
     }
 }
 
-impl From<u64> for SsalBlockNumber {
+impl From<u64> for BlockHeight {
     fn from(value: u64) -> Self {
         Self(value)
     }
 }
 
-impl SsalBlockNumber {
-    pub const ID: &'static str = stringify!(SsalBlockNumber);
-
-    pub fn get() -> Result<Self, database::Error> {
-        database()?.get(&Self::ID)
-    }
-
-    pub fn put(&self) -> Result<(), database::Error> {
-        database()?.put(&Self::ID, self)
-    }
-
-    pub fn into_inner(self) -> u64 {
-        self.0
-    }
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RollupBlock(Vec<UserTransaction>);
-
-impl From<Vec<UserTransaction>> for RollupBlock {
-    fn from(value: Vec<UserTransaction>) -> Self {
-        Self(value)
-    }
-}
-
-impl RollupBlock {
-    const ID: &'static str = stringify!(RollupBlock);
-
-    pub fn get(full_node_id: u32, rollup_block_number: u64) -> Result<Self, database::Error> {
-        let key = (Self::ID, full_node_id, rollup_block_number);
-        database()?.get(&key)
-    }
-
-    pub fn put(&self, full_node_id: u32, rollup_block_number: u64) -> Result<(), database::Error> {
-        let key = (Self::ID, full_node_id, rollup_block_number);
-        database()?.put(&key, self)
-    }
-
-    pub fn new(capacity: usize) -> Self {
-        Self(Vec::with_capacity(capacity))
-    }
-}
+pub struct Timestamp(String);
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BlockCommitment(Vec<u8>);
 
-impl AsRef<[u8]> for BlockCommitment {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Block {
+    block_height: BlockHeight,
 
-impl From<Vec<u8>> for BlockCommitment {
-    fn from(value: Vec<u8>) -> Self {
-        Self(value)
-    }
-}
+    encrypted_transaction_list: EncryptedTransactionList,
+    raw_transaction_list: RawTransactionList,
 
-impl BlockCommitment {
-    pub const ID: &'static str = stringify!(BlockCommitment);
+    proposer_address: Address,
+    signature: Signature,
 
-    pub fn get(full_node_id: u32, rollup_block_number: u64) -> Result<Self, database::Error> {
-        let key = (Self::ID, full_node_id, rollup_block_number);
-        database()?.get(&key)
-    }
+    timestamp: Timestamp,
 
-    pub fn put(&self, full_node_id: u32, rollup_block_number: u64) -> Result<(), database::Error> {
-        let key = (Self::ID, full_node_id, rollup_block_number);
-        database()?.put(&key, self)
-    }
-
-    pub fn to_bytes(&self) -> Bytes {
-        Bytes::from_iter(&self.0)
-    }
+    block_commitment: BlockCommitment,
 }

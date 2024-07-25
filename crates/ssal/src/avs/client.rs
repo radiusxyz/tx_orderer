@@ -199,10 +199,10 @@ impl SsalClient {
         &self.inner.signer
     }
 
-    pub async fn get_block_number(&self) -> Result<u64, Error> {
+    pub async fn get_block_height(&self) -> Result<u64, Error> {
         self.inner
             .provider
-            .get_block_number()
+            .get_block_height()
             .await
             .map_err(|error| (ErrorKind::GetBlockNumber, error).into())
     }
@@ -238,7 +238,7 @@ impl SsalClient {
             .await
             .map_err(|error| (ErrorKind::RegisterAsOperator, error))?;
 
-        println!("{:?}", register_as_operator.block_number);
+        println!("{:?}", register_as_operator.block_height);
         println!("{:?}", register_as_operator.transaction_hash);
 
         match self.is_operator().await? {
@@ -307,7 +307,7 @@ impl SsalClient {
             .await
             .map_err(|error| (ErrorKind::RegisterOnAvs, error))?;
 
-        println!("{:?}", register_operator_with_signature.block_number);
+        println!("{:?}", register_operator_with_signature.block_height);
         println!("{:?}", register_operator_with_signature.transaction_hash);
 
         match self.is_avs().await? {
@@ -400,8 +400,8 @@ impl SsalClient {
     pub async fn register_block_commitment(
         &self,
         block_commitment: impl AsRef<[u8]>,
-        block_number: u64,
-        full_node_id: u32,
+        block_height: u64,
+        rollup_id: RollupId,
         cluster_id: impl AsRef<str>,
     ) -> Result<(), Error> {
         let block_commitment = Bytes::from_iter(block_commitment.as_ref());
@@ -412,7 +412,7 @@ impl SsalClient {
         let _transaction = self
             .inner
             .avs_contract
-            .createNewTask(block_commitment, block_number, full_node_id, cluster_id)
+            .createNewTask(block_commitment, block_height, rollup_id, cluster_id)
             .send()
             .await
             .map_err(|error| (ErrorKind::RegisterBlockCommitment, error))?;

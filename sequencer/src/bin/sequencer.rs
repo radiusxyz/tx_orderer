@@ -52,7 +52,7 @@ async fn main() -> Result<(), Error> {
     tracing::info!("Successfully initialized the SSAL client.");
 
     // Initialize an application-wide state instance.
-    let app_state = AppState::new(config, ssal_client, None);
+    let app_state = AppState::new(config, ssal_client);
 
     // // Check if the sequencer has failed previously.
     // check_failover(&app_state).await?;
@@ -120,15 +120,15 @@ async fn check_failover(app_state: &AppState) -> Result<(), Error> {
         Some(mut cluster_metadata) => {
             tracing::warn!("Found a saved cluster metadata. Recovering the previous state..");
 
-            let ssal_block_number = cluster_metadata.ssal_block_number;
-            let rollup_block_number = cluster_metadata.rollup_block_number;
+            let ssal_block_height = cluster_metadata.ssal_block_height;
+            let rollup_block_height = cluster_metadata.rollup_block_height;
 
             let cluster = cluster_metadata
                 .update(
                     app_state.ssal_client().address(),
                     app_state.config().cluster_id(),
-                    ssal_block_number,
-                    rollup_block_number,
+                    ssal_block_height,
+                    rollup_block_height,
                 )
                 .await?;
             app_state.update_cluster(cluster).await;

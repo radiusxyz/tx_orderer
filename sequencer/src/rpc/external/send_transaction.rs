@@ -2,8 +2,8 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendTransaction {
-    pub full_node_id: u32,
-    pub transaction: UserTransaction,
+    pub rollup_id: RollupId,
+    pub transaction: Transaction,
 }
 
 impl SendTransaction {
@@ -20,13 +20,13 @@ impl SendTransaction {
                 true => {
                     // Issue an order commitment.
                     let order_commitment = cluster_metadata
-                        .issue_order_commitment(parameter.full_node_id, &parameter.transaction)?;
+                        .issue_order_commitment(parameter.rollup_id, &parameter.transaction)?;
 
                     cluster_metadata.commit()?;
 
                     syncer::sync_user_transaction(
                         context.cluster().await?,
-                        parameter.full_node_id,
+                        parameter.rollup_id,
                         parameter.transaction,
                         order_commitment,
                     );
