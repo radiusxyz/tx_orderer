@@ -1,10 +1,14 @@
-use crate::rpc::prelude::*;
+use crate::{
+    models::{ClusterMetadataModel, TransactionModel},
+    rpc::prelude::*,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncRequest {
     pub rollup_id: RollupId,
-    pub transaction: Transaction,
-    pub order_commitment: OrderCommitment,
+    pub block_height: BlockHeight,
+    pub transaction_order: TransactionOrder,
+    pub transaction_model: TransactionModel,
 }
 
 impl SyncRequest {
@@ -13,14 +17,15 @@ impl SyncRequest {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let mut cluster_metadata = ClusterMetadata::get_mut()?;
-        cluster_metadata.transaction_order += 1;
+        let mut cluster_metadata = ClusterMetadataModel::get_mut()?;
+
+        cluster_metadata.transaction_order.increment();
         cluster_metadata.commit()?;
 
-        parameter.transaction.put(
-            parameter.rollup_id,
-            parameter.order_commitment.rollup_block_height,
-            parameter.order_commitment.transaction_order,
+        parameter.transaction_model.put(
+            &parameter.rollup_id,
+            &parameter.block_height,
+            &parameter.transaction_order,
         )?;
 
         Ok(())

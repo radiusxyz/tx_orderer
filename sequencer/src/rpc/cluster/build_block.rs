@@ -3,8 +3,8 @@ use crate::{models::ClusterMetadataModel, rpc::prelude::*};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BuildBlock {
     pub rollup_id: RollupId,
-    pub ssal_block_height: u64,
-    pub rollup_block_height: u64,
+    pub ssal_block_height: BlockHeight,
+    pub rollup_block_height: BlockHeight,
 }
 
 impl BuildBlock {
@@ -18,12 +18,8 @@ impl BuildBlock {
 
         match ClusterMetadataModel::get_mut() {
             Ok(mut cluster_metadata) => {
-                let previous_rollup_block_height = cluster_metadata.rollup_block_height;
-
-                tracing::info!("{}", previous_rollup_block_height);
-
-                let previous_block_length = cluster_metadata.transaction_order;
-                tracing::info!("{}", previous_block_length);
+                let finalized_block_height = cluster_metadata.rollup_block_height;
+                let transaction_count = cluster_metadata.transaction_order;
 
                 let cluster = cluster_metadata
                     .update(
@@ -41,15 +37,15 @@ impl BuildBlock {
                     parameter.rollup_id,
                     parameter.ssal_block_height,
                     parameter.rollup_block_height,
-                    previous_block_length,
+                    transaction_count,
                 );
 
                 builder::build_block(
                     context.ssal_client(),
                     cluster,
                     parameter.rollup_id,
-                    previous_rollup_block_height,
-                    previous_block_length,
+                    finalized_block_height,
+                    transaction_count,
                     true,
                 );
 

@@ -9,34 +9,32 @@ use json_rpc::RpcClient;
 use serde::{de::DeserializeOwned, ser::Serialize};
 use ssal::avs::SsalClient;
 
-use super::TraceExt;
 use crate::{
-    error::Error,
-    rpc::cluster::GetTransaction,
-    types::{
-        BlockCommitment, Cluster, EncryptedTransaction, RollupBlock, Transaction,
-        UserRawTransaction,
-    },
+    error::Error, models::EncryptedTransactionModel, rpc::cluster::GetTransaction, types::*,
 };
 
 pub fn build_block(
     ssal_client: SsalClient,
     cluster: Cluster,
     rollup_id: RollupId,
-    rollup_block_height: u64,
-    block_length: u64,
+    rollup_block_height: BlockHeight,
+    transaction_order: TransactionOrder,
     register_block_commitment: bool,
 ) {
     tokio::spawn(async move {
-        let mut block: Vec<Transaction> = Vec::with_capacity(block_length as usize);
+        let mut block: Vec<Transaction> = Vec::with_capacity(transaction_order as usize);
         let followers = cluster.followers();
 
         // TODO(jaemin): include the raw tx added by decrypting encrypted tx
-        if block_length != 0 {
-            for transaction_order in 1..=block_length {
+        if transaction_order != 0 {
+            for transaction_order in 1..=transaction_order {
                 match (
-                    EncryptedTransaction::get(rollup_id, rollup_block_height, transaction_order),
-                    UserRawTransaction::get(rollup_id, rollup_block_height, transaction_order),
+                    EncryptedTransactionModel::get(
+                        &rollup_id,
+                        &rollup_block_height,
+                        &transaction_order,
+                    ),
+                    RawTransactionModel::get(&rollup_id, &rollup_block_height, &transaction_order),
                 ) {
                     (Err(_), Ok(transaction)) => block.push(Transaction::Raw(transaction)),
                     (Ok(transaction), Err(_)) => block.push(Transaction::Encrypted(transaction)),
@@ -76,6 +74,7 @@ pub fn build_block(
         // TODO: Get the seed from SSAL.
         let seed = [0u8; 32];
         let block_commitment: BlockCommitment = calculate_block_commitment(&block, seed).into();
+
         block_commitment
             .put(rollup_id, rollup_block_height)
             .ok_or_trace();
@@ -86,7 +85,7 @@ pub fn build_block(
                 .register_block_commitment(block_commitment, rollup_block_height, rollup_id, cluster.id())
                 .await
             {
-                Ok(_) => tracing::info!("Successfully registered the block commitment.\nRollup block number: {}\nBlock height: {}", rollup_block_height, block_length),
+                Ok(_) => tracing::info!("Successfully registered the block commitment.\nRollup block number: {}\nBlock height: {}", rollup_block_height, transaction_order),
                 Err(error) => tracing::error!("{}", error),
             }
         }

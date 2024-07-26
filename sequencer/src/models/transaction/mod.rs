@@ -25,4 +25,21 @@ impl TransactionModel {
             Self::Encrypted(encrypted) => encrypted.put(rollup_id, block_height, transaction_order),
         }
     }
+
+    pub fn get(
+        rollup_id: &RollupId,
+        block_height: &BlockHeight,
+        transaction_order: &TransactionOrder,
+    ) -> Result<Self, database::Error> {
+        RawTransactionModel::get(rollup_id, block_height, transaction_order)
+            .map(Self::Raw)
+            .or_else(|error| {
+                if error.kind() == database::ErrorKind::KeyDoesNotExist {
+                    EncryptedTransactionModel::get(rollup_id, block_height, transaction_order)
+                        .map(Self::Encrypted)
+                } else {
+                    Err(error)
+                }
+            })
+    }
 }

@@ -6,16 +6,16 @@ use crate::{
 pub fn sync_build_block(
     cluster: Cluster,
     rollup_id: RollupId,
-    ssal_block_height: u64,
-    rollup_block_height: u64,
-    previous_block_length: u64,
+    ssal_block_height: BlockHeight,
+    rollup_block_height: BlockHeight,
+    transaction_order: TransactionOrder,
 ) {
     tokio::spawn(async move {
         let rpc_method = SyncBuildBlock {
             rollup_id,
             ssal_block_height,
             rollup_block_height,
-            previous_block_length,
+            transaction_order,
         };
 
         for rpc_client in cluster.followers() {
