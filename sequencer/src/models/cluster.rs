@@ -50,6 +50,10 @@ impl ClusterMetadataModel {
         }
     }
 
+    pub fn get_transaction_order(&self) -> TransactionOrder {
+        self.transaction_order.clone()
+    }
+
     pub fn increment_transaction_order(&mut self) {
         self.transaction_order.increment();
     }

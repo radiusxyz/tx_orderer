@@ -6,6 +6,7 @@ mod prelude {
 }
 mod block;
 mod cluster;
+mod constant;
 mod order_commitment;
 mod rollup;
 mod sequencer;
@@ -14,6 +15,7 @@ mod time_lock_puzzle;
 
 pub use block::*;
 pub use cluster::*;
+pub use constant::*;
 pub use order_commitment::*;
 pub use rollup::*;
 pub use sequencer::*;

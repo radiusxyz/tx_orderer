@@ -1,4 +1,5 @@
 use crate::{
+    models::TransactionModel,
     rpc::cluster::{SyncBuildBlock, SyncRequest},
     types::*,
 };
@@ -34,7 +35,7 @@ pub fn sync_build_block(
 pub fn sync_user_transaction(
     cluster: Cluster,
     rollup_id: RollupId,
-    transaction: Transaction,
+    transaction: TransactionModel,
     order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {

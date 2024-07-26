@@ -6,9 +6,8 @@ use crate::{
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncRequest {
     pub rollup_id: RollupId,
-    pub block_height: BlockHeight,
-    pub transaction_order: TransactionOrder,
-    pub transaction_model: TransactionModel,
+    pub transaction: TransactionModel,
+    pub order_commitment: OrderCommitment,
 }
 
 impl SyncRequest {
@@ -19,13 +18,14 @@ impl SyncRequest {
 
         let mut cluster_metadata = ClusterMetadataModel::get_mut()?;
 
+        // TODO: compare block height and transaction order with order commitment
         cluster_metadata.transaction_order.increment();
         cluster_metadata.commit()?;
 
-        parameter.transaction_model.put(
+        parameter.transaction.put(
             &parameter.rollup_id,
-            &parameter.block_height,
-            &parameter.transaction_order,
+            &parameter.order_commitment.data.block_height,
+            &parameter.order_commitment.data.transaction_order,
         )?;
 
         Ok(())

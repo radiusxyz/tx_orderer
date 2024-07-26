@@ -20,21 +20,27 @@ impl TransactionOrder {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderHash(String);
 
+impl Default for OrderHash {
+    fn default() -> Self {
+        Self("".to_string())
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderHashList(Vec<OrderHash>);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitmentData {
-    rollup_id: RollupId,
-    block_height: BlockHeight,
-    transaction_order: TransactionOrder,
-    previous_order_hash: OrderHash,
+    pub rollup_id: RollupId,
+    pub block_height: BlockHeight,
+    pub transaction_order: TransactionOrder,
+    pub previous_order_hash: OrderHash,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitment {
-    order_commitment_data: OrderCommitmentData,
-    signature: Signature,
+    pub data: OrderCommitmentData,
+    pub signature: Signature,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use ssal::avs::SsalClient;
+use tokio::sync::Mutex;
 
-use crate::config::Config;
+use crate::{config::Config, error::Error, types::Cluster};
 
 pub struct AppState {
     inner: Arc<AppStateInner>,
@@ -11,6 +12,7 @@ pub struct AppState {
 struct AppStateInner {
     config: Config,
     ssal_client: SsalClient,
+    cluster: Mutex<Option<Cluster>>,
 }
 
 unsafe impl Send for AppState {}
@@ -26,10 +28,11 @@ impl Clone for AppState {
 }
 
 impl AppState {
-    pub fn new(config: Config, ssal_client: SsalClient) -> Self {
+    pub fn new(config: Config, ssal_client: SsalClient, cluster: Option<Cluster>) -> Self {
         let inner = AppStateInner {
             config,
             ssal_client,
+            cluster: Mutex::new(cluster),
         };
 
         Self {
@@ -43,5 +46,13 @@ impl AppState {
 
     pub fn ssal_client(&self) -> SsalClient {
         self.inner.ssal_client.clone()
+    }
+
+    pub async fn cluster(&self) -> Result<Cluster, Error> {
+        let cluster_lock = self.inner.cluster.lock().await;
+        match &*cluster_lock {
+            Some(cluster) => Ok(cluster.clone()),
+            None => Err(Error::Uninitialized),
+        }
     }
 }
