@@ -15,3 +15,13 @@ pub struct Signature {
     s: String,
     v: String,
 }
+
+impl Default for Signature {
+    fn default() -> Self {
+        Self {
+            r: "".to_string(),
+            s: "".to_string(),
+            v: "".to_string(),
+        }
+    }
+}
