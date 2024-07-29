@@ -13,8 +13,8 @@ pub struct ClusterMetadataModel {
 impl Default for ClusterMetadataModel {
     fn default() -> Self {
         Self {
-            ssal_block_height: BlockHeight::new(0),
-            rollup_block_height: BlockHeight::new(0),
+            ssal_block_height: 0,
+            rollup_block_height: 0,
             transaction_order: TransactionOrder::new(0),
             is_leader: false,
         }

@@ -7,10 +7,8 @@ impl Deregister {
     pub const METHOD_NAME: &'static str = stringify!(Deregister);
 
     pub async fn handler(_parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
-        context
-            .ssal_client()
-            .deregister_sequencer(context.config().cluster_id())
-            .await?;
+        // TODO: context.config().cluster_id()
+        context.ssal_client().deregister_sequencer("").await?;
 
         shutdown::init(context.ssal_client());
 

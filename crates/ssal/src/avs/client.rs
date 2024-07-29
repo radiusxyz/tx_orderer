@@ -202,7 +202,7 @@ impl SsalClient {
     pub async fn get_block_height(&self) -> Result<u64, Error> {
         self.inner
             .provider
-            .get_block_height()
+            .get_block_number()
             .await
             .map_err(|error| (ErrorKind::GetBlockNumber, error).into())
     }
@@ -238,7 +238,6 @@ impl SsalClient {
             .await
             .map_err(|error| (ErrorKind::RegisterAsOperator, error))?;
 
-        println!("{:?}", register_as_operator.block_height);
         println!("{:?}", register_as_operator.transaction_hash);
 
         match self.is_operator().await? {
@@ -307,7 +306,6 @@ impl SsalClient {
             .await
             .map_err(|error| (ErrorKind::RegisterOnAvs, error))?;
 
-        println!("{:?}", register_operator_with_signature.block_height);
         println!("{:?}", register_operator_with_signature.transaction_hash);
 
         match self.is_avs().await? {
@@ -401,21 +399,21 @@ impl SsalClient {
         &self,
         block_commitment: impl AsRef<[u8]>,
         block_height: u64,
-        rollup_id: RollupId,
+        rollup_id: String,
         cluster_id: impl AsRef<str>,
     ) -> Result<(), Error> {
         let block_commitment = Bytes::from_iter(block_commitment.as_ref());
 
-        let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
-            .map_err(|error| (ErrorKind::ParseClusterId, error))?;
+        // let cluster_id = FixedBytes::from_str(cluster_id.as_ref())
+        //     .map_err(|error| (ErrorKind::ParseClusterId, error))?;
 
-        let _transaction = self
-            .inner
-            .avs_contract
-            .createNewTask(block_commitment, block_height, rollup_id, cluster_id)
-            .send()
-            .await
-            .map_err(|error| (ErrorKind::RegisterBlockCommitment, error))?;
+        // let _transaction = self
+        //     .inner
+        //     .avs_contract
+        //     .createNewTask(block_commitment, block_height, rollup_id, cluster_id)
+        //     .send()
+        //     .await
+        //     .map_err(|error| (ErrorKind::RegisterBlockCommitment, error))?;
 
         Ok(())
     }

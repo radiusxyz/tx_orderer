@@ -16,28 +16,19 @@ impl BuildBlock {
     ) -> Result<SequencerStatus, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        let cluster = context.cluster().await?;
+
         match ClusterMetadataModel::get_mut() {
-            Ok(mut cluster_metadata) => {
-                let finalized_block_height = cluster_metadata.rollup_block_height;
-                let transaction_count = cluster_metadata.transaction_order;
+            Ok(cluster_metadata) => {
+                let finalized_block_height = cluster_metadata.rollup_block_height.clone();
+                let transaction_count = cluster_metadata.transaction_order.clone();
 
-                let cluster = cluster_metadata
-                    .update(
-                        context.ssal_client().address(),
-                        context.config().cluster_id(),
-                        parameter.ssal_block_height,
-                        parameter.rollup_block_height,
-                    )
-                    .await?;
-                context.update_cluster(cluster.clone()).await;
-                cluster_metadata.commit()?;
-
-                syncer::sync_build_block(
+                syncer::sync_block(
                     cluster.clone(),
-                    parameter.rollup_id,
+                    parameter.rollup_id.clone(),
                     parameter.ssal_block_height,
                     parameter.rollup_block_height,
-                    transaction_count,
+                    transaction_count.clone(),
                 );
 
                 builder::build_block(
@@ -53,26 +44,22 @@ impl BuildBlock {
             }
             Err(error) => {
                 if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                    let previous_block_length = 0;
-                    let mut cluster_metadata = ClusterMetadataModel::default();
+                    let transaction_count = TransactionOrder::new(0);
+                    let cluster_metadata = ClusterMetadataModel::new(
+                        parameter.ssal_block_height.clone(),
+                        parameter.rollup_block_height.clone(),
+                        transaction_count.clone(),
+                        false, // TODO: check
+                    );
 
-                    let cluster = cluster_metadata
-                        .update(
-                            context.ssal_client().address(),
-                            context.config().cluster_id(),
-                            parameter.ssal_block_height,
-                            parameter.rollup_block_height,
-                        )
-                        .await?;
-                    context.update_cluster(cluster.clone()).await;
                     cluster_metadata.put()?;
 
-                    syncer::sync_build_block(
+                    syncer::sync_block(
                         cluster,
                         parameter.rollup_id,
                         parameter.ssal_block_height,
                         parameter.rollup_block_height,
-                        previous_block_length,
+                        transaction_count,
                     );
 
                     Ok(SequencerStatus::Uninitialized)

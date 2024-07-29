@@ -1,5 +1,4 @@
 pub mod builder;
-pub mod event_manager;
 pub mod shutdown;
 pub mod syncer;
 

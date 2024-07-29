@@ -1,10 +1,10 @@
 use crate::{
     models::TransactionModel,
-    rpc::cluster::{SyncBuildBlock, SyncRequest},
+    rpc::cluster::{SyncBlock, SyncRequest},
     types::*,
 };
 
-pub fn sync_build_block(
+pub fn sync_block(
     cluster: Cluster,
     rollup_id: RollupId,
     ssal_block_height: BlockHeight,
@@ -12,7 +12,7 @@ pub fn sync_build_block(
     transaction_order: TransactionOrder,
 ) {
     tokio::spawn(async move {
-        let rpc_method = SyncBuildBlock {
+        let rpc_method = SyncBlock {
             rollup_id,
             ssal_block_height,
             rollup_block_height,
@@ -25,7 +25,7 @@ pub fn sync_build_block(
 
             tokio::spawn(async move {
                 let _ = rpc_client
-                    .request::<SyncBuildBlock, ()>(SyncBuildBlock::METHOD_NAME, rpc_method)
+                    .request::<SyncBlock, ()>(SyncBlock::METHOD_NAME, rpc_method)
                     .await;
             });
         }

@@ -1,8 +1,10 @@
 use super::prelude::*;
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SequencerList(Vec<(Address, Option<IpAddress>)>);
+
 impl SequencerList {
     pub const ID: &'static str = stringify!(SequencerList);
-    pub const DELETE_MARGIN: u64 = 100;
 
     pub fn get(ssal_block_height: BlockHeight) -> Result<Self, database::Error> {
         let key = (Self::ID, ssal_block_height);
@@ -23,7 +25,7 @@ impl SequencerList {
         self.0.len()
     }
 
-    pub fn into_inner(self) -> Vec<(Address, Option<String>)> {
+    pub fn into_inner(self) -> Vec<(Address, Option<IpAddress>)> {
         self.0
     }
 }

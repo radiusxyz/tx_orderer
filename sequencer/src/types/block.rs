@@ -1,37 +1,24 @@
 use crate::types::prelude::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct BlockHeight(u64);
-
-impl BlockHeight {
-    pub fn new(value: u64) -> Self {
-        BlockHeight(value)
-    }
-
-    pub fn value(&self) -> u64 {
-        self.0
-    }
-}
-
-impl std::ops::Sub<u64> for BlockHeight {
-    type Output = u64;
-
-    fn sub(self, rhs: u64) -> Self::Output {
-        self.0 - rhs
-    }
-}
-
-impl From<u64> for BlockHeight {
-    fn from(value: u64) -> Self {
-        Self(value)
-    }
-}
+pub type BlockHeight = u64;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Timestamp(String);
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BlockCommitment(Vec<u8>);
+
+impl AsRef<[u8]> for BlockCommitment {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Vec<u8>> for BlockCommitment {
+    fn from(value: Vec<u8>) -> Self {
+        Self(value)
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Block {

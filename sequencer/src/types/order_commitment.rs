@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -5,7 +7,7 @@ pub struct TransactionOrder(u64);
 
 impl TransactionOrder {
     pub fn new(value: u64) -> Self {
-        TransactionOrder(value)
+        Self(value)
     }
 
     pub fn increment(&mut self) {
@@ -14,6 +16,34 @@ impl TransactionOrder {
 
     pub fn value(&self) -> u64 {
         self.0
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
+
+impl From<u64> for TransactionOrder {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+impl From<TransactionOrder> for u64 {
+    fn from(transaction_order: TransactionOrder) -> Self {
+        transaction_order.0
+    }
+}
+
+impl PartialEq for TransactionOrder {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl fmt::Display for TransactionOrder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
