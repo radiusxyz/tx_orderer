@@ -1,36 +1,50 @@
-use std::env;
-
 use database::Database;
 use json_rpc::RpcServer;
-use seeder::{config::Config, error::Error, rpc::*};
+use seeder::{
+    cli::{Cli, Commands, ConfigOption, ConfigPath},
+    error::Error,
+    rpc::*,
+    task::event_listener,
+};
 use ssal::avs::seeder::rpc::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
 
-    let arguments: Vec<String> = env::args().skip(1).collect();
-    let config_path: String = arguments
-        .get(0)
-        .expect("Provide the configuration file path.")
-        .to_owned();
+    let mut cli = Cli::init();
 
-    let config = Config::load(config_path)?;
+    match cli.command {
+        Commands::Init { ref config_path } => ConfigPath::init(config_path)?,
+        Commands::Start {
+            ref mut config_option,
+        } => {
+            let config = ConfigOption::load_config(config_option)?;
 
-    Database::new(config.database_path())?.init();
+            let config_path = config.path.as_ref().unwrap();
+            let seeder_rpc_endpoint = config.seeder_rpc_endpoint.as_ref().unwrap();
 
-    let rpc_server_handle = RpcServer::new(())
-        .register_rpc_method(Register::METHOD_NAME, register::handler)?
-        .register_rpc_method(Deregister::METHOD_NAME, deregister::handler)?
-        .register_rpc_method(
-            GetSequencerRpcUrlList::METHOD_NAME,
-            get_sequencer_url_list::handler,
-        )?
-        .init(config.seeder_rpc_url())
-        .await?;
+            let provider_rpc_endpoint = config.provider_rpc_endpoint.as_ref().unwrap();
+            let contract_address = config.contract_address.as_ref().unwrap();
 
-    tracing::info!("Seeder server starting at {}", config.seeder_rpc_url());
-    rpc_server_handle.stopped().await;
+            // Initialize a local database.
+            Database::new(config_path.join("database"))?.init();
+
+            event_listener::init(provider_rpc_endpoint, contract_address);
+
+            let rpc_server_handle = RpcServer::new(())
+                .register_rpc_method(Register::METHOD_NAME, register::handler)?
+                .register_rpc_method(
+                    GetSequencerRpcUrlList::METHOD_NAME,
+                    get_sequencer_url_list::handler,
+                )?
+                .init(seeder_rpc_endpoint)
+                .await?;
+
+            tracing::info!("Seeder server starting at {}", seeder_rpc_endpoint);
+            rpc_server_handle.stopped().await;
+        }
+    }
 
     Ok(())
 }

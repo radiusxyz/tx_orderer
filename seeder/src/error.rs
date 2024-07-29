@@ -6,6 +6,18 @@ pub enum Error {
     JsonRPC(json_rpc::Error),
     SignatureMismatch,
     HealthCheck,
+
+    RemoveConfigDirectory,
+    CreateConfigDirectory,
+    CreateConfigFile,
+    CreatePrivateKeyFile,
+    LoadConfigOption,
+    ParseTomlString,
+
+    ConnectEventListener,
+    ParseContractAddress,
+
+    NotRegisteredSequencer,
 }
 
 impl std::fmt::Debug for Error {
@@ -28,6 +40,33 @@ impl std::fmt::Display for Error {
                     f,
                     "Health-check failed. Make sure the sequencer is running and port-forwarded."
                 )
+            }
+            Self::RemoveConfigDirectory => {
+                write!(f, "Failed to remove the previous configuration directory")
+            }
+            Self::CreateConfigDirectory => {
+                write!(f, "Failed to create a new configuration directory")
+            }
+            Self::CreateConfigFile => {
+                write!(f, "Failed to create a new config file")
+            }
+            Self::CreatePrivateKeyFile => {
+                write!(f, "Failed to create a private key file")
+            }
+            Self::LoadConfigOption => {
+                write!(f, "Failed to load a config file")
+            }
+            Self::ParseTomlString => {
+                write!(f, "Failed to parse String to TOML String")
+            }
+            Self::ConnectEventListener => {
+                write!(f, "Failed to connect to the event listener")
+            }
+            Self::ParseContractAddress => {
+                write!(f, "Failed to parse contract address")
+            }
+            Self::NotRegisteredSequencer => {
+                write!(f, "Not registered sequencer")
             }
         }
     }
