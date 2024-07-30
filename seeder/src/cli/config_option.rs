@@ -7,7 +7,6 @@ use super::{ConfigPath, CONFIG_FILE_NAME};
 use crate::error::Error;
 
 const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:3000";
-const DEFAULT_PROVIDER_RPC_URL: &str = "http://127.0.0.1:8546";
 const DEFAULT_PROVIDER_WEBSOCKET_URL: &str = "ws://127.0.0.1:8545";
 const DEFAULT_CONTRACT_ADDRESS: &str = "";
 
@@ -84,7 +83,7 @@ impl ConfigOption {
         toml_string
     }
 
-    fn merge(mut self, other: &ConfigOption) -> Self {
+    pub fn merge(mut self, other: &ConfigOption) -> Self {
         if other.path.is_some() {
             self.path = other.path.clone();
         }

@@ -3,7 +3,7 @@ use get_sequencer_rpc_url_list::GetSequencerRpcUrlList;
 use json_rpc::RpcServer;
 use register_sequencer_rpc_url::RegisterSequencerRpcUrl;
 use seeder::{
-    cli::{Cli, Commands, ConfigOption, ConfigPath},
+    cli::{Cli, Commands, Config, ConfigOption, ConfigPath, DATABASE_DIR_NAME},
     error::Error,
     rpc::*,
     task::event_listener,
@@ -20,18 +20,17 @@ async fn main() -> Result<(), Error> {
         Commands::Start {
             ref mut config_option,
         } => {
-            let config = ConfigOption::load_config(config_option)?;
+            let config = Config::load(config_option)?;
 
-            let config_path = config.path.as_ref().unwrap();
-            let seeder_rpc_url = config.seeder_rpc_url.as_ref().unwrap();
+            let seeder_rpc_url = config.seeder_rpc_url();
 
-            let provider_websocket_url = config.provider_websocket_url.unwrap();
-            let contract_address = config.contract_address.unwrap();
-
-            event_listener::init(provider_websocket_url, contract_address);
+            event_listener::init(
+                config.provider_websocket_url().to_string(),
+                config.contract_address().to_string(),
+            );
 
             // Initialize a local database.
-            Database::new(config_path.join("database"))?.init();
+            Database::new(config.path().join(DATABASE_DIR_NAME))?.init();
 
             let rpc_server_handle = RpcServer::new(())
                 .register_rpc_method(
