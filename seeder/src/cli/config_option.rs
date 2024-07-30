@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 use super::{ConfigPath, CONFIG_FILE_NAME};
 use crate::error::Error;
 
-const DEFAULT_SEEDER_RPC_ENDPOINT: &str = "127.0.0.1:3000";
-const DEFAULT_PROVIDER_RPC_ENDPOINT: &str = "127.0.0.1:4000";
+const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:3000";
+const DEFAULT_PROVIDER_RPC_URL: &str = "http://127.0.0.1:8546";
+const DEFAULT_PROVIDER_WEBSOCKET_URL: &str = "ws://127.0.0.1:8545";
 const DEFAULT_CONTRACT_ADDRESS: &str = "";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
@@ -16,13 +17,13 @@ pub struct ConfigOption {
     #[clap(long = "path")]
     pub path: Option<PathBuf>,
 
-    #[doc = "Set the seeder rpc endpoint"]
-    #[clap(long = "seeder-rpc-endpoint")]
-    pub seeder_rpc_endpoint: Option<String>,
+    #[doc = "Set the seeder rpc url"]
+    #[clap(long = "seeder-rpc-url")]
+    pub seeder_rpc_url: Option<String>,
 
-    #[doc = "Set the provider rpc endpoint"]
-    #[clap(long = "provider-rpc-endpoint")]
-    pub provider_rpc_endpoint: Option<String>,
+    #[doc = "Set the provider websocket url"]
+    #[clap(long = "provider-websocket-url")]
+    pub provider_websocket_url: Option<String>,
 
     #[doc = "Set the contract address"]
     #[clap(long = "contract-address")]
@@ -33,8 +34,8 @@ impl Default for ConfigOption {
     fn default() -> Self {
         Self {
             path: Some(ConfigPath::default().as_ref().into()),
-            seeder_rpc_endpoint: Some(DEFAULT_SEEDER_RPC_ENDPOINT.into()),
-            provider_rpc_endpoint: Some(DEFAULT_PROVIDER_RPC_ENDPOINT.into()),
+            seeder_rpc_url: Some(DEFAULT_SEEDER_RPC_URL.into()),
+            provider_websocket_url: Some(DEFAULT_PROVIDER_WEBSOCKET_URL.into()),
             contract_address: Some(DEFAULT_CONTRACT_ADDRESS.into()),
         }
     }
@@ -67,18 +68,14 @@ impl ConfigOption {
     pub fn get_toml_string(&self) -> String {
         let mut toml_string = String::new();
 
-        set_toml_comment(&mut toml_string, "Set seeder rpc endpoint");
-        set_toml_name_value(
-            &mut toml_string,
-            "seeder_rpc_endpoint",
-            &self.seeder_rpc_endpoint,
-        );
+        set_toml_comment(&mut toml_string, "Set seeder rpc url");
+        set_toml_name_value(&mut toml_string, "seeder_rpc_url", &self.seeder_rpc_url);
 
-        set_toml_comment(&mut toml_string, "Set provider rpc endpoint");
+        set_toml_comment(&mut toml_string, "Set provider websocket url");
         set_toml_name_value(
             &mut toml_string,
-            "provider_rpc_endpoint",
-            &self.provider_rpc_endpoint,
+            "provider_websocket_url",
+            &self.provider_websocket_url,
         );
 
         set_toml_comment(&mut toml_string, "Set contract address");
@@ -92,12 +89,12 @@ impl ConfigOption {
             self.path = other.path.clone();
         }
 
-        if other.seeder_rpc_endpoint.is_some() {
-            self.seeder_rpc_endpoint = other.seeder_rpc_endpoint.clone();
+        if other.seeder_rpc_url.is_some() {
+            self.seeder_rpc_url = other.seeder_rpc_url.clone();
         }
 
-        if other.provider_rpc_endpoint.is_some() {
-            self.provider_rpc_endpoint = other.provider_rpc_endpoint.clone();
+        if other.provider_websocket_url.is_some() {
+            self.provider_websocket_url = other.provider_websocket_url.clone();
         }
 
         if other.contract_address.is_some() {

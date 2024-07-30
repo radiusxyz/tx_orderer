@@ -1,59 +1,37 @@
-use std::str::FromStr;
+use std::time::Duration;
 
-use alloy::{
-    primitives::Address,
-    providers::{Provider, ProviderBuilder, RootProvider, WsConnect},
-    pubsub::PubSubFrontend,
-    rpc::types::{Block, Log},
-    sol,
-};
 pub use database::database;
-use futures::{stream::select_all, Future, Stream, StreamExt, TryStreamExt};
-use tokio::time::{sleep, Duration};
+use radius_sequencer_sdk::liveness::{
+    subscriber::Subscriber,
+    types::{Events, Ssal::SsalEvents},
+};
+use sequencer::types::Address;
+use tokio::time::sleep;
+use tracing::info;
 
-use crate::error::Error;
+use crate::models::{ClusterModel, ProposerSetId};
 
-sol!(
-    #[allow(missing_docs)]
-    #[sol(rpc)]
-    Ssal,
-    "src/avs/contract/Ssal.json"
-);
-
-pub enum EventType {
-    RegisterProposer((Ssal::RegisterSequencer, Log)),
-    DeregisterProposer((Ssal::DeregisterSequencer, Log)),
-}
-
-pub fn init(provider_rpc_endpoint: &str, contract_address: &str) {
+pub fn init(provider_websocket_url: String, contract_address: String) {
     tokio::spawn(async move {
         loop {
-            let websocket = WsConnect::new(provider_rpc_endpoint.as_ref());
-            let provider: RootProvider<PubSubFrontend> = ProviderBuilder::new()
-                .on_ws(websocket)
-                .await
-                .map_err(|error| (Error::ConnectEventListener, error))
-                .unwrap();
+            tracing::info!(
+                "Start event listener {} / {}",
+                provider_websocket_url,
+                contract_address
+            );
 
-            let contract_address = Address::from_str(contract_address.as_ref())
-                .map_err(|error| (Error::ParseContractAddress, error))
-                .unwrap();
-
-            let ssal_contract = Ssal::SsalInstance::new(contract_address, provider.clone());
-
-            // registerProposerEvent
-            let event = ssal_contract
-                .RegisterSequencerEvent_filter()
-                .DeregisterSequencerEvent_filter()
-                .subscribe()
-                .await
-                .map_err(|error| (Error::ParseContractAddress, error))?
-                .into_stream()
-                .boxed()
-                .into();
-
-            while let Some(event) = event.next().await {
-                event_callback(event).await;
+            match Subscriber::new(provider_websocket_url.clone(), contract_address.clone()) {
+                Ok(subscriber) => match subscriber.initialize_event_handler(callback, ()).await {
+                    Ok(_) => {
+                        tracing::info!("Successfully initialized the event listener.");
+                    }
+                    Err(err) => {
+                        tracing::warn!("Failed to initialize the event listener: {}", err);
+                    }
+                },
+                Err(err) => {
+                    tracing::warn!("Failed to initialize the event listener: {}", err);
+                }
             }
 
             sleep(Duration::from_secs(3)).await;
@@ -62,45 +40,76 @@ pub fn init(provider_rpc_endpoint: &str, contract_address: &str) {
     });
 }
 
-async fn event_callback(event_type: EventType) {
-    match event_type {
-        EventType::RegisterProposer((event, _)) => registered_sequencer(event).await,
-        EventType::DeregisterProposer((event, _)) => {
-            deregistered_sequencer(event).await;
-        }
+async fn callback(event: Events, _context: ()) {
+    match event {
+        Events::Block(_) => {}
+        Events::SsalEvents(ssal_events) => match ssal_events {
+            SsalEvents::InitializeProposerSet(data) => {
+                println!(
+                    "InitializeProposerSet - Owner: {}\nProposer Set ID: {}",
+                    data.owner, data.proposerSetId
+                );
+
+                initialize_cluster(data.proposerSetId.to_string());
+            }
+            SsalEvents::RegisterSequencer(data) => {
+                println!(
+                    "RegisterSequencer - Proposer Set ID: {}\nSequencer Address: {}",
+                    data.proposerSetId, data.sequencerAddress
+                );
+
+                register_sequencer(
+                    data.proposerSetId.to_string(),
+                    data.sequencerAddress.to_string().into(),
+                )
+            }
+            SsalEvents::DeregisterSequencer(data) => {
+                println!(
+                    "DeregisterSequencer - Proposer Set ID: {}\nSequencer Address: {}",
+                    data.proposerSetId, data.sequencerAddress
+                );
+
+                deregister_sequencer(
+                    data.proposerSetId.to_string(),
+                    data.sequencerAddress.to_string().into(),
+                )
+            }
+        },
     }
 }
 
-async fn registered_sequencer(registered_event: Ssal::RegisterSequencer) {
-    let proposer_set_id = registered_event.proposerSetId.to_string();
-    let sequencer_address = registered_event.sequencerAddress.to_string();
-    let db = database().unwrap();
+fn initialize_cluster(proposer_set_id: ProposerSetId) {
+    info!("initialize_cluster: {:?}", proposer_set_id);
 
-    let mut sequencer_list: Vec<Address> = match db.get(&proposer_set_id) {
-        Ok(sequencer_list) => sequencer_list,
-        Err(_) => vec![],
-    };
+    let cluster_model = ClusterModel::new(proposer_set_id);
 
-    sequencer_list.push(sequencer_address.clone());
-
-    db.put(&proposer_set_id, &sequencer_list);
+    let _ = cluster_model.put();
 }
 
-async fn deregistered_sequencer(deregistered_event: Ssal::DeregisterSequencer) {
-    let proposer_set_id = deregistered_event.proposerSetId.to_string();
-    let sequencer_address = deregistered_event.sequencerAddress.to_string();
+fn register_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Address) {
+    info!(
+        "register_sequencer: {:?} / {:?}",
+        proposer_set_id, sequencer_address
+    );
 
-    let db = database().unwrap();
-    let mut sequencer_list: Vec<Address> = match db.get(&proposer_set_id) {
-        Ok(sequencer_list) => sequencer_list,
-        Err(_) => vec![],
-    };
+    let mut cluster_model = ClusterModel::get_mut(proposer_set_id).unwrap();
 
-    let index = sequencer_list.iter().position(|x| *x == sequencer_address);
+    cluster_model
+        .sequencer_addresses
+        .insert(sequencer_address, true);
 
-    if let Some(index) = index {
-        sequencer_list.remove(index);
-    }
+    let _ = cluster_model.commit();
+}
 
-    db.put(&proposer_set_id, &sequencer_list);
+fn deregister_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Address) {
+    info!(
+        "deregister_sequencer: {:?} / {:?}",
+        proposer_set_id, sequencer_address
+    );
+
+    let mut cluster_model = ClusterModel::get_mut(proposer_set_id).unwrap();
+
+    cluster_model.sequencer_addresses.remove(&sequencer_address);
+
+    let _ = cluster_model.commit();
 }

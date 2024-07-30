@@ -1,10 +1,9 @@
-pub mod get_sequencer_url_list;
-pub mod register;
+pub mod get_sequencer_rpc_url_list;
+pub mod register_sequencer_rpc_url;
 
 mod prelude {
     pub use std::sync::Arc;
 
-    pub use database::database;
     pub use json_rpc::{types::*, RpcError};
     pub use serde::{Deserialize, Serialize};
 
