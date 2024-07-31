@@ -1,15 +1,19 @@
+mod config;
 mod config_option;
 mod config_path;
-mod error;
 
+use clap::{Parser, Subcommand};
+pub use config::Config;
 pub use config_option::ConfigOption;
 pub use config_path::ConfigPath;
-use serde::{Deserialize, Serialize};
+pub use serde::{Deserialize, Serialize};
 
-pub(crate) const DEFAULT_HOME_PATH: &str = ".radius";
+pub const DEFAULT_HOME_PATH: &str = ".radius";
+pub const DATABASE_DIR_NAME: &str = "database";
+pub const CONFIG_FILE_NAME: &str = "Config.toml";
+pub const SIGN_KEY: &str = "sign_key";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
-#[serde(crate = "primitives::serde")]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 pub struct Cli {
@@ -24,7 +28,6 @@ impl Cli {
 }
 
 #[derive(Subcommand, Debug, Deserialize, Serialize)]
-#[serde(crate = "primitives::serde")]
 pub enum Commands {
     /// Initializes a node
     Init {

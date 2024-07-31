@@ -1,17 +1,17 @@
-use std::path::{Path, PathBuf};
-use std::{env, fs};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
-use primitives::clap::{self, Parser};
-use primitives::error::{Error, WrapError};
-use primitives::serde::{Deserialize, Serialize};
-use primitives::tracing;
+use clap::Parser;
+use serde::{Deserialize, Serialize};
 
-use crate::cli::config_option::ConfigOption;
-use crate::cli::error::ConfigError;
-use crate::cli::SecureRpcEndpointConfigOption;
+use crate::{
+    cli::{ConfigOption, CONFIG_FILE_NAME, SIGN_KEY},
+    error::Error,
+};
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
-#[serde(crate = "primitives::serde")]
 pub struct ConfigPath {
     #[doc = "Set the sequencer configuration path"]
     #[clap(long = "path", default_value_t = Self::default().to_string())]
@@ -46,46 +46,24 @@ impl ConfigPath {
     pub fn init(&self) -> Result<(), Error> {
         // Remove the directory if it exists.
         if self.as_ref().exists() {
-            fs::remove_dir_all(self)
-                .map_err(|error| Error::new(ConfigError::RemoveConfigDirectory, error))
-                .context(format_args!("{:?}", self))?;
+            fs::remove_dir_all(self).map_err(|_| Error::RemoveConfigDirectory)?;
         }
 
-        // Create the directory.
-        fs::create_dir_all(self)
-            .map_err(|error| Error::new(ConfigError::CreateConfigDirectory, error))
-            .context(format_args!("{:?}", self))?;
+        // Create the directory
+        fs::create_dir_all(self).map_err(|_| Error::CreateConfigDirectory)?;
 
-        // Create TOML config file.
-        let toml_config_path = self.as_ref().join("config.toml");
-        let toml_config_string = ConfigOption::default().get_toml_string();
-        fs::write(toml_config_path, toml_config_string)
-            .map_err(|error| Error::new(ConfigError::CreateConfigFile, error))
-            .context(format_args!("{:?}", self))?;
+        // Create config file
+        let config_file_path = self.as_ref().join(CONFIG_FILE_NAME);
+        let config_toml_string = ConfigOption::default().get_toml_string();
+        fs::write(config_file_path, config_toml_string).map_err(|_| Error::CreateConfigFile)?;
 
-        tracing::info!("Created a new config directory at {:?}", self.as_ref());
-        Ok(())
-    }
+        // Generate a sign key.
+        let sign_key_path = self.as_ref().join(SIGN_KEY);
+        // TODO: Generate a sign key.
+        let sign_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+        fs::write(&sign_key_path, sign_key).map_err(|_| Error::CreatePrivateKeyFile)?;
 
-    pub fn init_secure_rpc_endpoint(&self) -> Result<(), Error> {
-        // Remove the directory if it exists.
-        if self.as_ref().exists() {
-            fs::remove_dir_all(self)
-                .map_err(|error| Error::new(ConfigError::RemoveConfigDirectory, error))
-                .context(format_args!("{:?}", self))?;
-        }
-
-        // Create the directory.
-        fs::create_dir_all(self)
-            .map_err(|error| Error::new(ConfigError::CreateConfigDirectory, error))
-            .context(format_args!("{:?}", self))?;
-
-        // Create TOML config file.
-        let toml_config_path = self.as_ref().join("config.toml");
-        let toml_config_string = SecureRpcEndpointConfigOption::default().get_toml_string();
-        fs::write(toml_config_path, toml_config_string)
-            .map_err(|error| Error::new(ConfigError::CreateConfigFile, error))
-            .context(format_args!("{:?}", self))?;
+        tracing::info!("Created a sign key {:?}", sign_key);
 
         tracing::info!("Created a new config directory at {:?}", self.as_ref());
         Ok(())
