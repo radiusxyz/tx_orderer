@@ -26,7 +26,7 @@ async fn main() -> Result<(), Error> {
 
             event_listener::init(
                 config.provider_websocket_url().to_string(),
-                config.contract_address().to_string(),
+                config.liveness_contract_address().to_string(),
             );
 
             // Initialize a local database.

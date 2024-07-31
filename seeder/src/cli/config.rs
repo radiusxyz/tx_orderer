@@ -10,7 +10,7 @@ pub struct Config {
     path: PathBuf,
     seeder_rpc_url: String,
     provider_websocket_url: String,
-    contract_address: String,
+    liveness_contract_address: String,
 }
 
 impl Config {
@@ -40,7 +40,7 @@ impl Config {
             path: config_path,
             seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
             provider_websocket_url: merged_config_option.provider_websocket_url.unwrap(),
-            contract_address: merged_config_option.contract_address.unwrap(),
+            liveness_contract_address: merged_config_option.liveness_contract_address.unwrap(),
         })
     }
 
@@ -56,7 +56,7 @@ impl Config {
         &self.provider_websocket_url
     }
 
-    pub fn contract_address(&self) -> &String {
-        &self.contract_address
+    pub fn liveness_contract_address(&self) -> &String {
+        &self.liveness_contract_address
     }
 }

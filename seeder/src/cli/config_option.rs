@@ -7,7 +7,7 @@ use super::{ConfigPath, CONFIG_FILE_NAME};
 
 const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:3000";
 const DEFAULT_PROVIDER_WEBSOCKET_URL: &str = "ws://127.0.0.1:8545";
-const DEFAULT_CONTRACT_ADDRESS: &str = "";
+const DEFAULT_LIVENESS_CONTRACT_ADDRESS: &str = "";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 pub struct ConfigOption {
@@ -25,7 +25,7 @@ pub struct ConfigOption {
 
     #[doc = "Set the contract address"]
     #[clap(long = "contract-address")]
-    pub contract_address: Option<String>,
+    pub liveness_contract_address: Option<String>,
 }
 
 impl Default for ConfigOption {
@@ -34,7 +34,7 @@ impl Default for ConfigOption {
             path: Some(ConfigPath::default().as_ref().into()),
             seeder_rpc_url: Some(DEFAULT_SEEDER_RPC_URL.into()),
             provider_websocket_url: Some(DEFAULT_PROVIDER_WEBSOCKET_URL.into()),
-            contract_address: Some(DEFAULT_CONTRACT_ADDRESS.into()),
+            liveness_contract_address: Some(DEFAULT_LIVENESS_CONTRACT_ADDRESS.into()),
         }
     }
 }
@@ -53,8 +53,12 @@ impl ConfigOption {
             &self.provider_websocket_url,
         );
 
-        set_toml_comment(&mut toml_string, "Set contract address");
-        set_toml_name_value(&mut toml_string, "contract_address", &self.contract_address);
+        set_toml_comment(&mut toml_string, "Set liveness contract address");
+        set_toml_name_value(
+            &mut toml_string,
+            "liveness_contract_address",
+            &self.liveness_contract_address,
+        );
 
         toml_string
     }
@@ -72,8 +76,8 @@ impl ConfigOption {
             self.provider_websocket_url = other.provider_websocket_url.clone();
         }
 
-        if other.contract_address.is_some() {
-            self.contract_address = other.contract_address.clone();
+        if other.liveness_contract_address.is_some() {
+            self.liveness_contract_address = other.liveness_contract_address.clone();
         }
 
         self
