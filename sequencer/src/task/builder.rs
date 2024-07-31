@@ -1,23 +1,21 @@
 use std::pin::Pin;
 
-use block_commitment::calculate_block_commitment;
 use futures::{
     future::{select_ok, Fuse},
     FutureExt,
 };
-use json_rpc::RpcClient;
+use radius_sequencer_sdk::json_rpc::RpcClient;
 use serde::{de::DeserializeOwned, ser::Serialize};
-use ssal::avs::SsalClient;
+use ssal::avs::LivenessClient;
 
 use crate::{
     error::Error,
     models::{EncryptedTransactionModel, RawTransactionModel},
-    rpc::cluster::GetTransaction,
     types::*,
 };
 
 pub fn build_block(
-    ssal_client: SsalClient,
+    ssal_client: LivenessClient,
     cluster: Cluster,
     rollup_id: RollupId,
     rollup_block_height: BlockHeight,

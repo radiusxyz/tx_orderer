@@ -3,7 +3,7 @@ pub enum Error {
     OpenConfig(std::io::Error),
     ParseConfig(toml::de::Error),
     Database(database::Error),
-    JsonRPC(json_rpc::Error),
+    JsonRPC(radius_sequencer_sdk::json_rpc::Error),
     SignatureMismatch,
     HealthCheck,
 
@@ -80,8 +80,8 @@ impl From<database::Error> for Error {
     }
 }
 
-impl From<json_rpc::Error> for Error {
-    fn from(value: json_rpc::Error) -> Self {
+impl From<radius_sequencer_sdk::json_rpc::Error> for Error {
+    fn from(value: radius_sequencer_sdk::json_rpc::Error) -> Self {
         Self::JsonRPC(value)
     }
 }

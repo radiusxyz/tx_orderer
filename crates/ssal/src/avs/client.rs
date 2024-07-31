@@ -90,7 +90,7 @@ type AvsContract = Avs::AvsInstance<
     >,
 >;
 
-pub struct SsalClient {
+pub struct LivenessClient {
     inner: Arc<SsalClientInner>,
 }
 
@@ -105,11 +105,11 @@ struct SsalClientInner {
     avs_contract: AvsContract,
 }
 
-unsafe impl Send for SsalClient {}
+unsafe impl Send for LivenessClient {}
 
-unsafe impl Sync for SsalClient {}
+unsafe impl Sync for LivenessClient {}
 
-impl Clone for SsalClient {
+impl Clone for LivenessClient {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -117,7 +117,7 @@ impl Clone for SsalClient {
     }
 }
 
-impl SsalClient {
+impl LivenessClient {
     pub fn new(
         ethereum_rpc_url: impl AsRef<str>,
         signing_key: impl AsRef<str>,

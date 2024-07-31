@@ -3,15 +3,24 @@ pub enum Error {
     OpenConfig(std::io::Error),
     ParseConfig(toml::de::Error),
     Database(database::Error),
-    JsonRPC(json_rpc::Error),
+    JsonRPC(radius_sequencer_sdk::json_rpc::Error),
     Ssal(ssal::avs::Error),
     Uninitialized,
     EmptySequencerList,
-    LeaderIndexOutofBound,
+    LeaderIndexOutOfBound,
     EmptyLeaderRpcUrl,
     FetchResponse,
     ClusterDown,
     InvalidSequencerPort,
+
+    LoadConfigOption,
+    ParseTomlString,
+
+    RemoveConfigDirectory,
+    CreateConfigDirectory,
+    CreateConfigFile,
+    CreatePrivateKeyFile,
+    InvalidClusterType,
 }
 
 unsafe impl Send for Error {}
@@ -30,8 +39,8 @@ impl From<database::Error> for Error {
     }
 }
 
-impl From<json_rpc::Error> for Error {
-    fn from(value: json_rpc::Error) -> Self {
+impl From<radius_sequencer_sdk::json_rpc::Error> for Error {
+    fn from(value: radius_sequencer_sdk::json_rpc::Error) -> Self {
         Self::JsonRPC(value)
     }
 }

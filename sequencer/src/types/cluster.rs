@@ -1,11 +1,27 @@
 use std::sync::Arc;
 
-use json_rpc::RpcClient;
+use radius_sequencer_sdk::json_rpc::RpcClient;
+use ssal::avs::LivenessClient;
+
+use super::prelude::*;
+
+pub type ProposerSetId = String;
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ClusterType {
+    Local,
+    EigenLayer,
+}
 
 struct ClusterInner {
-    id: String,
+    rollup_id: String,
     leader: RpcClient,
     followers: Vec<RpcClient>,
+
+    liveness_client: Option<LivenessClient>,
+
+    is_leader: bool,
 }
 
 pub struct Cluster {
@@ -25,11 +41,18 @@ impl Clone for Cluster {
 }
 
 impl Cluster {
-    pub fn new(cluster_id: String, leader: RpcClient, followers: Vec<RpcClient>) -> Self {
+    pub fn new(
+        rollup_id: RollupId,
+        leader: RpcClient,
+        followers: Vec<RpcClient>,
+        liveness_client: Option<LivenessClient>,
+    ) -> Self {
         let inner = ClusterInner {
-            id: cluster_id,
+            rollup_id,
             leader,
             followers,
+            liveness_client,
+            is_leader: false,
         };
 
         Self {
@@ -37,8 +60,8 @@ impl Cluster {
         }
     }
 
-    pub fn id(&self) -> &String {
-        &self.inner.id
+    pub fn rollup_id(&self) -> &String {
+        &self.inner.rollup_id
     }
 
     pub fn leader(&self) -> &RpcClient {
@@ -49,44 +72,37 @@ impl Cluster {
         &self.inner.followers
     }
 
-    // TODO:
-    // pub async fn update(
-    //     &mut self,
-    //     my_address: Address,
-    //     cluster_id: &String,
-    //     ssal_block_height: BlockHeight,
-    //     rollup_block_height: BlockHeight,
-    // ) -> Result<Cluster, Error> {
-    //     let mut sequencer_list = SequencerList::get(ssal_block_height)?.into_inner();
-
-    //     // # Safety
-    //     // The length of the sequencer list must be constrained to be greater than 1 by the contract.
-    //     let leader_index = rollup_block_height
-    //         .checked_rem(sequencer_list.len() as u64)
-    //         .ok_or(Error::EmptySequencerList)? as usize;
-    //     if leader_index >= sequencer_list.len() {
-    //         return Err(Error::LeaderIndexOutofBound);
-    //     }
-
-    //     // Separate the leader from followers.
-    //     let (leader_address, leader_rpc_url) = sequencer_list.remove(leader_index);
-    //     let leader_rpc_url = leader_rpc_url.ok_or(Error::EmptyLeaderRpcUrl)?;
-
-    //     // Build the leader RPC client.
-    //     let leader = RpcClient::new(leader_rpc_url)?;
-
-    //     // Build the followers' RPC client.
-    //     let followers: Vec<RpcClient> = sequencer_list
-    //         .into_iter()
-    //         .filter(|(address, rpc_url)| *address != my_address && rpc_url.is_some())
-    //         .filter_map(|(_, rpc_url)| RpcClient::new(rpc_url.unwrap()).ok())
-    //         .collect();
-
-    //     self.ssal_block_height = ssal_block_height;
-    //     self.rollup_block_height = rollup_block_height;
-    //     self.transaction_order = 0;
-    //     self.is_leader = my_address == leader_address;
-
-    //     Ok(Cluster::new(cluster_id.to_owned(), leader, followers))
+    // pub fn leader(
+    //     &self,
+    //     liveness_block_height: &BlockHeight,
+    //     rollup_block_height: &BlockHeight,
+    // ) -> &RpcClient {
+    //     &self
+    //         .inner
+    //         .sequencer_list
+    //         .get(*rollup_block_height as usize % self.inner.sequencer_list.len())
+    //         .unwrap()
     // }
+
+    // pub fn followers(&self) -> Vec<&RpcClient> {
+    //     let exclude_index = *rollup_block_height as usize % self.inner.sequencer_list.len();
+
+    //     self.inner
+    //         .sequencer_list
+    //         .iter()
+    //         .enumerate()
+    //         .filter(|(i, _)| *i != exclude_index)
+    //         .map(|(_, sequencer)| sequencer)
+    //         .collect::<Vec<&RpcClient>>()
+    // }
+
+    // async fn update_sequencer_list(&mut self, liveness_block_height: BlockHeight) {
+    //     let mut sequencer_list = SequencerList::get(liveness_block_height)?.into_inner();
+
+    //     &self.inner.sequencer_list = self.inner.liveness_client.get_sequencer_list().await;
+    // }
+
+    pub fn get_liveness_client(&self) -> Option<&LivenessClient> {
+        self.inner.liveness_client.as_ref()
+    }
 }

@@ -1,4 +1,6 @@
-use ssal::avs::types::Address as AlloyAddress;
+use std::collections::HashMap;
+
+use radius_sequencer_sdk::liveness::types::Address as AlloyAddress;
 
 use crate::types::prelude::*;
 
@@ -8,14 +10,37 @@ pub struct SigningKey(String);
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PublicKey(String);
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Address(String);
 
+pub type Addresses = HashMap<Address, bool>;
+
+impl Address {
+    pub fn new(value: impl AsRef<str>) -> Self {
+        Self(value.as_ref().to_owned())
+    }
+}
+
+impl From<String> for Address {
+    fn from(address: String) -> Self {
+        Self(address)
+    }
+}
+
+impl From<&str> for Address {
+    fn from(address: &str) -> Self {
+        Self(address.to_owned())
+    }
+}
+
+// TODO:
 impl PartialEq<AlloyAddress> for Address {
     fn eq(&self, other: &AlloyAddress) -> bool {
         true
     }
 }
+
+pub type AddressList = Vec<Address>;
 
 impl PartialEq<Address> for AlloyAddress {
     fn eq(&self, other: &Address) -> bool {

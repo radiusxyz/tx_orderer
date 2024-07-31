@@ -9,7 +9,6 @@ path = "src/bin/seeder.rs"
 
 [dependencies]
 database = { workspace = true, features = ["singleton"] }
-json-rpc = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 ssal = { workspace = true, features = ["avs"] }

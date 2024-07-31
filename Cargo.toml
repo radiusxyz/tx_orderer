@@ -2,7 +2,6 @@
 members = [
     "crates/block-commitment",
     "crates/database",
-    "crates/json-rpc",
     "crates/ssal",
     "seeder",
     "sequencer",
@@ -11,17 +10,24 @@ resolver = "2"
 
 [workspace.dependencies]
 async-trait = "0.1.73"
-block-commitment = { path = "crates/block-commitment" }
-database = { path = "crates/database" }
 futures = "0.3.30"
-json-rpc = { path = "crates/json-rpc" }
 rand = "0.8.5"
 reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.117"
-ssal = { path = "crates/ssal", default-features = false }
 tokio = { version = "1.37.0", default-features = false }
 toml = "0.8.13"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
-clap = "2.33.3"
+clap = { version = "4.4.7", features = ["derive"] }
+alloy = { version = "0.2.0"}
+
+sequencer = { path = "sequencer" }
+
+block-commitment = { path = "crates/block-commitment" }
+database = { path = "crates/database" }
+ssal = { path = "crates/ssal", default-features = false }
+
+# radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev="34ef3b93a2833582123f5e963786d820f24eccf0", features = ["liveness-evm"] }
+
+radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", features = ["full", "liveness-evm", "validation-eigenlayer"] }

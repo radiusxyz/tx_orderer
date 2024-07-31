@@ -1,93 +1,90 @@
 use std::env;
 
 use database::Database;
-use json_rpc::RpcServer;
+use radius_sequencer_sdk::json_rpc::RpcServer;
 use sequencer::{
-    config::Config,
+    cli::{Cli, Commands, Config, ConfigOption, ConfigPath, DATABASE_DIR_NAME},
     error::Error,
     rpc::{cluster, external, internal},
     state::AppState,
-    types::*,
+    task::event_listener,
+    types::{Cluster, ClusterType},
 };
-use ssal::avs::SsalClient;
+use ssal::avs::LivenessClient;
 use tokio::task::JoinHandle;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
-    std::panic::set_hook(Box::new(|panic_info| tracing::error!("{}", panic_info)));
 
-    let arguments: Vec<String> = env::args().skip(1).collect();
-    let config_path = arguments
-        .get(0)
-        .expect("Provide the config file path.")
-        .to_owned();
+    let mut cli = Cli::init();
 
-    // Load the configuration from the path.
-    let config = Config::load(&config_path)?;
-    tracing::info!(
-        "Successfully loaded the configuration file at {}.",
-        config_path,
-    );
+    match cli.command {
+        Commands::Init { ref config_path } => ConfigPath::init(config_path)?,
+        Commands::Start {
+            ref mut config_option,
+        } => {
+            // Load the configuration from the path.
+            let config = Config::load(config_option)?;
 
-    // Initialize the database.
-    Database::new(config.database_path())?.init();
-    tracing::info!(
-        "Successfully initialized the database at {:?}.",
-        config.database_path(),
-    );
+            tracing::info!(
+                "Successfully loaded the configuration file at {:?}.",
+                config.path(),
+            );
 
-    // Initialize the SSAL client. (TODO: remove)
-    let ssal_client = SsalClient::new(
-        config.ethereum_rpc_url(),
-        config.signing_key(),
-        config.seeder_rpc_url(),
-        config.ssal_contract_address(),
-        config.delegation_manager_contract_address(),
-        config.stake_registry_contract_address(),
-        config.avs_directory_contract_address(),
-        config.avs_contract_address(),
-    )?;
-    tracing::info!("Successfully initialized the SSAL client.");
+            // Initialize the database.
+            Database::new(config.database_path())?.init();
+            tracing::info!(
+                "Successfully initialized the database at {:?}.",
+                config.database_path(),
+            );
 
-    // Initialize an application-wide state instance.
-    let app_state = AppState::new(config, ssal_client, None);
+            // Initialize an application-wide state instance.
+            let app_state = AppState::new(config.clone());
 
-    // // Check if the sequencer has failed previously.
-    // check_failover(&app_state).await?;
+            if config.cluster_type() == &ClusterType::EigenLayer {
+                event_listener::init(
+                    config.provider_websocket_url().to_string(),
+                    config
+                        .liveness_contract_address()
+                        .as_ref()
+                        .unwrap()
+                        .to_string(),
+                );
+            }
 
-    // Initialize the SSAL event manager.
-    // event_manager::init(app_state.clone());
-    // tracing::info!("Successfully initialized the event listener.");
+            // Initialize the internal RPC server.
+            initialize_internal_rpc_server(&app_state).await?;
 
-    // Initialize the internal RPC server.
-    initialize_internal_rpc_server(&app_state).await?;
+            // Initialize the cluster RPC server.
+            initialize_cluster_rpc_server(&app_state).await?;
 
-    // Initialize the external RPC server.
-    initialize_external_rpc_server(&app_state).await?;
+            // Initialize the external RPC server.
+            let server_handle = initialize_external_rpc_server(&app_state).await?;
 
-    // Initialize the cluster RPC server.
-    let server_handle = initialize_cluster_rpc_server(&app_state).await?;
-
-    // Initialize the sequencer registration for both EigenLayer and SSAL.
-    // register_as_operator(&app_state).await?;
-    // register_on_avs(&app_state).await?;
-    // register_sequencer(&app_state).await?;
-
-    server_handle.await.unwrap();
+            server_handle.await.unwrap();
+        }
+    }
 
     Ok(())
 }
 
 async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Error> {
+    let internal_rpc_url = app_state.config().internal_rpc_url().to_string();
+
     // Initialize the internal RPC server.
     let internal_rpc_server = RpcServer::new(app_state.clone())
         .register_rpc_method(
             internal::Deregister::METHOD_NAME,
             internal::Deregister::handler,
         )?
-        .init("127.0.0.1:7234")
+        .init(app_state.config().internal_rpc_url().to_string())
         .await?;
+
+    tracing::info!(
+        "Successfully started the internal RPC server: {}",
+        internal_rpc_url
+    );
 
     tokio::spawn(async move {
         internal_rpc_server.stopped().await;
@@ -96,49 +93,49 @@ async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Erro
     Ok(())
 }
 
-async fn initialize_external_rpc_server(app_state: &AppState) -> Result<(), Error> {
-    // Initialize the external RPC server.
-    let external_rpc_server = RpcServer::new(app_state.clone())
+async fn initialize_cluster_rpc_server(app_state: &AppState) -> Result<(), Error> {
+    let cluster_rpc_url = app_state.config().cluster_rpc_url().to_string();
+
+    let sequencer_rpc_server = RpcServer::new(app_state.clone())
+        .register_rpc_method(cluster::SyncBlock::METHOD_NAME, cluster::SyncBlock::handler)?
         .register_rpc_method(
-            external::SendTransaction::METHOD_NAME,
-            external::SendTransaction::handler,
+            cluster::SyncTransaction::METHOD_NAME,
+            cluster::SyncTransaction::handler,
         )?
-        .init("127.0.0.1:7235")
+        .init(cluster_rpc_url.clone())
         .await?;
 
+    tracing::info!(
+        "Successfully started the cluster RPC server: {}",
+        cluster_rpc_url
+    );
+
     tokio::spawn(async move {
-        external_rpc_server.stopped().await;
+        sequencer_rpc_server.stopped().await;
     });
 
     Ok(())
 }
 
-async fn initialize_cluster_rpc_server(app_state: &AppState) -> Result<JoinHandle<()>, Error> {
-    let sequencer_rpc_server = RpcServer::new(app_state.clone())
-        .register_rpc_method(
-            cluster::BuildBlock::METHOD_NAME,
-            cluster::BuildBlock::handler,
-        )?
-        .register_rpc_method(cluster::SyncBlock::METHOD_NAME, cluster::SyncBlock::handler)?
-        .register_rpc_method(
-            cluster::SyncRequest::METHOD_NAME,
-            cluster::SyncRequest::handler,
-        )?
-        .register_rpc_method(cluster::GetBlock::METHOD_NAME, cluster::GetBlock::handler)?
-        .register_rpc_method(
-            cluster::GetTransaction::METHOD_NAME,
-            cluster::GetTransaction::handler,
-        )?
-        .init(format!("0.0.0.0:{}", app_state.config().sequencer_port()?))
+async fn initialize_external_rpc_server(app_state: &AppState) -> Result<JoinHandle<()>, Error> {
+    let sequencer_rpc_url = app_state.config().sequencer_rpc_url().to_string();
+
+    // Initialize the external RPC server.
+    let external_rpc_server = RpcServer::new(app_state.clone())
+        // .register_rpc_method(
+        //     external::SendTransaction::METHOD_NAME,
+        //     external::SendTransaction::handler,
+        // )?
+        .init(sequencer_rpc_url.clone())
         .await?;
 
     tracing::info!(
-        "Successfully started the RPC server: {}",
-        format!("0.0.0.0:{}", app_state.config().sequencer_port()?)
+        "Successfully started the sequencer RPC server: {}",
+        sequencer_rpc_url
     );
 
     let server_handle = tokio::spawn(async move {
-        sequencer_rpc_server.stopped().await;
+        external_rpc_server.stopped().await;
     });
 
     Ok(server_handle)

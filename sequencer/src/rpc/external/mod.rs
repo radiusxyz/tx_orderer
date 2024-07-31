@@ -1,9 +1,6 @@
-mod send_transaction;
-
 use std::fmt::Debug;
 
 use async_trait::async_trait;
-pub use send_transaction::SendTransaction;
 use serde::de::DeserializeOwned;
 
 use crate::rpc::prelude::*;

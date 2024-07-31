@@ -1,6 +1,6 @@
 use database::Database;
 use get_sequencer_rpc_url_list::GetSequencerRpcUrlList;
-use json_rpc::RpcServer;
+use radius_sequencer_sdk::json_rpc::RpcServer;
 use register_sequencer_rpc_url::RegisterSequencerRpcUrl;
 use seeder::{
     cli::{Cli, Commands, Config, ConfigOption, ConfigPath, DATABASE_DIR_NAME},

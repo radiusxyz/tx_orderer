@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -31,9 +29,6 @@ impl SequencerModel {
         database()?.put(&key, self)
     }
 }
-
-pub type ProposerSetId = String;
-pub type Addresses = HashMap<Address, bool>;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClusterModel {

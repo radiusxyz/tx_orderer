@@ -1,9 +1,9 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use ssal::avs::SsalClient;
-use tokio::sync::Mutex;
-
-use crate::{config::Config, error::Error, types::Cluster};
+use crate::{
+    cli::Config,
+    types::{Cluster, RollupId},
+};
 
 pub struct AppState {
     inner: Arc<AppStateInner>,
@@ -11,8 +11,7 @@ pub struct AppState {
 
 struct AppStateInner {
     config: Config,
-    ssal_client: SsalClient,
-    cluster: Mutex<Option<Cluster>>,
+    clusters: HashMap<RollupId, Cluster>,
 }
 
 unsafe impl Send for AppState {}
@@ -28,11 +27,10 @@ impl Clone for AppState {
 }
 
 impl AppState {
-    pub fn new(config: Config, ssal_client: SsalClient, cluster: Option<Cluster>) -> Self {
+    pub fn new(config: Config) -> Self {
         let inner = AppStateInner {
             config,
-            ssal_client,
-            cluster: Mutex::new(cluster),
+            clusters: HashMap::new(),
         };
 
         Self {
@@ -44,15 +42,8 @@ impl AppState {
         &self.inner.config
     }
 
-    pub fn ssal_client(&self) -> SsalClient {
-        self.inner.ssal_client.clone()
-    }
-
-    pub async fn cluster(&self) -> Result<Cluster, Error> {
-        let cluster_lock = self.inner.cluster.lock().await;
-        match &*cluster_lock {
-            Some(cluster) => Ok(cluster.clone()),
-            None => Err(Error::Uninitialized),
-        }
+    // TODO: it can be use multiple threads
+    pub fn get_rollup_cluster(&self, rollup_id: &RollupId) -> Option<Cluster> {
+        self.inner.clusters.get(rollup_id).cloned()
     }
 }

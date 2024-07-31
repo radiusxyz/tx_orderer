@@ -1,15 +1,10 @@
 use std::time::Duration;
 
-pub use database::database;
 use radius_sequencer_sdk::liveness::{
     subscriber::Subscriber,
     types::{Events, Ssal::SsalEvents},
 };
-use sequencer::types::{Address, ProposerSetId};
 use tokio::time::sleep;
-use tracing::info;
-
-use crate::models::ClusterModel;
 
 pub fn init(provider_websocket_url: String, contract_address: String) {
     tokio::spawn(async move {
@@ -50,7 +45,7 @@ async fn callback(event: Events, _context: ()) {
                     data.owner, data.proposerSetId
                 );
 
-                initialize_cluster(data.proposerSetId.to_string());
+                // TODO: Implement the logic.
             }
             SsalEvents::RegisterSequencer(data) => {
                 println!(
@@ -58,10 +53,7 @@ async fn callback(event: Events, _context: ()) {
                     data.proposerSetId, data.sequencerAddress
                 );
 
-                register_sequencer(
-                    data.proposerSetId.to_string(),
-                    data.sequencerAddress.to_string().into(),
-                )
+                // TODO: Implement the logic.
             }
             SsalEvents::DeregisterSequencer(data) => {
                 println!(
@@ -69,47 +61,8 @@ async fn callback(event: Events, _context: ()) {
                     data.proposerSetId, data.sequencerAddress
                 );
 
-                deregister_sequencer(
-                    data.proposerSetId.to_string(),
-                    data.sequencerAddress.to_string().into(),
-                )
+                // TODO: Implement the logic.
             }
         },
     }
-}
-
-fn initialize_cluster(proposer_set_id: ProposerSetId) {
-    info!("initialize_cluster: {:?}", proposer_set_id);
-
-    let cluster_model = ClusterModel::new(proposer_set_id);
-
-    let _ = cluster_model.put();
-}
-
-fn register_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Address) {
-    info!(
-        "register_sequencer: {:?} / {:?}",
-        proposer_set_id, sequencer_address
-    );
-
-    let mut cluster_model = ClusterModel::get_mut(proposer_set_id).unwrap();
-
-    cluster_model
-        .sequencer_addresses
-        .insert(sequencer_address, true);
-
-    let _ = cluster_model.commit();
-}
-
-fn deregister_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Address) {
-    info!(
-        "deregister_sequencer: {:?} / {:?}",
-        proposer_set_id, sequencer_address
-    );
-
-    let mut cluster_model = ClusterModel::get_mut(proposer_set_id).unwrap();
-
-    cluster_model.sequencer_addresses.remove(&sequencer_address);
-
-    let _ = cluster_model.commit();
 }

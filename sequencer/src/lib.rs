@@ -1,5 +1,4 @@
-// pub mod cli;
-pub mod config;
+pub mod cli;
 pub mod error;
 pub mod models;
 pub mod rpc;

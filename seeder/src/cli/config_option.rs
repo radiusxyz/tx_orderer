@@ -4,7 +4,6 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 use super::{ConfigPath, CONFIG_FILE_NAME};
-use crate::error::Error;
 
 const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:3000";
 const DEFAULT_PROVIDER_WEBSOCKET_URL: &str = "ws://127.0.0.1:8545";
@@ -41,29 +40,6 @@ impl Default for ConfigOption {
 }
 
 impl ConfigOption {
-    pub fn load_config(config_option: &mut ConfigOption) -> Result<Self, Error> {
-        let config_path = match config_option.path.as_mut() {
-            Some(config_path) => config_path.clone(),
-            None => {
-                let config_path: PathBuf = ConfigPath::default().as_ref().into();
-                config_option.path = Some(config_path.clone());
-                config_path
-            }
-        };
-
-        // Read config file
-        let config_file_path = config_path.join(CONFIG_FILE_NAME);
-        let config_string =
-            fs::read_to_string(&config_file_path).map_err(|_| Error::LoadConfigOption)?;
-
-        // Parse String to TOML String
-        let config_file: Self =
-            toml::from_str(&config_string).map_err(|_| Error::ParseTomlString)?;
-
-        // Merge configs from CLI input
-        Ok(config_file.merge(config_option))
-    }
-
     pub fn get_toml_string(&self) -> String {
         let mut toml_string = String::new();
 

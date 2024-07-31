@@ -11,7 +11,6 @@ path = "src/bin/sequencer.rs"
 block-commitment = { workspace = true }
 database = { workspace = true, features = ["singleton"] }
 futures = { workspace = true }
-json-rpc = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
 ssal = { workspace = true, features = ["avs"] }
@@ -20,3 +19,5 @@ toml = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 async-trait = { workspace = true }
+clap ={ workspace = true }
+radius-sequencer-sdk = { workspace = true }

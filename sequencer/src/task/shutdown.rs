@@ -1,20 +1,20 @@
-use ssal::avs::SsalClient;
+use ssal::avs::LivenessClient;
 use tokio::time::{sleep, Duration};
 
 use crate::{models::SequencerList, task::TraceExt, types::BLOCK_MARGIN};
 
-pub fn init(ssal_client: SsalClient) {
+pub fn init(liveness_client: LivenessClient) {
     tracing::warn!("Shutdown in progress..");
 
     tokio::spawn(async move {
         let deregistered_block_height;
         loop {
-            let mut current_block_height = ssal_client.get_block_height().await.ok_or_trace();
+            let mut current_block_height = liveness_client.get_block_height().await.ok_or_trace();
 
             if let Some(block_height) = current_block_height {
-                ssal_client
+                liveness_client
                     .seeder_client()
-                    .deregister(ssal_client.address())
+                    .deregister(liveness_client.address())
                     .await
                     .ok_or_trace();
 
@@ -34,7 +34,7 @@ pub fn init(ssal_client: SsalClient) {
         loop {
             sleep(Duration::from_secs(10)).await;
 
-            let mut current_block_height = ssal_client.get_block_height().await.ok_or_trace();
+            let mut current_block_height = liveness_client.get_block_height().await.ok_or_trace();
 
             if let Some(current_block_height) = current_block_height {
                 let sequencer_list = SequencerList::get(current_block_height - BLOCK_MARGIN).ok();
@@ -43,7 +43,7 @@ pub fn init(ssal_client: SsalClient) {
                     match sequencer_list
                         .into_inner()
                         .into_iter()
-                        .find(|(address, _rpc_url)| *address == ssal_client.address())
+                        .find(|(address, _rpc_url)| *address == liveness_client.address())
                     {
                         Some(_) => break,
                         None => {
