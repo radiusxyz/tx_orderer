@@ -44,7 +44,7 @@ pub enum ErrorSource {
     Boxed(Box<dyn std::error::Error>),
     Custom(String),
     IO(std::io::Error),
-    JsonRPC(json_rpc::Error),
+    JsonRPC(radius_sequencer_sdk::json_rpc::Error),
     LocalSigner(alloy::signers::local::LocalSignerError),
     Hex(alloy::hex::FromHexError),
     Contract(alloy::contract::Error),
@@ -74,8 +74,8 @@ impl From<std::io::Error> for ErrorSource {
     }
 }
 
-impl From<json_rpc::Error> for ErrorSource {
-    fn from(value: json_rpc::Error) -> Self {
+impl From<radius_sequencer_sdk::json_rpc::Error> for ErrorSource {
+    fn from(value: radius_sequencer_sdk::json_rpc::Error) -> Self {
         Self::JsonRPC(value)
     }
 }

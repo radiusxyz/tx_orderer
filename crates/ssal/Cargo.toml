@@ -10,7 +10,7 @@ doctest = false
 alloy = { version = "0.1.1", features = ["full", "signer-keystore", "signer-local"], optional = true }
 chrono = "0.4.38"
 futures = { workspace = true }
-json-rpc = { workspace = true }
+radius-sequencer-sdk = { workspace = true }
 pin-project = "1.1.5"
 rand = { workspace = true }
 serde = { workspace = true }

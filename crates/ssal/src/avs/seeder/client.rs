@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use json_rpc::RpcClient;
+use radius_sequencer_sdk::json_rpc::RpcClient;
 
 use crate::avs::{seeder::rpc::*, types::*, Error, ErrorKind};
 
