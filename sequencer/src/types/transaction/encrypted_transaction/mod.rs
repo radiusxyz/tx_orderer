@@ -34,10 +34,10 @@ impl EncryptedTransaction {
         }
     }
 
-    pub fn mut_pvde_zkp(&mut self) -> Option<&mut PvdeZkp> {
+    pub fn update_pvde_zkp(&mut self, pvde_zkp: Option<PvdeZkp>) {
         match self {
-            EncryptedTransaction::Eth(eth) => eth.mut_pvde_zkp(),
-            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.mut_pvde_zkp(),
+            EncryptedTransaction::Eth(eth) => eth.update_pvde_zkp(pvde_zkp),
+            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.update_pvde_zkp(pvde_zkp),
         }
     }
 }

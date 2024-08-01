@@ -26,7 +26,7 @@ impl EthBundleTransaction {
         self.pvde_zkp.as_ref()
     }
 
-    pub fn mut_pvde_zkp(&mut self) -> Option<&mut PvdeZkp> {
-        self.pvde_zkp.as_mut()
+    pub fn update_pvde_zkp(&mut self, pvde_zkp: Option<PvdeZkp>) {
+        self.pvde_zkp = pvde_zkp;
     }
 }
