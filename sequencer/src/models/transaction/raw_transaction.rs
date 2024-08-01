@@ -14,7 +14,7 @@ impl RawTransactionModel {
         rollup_id: &RollupId,
         block_height: &BlockHeight,
         transaction_order: &TransactionOrder,
-    ) -> Result<Self, database::Error> {
+    ) -> Result<Self, DbError> {
         let key = (Self::ID, rollup_id, block_height, transaction_order);
         database()?.get(&key)
     }
@@ -24,7 +24,7 @@ impl RawTransactionModel {
         rollup_id: &RollupId,
         block_height: &BlockHeight,
         transaction_order: &TransactionOrder,
-    ) -> Result<(), database::Error> {
+    ) -> Result<(), DbError> {
         let key = (Self::ID, rollup_id, block_height, transaction_order);
         database()?.put(&key, self)
     }

@@ -8,10 +8,7 @@ pub struct RollupBlockModel {
 impl RollupBlockModel {
     const ID: &'static str = stringify!(RollupBlockModel);
 
-    pub fn get(
-        rollup_id: &RollupId,
-        rollup_block_height: &BlockHeight,
-    ) -> Result<Self, database::Error> {
+    pub fn get(rollup_id: &RollupId, rollup_block_height: &BlockHeight) -> Result<Self, DbError> {
         let key = (Self::ID, rollup_id, rollup_block_height);
         database()?.get(&key)
     }
@@ -20,7 +17,7 @@ impl RollupBlockModel {
         &self,
         rollup_id: &RollupId,
         rollup_block_height: &BlockHeight,
-    ) -> Result<(), database::Error> {
+    ) -> Result<(), DbError> {
         let key = (Self::ID, rollup_id, rollup_block_height);
         database()?.put(&key, self)
     }

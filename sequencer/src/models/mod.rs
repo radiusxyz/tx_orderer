@@ -13,7 +13,7 @@ pub use transaction::*;
 pub mod prelude {
     pub use std::sync::Arc;
 
-    pub use database::{database, Lock};
+    pub use radius_sequencer_sdk::kvstore::{kvstore as database, KvStoreError as DbError, Lock};
     pub use serde::{Deserialize, Serialize};
 
     pub use crate::{error::Error, state::AppState, task::*, types::*};

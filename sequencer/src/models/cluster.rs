@@ -12,17 +12,17 @@ pub struct ClusterMetadataModel {
 impl ClusterMetadataModel {
     pub const ID: &'static str = stringify!(ClusterMetadata);
 
-    pub fn get(rollup_id: &RollupId) -> Result<Self, database::Error> {
+    pub fn get(rollup_id: &RollupId) -> Result<Self, DbError> {
         let key = (Self::ID, rollup_id);
         database()?.get(&key)
     }
 
-    pub fn get_mut(rollup_id: &RollupId) -> Result<Lock<'static, Self>, database::Error> {
+    pub fn get_mut(rollup_id: &RollupId) -> Result<Lock<'static, Self>, DbError> {
         let key = (Self::ID, rollup_id);
         database()?.get_mut(&key)
     }
 
-    pub fn put(&self) -> Result<(), database::Error> {
+    pub fn put(&self) -> Result<(), DbError> {
         let key = (Self::ID, self.rollup_id.clone());
         database()?.put(&key, self)
     }

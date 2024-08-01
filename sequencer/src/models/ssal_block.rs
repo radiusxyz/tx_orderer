@@ -8,11 +8,11 @@ pub struct SsalBlockModel {
 impl SsalBlockModel {
     pub const ID: &'static str = stringify!(SsalBlockModel);
 
-    pub fn get() -> Result<Self, database::Error> {
+    pub fn get() -> Result<Self, DbError> {
         database()?.get(&Self::ID)
     }
 
-    pub fn put(&self) -> Result<(), database::Error> {
+    pub fn put(&self) -> Result<(), DbError> {
         database()?.put(&Self::ID, self)
     }
 }

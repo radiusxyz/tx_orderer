@@ -18,17 +18,17 @@ impl ClusterModel {
 impl ClusterModel {
     pub const ID: &'static str = stringify!(ClusterModel);
 
-    pub fn get(proposer_set_id: ProposerSetId) -> Result<Self, database::Error> {
+    pub fn get(proposer_set_id: ProposerSetId) -> Result<Self, DbError> {
         let key = (Self::ID, proposer_set_id);
         database()?.get(&key)
     }
 
-    pub fn get_mut(proposer_set_id: ProposerSetId) -> Result<Lock<'static, Self>, database::Error> {
+    pub fn get_mut(proposer_set_id: ProposerSetId) -> Result<Lock<'static, Self>, DbError> {
         let key = (Self::ID, proposer_set_id);
         database()?.get_mut(&key)
     }
 
-    pub fn put(&self) -> Result<(), database::Error> {
+    pub fn put(&self) -> Result<(), DbError> {
         let key = (Self::ID, self.proposer_set_id.clone());
         database()?.put(&key, self)
     }
