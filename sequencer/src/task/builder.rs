@@ -16,7 +16,7 @@ use crate::{
 
 pub fn build_block(
     ssal_client: LivenessClient,
-    cluster: Cluster,
+    cluster: RollupCluster,
     rollup_id: RollupId,
     rollup_block_height: BlockHeight,
     transaction_order: TransactionOrder,

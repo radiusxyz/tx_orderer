@@ -24,15 +24,15 @@ struct ClusterInner {
     is_leader: bool,
 }
 
-pub struct Cluster {
+pub struct RollupCluster {
     inner: Arc<ClusterInner>,
 }
 
-unsafe impl Send for Cluster {}
+unsafe impl Send for RollupCluster {}
 
-unsafe impl Sync for Cluster {}
+unsafe impl Sync for RollupCluster {}
 
-impl Clone for Cluster {
+impl Clone for RollupCluster {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -40,7 +40,7 @@ impl Clone for Cluster {
     }
 }
 
-impl Cluster {
+impl RollupCluster {
     pub fn new(
         rollup_id: RollupId,
         leader: RpcClient,
