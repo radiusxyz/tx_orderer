@@ -22,7 +22,7 @@ impl RawTxHash {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum RawTransaction {
     Eth(EthRawTransaction),
-    EthBundle(EthBundleTransaction),
+    EthBundle(EthBundleRawTransaction),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
