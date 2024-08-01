@@ -20,7 +20,10 @@ impl RawTxHash {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RawTransaction(String);
+pub enum RawTransaction {
+    Eth(EthRawTransaction),
+    EthBundle(EthBundleTransaction),
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RawTransactionList(Vec<RawTransaction>);
