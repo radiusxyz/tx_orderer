@@ -8,7 +8,7 @@ use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EthTransaction {
-    open_data: OpenData,
+    open_data: EthOpenData,
     encrypted_transaction: EncryptedData,
 }
 
