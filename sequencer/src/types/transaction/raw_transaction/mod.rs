@@ -25,5 +25,17 @@ pub enum RawTransaction {
     EthBundle(EthBundleRawTransaction),
 }
 
+impl From<EthRawTransaction> for RawTransaction {
+    fn from(raw_transaction: EthRawTransaction) -> Self {
+        RawTransaction::Eth(raw_transaction)
+    }
+}
+
+impl From<EthBundleRawTransaction> for RawTransaction {
+    fn from(raw_transaction: EthBundleRawTransaction) -> Self {
+        RawTransaction::EthBundle(raw_transaction)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RawTransactionList(Vec<RawTransaction>);
