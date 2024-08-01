@@ -20,7 +20,7 @@ impl SyncTransaction {
 
         // TODO: compare block height and transaction order with order commitment
         cluster_metadata.transaction_order.increment();
-        cluster_metadata.commit()?;
+        cluster_metadata.update()?;
 
         parameter.transaction.put(
             &parameter.rollup_id,

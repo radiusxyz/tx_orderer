@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-pub use database::database;
 use radius_sequencer_sdk::liveness::{
     subscriber::Subscriber,
     types::{Events, Ssal::SsalEvents},
@@ -101,7 +100,7 @@ fn register_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Address
         .sequencer_addresses
         .insert(sequencer_address, true);
 
-    let _ = cluster_model.commit();
+    let _ = cluster_model.update();
 }
 
 fn deregister_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Address) {
@@ -114,5 +113,5 @@ fn deregister_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Addre
 
     cluster_model.sequencer_addresses.remove(&sequencer_address);
 
-    let _ = cluster_model.commit();
+    let _ = cluster_model.update();
 }

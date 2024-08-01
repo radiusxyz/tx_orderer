@@ -1,7 +1,5 @@
 [workspace]
 members = [
-    "crates/block-commitment",
-    "crates/database",
     "crates/ssal",
     "seeder",
     "sequencer",
@@ -24,10 +22,8 @@ alloy = { version = "0.2.0"}
 
 sequencer = { path = "sequencer" }
 
-block-commitment = { path = "crates/block-commitment" }
-database = { path = "crates/database" }
 ssal = { path = "crates/ssal", default-features = false }
 
 # radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev="34ef3b93a2833582123f5e963786d820f24eccf0", features = ["liveness-evm"] }
 
-radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", features = ["full", "liveness-evm", "validation-eigenlayer"] }
+radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev="c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b", features = ["full", "liveness-evm", "validation-eigenlayer"] }

@@ -8,7 +8,6 @@ name = "seeder"
 path = "src/bin/seeder.rs"
 
 [dependencies]
-database = { workspace = true, features = ["singleton"] }
 reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 ssal = { workspace = true, features = ["avs"] }

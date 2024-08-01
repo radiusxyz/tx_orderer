@@ -1509,6 +1509,7 @@ dependencies = [
 [[package]]
 name = "block-commitment"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b#c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-381",
@@ -1713,7 +1714,7 @@ checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 [[package]]
 name = "context"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs#8f5fafd070e715357495502acbbe2884b4fec98f"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b#c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b"
 dependencies = [
  "crossbeam-epoch",
 ]
@@ -1829,15 +1830,6 @@ name = "data-encoding"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
-
-[[package]]
-name = "database"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "rocksdb",
- "serde",
-]
 
 [[package]]
 name = "der"
@@ -2713,7 +2705,7 @@ dependencies = [
 [[package]]
 name = "json-rpc"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs#8f5fafd070e715357495502acbbe2884b4fec98f"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b#c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b"
 dependencies = [
  "hyper 0.14.30",
  "jsonrpsee",
@@ -2936,7 +2928,7 @@ dependencies = [
 [[package]]
 name = "kvstore"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs#8f5fafd070e715357495502acbbe2884b4fec98f"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b#c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b"
 dependencies = [
  "bincode",
  "rocksdb",
@@ -3013,7 +3005,7 @@ checksum = "78b3ae25bc7c8c38cec158d1f2757ee79e9b3740fbc7ccf0e59e4b08d793fa89"
 [[package]]
 name = "liveness-evm"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs#8f5fafd070e715357495502acbbe2884b4fec98f"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b#c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b"
 dependencies = [
  "alloy 0.2.0",
  "futures",
@@ -3524,8 +3516,9 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 [[package]]
 name = "radius-sequencer-sdk"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs#8f5fafd070e715357495502acbbe2884b4fec98f"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b#c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b"
 dependencies = [
+ "block-commitment",
  "context",
  "json-rpc",
  "kvstore",
@@ -4033,7 +4026,6 @@ version = "0.1.0"
 dependencies = [
  "alloy 0.2.0",
  "clap",
- "database",
  "futures",
  "radius-sequencer-sdk",
  "reqwest",
@@ -4087,9 +4079,7 @@ name = "sequencer"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "block-commitment",
  "clap",
- "database",
  "futures",
  "radius-sequencer-sdk",
  "rand",
@@ -4929,7 +4919,7 @@ dependencies = [
 [[package]]
 name = "validation-eigenlayer"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs#8f5fafd070e715357495502acbbe2884b4fec98f"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b#c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b"
 
 [[package]]
 name = "valuable"

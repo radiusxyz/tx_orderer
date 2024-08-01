@@ -1,6 +1,5 @@
-use database::Database;
 use get_sequencer_rpc_url_list::GetSequencerRpcUrlList;
-use radius_sequencer_sdk::json_rpc::RpcServer;
+use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
 use register_sequencer_rpc_url::RegisterSequencerRpcUrl;
 use seeder::{
     cli::{Cli, Commands, Config, ConfigOption, ConfigPath, DATABASE_DIR_NAME},

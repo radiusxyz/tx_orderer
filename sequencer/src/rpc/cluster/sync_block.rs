@@ -14,6 +14,8 @@ impl SyncBlock {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        let cluster = context.get_rollup_cluster(&parameter.rollup_id).await?;
+
         // let cluster = context.cluster().await?;
 
         match ClusterMetadataModel::get_mut(&parameter.rollup_id) {
@@ -30,7 +32,7 @@ impl SyncBlock {
                 Ok(())
             }
             Err(error) => {
-                if error.kind() == database::ErrorKind::KeyDoesNotExist {
+                if error.is_none_type() {
                     let cluster_metadata = ClusterMetadataModel::new(
                         parameter.rollup_id,
                         parameter.liveness_block_height,

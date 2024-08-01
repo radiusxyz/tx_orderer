@@ -8,8 +8,6 @@ name = "sequencer"
 path = "src/bin/sequencer.rs"
 
 [dependencies]
-block-commitment = { workspace = true }
-database = { workspace = true, features = ["singleton"] }
 futures = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
