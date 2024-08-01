@@ -10,6 +10,10 @@ pub use eth_transaction::*;
 pub struct RawTxHash(String);
 
 impl RawTxHash {
+    pub fn new(value: impl AsRef<str>) -> Self {
+        Self(value.as_ref().to_owned())
+    }
+
     pub fn into_inner(self) -> String {
         self.0
     }

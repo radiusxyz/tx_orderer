@@ -9,7 +9,34 @@ use crate::types::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EthTransaction {
     open_data: EthOpenData,
-    encrypted_transaction: EncryptedData,
+    encrypted_data: EncryptedData,
+    pvde_zkp: Option<PvdeZkp>,
+}
+
+impl EthTransaction {
+    pub fn new(
+        open_data: EthOpenData,
+        encrypted_data: EncryptedData,
+        pvde_zkp: Option<PvdeZkp>,
+    ) -> Self {
+        Self {
+            open_data,
+            encrypted_data,
+            pvde_zkp,
+        }
+    }
+
+    pub fn open_data(&self) -> &EthOpenData {
+        &self.open_data
+    }
+
+    pub fn encrypted_transaction(&self) -> &EncryptedData {
+        &self.encrypted_data
+    }
+
+    pub fn pvde_zkp(&self) -> Option<&PvdeZkp> {
+        self.pvde_zkp.as_ref()
+    }
 }
 
 // TODO: stompesi
@@ -32,6 +59,32 @@ pub struct EthOpenData {
     pub max_fee_per_gas: Option<eth_types::U256>,
     pub chain_id: Option<eth_types::U256>,
     pub other: eth_types::OtherFields,
+}
+
+impl From<eth_types::Transaction> for EthOpenData {
+    fn from(transaction: eth_types::Transaction) -> Self {
+        Self {
+            raw_tx_hash: RawTxHash::new(format!("0x{}", hex::encode(transaction.hash.as_bytes()))),
+            from: transaction.from,
+            nonce: transaction.nonce.into(),
+            gas_price: transaction.gas_price,
+            gas_limit: transaction.gas,
+            signature: eth_types::Signature {
+                r: transaction.r,
+                s: transaction.s,
+                v: transaction.v.as_u64(),
+            },
+            block_hash: transaction.block_hash,
+            block_number: transaction.block_number,
+            transaction_index: transaction.transaction_index,
+            transaction_type: transaction.transaction_type,
+            access_list: transaction.access_list,
+            max_priority_fee_per_gas: transaction.max_priority_fee_per_gas,
+            max_fee_per_gas: transaction.max_fee_per_gas,
+            chain_id: transaction.chain_id,
+            other: transaction.other,
+        }
+    }
 }
 
 impl EthOpenData {

@@ -28,3 +28,4 @@ clap = "2.33.3"
 alloy = { version = "0.1.1", features = ["full", "signer-keystore", "signer-local"] }
 radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", features = ["liveness-evm"] }
 sequencer = { path = "sequencer" }
+pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
