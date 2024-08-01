@@ -1,4 +1,5 @@
 mod transaction;
+mod zkp;
 mod prelude {
     pub use serde::{Deserialize, Serialize};
 
@@ -22,3 +23,4 @@ pub use sequencer::*;
 pub use signer::*;
 pub use time_lock_puzzle::*;
 pub use transaction::*;
+pub use zkp::*;

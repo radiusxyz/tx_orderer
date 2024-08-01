@@ -11,6 +11,7 @@ path = "src/bin/sequencer.rs"
 futures = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 ssal = { workspace = true, features = ["avs"] }
 tokio = { workspace = true, features = ["full"] }
 toml = { workspace = true }
@@ -19,3 +20,6 @@ tracing-subscriber = { workspace = true }
 async-trait = { workspace = true }
 clap ={ workspace = true }
 radius-sequencer-sdk = { workspace = true }
+# TODO(jaemin): Replace with alloy
+ethers = "2.0"
+pvde = { workspace = true }

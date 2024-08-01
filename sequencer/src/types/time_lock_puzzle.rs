@@ -15,4 +15,16 @@ impl TimeLockPuzzle {
             n: n.as_ref().to_owned(),
         }
     }
+
+    pub fn o(&self) -> &str {
+        &self.o
+    }
+
+    pub fn t(&self) -> u32 {
+        self.t
+    }
+
+    pub fn n(&self) -> &str {
+        &self.n
+    }
 }

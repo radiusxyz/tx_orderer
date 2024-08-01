@@ -17,12 +17,14 @@ tokio = { version = "1.37.0", default-features = false }
 toml = "0.8.13"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
+
+
 clap = { version = "4.4.7", features = ["derive"] }
+# alloy = { version = "0.1.1", features = ["full", "signer-keystore", "signer-local"] }
 alloy = { version = "0.2.0"}
-
 sequencer = { path = "sequencer" }
-
 ssal = { path = "crates/ssal", default-features = false }
+pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
 
 # radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev="34ef3b93a2833582123f5e963786d820f24eccf0", features = ["liveness-evm"] }
 
