@@ -1,8 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
+use tokio::sync::Mutex;
+
 use crate::{
     cli::Config,
-    types::{Cluster, RollupId},
+    error::Error,
+    types::{RollupCluster, RollupId},
 };
 
 pub struct AppState {
@@ -11,7 +14,7 @@ pub struct AppState {
 
 struct AppStateInner {
     config: Config,
-    clusters: HashMap<RollupId, Cluster>,
+    rollup_clusters: Mutex<HashMap<RollupId, RollupCluster>>,
 }
 
 unsafe impl Send for AppState {}
@@ -30,7 +33,7 @@ impl AppState {
     pub fn new(config: Config) -> Self {
         let inner = AppStateInner {
             config,
-            clusters: HashMap::new(),
+            rollup_clusters: HashMap::new().into(),
         };
 
         Self {
@@ -42,8 +45,18 @@ impl AppState {
         &self.inner.config
     }
 
-    // TODO: it can be use multiple threads
-    pub fn get_rollup_cluster(&self, rollup_id: &RollupId) -> Option<Cluster> {
-        self.inner.clusters.get(rollup_id).cloned()
+    pub async fn get_rollup_cluster(&self, rollup_id: &RollupId) -> Result<RollupCluster, Error> {
+        let rollup_clusters_lock = self.inner.rollup_clusters.lock().await;
+
+        rollup_clusters_lock
+            .get(rollup_id)
+            .cloned()
+            .ok_or(Error::Uninitialized)
+    }
+
+    pub async fn set_rollup_cluster(&mut self, rollup_id: RollupId, rollup_cluster: RollupCluster) {
+        let mut rollup_clusters_lock = self.inner.rollup_clusters.lock().await;
+
+        rollup_clusters_lock.insert(rollup_id.clone(), rollup_cluster);
     }
 }
