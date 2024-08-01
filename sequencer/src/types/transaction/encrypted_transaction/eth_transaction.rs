@@ -30,7 +30,7 @@ impl EthTransaction {
         &self.open_data
     }
 
-    pub fn encrypted_transaction(&self) -> &EncryptedData {
+    pub fn encrypted_data(&self) -> &EncryptedData {
         &self.encrypted_data
     }
 

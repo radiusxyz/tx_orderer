@@ -12,6 +12,15 @@ pub enum EncryptedTransaction {
     EthBundle(EthBundleTransaction),
 }
 
+impl EncryptedTransaction {
+    pub fn encrypted_data(&self) -> &EncryptedData {
+        match self {
+            EncryptedTransaction::Eth(eth) => eth.encrypted_data(),
+            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.encrypted_data(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EncryptedData(String);
 

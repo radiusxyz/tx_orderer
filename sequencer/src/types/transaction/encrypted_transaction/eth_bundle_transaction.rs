@@ -11,3 +11,9 @@ pub struct EthBundleTransaction {
 pub struct OpenData {
     pub raw_tx_hash: String,
 }
+
+impl EthBundleTransaction {
+    pub fn encrypted_data(&self) -> &EncryptedData {
+        &self.encrypted_transaction
+    }
+}
