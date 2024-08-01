@@ -8,8 +8,8 @@ pub use eth_transaction::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum EncryptedTransaction {
-    Eth(EthTransaction),
-    EthBundle(EthBundleTransaction),
+    Eth(EthEncryptedTransaction),
+    EthBundle(EthEncryptedBundleTransaction),
 }
 
 impl EncryptedTransaction {

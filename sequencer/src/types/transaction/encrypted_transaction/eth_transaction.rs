@@ -7,13 +7,13 @@ use ssal::avs::types::{hex, Bytes};
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EthTransaction {
+pub struct EthEncryptedTransaction {
     open_data: EthOpenData,
     encrypted_data: EncryptedData,
     pvde_zkp: Option<PvdeZkp>,
 }
 
-impl EthTransaction {
+impl EthEncryptedTransaction {
     pub fn new(
         open_data: EthOpenData,
         encrypted_data: EncryptedData,

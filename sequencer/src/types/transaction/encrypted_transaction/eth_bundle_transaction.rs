@@ -1,20 +1,20 @@
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EthBundleTransaction {
-    open_data: OpenData,
+pub struct EthEncryptedBundleTransaction {
+    open_data: EthBundleOpenData,
     encrypted_transaction: EncryptedData,
     pvde_zkp: Option<PvdeZkp>,
 }
 
 // TODO: stompesi
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct OpenData {
+pub struct EthBundleOpenData {
     pub raw_tx_hash: String,
 }
 
-impl EthBundleTransaction {
-    pub fn opend_data(&self) -> &OpenData {
+impl EthEncryptedBundleTransaction {
+    pub fn opend_data(&self) -> &EthBundleOpenData {
         &self.open_data
     }
 
