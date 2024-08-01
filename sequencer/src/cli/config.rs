@@ -8,10 +8,12 @@ use crate::{error::Error, types::ClusterType};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     path: PathBuf,
+
     sequencer_rpc_url: String,
     internal_rpc_url: String,
     cluster_rpc_url: String,
 
+    seeder_rpc_url: String,
     cluster_type: ClusterType,
 
     liveness_provider_rpc_url: String,
@@ -48,18 +50,25 @@ impl Config {
                 sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
                 internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
                 cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
+
+                seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
+                cluster_type: ClusterType::Local,
+
                 liveness_provider_rpc_url: merged_config_option.liveness_provider_rpc_url.unwrap(),
                 liveness_provider_websocket_url: merged_config_option
                     .liveness_provider_websocket_url
                     .unwrap(),
                 liveness_contract_address: None,
-                cluster_type: ClusterType::Local,
             }),
             "eigen_layer" => Ok(Config {
                 path: config_path,
                 sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
                 internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
                 cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
+
+                seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
+                cluster_type: ClusterType::EigenLayer,
+
                 liveness_provider_rpc_url: merged_config_option.liveness_provider_rpc_url.unwrap(),
                 liveness_provider_websocket_url: merged_config_option
                     .liveness_provider_websocket_url
@@ -67,7 +76,6 @@ impl Config {
                 liveness_contract_address: Some(
                     merged_config_option.liveness_contract_address.unwrap(),
                 ),
-                cluster_type: ClusterType::EigenLayer,
             }),
             _ => Err(Error::InvalidClusterType),
         }
@@ -93,6 +101,14 @@ impl Config {
         &self.cluster_rpc_url
     }
 
+    pub fn seeder_rpc_url(&self) -> &String {
+        &self.seeder_rpc_url
+    }
+
+    pub fn cluster_type(&self) -> &ClusterType {
+        &self.cluster_type
+    }
+
     pub fn liveness_provider_rpc_url(&self) -> &String {
         &self.liveness_provider_rpc_url
     }
@@ -103,9 +119,5 @@ impl Config {
 
     pub fn liveness_contract_address(&self) -> &Option<String> {
         &self.liveness_contract_address
-    }
-
-    pub fn cluster_type(&self) -> &ClusterType {
-        &self.cluster_type
     }
 }

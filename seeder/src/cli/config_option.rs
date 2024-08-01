@@ -3,9 +3,9 @@ use std::{fs, path::PathBuf};
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 
-use super::{ConfigPath, CONFIG_FILE_NAME};
+use super::ConfigPath;
 
-const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:3000";
+const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:4000";
 const DEFAULT_PROVIDER_WEBSOCKET_URL: &str = "ws://127.0.0.1:8545";
 const DEFAULT_LIVENESS_CONTRACT_ADDRESS: &str = "";
 
