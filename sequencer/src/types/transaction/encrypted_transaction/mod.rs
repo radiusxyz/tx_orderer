@@ -19,6 +19,27 @@ impl EncryptedTransaction {
             EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.encrypted_data(),
         }
     }
+
+    pub fn open_data(&self) -> &EthOpenData {
+        match self {
+            EncryptedTransaction::Eth(eth) => eth.open_data(),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn pvde_zkp(&self) -> Option<&PvdeZkp> {
+        match self {
+            EncryptedTransaction::Eth(eth) => eth.pvde_zkp(),
+            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.pvde_zkp(),
+        }
+    }
+
+    pub fn mut_pvde_zkp(&mut self) -> Option<&mut PvdeZkp> {
+        match self {
+            EncryptedTransaction::Eth(eth) => eth.mut_pvde_zkp(),
+            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.mut_pvde_zkp(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -33,6 +54,10 @@ impl AsRef<[u8]> for EncryptedData {
 impl EncryptedData {
     pub fn new(value: impl AsRef<str>) -> Self {
         Self(value.as_ref().to_owned())
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
     }
 }
 

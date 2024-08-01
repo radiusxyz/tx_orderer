@@ -37,6 +37,10 @@ impl EthTransaction {
     pub fn pvde_zkp(&self) -> Option<&PvdeZkp> {
         self.pvde_zkp.as_ref()
     }
+
+    pub fn mut_pvde_zkp(&mut self) -> Option<&mut PvdeZkp> {
+        self.pvde_zkp.as_mut()
+    }
 }
 
 // TODO: stompesi
