@@ -12,13 +12,13 @@ impl Deregister {
         let parameter = parameter.parse::<Self>()?;
 
         // TODO: context.config().cluster_id()
-        context
-            .get_rollup_cluster(&parameter.rollup_id)
-            .unwrap()
-            .get_liveness_client()
-            .unwrap()
-            .deregister_sequencer(parameter.rollup_id)
-            .await?;
+        // context
+        //     .get_rollup_cluster(&parameter.rollup_id)
+        //     .unwrap()
+        //     .get_liveness_client()
+        //     .unwrap()
+        //     .deregister_sequencer(parameter.rollup_id)
+        //     .await?;
 
         Ok(())
     }

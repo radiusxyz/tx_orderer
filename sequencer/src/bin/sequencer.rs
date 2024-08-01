@@ -1,14 +1,13 @@
 use std::env;
 
-use database::Database;
-use radius_sequencer_sdk::json_rpc::RpcServer;
+use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
 use sequencer::{
     cli::{Cli, Commands, Config, ConfigOption, ConfigPath, DATABASE_DIR_NAME},
     error::Error,
     rpc::{cluster, external, internal},
     state::AppState,
     task::event_listener,
-    types::{Cluster, ClusterType},
+    types::{ClusterType, RollupCluster},
 };
 use ssal::avs::LivenessClient;
 use tokio::task::JoinHandle;
@@ -44,7 +43,7 @@ async fn main() -> Result<(), Error> {
 
             if config.cluster_type() == &ClusterType::EigenLayer {
                 event_listener::init(
-                    config.provider_websocket_url().to_string(),
+                    config.liveness_provider_websocket_url().to_string(),
                     config
                         .liveness_contract_address()
                         .as_ref()

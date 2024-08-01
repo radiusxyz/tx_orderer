@@ -31,13 +31,13 @@ pub struct ConfigOption {
     #[clap(long = "cluster-rpc-url")]
     pub cluster_rpc_url: Option<String>,
 
-    #[doc = "Set the provider rpc url"]
-    #[clap(long = "provider-rpc-url")]
-    pub provider_rpc_url: Option<String>,
+    #[doc = "Set the liveness provider rpc url"]
+    #[clap(long = "liveness-provider-rpc-url")]
+    pub liveness_provider_rpc_url: Option<String>,
 
-    #[doc = "Set the provider websocket url"]
-    #[clap(long = "provider-websocket-url")]
-    pub provider_websocket_url: Option<String>,
+    #[doc = "Set the liveness provider websocket url"]
+    #[clap(long = "liveness-provider-websocket-url")]
+    pub liveness_provider_websocket_url: Option<String>,
 
     #[doc = "Set the liveness contract address"]
     #[clap(long = "liveness-contract-address")]
@@ -55,8 +55,8 @@ impl Default for ConfigOption {
             sequencer_rpc_url: Some(DEFAULT_SEQUENCER_RPC_URL.into()),
             internal_rpc_url: Some(DEFAULT_INTERNAL_RPC_URL.into()),
             cluster_rpc_url: Some(DEFAULT_CLUSTER_RPC_URL.into()),
-            provider_rpc_url: Some(DEFAULT_PROVIDER_RPC_URL.into()),
-            provider_websocket_url: Some(DEFAULT_PROVIDER_WEBSOCKET_URL.into()),
+            liveness_provider_rpc_url: Some(DEFAULT_PROVIDER_RPC_URL.into()),
+            liveness_provider_websocket_url: Some(DEFAULT_PROVIDER_WEBSOCKET_URL.into()),
             liveness_contract_address: Some(DEFAULT_LIVENESS_CONTRACT_ADDRESS.into()),
             cluster_type: Some(DEFAULT_CLUSTER_TYPE.into()),
         }
@@ -80,14 +80,18 @@ impl ConfigOption {
         set_toml_comment(&mut toml_string, "Set cluster rpc url");
         set_toml_name_value(&mut toml_string, "cluster_rpc_url", &self.cluster_rpc_url);
 
-        set_toml_comment(&mut toml_string, "Set provider rpc url");
-        set_toml_name_value(&mut toml_string, "provider_rpc_url", &self.provider_rpc_url);
-
-        set_toml_comment(&mut toml_string, "Set provider websocket url");
+        set_toml_comment(&mut toml_string, "Set liveness provider rpc url");
         set_toml_name_value(
             &mut toml_string,
-            "provider_websocket_url",
-            &self.provider_websocket_url,
+            "liveness_provider_rpc_url",
+            &self.liveness_provider_rpc_url,
+        );
+
+        set_toml_comment(&mut toml_string, "Set liveness provider websocket url");
+        set_toml_name_value(
+            &mut toml_string,
+            "liveness_provider_websocket_url",
+            &self.liveness_provider_websocket_url,
         );
 
         set_toml_comment(&mut toml_string, "Set liveness contract address");
@@ -120,12 +124,12 @@ impl ConfigOption {
             self.cluster_rpc_url = other.cluster_rpc_url.clone();
         }
 
-        if other.provider_rpc_url.is_some() {
-            self.provider_rpc_url = other.provider_rpc_url.clone();
+        if other.liveness_provider_rpc_url.is_some() {
+            self.liveness_provider_rpc_url = other.liveness_provider_rpc_url.clone();
         }
 
-        if other.provider_websocket_url.is_some() {
-            self.provider_websocket_url = other.provider_websocket_url.clone();
+        if other.liveness_provider_websocket_url.is_some() {
+            self.liveness_provider_websocket_url = other.liveness_provider_websocket_url.clone();
         }
 
         if other.liveness_contract_address.is_some() {

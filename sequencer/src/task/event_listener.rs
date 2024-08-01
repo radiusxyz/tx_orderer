@@ -6,16 +6,19 @@ use radius_sequencer_sdk::liveness::{
 };
 use tokio::time::sleep;
 
-pub fn init(provider_websocket_url: String, contract_address: String) {
+pub fn init(liveness_provider_websocket_url: String, contract_address: String) {
     tokio::spawn(async move {
         loop {
             tracing::info!(
                 "Start event listener {} / {}",
-                provider_websocket_url,
+                liveness_provider_websocket_url,
                 contract_address
             );
 
-            match Subscriber::new(provider_websocket_url.clone(), contract_address.clone()) {
+            match Subscriber::new(
+                liveness_provider_websocket_url.clone(),
+                contract_address.clone(),
+            ) {
                 Ok(subscriber) => match subscriber.initialize_event_handler(callback, ()).await {
                     Ok(_) => {
                         tracing::info!("Successfully initialized the event listener.");

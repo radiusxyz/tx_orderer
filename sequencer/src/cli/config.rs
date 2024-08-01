@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use super::{ConfigOption, ConfigPath, CONFIG_FILE_NAME};
+use super::{ConfigOption, ConfigPath, CONFIG_FILE_NAME, DATABASE_DIR_NAME};
 use crate::{error::Error, types::ClusterType};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -11,9 +11,11 @@ pub struct Config {
     sequencer_rpc_url: String,
     internal_rpc_url: String,
     cluster_rpc_url: String,
-    provider_rpc_url: String,
-    provider_websocket_url: String,
+
     cluster_type: ClusterType,
+
+    liveness_provider_rpc_url: String,
+    liveness_provider_websocket_url: String,
     liveness_contract_address: Option<String>,
 }
 
@@ -46,8 +48,10 @@ impl Config {
                 sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
                 internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
                 cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
-                provider_rpc_url: merged_config_option.provider_rpc_url.unwrap(),
-                provider_websocket_url: merged_config_option.provider_websocket_url.unwrap(),
+                liveness_provider_rpc_url: merged_config_option.liveness_provider_rpc_url.unwrap(),
+                liveness_provider_websocket_url: merged_config_option
+                    .liveness_provider_websocket_url
+                    .unwrap(),
                 liveness_contract_address: None,
                 cluster_type: ClusterType::Local,
             }),
@@ -56,8 +60,10 @@ impl Config {
                 sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
                 internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
                 cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
-                provider_rpc_url: merged_config_option.provider_rpc_url.unwrap(),
-                provider_websocket_url: merged_config_option.provider_websocket_url.unwrap(),
+                liveness_provider_rpc_url: merged_config_option.liveness_provider_rpc_url.unwrap(),
+                liveness_provider_websocket_url: merged_config_option
+                    .liveness_provider_websocket_url
+                    .unwrap(),
                 liveness_contract_address: Some(
                     merged_config_option.liveness_contract_address.unwrap(),
                 ),
@@ -72,7 +78,7 @@ impl Config {
     }
 
     pub fn database_path(&self) -> PathBuf {
-        self.path.join("database")
+        self.path.join(DATABASE_DIR_NAME)
     }
 
     pub fn sequencer_rpc_url(&self) -> &String {
@@ -87,12 +93,12 @@ impl Config {
         &self.cluster_rpc_url
     }
 
-    pub fn provider_rpc_url(&self) -> &String {
-        &self.provider_rpc_url
+    pub fn liveness_provider_rpc_url(&self) -> &String {
+        &self.liveness_provider_rpc_url
     }
 
-    pub fn provider_websocket_url(&self) -> &String {
-        &self.provider_websocket_url
+    pub fn liveness_provider_websocket_url(&self) -> &String {
+        &self.liveness_provider_websocket_url
     }
 
     pub fn liveness_contract_address(&self) -> &Option<String> {
