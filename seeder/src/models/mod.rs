@@ -1,7 +1,9 @@
 mod cluster;
+mod liveness;
 mod sequencer;
 
 pub use cluster::*;
+pub use liveness::*;
 pub use sequencer::*;
 
 pub mod prelude {

@@ -4,13 +4,15 @@ use crate::models::prelude::*;
 pub struct ClusterModel {
     proposer_set_id: ProposerSetId,
     pub sequencer_addresses: Addresses,
+    pub cluster_type: ClusterType,
 }
 
 impl ClusterModel {
-    pub fn new(proposer_set_id: ProposerSetId) -> Self {
+    pub fn new(proposer_set_id: ProposerSetId, cluster_type: ClusterType) -> Self {
         Self {
             proposer_set_id,
             sequencer_addresses: Addresses::new(),
+            cluster_type,
         }
     }
 }

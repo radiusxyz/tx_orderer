@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 use super::ConfigPath;
 
 const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:4000";
-const DEFAULT_PROVIDER_WEBSOCKET_URL: &str = "ws://127.0.0.1:8545";
-const DEFAULT_LIVENESS_CONTRACT_ADDRESS: &str = "";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 pub struct ConfigOption {
@@ -18,14 +16,6 @@ pub struct ConfigOption {
     #[doc = "Set the seeder rpc url"]
     #[clap(long = "seeder-rpc-url")]
     pub seeder_rpc_url: Option<String>,
-
-    #[doc = "Set the provider websocket url"]
-    #[clap(long = "provider-websocket-url")]
-    pub provider_websocket_url: Option<String>,
-
-    #[doc = "Set the contract address"]
-    #[clap(long = "contract-address")]
-    pub liveness_contract_address: Option<String>,
 }
 
 impl Default for ConfigOption {
@@ -33,8 +23,6 @@ impl Default for ConfigOption {
         Self {
             path: Some(ConfigPath::default().as_ref().into()),
             seeder_rpc_url: Some(DEFAULT_SEEDER_RPC_URL.into()),
-            provider_websocket_url: Some(DEFAULT_PROVIDER_WEBSOCKET_URL.into()),
-            liveness_contract_address: Some(DEFAULT_LIVENESS_CONTRACT_ADDRESS.into()),
         }
     }
 }
@@ -46,20 +34,6 @@ impl ConfigOption {
         set_toml_comment(&mut toml_string, "Set seeder rpc url");
         set_toml_name_value(&mut toml_string, "seeder_rpc_url", &self.seeder_rpc_url);
 
-        set_toml_comment(&mut toml_string, "Set provider websocket url");
-        set_toml_name_value(
-            &mut toml_string,
-            "provider_websocket_url",
-            &self.provider_websocket_url,
-        );
-
-        set_toml_comment(&mut toml_string, "Set liveness contract address");
-        set_toml_name_value(
-            &mut toml_string,
-            "liveness_contract_address",
-            &self.liveness_contract_address,
-        );
-
         toml_string
     }
 
@@ -70,14 +44,6 @@ impl ConfigOption {
 
         if other.seeder_rpc_url.is_some() {
             self.seeder_rpc_url = other.seeder_rpc_url.clone();
-        }
-
-        if other.provider_websocket_url.is_some() {
-            self.provider_websocket_url = other.provider_websocket_url.clone();
-        }
-
-        if other.liveness_contract_address.is_some() {
-            self.liveness_contract_address = other.liveness_contract_address.clone();
         }
 
         self

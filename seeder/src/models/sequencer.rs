@@ -2,12 +2,12 @@ use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SequencerModel {
-    address: Address,
-    pub rpc_url: IpAddress,
+    pub address: Address,
+    pub rpc_url: Option<IpAddress>,
 }
 
 impl SequencerModel {
-    pub fn new(address: Address, rpc_url: IpAddress) -> Self {
+    pub fn new(address: Address, rpc_url: Option<IpAddress>) -> Self {
         Self { address, rpc_url }
     }
 }

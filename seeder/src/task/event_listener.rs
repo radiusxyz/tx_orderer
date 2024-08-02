@@ -4,7 +4,7 @@ use radius_sequencer_sdk::liveness::{
     subscriber::Subscriber,
     types::{Events, Ssal::SsalEvents},
 };
-use sequencer::types::{Address, ProposerSetId};
+use sequencer::types::{Address, ClusterType, ProposerSetId};
 use tokio::time::sleep;
 use tracing::info;
 
@@ -83,7 +83,8 @@ async fn callback(event: Events, _context: ()) {
 fn initialize_cluster(proposer_set_id: ProposerSetId) {
     info!("initialize_cluster: {:?}", proposer_set_id);
 
-    let cluster_model = ClusterModel::new(proposer_set_id);
+    // TODO: Initialize the cluster model
+    let cluster_model = ClusterModel::new(proposer_set_id, ClusterType::EigenLayer);
 
     let _ = cluster_model.put();
 }

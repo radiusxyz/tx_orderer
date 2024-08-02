@@ -1,5 +1,9 @@
-pub mod get_sequencer_rpc_url_list;
+pub mod get_sequencer_rpc_urls;
 pub mod register_sequencer_rpc_url;
+
+pub mod add_support_liveness;
+
+pub use add_support_liveness::*;
 
 mod prelude {
     pub use std::sync::Arc;

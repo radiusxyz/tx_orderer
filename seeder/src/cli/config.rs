@@ -9,8 +9,6 @@ use crate::error::Error;
 pub struct Config {
     path: PathBuf,
     seeder_rpc_url: String,
-    provider_websocket_url: String,
-    liveness_contract_address: String,
 }
 
 impl Config {
@@ -39,8 +37,6 @@ impl Config {
         Ok(Config {
             path: config_path,
             seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
-            provider_websocket_url: merged_config_option.provider_websocket_url.unwrap(),
-            liveness_contract_address: merged_config_option.liveness_contract_address.unwrap(),
         })
     }
 
@@ -50,13 +46,5 @@ impl Config {
 
     pub fn seeder_rpc_url(&self) -> &String {
         &self.seeder_rpc_url
-    }
-
-    pub fn provider_websocket_url(&self) -> &String {
-        &self.provider_websocket_url
-    }
-
-    pub fn liveness_contract_address(&self) -> &String {
-        &self.liveness_contract_address
     }
 }
