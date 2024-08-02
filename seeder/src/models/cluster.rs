@@ -20,12 +20,12 @@ impl ClusterModel {
 impl ClusterModel {
     pub const ID: &'static str = stringify!(ClusterModel);
 
-    pub fn get(proposer_set_id: ProposerSetId) -> Result<Self, DbError> {
+    pub fn get(proposer_set_id: &ProposerSetId) -> Result<Self, DbError> {
         let key = (Self::ID, proposer_set_id);
         database()?.get(&key)
     }
 
-    pub fn get_mut(proposer_set_id: ProposerSetId) -> Result<Lock<'static, Self>, DbError> {
+    pub fn get_mut(proposer_set_id: &ProposerSetId) -> Result<Lock<'static, Self>, DbError> {
         let key = (Self::ID, proposer_set_id);
         database()?.get_mut(&key)
     }

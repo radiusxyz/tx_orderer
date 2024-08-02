@@ -62,6 +62,15 @@ async fn main() -> Result<(), Error> {
                     add_support_liveness::handler,
                 )?
                 .register_rpc_method(
+                    InitializeProposerSet::METHOD_NAME,
+                    initialize_proposer_set::handler,
+                )?
+                .register_rpc_method(RegisterSequencer::METHOD_NAME, register_sequencer::handler)?
+                .register_rpc_method(
+                    DeregisterSequencer::METHOD_NAME,
+                    deregister_sequencer::handler,
+                )?
+                .register_rpc_method(
                     RegisterSequencerRpcUrl::METHOD_NAME,
                     register_sequencer_rpc_url::handler,
                 )?

@@ -8,7 +8,7 @@ use sequencer::types::{Address, ClusterType, ProposerSetId};
 use tokio::time::sleep;
 use tracing::info;
 
-use crate::models::ClusterModel;
+use crate::{error::Error, models::ClusterModel};
 
 pub fn init(provider_websocket_url: String, liveness_contract_address: String) {
     tokio::spawn(async move {
@@ -52,7 +52,7 @@ async fn callback(event: Events, _context: ()) {
                     data.owner, data.proposerSetId
                 );
 
-                initialize_cluster(data.proposerSetId.to_string());
+                let _ = initialize_cluster(data.proposerSetId.to_string(), ClusterType::EigenLayer);
             }
             SsalEvents::RegisterSequencer(data) => {
                 println!(
@@ -60,10 +60,10 @@ async fn callback(event: Events, _context: ()) {
                     data.proposerSetId, data.sequencerAddress
                 );
 
-                register_sequencer(
+                let _ = register_sequencer(
                     data.proposerSetId.to_string(),
                     data.sequencerAddress.to_string().into(),
-                )
+                );
             }
             SsalEvents::DeregisterSequencer(data) => {
                 println!(
@@ -71,48 +71,62 @@ async fn callback(event: Events, _context: ()) {
                     data.proposerSetId, data.sequencerAddress
                 );
 
-                deregister_sequencer(
+                let _ = deregister_sequencer(
                     data.proposerSetId.to_string(),
                     data.sequencerAddress.to_string().into(),
-                )
+                );
             }
         },
     }
 }
 
-fn initialize_cluster(proposer_set_id: ProposerSetId) {
+pub fn initialize_cluster(
+    proposer_set_id: ProposerSetId,
+    cluster_type: ClusterType,
+) -> Result<(), Error> {
     info!("initialize_cluster: {:?}", proposer_set_id);
 
-    // TODO: Initialize the cluster model
-    let cluster_model = ClusterModel::new(proposer_set_id, ClusterType::EigenLayer);
+    let cluster_model = ClusterModel::new(proposer_set_id, cluster_type);
 
-    let _ = cluster_model.put();
+    let _ = cluster_model.put()?;
+
+    Ok(())
 }
 
-fn register_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Address) {
+pub fn register_sequencer(
+    proposer_set_id: ProposerSetId,
+    sequencer_address: Address,
+) -> Result<(), Error> {
     info!(
         "register_sequencer: {:?} / {:?}",
         proposer_set_id, sequencer_address
     );
 
-    let mut cluster_model = ClusterModel::get_mut(proposer_set_id).unwrap();
+    let mut cluster_model = ClusterModel::get_mut(&proposer_set_id)?;
 
     cluster_model
         .sequencer_addresses
         .insert(sequencer_address, true);
 
-    let _ = cluster_model.update();
+    let _ = cluster_model.update()?;
+
+    Ok(())
 }
 
-fn deregister_sequencer(proposer_set_id: ProposerSetId, sequencer_address: Address) {
+pub fn deregister_sequencer(
+    proposer_set_id: ProposerSetId,
+    sequencer_address: Address,
+) -> Result<(), Error> {
     info!(
         "deregister_sequencer: {:?} / {:?}",
         proposer_set_id, sequencer_address
     );
 
-    let mut cluster_model = ClusterModel::get_mut(proposer_set_id).unwrap();
+    let mut cluster_model = ClusterModel::get_mut(&proposer_set_id).unwrap();
 
     cluster_model.sequencer_addresses.remove(&sequencer_address);
 
-    let _ = cluster_model.update();
+    let _ = cluster_model.update()?;
+
+    Ok(())
 }

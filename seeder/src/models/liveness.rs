@@ -1,5 +1,6 @@
 use crate::models::prelude::*;
 
+// TODO:
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LivenessInfo {
     pub cluster_type: ClusterType,

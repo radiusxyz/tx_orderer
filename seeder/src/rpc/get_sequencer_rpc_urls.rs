@@ -23,7 +23,7 @@ pub async fn handler(
 
     info!("get_sequencer_rpc_urls: {:?}", parameter.proposer_set_id);
 
-    let cluster_model = ClusterModel::get(parameter.proposer_set_id.clone())?;
+    let cluster_model = ClusterModel::get(&parameter.proposer_set_id)?;
 
     let sequencer_address_list = cluster_model
         .sequencer_addresses
