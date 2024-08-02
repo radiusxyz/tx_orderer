@@ -5,6 +5,14 @@ use serde::de::DeserializeOwned;
 
 use crate::rpc::prelude::*;
 
+mod send_encrypted_transaction;
+
+pub use send_encrypted_transaction::SendEncryptedTransaction;
+
+mod get_block;
+
+pub use get_block::*;
+
 #[async_trait]
 pub trait RollupRpcParameter: Clone + Debug + DeserializeOwned + Send + Serialize {
     const METHOD_NAME: &'static str;

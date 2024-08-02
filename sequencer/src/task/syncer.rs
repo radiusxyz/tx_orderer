@@ -19,7 +19,7 @@ pub fn sync_block(
             transaction_order,
         };
 
-        for rpc_client in cluster.followers() {
+        for rpc_client in cluster.get_follower_rpc_client_list().await {
             let rpc_client = rpc_client.clone();
             let rpc_method = rpc_method.clone();
 
@@ -45,7 +45,7 @@ pub fn sync_transaction(
             order_commitment,
         };
 
-        for rpc_client in cluster.followers() {
+        for rpc_client in cluster.get_follower_rpc_client_list().await {
             let rpc_client = rpc_client.clone();
             let rpc_method = rpc_method.clone();
 

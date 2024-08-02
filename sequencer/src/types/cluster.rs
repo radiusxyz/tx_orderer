@@ -1,7 +1,8 @@
-use std::sync::Arc;
+use std::{collections::HashMap, hash::Hash, sync::Arc};
 
 use radius_sequencer_sdk::json_rpc::RpcClient;
 use ssal::avs::LivenessClient;
+use tokio::sync::Mutex;
 
 use super::prelude::*;
 
@@ -16,12 +17,9 @@ pub enum ClusterType {
 
 struct ClusterInner {
     rollup_id: String,
-    leader: RpcClient,
-    followers: Vec<RpcClient>,
 
-    liveness_client: Option<LivenessClient>,
-
-    is_leader: bool,
+    leader_address: Mutex<Address>,
+    sequencer_rpc_clients: Mutex<HashMap<Address, RpcClient>>,
 }
 
 pub struct RollupCluster {
@@ -41,18 +39,11 @@ impl Clone for RollupCluster {
 }
 
 impl RollupCluster {
-    pub fn new(
-        rollup_id: RollupId,
-        leader: RpcClient,
-        followers: Vec<RpcClient>,
-        liveness_client: Option<LivenessClient>,
-    ) -> Self {
+    pub fn new(rollup_id: RollupId) -> Self {
         let inner = ClusterInner {
             rollup_id,
-            leader,
-            followers,
-            liveness_client,
-            is_leader: false,
+            leader_address: Mutex::new(Address::default()),
+            sequencer_rpc_clients: Mutex::new(HashMap::new()),
         };
 
         Self {
@@ -64,12 +55,34 @@ impl RollupCluster {
         &self.inner.rollup_id
     }
 
-    pub fn leader(&self) -> &RpcClient {
-        &self.inner.leader
+    pub async fn get_leader_rpc_client(&self) -> RpcClient {
+        let leader_address_lock = self.inner.leader_address.lock().await;
+        let sequencers_lock = self.inner.sequencer_rpc_clients.lock().await;
+
+        sequencers_lock.get(&*leader_address_lock).cloned().unwrap()
     }
 
-    pub fn followers(&self) -> &Vec<RpcClient> {
-        &self.inner.followers
+    pub async fn get_follower_rpc_client_list(&self) -> Vec<RpcClient> {
+        let leader_address_lock = self.inner.leader_address.lock().await;
+        let sequencers_lock = self.inner.sequencer_rpc_clients.lock().await;
+
+        sequencers_lock
+            .iter()
+            .filter(|(address, _)| **address != *leader_address_lock)
+            .map(|(_, rpc_client)| rpc_client.clone())
+            .collect()
+    }
+
+    pub async fn set_leader_address(&mut self, address: Address) {
+        let mut leader_address_lock = self.inner.leader_address.lock().await;
+
+        *leader_address_lock = address;
+    }
+
+    pub async fn set_sequencer_rpc_clients(&mut self, rpc_clients: HashMap<Address, RpcClient>) {
+        let mut sequencers_lock = self.inner.sequencer_rpc_clients.lock().await;
+
+        *sequencers_lock = rpc_clients;
     }
 
     // pub fn leader(
@@ -101,8 +114,4 @@ impl RollupCluster {
 
     //     &self.inner.sequencer_list = self.inner.liveness_client.get_sequencer_list().await;
     // }
-
-    pub fn get_liveness_client(&self) -> Option<&LivenessClient> {
-        self.inner.liveness_client.as_ref()
-    }
 }

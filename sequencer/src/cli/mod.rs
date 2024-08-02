@@ -11,7 +11,7 @@ pub use serde::{Deserialize, Serialize};
 pub const DEFAULT_HOME_PATH: &str = ".radius";
 pub const DATABASE_DIR_NAME: &str = "database";
 pub const CONFIG_FILE_NAME: &str = "Config.toml";
-pub const SIGN_KEY: &str = "sign_key";
+pub const SIGNING_KEY: &str = "signing_key";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 #[command(author, version, about, long_about = None)]

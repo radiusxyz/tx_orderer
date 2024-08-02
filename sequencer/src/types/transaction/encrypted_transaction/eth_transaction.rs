@@ -44,7 +44,6 @@ impl EthEncryptedTransaction {
     }
 }
 
-// TODO: stompesi
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EthOpenData {
     pub raw_tx_hash: RawTxHash,

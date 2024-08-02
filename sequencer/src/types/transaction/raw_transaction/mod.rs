@@ -1,10 +1,10 @@
-use crate::types::prelude::*;
+use crate::types::prelude::{Deserialize, Serialize};
 
 mod eth_bundle_transaction;
 mod eth_transaction;
 
-pub use eth_bundle_transaction::*;
-pub use eth_transaction::*;
+pub use eth_bundle_transaction::EthRawBundleTransaction;
+pub use eth_transaction::EthRawTransaction;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RawTxHash(String);
@@ -22,7 +22,7 @@ impl RawTxHash {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum RawTransaction {
     Eth(EthRawTransaction),
-    EthBundle(EthBundleRawTransaction),
+    EthBundle(EthRawBundleTransaction),
 }
 
 impl From<EthRawTransaction> for RawTransaction {
@@ -31,8 +31,8 @@ impl From<EthRawTransaction> for RawTransaction {
     }
 }
 
-impl From<EthBundleRawTransaction> for RawTransaction {
-    fn from(raw_transaction: EthBundleRawTransaction) -> Self {
+impl From<EthRawBundleTransaction> for RawTransaction {
+    fn from(raw_transaction: EthRawBundleTransaction) -> Self {
         RawTransaction::EthBundle(raw_transaction)
     }
 }

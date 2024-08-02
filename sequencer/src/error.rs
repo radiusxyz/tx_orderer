@@ -1,11 +1,11 @@
-use radius_sequencer_sdk::kvstore::KvStoreError as DbError;
+use radius_sequencer_sdk::{json_rpc::Error as RpcError, kvstore::KvStoreError as DbError};
 
 #[derive(Debug)]
 pub enum Error {
     OpenConfig(std::io::Error),
     ParseConfig(toml::de::Error),
     Database(DbError),
-    JsonRPC(radius_sequencer_sdk::json_rpc::Error),
+    RpcError(RpcError),
     Ssal(ssal::avs::Error),
     Uninitialized,
     EmptySequencerList,
@@ -23,6 +23,11 @@ pub enum Error {
     CreateConfigFile,
     CreatePrivateKeyFile,
     InvalidClusterType,
+
+    RegisterSequencer,
+    GetSequencerRpcUrlList,
+
+    LivenessPublisher(radius_sequencer_sdk::liveness::publisher::PublisherError),
 }
 
 unsafe impl Send for Error {}
@@ -35,15 +40,21 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+impl From<radius_sequencer_sdk::liveness::publisher::PublisherError> for Error {
+    fn from(value: radius_sequencer_sdk::liveness::publisher::PublisherError) -> Self {
+        Self::LivenessPublisher(value)
+    }
+}
+
 impl From<DbError> for Error {
     fn from(value: DbError) -> Self {
         Self::Database(value)
     }
 }
 
-impl From<radius_sequencer_sdk::json_rpc::Error> for Error {
-    fn from(value: radius_sequencer_sdk::json_rpc::Error) -> Self {
-        Self::JsonRPC(value)
+impl From<RpcError> for Error {
+    fn from(value: RpcError) -> Self {
+        Self::RpcError(value)
     }
 }
 

@@ -7,14 +7,8 @@ pub struct EthEncryptedBundleTransaction {
     pvde_zkp: Option<PvdeZkp>,
 }
 
-// TODO: stompesi
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct EthBundleOpenData {
-    pub raw_tx_hash: String,
-}
-
 impl EthEncryptedBundleTransaction {
-    pub fn opend_data(&self) -> &EthBundleOpenData {
+    pub fn open_data(&self) -> &EthBundleOpenData {
         &self.open_data
     }
 
@@ -29,4 +23,10 @@ impl EthEncryptedBundleTransaction {
     pub fn update_pvde_zkp(&mut self, pvde_zkp: Option<PvdeZkp>) {
         self.pvde_zkp = pvde_zkp;
     }
+}
+
+// TODO: stompesi
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct EthBundleOpenData {
+    pub raw_tx_hash: String,
 }

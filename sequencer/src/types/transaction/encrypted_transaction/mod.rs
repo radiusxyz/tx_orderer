@@ -7,6 +7,24 @@ pub use eth_bundle_transaction::*;
 pub use eth_transaction::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum OpenData {
+    Eth(EthOpenData),
+    EthBundle(EthBundleOpenData),
+}
+
+impl From<EthOpenData> for OpenData {
+    fn from(open_data: EthOpenData) -> Self {
+        OpenData::Eth(open_data)
+    }
+}
+
+impl From<EthBundleOpenData> for OpenData {
+    fn from(open_data: EthBundleOpenData) -> Self {
+        OpenData::EthBundle(open_data)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum EncryptedTransaction {
     Eth(EthEncryptedTransaction),
     EthBundle(EthEncryptedBundleTransaction),
@@ -20,9 +38,12 @@ impl EncryptedTransaction {
         }
     }
 
-    pub fn open_data(&self) -> &EthOpenData {
+    pub fn open_data(&self) -> OpenData {
         match self {
-            EncryptedTransaction::Eth(eth) => eth.open_data(),
+            EncryptedTransaction::Eth(eth) => OpenData::from(eth.open_data().clone()),
+            EncryptedTransaction::EthBundle(eth_bundle) => {
+                OpenData::from(eth_bundle.open_data().clone())
+            }
             _ => unreachable!(),
         }
     }

@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use super::{ConfigOption, ConfigPath, CONFIG_FILE_NAME, DATABASE_DIR_NAME};
+use super::{ConfigOption, ConfigPath, CONFIG_FILE_NAME, DATABASE_DIR_NAME, SIGNING_KEY};
 use crate::{error::Error, types::ClusterType};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -87,6 +87,12 @@ impl Config {
 
     pub fn database_path(&self) -> PathBuf {
         self.path.join(DATABASE_DIR_NAME)
+    }
+
+    pub fn signing_key(&self) -> String {
+        let signing_key_path = self.path.join(SIGNING_KEY);
+
+        fs::read_to_string(signing_key_path).unwrap()
     }
 
     pub fn sequencer_rpc_url(&self) -> &String {

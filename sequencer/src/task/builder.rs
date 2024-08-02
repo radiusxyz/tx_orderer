@@ -15,9 +15,8 @@ use crate::{
 };
 
 pub fn build_block(
-    ssal_client: LivenessClient,
     cluster: RollupCluster,
-    rollup_id: RollupId,
+    ssal_client: LivenessClient,
     rollup_block_height: BlockHeight,
     transaction_order: TransactionOrder,
     register_block_commitment: bool,
@@ -26,7 +25,7 @@ pub fn build_block(
         let mut raw_transaction_list: Vec<Transaction> =
             Vec::with_capacity(transaction_order.value() as usize);
 
-        let followers = cluster.followers();
+        // let followers = cluster.followers();
 
         // TODO: Check
         // Register the block commitment.

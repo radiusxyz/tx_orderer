@@ -1,5 +1,5 @@
 pub mod builder;
-pub mod event_listener;
+pub mod liveness_event_listener;
 pub mod shutdown;
 pub mod syncer;
 

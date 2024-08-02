@@ -7,7 +7,7 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cli::{ConfigOption, CONFIG_FILE_NAME, SIGN_KEY},
+    cli::{ConfigOption, CONFIG_FILE_NAME, SIGNING_KEY},
     error::Error,
 };
 
@@ -58,12 +58,12 @@ impl ConfigPath {
         fs::write(config_file_path, config_toml_string).map_err(|_| Error::CreateConfigFile)?;
 
         // Generate a sign key.
-        let sign_key_path = self.as_ref().join(SIGN_KEY);
+        let signing_key_path = self.as_ref().join(SIGNING_KEY);
         // TODO: Generate a sign key.
-        let sign_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-        fs::write(&sign_key_path, sign_key).map_err(|_| Error::CreatePrivateKeyFile)?;
+        let signing_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+        fs::write(&signing_key_path, signing_key).map_err(|_| Error::CreatePrivateKeyFile)?;
 
-        tracing::info!("Created a sign key {:?}", sign_key);
+        tracing::info!("Created a sign key {:?}", signing_key);
 
         tracing::info!("Created a new config directory at {:?}", self.as_ref());
         Ok(())

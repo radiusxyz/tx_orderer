@@ -9,6 +9,18 @@ pub struct EncryptedTransactionModel {
 }
 
 impl EncryptedTransactionModel {
+    pub fn new(
+        encrypted_transaction: EncryptedTransaction,
+        time_lock_puzzle: TimeLockPuzzle,
+    ) -> Self {
+        Self {
+            encrypted_transaction,
+            time_lock_puzzle,
+        }
+    }
+}
+
+impl EncryptedTransactionModel {
     pub const ID: &'static str = stringify!(EncryptedTransactionModel);
 
     pub fn get(

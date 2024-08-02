@@ -15,9 +15,19 @@ pub struct Address(String);
 
 pub type Addresses = HashMap<Address, bool>;
 
+impl Default for Address {
+    fn default() -> Self {
+        Self("".to_string())
+    }
+}
+
 impl Address {
     pub fn new(value: impl AsRef<str>) -> Self {
         Self(value.as_ref().to_owned())
+    }
+
+    pub fn to_string(&self) -> String {
+        self.0.clone()
     }
 }
 

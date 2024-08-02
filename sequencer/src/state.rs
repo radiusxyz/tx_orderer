@@ -54,7 +54,11 @@ impl AppState {
             .ok_or(Error::Uninitialized)
     }
 
-    pub async fn set_rollup_cluster(&mut self, rollup_id: RollupId, rollup_cluster: RollupCluster) {
+    pub async fn set_rollup_cluster(
+        &mut self,
+        rollup_id: &RollupId,
+        rollup_cluster: RollupCluster,
+    ) {
         let mut rollup_clusters_lock = self.inner.rollup_clusters.lock().await;
 
         rollup_clusters_lock.insert(rollup_id.clone(), rollup_cluster);
