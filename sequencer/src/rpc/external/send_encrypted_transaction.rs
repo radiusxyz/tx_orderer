@@ -4,7 +4,7 @@ use crate::{models::EncryptedTransactionModel, rpc::prelude::*, types::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
-    rollup_id: RollupId,
+    rollup_id: ClusterId,
     encrypted_transaction: EncryptedTransaction,
     time_lock_puzzle: TimeLockPuzzle,
 }

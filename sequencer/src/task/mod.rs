@@ -1,6 +1,5 @@
 pub mod builder;
-pub mod liveness_event_listener;
-pub mod shutdown;
+pub mod radius_liveness_event_listener;
 pub mod syncer;
 
 /// Using unwrap() inside the task block is caught by tracing::error!().

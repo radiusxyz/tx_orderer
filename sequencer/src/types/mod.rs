@@ -11,6 +11,7 @@ mod constant;
 mod order_commitment;
 mod rollup;
 mod sequencer;
+mod sequencing;
 mod signer;
 mod time_lock_puzzle;
 
@@ -20,6 +21,7 @@ pub use constant::*;
 pub use order_commitment::*;
 pub use rollup::*;
 pub use sequencer::*;
+pub use sequencing::*;
 pub use signer::*;
 pub use time_lock_puzzle::*;
 pub use transaction::*;

@@ -2,7 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Deregister {
-    pub rollup_id: RollupId,
+    pub rollup_id: ClusterId,
 }
 
 impl Deregister {

@@ -1,10 +1,6 @@
 use std::sync::Arc;
 
-use radius_sequencer_sdk::{
-    json_rpc::{Error as JsonRpcError, ErrorKind, RpcClient},
-    liveness::publisher::Publisher,
-};
-use serde_json::json;
+use radius_sequencer_sdk::liveness::publisher::Publisher;
 
 use crate::{error::Error, types::*};
 
@@ -43,7 +39,7 @@ impl LivenessClient {
 
     pub async fn get_sequencer_address_list(
         &self,
-        proposer_set_id: &ProposerSetId,
+        proposer_set_id: &ClusterId,
         liveness_block_height: Option<BlockHeight>,
     ) -> Result<Vec<Address>, Error> {
         let block_height = match liveness_block_height {
@@ -64,7 +60,7 @@ impl LivenessClient {
 
     pub async fn get_leader_sequencer_address(
         &self,
-        proposer_set_id: &ProposerSetId,
+        proposer_set_id: &ClusterId,
         rollup_block_height: &BlockHeight,
         liveness_block_height: Option<BlockHeight>,
     ) -> Result<Address, Error> {

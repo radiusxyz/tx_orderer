@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use sequencer::{models::SequencingInfoModel, types::SequencingInfo};
-
-use crate::rpc::prelude::*;
+use crate::{models::SequencingInfoModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfos {}
@@ -18,7 +16,7 @@ impl GetSequencingInfos {
 
     pub async fn handler(
         _parameter: RpcParameter,
-        _context: Arc<()>,
+        _context: Arc<AppState>,
     ) -> Result<GetLivenessInfosResponse, RpcError> {
         let sequencing_info_model = SequencingInfoModel::get()?;
 

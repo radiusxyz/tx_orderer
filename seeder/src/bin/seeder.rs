@@ -6,7 +6,7 @@ use seeder::{
     task::radius_liveness_event_listener,
 };
 use sequencer::{
-    models::SequencingModel,
+    models::SequencingInfoModel,
     types::{PlatForm, ServiceType},
 };
 use tracing::info;
@@ -29,9 +29,9 @@ async fn main() -> Result<(), Error> {
             // Initialize a local database.
             Database::new(config.path().join(DATABASE_DIR_NAME))?.init();
 
-            let sequencing_model = SequencingModel::get()?;
+            let sequencing_info_model = SequencingInfoModel::get()?;
 
-            sequencing_model.sequencing_infos().iter().for_each(
+            sequencing_info_model.sequencing_infos().iter().for_each(
                 |(sequencing_info_key, sequencing_info)| {
                     info!(
                         "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",

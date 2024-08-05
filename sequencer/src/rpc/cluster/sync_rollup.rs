@@ -2,7 +2,7 @@ use crate::{models::ClusterMetadataModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncBlock {
-    pub rollup_id: ClusterId,
+    pub rollup_id: RollupId,
     pub liveness_block_height: BlockHeight,
     pub rollup_block_height: BlockHeight,
     pub transaction_order: TransactionOrder,
@@ -28,10 +28,26 @@ impl SyncBlock {
                 //     parameter.transaction_order,
                 //     false,
                 // );
-            }
-            Err(error) => {}
-        }
 
-        Ok(())
+                Ok(())
+            }
+            Err(error) => {
+                if error.is_none_type() {
+                    let cluster_metadata = ClusterMetadataModel::new(
+                        parameter.rollup_id,
+                        parameter.liveness_block_height,
+                        parameter.rollup_block_height,
+                        parameter.transaction_order,
+                        false, // TODO: check
+                    );
+
+                    cluster_metadata.put()?;
+
+                    Ok(())
+                } else {
+                    Err(error.into())
+                }
+            }
+        }
     }
 }

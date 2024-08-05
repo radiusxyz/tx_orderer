@@ -2,7 +2,7 @@ use crate::{models::RollupBlockModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlock {
-    pub rollup_id: RollupId,
+    pub rollup_id: ClusterId,
     pub rollup_block_height: BlockHeight,
 }
 

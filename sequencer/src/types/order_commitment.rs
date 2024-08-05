@@ -61,7 +61,7 @@ pub struct OrderHashList(Vec<OrderHash>);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitmentData {
-    pub rollup_id: RollupId,
+    pub rollup_id: ClusterId,
     pub block_height: BlockHeight,
     pub transaction_order: TransactionOrder,
     pub previous_order_hash: OrderHash,

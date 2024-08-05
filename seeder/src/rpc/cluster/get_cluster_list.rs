@@ -1,7 +1,10 @@
-use sequencer::types::{PlatForm, SequencingFunctionType, ServiceType};
+use sequencer::{
+    models::ClusterIdListModel,
+    types::{PlatForm, SequencingFunctionType, ServiceType},
+};
 
 use crate::{
-    models::{ClusterIdListModel, ClusterModel, LivenessClusterModel, ValidationClusterModel},
+    models::{ClusterModel, LivenessClusterModel, ValidationClusterModel},
     rpc::prelude::*,
 };
 

@@ -1,9 +1,4 @@
-use sequencer::{
-    models::SequencingInfoModel,
-    types::{Address, IpAddress, PlatForm, SequencingFunctionType, SequencingInfo, ServiceType},
-};
-
-use crate::{rpc::prelude::*, task::radius_liveness_event_listener};
+use crate::{models::SequencingInfoModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AddSequencingInfo {
@@ -27,7 +22,7 @@ impl AddSequencingInfo {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<()>,
+        _context: Arc<AppState>,
     ) -> Result<AddSequencingInfoResponse, RpcError> {
         let parameter = parameter.parse::<AddSequencingInfo>()?;
 

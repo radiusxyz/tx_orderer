@@ -11,7 +11,7 @@ impl RawTransactionModel {
     pub const ID: &'static str = stringify!(RawTransactionModel);
 
     pub fn get(
-        rollup_id: &RollupId,
+        rollup_id: &ClusterId,
         block_height: &BlockHeight,
         transaction_order: &TransactionOrder,
     ) -> Result<Self, DbError> {
@@ -21,7 +21,7 @@ impl RawTransactionModel {
 
     pub fn put(
         &self,
-        rollup_id: &RollupId,
+        rollup_id: &ClusterId,
         block_height: &BlockHeight,
         transaction_order: &TransactionOrder,
     ) -> Result<(), DbError> {

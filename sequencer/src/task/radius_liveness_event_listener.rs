@@ -4,14 +4,13 @@ use radius_sequencer_sdk::liveness::{
     subscriber::Subscriber,
     types::{Events, Ssal::SsalEvents},
 };
-use sequencer::{
-    models::ClusterIdListModel,
-    types::{Address, ClusterId, PlatForm, SequencingFunctionType, SequencingInfo, ServiceType},
-};
 use tokio::time::sleep;
 use tracing::info;
 
-use crate::{error::Error, models::LivenessClusterModel};
+use crate::{
+    error::Error,
+    types::{Address, ClusterId, PlatForm, SequencingInfo, ServiceType},
+};
 
 pub fn init(sequencing_info: SequencingInfo) {
     tokio::spawn(async move {
@@ -62,15 +61,7 @@ async fn callback(event: Events, context: Arc<SequencingInfo>) {
     match event {
         Events::Block(_) => {}
         Events::SsalEvents(ssal_events) => match ssal_events {
-            SsalEvents::InitializeProposerSet(data) => {
-                println!(
-                    "InitializeProposerSet - Owner: {}\nProposer Set ID: {}",
-                    data.owner, data.proposerSetId
-                );
-
-                let _ =
-                    initialize_cluster(context.platform.clone(), data.proposerSetId.to_string());
-            }
+            SsalEvents::InitializeProposerSet(_data) => {}
             SsalEvents::RegisterSequencer(data) => {
                 println!(
                     "RegisterSequencer - Proposer Set ID: {}\nSequencer Address: {}",
@@ -99,25 +90,6 @@ async fn callback(event: Events, context: Arc<SequencingInfo>) {
     }
 }
 
-pub fn initialize_cluster(platform: PlatForm, cluster_id: ClusterId) -> Result<(), Error> {
-    info!("initialize_cluster: {:?}", cluster_id);
-
-    let mut cluster_id_list_model = ClusterIdListModel::entry(
-        &platform,
-        &SequencingFunctionType::Liveness,
-        &ServiceType::Radius,
-    )?;
-
-    cluster_id_list_model.push(cluster_id.clone());
-    cluster_id_list_model.update()?;
-
-    let cluster_model = LivenessClusterModel::new(platform, ServiceType::Radius, cluster_id);
-
-    let _ = cluster_model.put()?;
-
-    Ok(())
-}
-
 pub fn register_sequencer(
     platform: PlatForm,
 
@@ -130,15 +102,6 @@ pub fn register_sequencer(
         ServiceType::Radius,
         sequencer_address
     );
-
-    let mut cluster_model =
-        LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
-
-    cluster_model
-        .sequencer_addresses
-        .insert(sequencer_address, true);
-
-    let _ = cluster_model.update()?;
 
     Ok(())
 }
@@ -155,13 +118,6 @@ pub fn deregister_sequencer(
         ServiceType::Radius,
         sequencer_address
     );
-
-    let mut cluster_model =
-        LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
-
-    cluster_model.sequencer_addresses.remove(&sequencer_address);
-
-    let _ = cluster_model.update()?;
 
     Ok(())
 }

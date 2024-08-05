@@ -22,7 +22,6 @@ pub enum Error {
     CreateConfigDirectory,
     CreateConfigFile,
     CreatePrivateKeyFile,
-    InvalidClusterType,
 
     RegisterSequencer,
     GetSequencerRpcUrlList,

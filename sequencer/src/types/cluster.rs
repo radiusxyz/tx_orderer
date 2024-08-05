@@ -1,29 +1,25 @@
-use std::{collections::HashMap, hash::Hash, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use radius_sequencer_sdk::json_rpc::RpcClient;
-use ssal::avs::LivenessClient;
 use tokio::sync::Mutex;
 
 use super::prelude::*;
+use crate::models::SequencingInfoKey;
 
-pub type ProposerSetId = String;
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum ClusterType {
-    Local,
-    EigenLayer,
-}
-
-struct ClusterInner {
-    rollup_id: String,
-
-    leader_address: Mutex<Address>,
-    sequencer_rpc_clients: Mutex<HashMap<Address, RpcClient>>,
-}
+pub type ClusterId = String;
+pub type ClusterIdList = Vec<ClusterId>;
 
 pub struct RollupCluster {
     inner: Arc<ClusterInner>,
+}
+
+struct ClusterInner {
+    cluster_id: ClusterId,
+
+    sequencing_info_key: SequencingInfoKey,
+
+    leader_address: Mutex<Address>,
+    sequencer_rpc_clients: Mutex<HashMap<Address, RpcClient>>,
 }
 
 unsafe impl Send for RollupCluster {}
@@ -39,9 +35,10 @@ impl Clone for RollupCluster {
 }
 
 impl RollupCluster {
-    pub fn new(rollup_id: RollupId) -> Self {
+    pub fn new(cluster_id: ClusterId, sequencing_info_key: SequencingInfoKey) -> Self {
         let inner = ClusterInner {
-            rollup_id,
+            cluster_id,
+            sequencing_info_key,
             leader_address: Mutex::new(Address::default()),
             sequencer_rpc_clients: Mutex::new(HashMap::new()),
         };
@@ -51,8 +48,8 @@ impl RollupCluster {
         }
     }
 
-    pub fn rollup_id(&self) -> &String {
-        &self.inner.rollup_id
+    pub fn cluster_id(&self) -> &ClusterId {
+        &self.inner.cluster_id
     }
 
     pub async fn get_leader_rpc_client(&self) -> RpcClient {

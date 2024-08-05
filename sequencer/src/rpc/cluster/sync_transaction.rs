@@ -5,7 +5,7 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncTransaction {
-    pub rollup_id: RollupId,
+    pub rollup_id: ClusterId,
     pub transaction: TransactionModel,
     pub order_commitment: OrderCommitment,
 }

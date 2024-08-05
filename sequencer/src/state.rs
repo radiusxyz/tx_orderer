@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 use crate::{
     cli::Config,
     error::Error,
-    types::{RollupCluster, RollupId},
+    types::{ClusterId, RollupCluster},
 };
 
 pub struct AppState {
@@ -14,7 +14,7 @@ pub struct AppState {
 
 struct AppStateInner {
     config: Config,
-    rollup_clusters: Mutex<HashMap<RollupId, RollupCluster>>,
+    rollup_clusters: Mutex<HashMap<ClusterId, RollupCluster>>,
 }
 
 unsafe impl Send for AppState {}
@@ -45,7 +45,7 @@ impl AppState {
         &self.inner.config
     }
 
-    pub async fn get_rollup_cluster(&self, rollup_id: &RollupId) -> Result<RollupCluster, Error> {
+    pub async fn get_rollup_cluster(&self, rollup_id: &ClusterId) -> Result<RollupCluster, Error> {
         let rollup_clusters_lock = self.inner.rollup_clusters.lock().await;
 
         rollup_clusters_lock
@@ -56,7 +56,7 @@ impl AppState {
 
     pub async fn set_rollup_cluster(
         &mut self,
-        rollup_id: &RollupId,
+        rollup_id: &ClusterId,
         rollup_cluster: RollupCluster,
     ) {
         let mut rollup_clusters_lock = self.inner.rollup_clusters.lock().await;

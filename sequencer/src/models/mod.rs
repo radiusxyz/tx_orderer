@@ -1,15 +1,13 @@
 mod cluster;
 mod rollup;
 mod rollup_block;
-mod sequencer;
-mod ssal_block;
+mod sequencing;
 mod transaction;
 
 pub use cluster::*;
 pub use rollup::*;
 pub use rollup_block::*;
-pub use sequencer::*;
-pub use ssal_block::*;
+pub use sequencing::*;
 pub use transaction::*;
 
 pub mod prelude {

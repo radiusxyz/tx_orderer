@@ -44,7 +44,7 @@ impl SeederClient {
 
     pub async fn get_sequencer_rpc_urls(
         &self,
-        proposer_set_id: &ProposerSetId,
+        proposer_set_id: &ClusterId,
     ) -> Result<HashMap<Address, IpAddress>, Error> {
         let rpc_method = json! { proposer_set_id };
 

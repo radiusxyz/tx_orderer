@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf};
 use serde::{Deserialize, Serialize};
 
 use super::{ConfigOption, ConfigPath, CONFIG_FILE_NAME, DATABASE_DIR_NAME, SIGNING_KEY};
-use crate::{error::Error, types::ClusterType};
+use crate::error::Error;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -14,11 +14,6 @@ pub struct Config {
     cluster_rpc_url: String,
 
     seeder_rpc_url: String,
-    cluster_type: ClusterType,
-
-    liveness_provider_rpc_url: String,
-    liveness_provider_websocket_url: String,
-    liveness_contract_address: Option<String>,
 }
 
 impl Config {
@@ -44,41 +39,13 @@ impl Config {
         // Merge configs from CLI input
         let merged_config_option = config_file.merge(config_option);
 
-        match merged_config_option.cluster_type.unwrap().as_str() {
-            "local" => Ok(Config {
-                path: config_path,
-                sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
-                internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
-                cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
-
-                seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
-                cluster_type: ClusterType::Local,
-
-                liveness_provider_rpc_url: merged_config_option.liveness_provider_rpc_url.unwrap(),
-                liveness_provider_websocket_url: merged_config_option
-                    .liveness_provider_websocket_url
-                    .unwrap(),
-                liveness_contract_address: None,
-            }),
-            "eigen_layer" => Ok(Config {
-                path: config_path,
-                sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
-                internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
-                cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
-
-                seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
-                cluster_type: ClusterType::EigenLayer,
-
-                liveness_provider_rpc_url: merged_config_option.liveness_provider_rpc_url.unwrap(),
-                liveness_provider_websocket_url: merged_config_option
-                    .liveness_provider_websocket_url
-                    .unwrap(),
-                liveness_contract_address: Some(
-                    merged_config_option.liveness_contract_address.unwrap(),
-                ),
-            }),
-            _ => Err(Error::InvalidClusterType),
-        }
+        Ok(Config {
+            path: config_path,
+            sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
+            internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
+            cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
+            seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
+        })
     }
 
     pub fn path(&self) -> &PathBuf {
@@ -109,21 +76,5 @@ impl Config {
 
     pub fn seeder_rpc_url(&self) -> &String {
         &self.seeder_rpc_url
-    }
-
-    pub fn cluster_type(&self) -> &ClusterType {
-        &self.cluster_type
-    }
-
-    pub fn liveness_provider_rpc_url(&self) -> &String {
-        &self.liveness_provider_rpc_url
-    }
-
-    pub fn liveness_provider_websocket_url(&self) -> &String {
-        &self.liveness_provider_websocket_url
-    }
-
-    pub fn liveness_contract_address(&self) -> &Option<String> {
-        &self.liveness_contract_address
     }
 }

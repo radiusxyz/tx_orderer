@@ -6,7 +6,7 @@ use crate::{
 
 pub fn sync_block(
     cluster: RollupCluster,
-    rollup_id: RollupId,
+    rollup_id: ClusterId,
     liveness_block_height: BlockHeight,
     rollup_block_height: BlockHeight,
     transaction_order: TransactionOrder,
@@ -34,7 +34,7 @@ pub fn sync_block(
 
 pub fn sync_transaction(
     cluster: RollupCluster,
-    rollup_id: RollupId,
+    rollup_id: ClusterId,
     transaction: TransactionModel,
     order_commitment: OrderCommitment,
 ) {
