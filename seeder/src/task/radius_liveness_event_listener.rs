@@ -1,29 +1,42 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use radius_sequencer_sdk::liveness::{
     subscriber::Subscriber,
     types::{Events, Ssal::SsalEvents},
 };
-use sequencer::types::{Address, ClusterType, ProposerSetId};
+use sequencer::types::{Address, ClusterId, PlatForm, SequencingInfo, ServiceType};
 use tokio::time::sleep;
 use tracing::info;
 
-use crate::{error::Error, models::ClusterModel};
+use crate::{error::Error, models::LivenessClusterModel};
 
-pub fn init(provider_websocket_url: String, liveness_contract_address: String) {
+pub fn init(sequencing_info: SequencingInfo) {
     tokio::spawn(async move {
         loop {
+            if sequencing_info.contract_address.is_none() {
+                tracing::warn!("Radius liveness contract address is not set.");
+                return;
+            }
+
             tracing::info!(
-                "Start event listener {} / {}",
-                provider_websocket_url,
-                liveness_contract_address
+                "Start event listener {:?} / {:?}",
+                sequencing_info.provider_websocket_url.clone(),
+                sequencing_info.contract_address.clone().unwrap()
             );
 
+            let sequencing_info_context = Arc::new(sequencing_info.clone());
+
+            let liveness_contract_address =
+                sequencing_info.contract_address.clone().unwrap().clone();
+
             match Subscriber::new(
-                provider_websocket_url.clone(),
-                liveness_contract_address.clone(),
+                sequencing_info.provider_websocket_url.clone(),
+                liveness_contract_address.to_string(),
             ) {
-                Ok(subscriber) => match subscriber.initialize_event_handler(callback, ()).await {
+                Ok(subscriber) => match subscriber
+                    .initialize_event_handler(callback, sequencing_info_context)
+                    .await
+                {
                     Ok(_) => {
                         tracing::info!("Successfully initialized the event listener.");
                     }
@@ -42,7 +55,7 @@ pub fn init(provider_websocket_url: String, liveness_contract_address: String) {
     });
 }
 
-async fn callback(event: Events, _context: ()) {
+async fn callback(event: Events, context: Arc<SequencingInfo>) {
     match event {
         Events::Block(_) => {}
         Events::SsalEvents(ssal_events) => match ssal_events {
@@ -52,7 +65,8 @@ async fn callback(event: Events, _context: ()) {
                     data.owner, data.proposerSetId
                 );
 
-                let _ = initialize_cluster(data.proposerSetId.to_string(), ClusterType::EigenLayer);
+                let _ =
+                    initialize_cluster(context.platform.clone(), data.proposerSetId.to_string());
             }
             SsalEvents::RegisterSequencer(data) => {
                 println!(
@@ -61,6 +75,7 @@ async fn callback(event: Events, _context: ()) {
                 );
 
                 let _ = register_sequencer(
+                    context.platform.clone(),
                     data.proposerSetId.to_string(),
                     data.sequencerAddress.to_string().into(),
                 );
@@ -72,6 +87,7 @@ async fn callback(event: Events, _context: ()) {
                 );
 
                 let _ = deregister_sequencer(
+                    context.platform.clone(),
                     data.proposerSetId.to_string(),
                     data.sequencerAddress.to_string().into(),
                 );
@@ -80,13 +96,10 @@ async fn callback(event: Events, _context: ()) {
     }
 }
 
-pub fn initialize_cluster(
-    proposer_set_id: ProposerSetId,
-    cluster_type: ClusterType,
-) -> Result<(), Error> {
-    info!("initialize_cluster: {:?}", proposer_set_id);
+pub fn initialize_cluster(platform: PlatForm, cluster_id: ClusterId) -> Result<(), Error> {
+    info!("initialize_cluster: {:?}", cluster_id);
 
-    let cluster_model = ClusterModel::new(proposer_set_id, cluster_type);
+    let cluster_model = LivenessClusterModel::new(platform, ServiceType::Radius, cluster_id);
 
     let _ = cluster_model.put()?;
 
@@ -94,15 +107,20 @@ pub fn initialize_cluster(
 }
 
 pub fn register_sequencer(
-    proposer_set_id: ProposerSetId,
+    platform: PlatForm,
+
+    cluster_id: ClusterId,
     sequencer_address: Address,
 ) -> Result<(), Error> {
     info!(
-        "register_sequencer: {:?} / {:?}",
-        proposer_set_id, sequencer_address
+        "register_sequencer: {:?} / {:?} /{:?}",
+        cluster_id,
+        ServiceType::Radius,
+        sequencer_address
     );
 
-    let mut cluster_model = ClusterModel::get_mut(&proposer_set_id)?;
+    let mut cluster_model =
+        LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
 
     cluster_model
         .sequencer_addresses
@@ -114,15 +132,20 @@ pub fn register_sequencer(
 }
 
 pub fn deregister_sequencer(
-    proposer_set_id: ProposerSetId,
+    platform: PlatForm,
+
+    cluster_id: ClusterId,
     sequencer_address: Address,
 ) -> Result<(), Error> {
     info!(
-        "deregister_sequencer: {:?} / {:?}",
-        proposer_set_id, sequencer_address
+        "deregister_sequencer: {:?} / {:?} /{:?}",
+        cluster_id,
+        ServiceType::Radius,
+        sequencer_address
     );
 
-    let mut cluster_model = ClusterModel::get_mut(&proposer_set_id).unwrap();
+    let mut cluster_model =
+        LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
 
     cluster_model.sequencer_addresses.remove(&sequencer_address);
 

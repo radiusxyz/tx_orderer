@@ -1,14 +1,14 @@
-use get_sequencer_rpc_urls::GetSequencerRpcUrls;
 use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
-use register_sequencer_rpc_url::RegisterSequencerRpcUrl;
 use seeder::{
-    cli::{Cli, Commands, Config, ConfigOption, ConfigPath, DATABASE_DIR_NAME},
+    cli::{Cli, Commands, Config, ConfigPath, DATABASE_DIR_NAME},
     error::Error,
-    models::LivenessModel,
     rpc::*,
-    task::event_listener,
+    task::radius_liveness_event_listener,
 };
-use sequencer::types::ClusterType;
+use sequencer::{
+    models::SequencingModel,
+    types::{PlatForm, ServiceType},
+};
 use tracing::info;
 
 #[tokio::main]
@@ -29,54 +29,59 @@ async fn main() -> Result<(), Error> {
             // Initialize a local database.
             Database::new(config.path().join(DATABASE_DIR_NAME))?.init();
 
-            let liveness_model = LivenessModel::get()?;
+            let sequencing_model = SequencingModel::get()?;
 
-            liveness_model
-                .liveness_info_list
-                .iter()
-                .for_each(|liveness_info| match liveness_info.cluster_type {
-                    ClusterType::Local => {
-                        info!(
-                            "Init local liveness - provider_websocket_url: {:?}",
-                            liveness_info.provider_websocket_url
-                        );
-                    }
-                    ClusterType::EigenLayer => {
-                        info!(
-                            "Init eigen layer liveness - provider_websocket_url: {:?}",
-                            liveness_info.provider_websocket_url
-                        );
-                        let liveness_contract_address =
-                            liveness_info.liveness_contract_address.clone().unwrap();
+            sequencing_model.sequencing_infos().iter().for_each(
+                |(sequencing_key, sequencing_info)| {
+                    info!(
+                        "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
+                        sequencing_key.platform(), sequencing_key.sequencing_function_type(), sequencing_key.service_type()
+                    );
 
-                        event_listener::init(
-                            liveness_info.provider_websocket_url.to_string(),
-                            liveness_contract_address.to_string(),
-                        );
+                    match sequencing_key.platform() {
+                        PlatForm::Local => {
+                            // TODO:
+                            info!("Init local platform (TODO)");
+                        }
+                        PlatForm::Ethereum => match sequencing_key.sequencing_function_type() {
+                            sequencer::types::SequencingFunctionType::Liveness => {
+                                match sequencing_key.service_type() {
+                                    ServiceType::Radius => {
+                                        info!(
+                                            "Init radius liveness - provider_websocket_url: {:?}",
+                                            sequencing_info.provider_websocket_url
+                                        );
+
+                                        radius_liveness_event_listener::init(
+                                            sequencing_info.clone(),
+                                        );
+                                    }
+                                    _ => {
+                                        // TODO:
+                                        info!(
+                                            "Init other liveness (TODO) - provider_websocket_url: {:?}",
+                                            sequencing_info.provider_websocket_url
+                                        );
+                                    }
+                                }
+                            }
+                            sequencer::types::SequencingFunctionType::Validation => {}
+                        },
                     }
-                });
+                },
+            );
 
             let rpc_server_handle = RpcServer::new(())
-                .register_rpc_method(
-                    AddSupportLiveness::METHOD_NAME,
-                    add_support_liveness::handler,
-                )?
-                .register_rpc_method(
-                    InitializeProposerSet::METHOD_NAME,
-                    initialize_proposer_set::handler,
-                )?
-                .register_rpc_method(RegisterSequencer::METHOD_NAME, register_sequencer::handler)?
-                .register_rpc_method(
-                    DeregisterSequencer::METHOD_NAME,
-                    deregister_sequencer::handler,
-                )?
-                .register_rpc_method(
-                    RegisterSequencerRpcUrl::METHOD_NAME,
-                    register_sequencer_rpc_url::handler,
-                )?
+                .register_rpc_method(AddSequencingInfo::METHOD_NAME, AddSequencingInfo::handler)?
+                .register_rpc_method(GetSequencingInfos::METHOD_NAME, GetSequencingInfos::handler)?
+                .register_rpc_method(InitializeCluster::METHOD_NAME, InitializeCluster::handler)?
+                .register_rpc_method(GetCluster::METHOD_NAME, GetCluster::handler)?
+                .register_rpc_method(Register::METHOD_NAME, Register::handler)?
+                .register_rpc_method(Deregister::METHOD_NAME, Deregister::handler)?
+                .register_rpc_method(RegisterRpcUrl::METHOD_NAME, RegisterRpcUrl::handler)?
                 .register_rpc_method(
                     GetSequencerRpcUrls::METHOD_NAME,
-                    get_sequencer_rpc_urls::handler,
+                    GetSequencerRpcUrls::handler,
                 )?
                 .init(seeder_rpc_url)
                 .await?;
