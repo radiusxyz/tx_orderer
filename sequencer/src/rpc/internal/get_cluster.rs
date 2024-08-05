@@ -1,9 +1,8 @@
-use sequencer::{
+use crate::{
     models::{ClusterModel, LivenessClusterModel, ValidationClusterModel},
+    rpc::prelude::*,
     types::{ClusterId, PlatForm, SequencingFunctionType, ServiceType},
 };
-
-use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetCluster {
@@ -24,7 +23,7 @@ impl GetCluster {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<()>,
+        _context: Arc<AppState>,
     ) -> Result<GetClusterResponse, RpcError> {
         let parameter = parameter.parse::<GetCluster>()?;
 

@@ -1,12 +1,9 @@
 use sequencer::{
-    models::ClusterIdListModel,
+    models::{ClusterIdListModel, LivenessClusterModel, ValidationClusterModel},
     types::{ClusterId, PlatForm, SequencingFunctionType, ServiceType},
 };
 
-use crate::{
-    models::{LivenessClusterModel, ValidationClusterModel},
-    rpc::prelude::*,
-};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct InitializeCluster {

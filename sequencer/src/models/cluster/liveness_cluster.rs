@@ -2,10 +2,12 @@ use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LivenessClusterModel {
-    pub cluster_id: ClusterId,
-
     pub platform: PlatForm,
     pub service_type: ServiceType,
+
+    pub cluster_id: ClusterId,
+
+    // TODO: change this propoerty to RpcClients
     pub sequencer_addresses: Addresses,
 }
 

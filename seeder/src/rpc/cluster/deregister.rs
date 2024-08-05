@@ -1,9 +1,9 @@
-use sequencer::types::{Address, ClusterId, PlatForm, SequencingFunctionType, ServiceType};
-
-use crate::{
+use sequencer::{
     models::{LivenessClusterModel, ValidationClusterModel},
-    rpc::prelude::*,
+    types::{Address, ClusterId, PlatForm, SequencingFunctionType, ServiceType},
 };
+
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Deregister {

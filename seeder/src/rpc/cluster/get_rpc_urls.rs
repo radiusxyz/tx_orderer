@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use sequencer::types::{
-    Address, AddressList, ClusterId, IpAddress, PlatForm, SequencingFunctionType, ServiceType,
+use sequencer::{
+    models::LivenessClusterModel,
+    types::{
+        Address, AddressList, ClusterId, IpAddress, PlatForm, SequencingFunctionType, ServiceType,
+    },
 };
 use tracing::info;
 
-use crate::{
-    models::{LivenessClusterModel, OperatorModel},
-    rpc::prelude::*,
-};
+use crate::{models::OperatorModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRpcUrls {

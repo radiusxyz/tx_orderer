@@ -5,13 +5,13 @@ use radius_sequencer_sdk::liveness::{
     types::{Events, Ssal::SsalEvents},
 };
 use sequencer::{
-    models::ClusterIdListModel,
+    models::{ClusterIdListModel, LivenessClusterModel},
     types::{Address, ClusterId, PlatForm, SequencingFunctionType, SequencingInfo, ServiceType},
 };
 use tokio::time::sleep;
 use tracing::info;
 
-use crate::{error::Error, models::LivenessClusterModel};
+use crate::error::Error;
 
 pub fn init(sequencing_info: SequencingInfo) {
     tokio::spawn(async move {

@@ -9,6 +9,7 @@ use tracing::info;
 
 use crate::{
     error::Error,
+    models::LivenessClusterModel,
     types::{Address, ClusterId, PlatForm, SequencingInfo, ServiceType},
 };
 
@@ -103,6 +104,15 @@ pub fn register_sequencer(
         sequencer_address
     );
 
+    let mut cluster_model =
+        LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
+
+    cluster_model
+        .sequencer_addresses
+        .insert(sequencer_address, true);
+
+    let _ = cluster_model.update()?;
+
     Ok(())
 }
 
@@ -118,6 +128,13 @@ pub fn deregister_sequencer(
         ServiceType::Radius,
         sequencer_address
     );
+
+    let mut cluster_model =
+        LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
+
+    cluster_model.sequencer_addresses.remove(&sequencer_address);
+
+    let _ = cluster_model.update()?;
 
     Ok(())
 }

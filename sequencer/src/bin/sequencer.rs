@@ -227,6 +227,10 @@ async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Erro
             internal::AddCluster::handler,
         )?
         .register_rpc_method(
+            internal::GetCluster::METHOD_NAME,
+            internal::GetCluster::handler,
+        )?
+        .register_rpc_method(
             internal::GetClusterIdList::METHOD_NAME,
             internal::GetClusterIdList::handler,
         )?
