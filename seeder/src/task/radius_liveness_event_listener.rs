@@ -4,11 +4,16 @@ use radius_sequencer_sdk::liveness::{
     subscriber::Subscriber,
     types::{Events, Ssal::SsalEvents},
 };
-use sequencer::types::{Address, ClusterId, PlatForm, SequencingInfo, ServiceType};
+use sequencer::types::{
+    Address, ClusterId, PlatForm, SequencingFunctionType, SequencingInfo, ServiceType,
+};
 use tokio::time::sleep;
 use tracing::info;
 
-use crate::{error::Error, models::LivenessClusterModel};
+use crate::{
+    error::Error,
+    models::{ClusterIdListModel, LivenessClusterModel},
+};
 
 pub fn init(sequencing_info: SequencingInfo) {
     tokio::spawn(async move {
@@ -98,6 +103,15 @@ async fn callback(event: Events, context: Arc<SequencingInfo>) {
 
 pub fn initialize_cluster(platform: PlatForm, cluster_id: ClusterId) -> Result<(), Error> {
     info!("initialize_cluster: {:?}", cluster_id);
+
+    let mut cluster_id_list_model = ClusterIdListModel::entry(
+        &platform,
+        &SequencingFunctionType::Liveness,
+        &ServiceType::Radius,
+    )?;
+
+    cluster_id_list_model.push(cluster_id.clone());
+    cluster_id_list_model.update()?;
 
     let cluster_model = LivenessClusterModel::new(platform, ServiceType::Radius, cluster_id);
 

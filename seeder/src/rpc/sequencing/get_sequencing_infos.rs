@@ -31,7 +31,9 @@ impl GetSequencingInfos {
             .sequencing_infos()
             .clone()
             .into_iter()
-            .map(|(sequencing_key, sequencing_info)| (sequencing_key.to_string(), sequencing_info))
+            .map(|(sequencing_info_key, sequencing_info)| {
+                (sequencing_info_key.to_string(), sequencing_info)
+            })
             .collect();
 
         Ok(GetLivenessInfosResponse { sequencing_infos })

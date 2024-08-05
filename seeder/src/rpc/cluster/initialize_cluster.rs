@@ -1,7 +1,7 @@
 use sequencer::types::{ClusterId, PlatForm, SequencingFunctionType, ServiceType};
 
 use crate::{
-    models::{LivenessClusterModel, ValidationClusterModel},
+    models::{ClusterIdListModel, LivenessClusterModel, ValidationClusterModel},
     rpc::prelude::*,
 };
 
@@ -38,9 +38,9 @@ impl InitializeCluster {
                     Ok(_) => {}
                     Err(_) => {
                         let cluster_model = LivenessClusterModel::new(
-                            parameter.platform,
-                            parameter.service_type,
-                            parameter.cluster_id,
+                            parameter.platform.clone(),
+                            parameter.service_type.clone(),
+                            parameter.cluster_id.clone(),
                         );
 
                         let _ = cluster_model.put()?;
@@ -56,9 +56,9 @@ impl InitializeCluster {
                     Ok(_) => {}
                     Err(_) => {
                         let cluster_model = ValidationClusterModel::new(
-                            parameter.platform,
-                            parameter.service_type,
-                            parameter.cluster_id,
+                            parameter.platform.clone(),
+                            parameter.service_type.clone(),
+                            parameter.cluster_id.clone(),
                         );
 
                         let _ = cluster_model.put()?;
@@ -66,6 +66,15 @@ impl InitializeCluster {
                 }
             }
         }
+
+        let mut cluster_id_list_model = ClusterIdListModel::entry(
+            &parameter.platform,
+            &parameter.sequencing_function_type,
+            &parameter.service_type,
+        )?;
+
+        cluster_id_list_model.push(parameter.cluster_id.clone());
+        cluster_id_list_model.update()?;
 
         Ok(InitializeClusterResponse { success: true })
     }

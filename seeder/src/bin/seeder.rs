@@ -32,20 +32,20 @@ async fn main() -> Result<(), Error> {
             let sequencing_model = SequencingModel::get()?;
 
             sequencing_model.sequencing_infos().iter().for_each(
-                |(sequencing_key, sequencing_info)| {
+                |(sequencing_info_key, sequencing_info)| {
                     info!(
                         "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
-                        sequencing_key.platform(), sequencing_key.sequencing_function_type(), sequencing_key.service_type()
+                        sequencing_info_key.platform(), sequencing_info_key.sequencing_function_type(), sequencing_info_key.service_type()
                     );
 
-                    match sequencing_key.platform() {
+                    match sequencing_info_key.platform() {
                         PlatForm::Local => {
                             // TODO:
                             info!("Init local platform (TODO)");
                         }
-                        PlatForm::Ethereum => match sequencing_key.sequencing_function_type() {
+                        PlatForm::Ethereum => match sequencing_info_key.sequencing_function_type() {
                             sequencer::types::SequencingFunctionType::Liveness => {
-                                match sequencing_key.service_type() {
+                                match sequencing_info_key.service_type() {
                                     ServiceType::Radius => {
                                         info!(
                                             "Init radius liveness - provider_websocket_url: {:?}",
@@ -81,6 +81,7 @@ async fn main() -> Result<(), Error> {
                 .register_rpc_method(Deregister::METHOD_NAME, Deregister::handler)?
                 .register_rpc_method(RegisterRpcUrl::METHOD_NAME, RegisterRpcUrl::handler)?
                 .register_rpc_method(GetRpcUrls::METHOD_NAME, GetRpcUrls::handler)?
+                .register_rpc_method(GetClusterList::METHOD_NAME, GetClusterList::handler)?
                 .init(seeder_rpc_url)
                 .await?;
 
