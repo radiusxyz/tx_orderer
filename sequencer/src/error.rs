@@ -26,6 +26,8 @@ pub enum Error {
     RegisterSequencer,
     GetSequencerRpcUrlList,
 
+    GetSequencingInfo,
+
     LivenessPublisher(radius_sequencer_sdk::liveness::publisher::PublisherError),
 }
 

@@ -18,6 +18,8 @@ pub enum Error {
 
     ConnectEventListener,
     ParseContractAddress,
+
+    GetSequencingInfo,
 }
 
 impl std::fmt::Debug for Error {
@@ -64,6 +66,9 @@ impl std::fmt::Display for Error {
             }
             Self::ParseContractAddress => {
                 write!(f, "Failed to parse contract address")
+            }
+            Self::GetSequencingInfo => {
+                write!(f, "Failed to get sequencing info")
             }
         }
     }

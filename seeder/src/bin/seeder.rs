@@ -74,6 +74,7 @@ async fn main() -> Result<(), Error> {
             let rpc_server_handle = RpcServer::new(())
                 .register_rpc_method(AddSequencingInfo::METHOD_NAME, AddSequencingInfo::handler)?
                 .register_rpc_method(GetRpcUrl::METHOD_NAME, GetRpcUrl::handler)?
+                .register_rpc_method(GetSequencingInfo::METHOD_NAME, GetSequencingInfo::handler)?
                 .register_rpc_method(GetSequencingInfos::METHOD_NAME, GetSequencingInfos::handler)?
                 .register_rpc_method(InitializeCluster::METHOD_NAME, InitializeCluster::handler)?
                 .register_rpc_method(GetCluster::METHOD_NAME, GetCluster::handler)?

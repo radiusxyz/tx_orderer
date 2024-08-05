@@ -203,6 +203,10 @@ async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Erro
             internal::AddSequencingInfo::handler,
         )?
         .register_rpc_method(
+            internal::GetSequencingInfo::METHOD_NAME,
+            internal::GetSequencingInfo::handler,
+        )?
+        .register_rpc_method(
             internal::GetSequencingInfos::METHOD_NAME,
             internal::GetSequencingInfos::handler,
         )?
