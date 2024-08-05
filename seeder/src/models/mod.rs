@@ -1,8 +1,8 @@
 mod cluster;
-mod sequencer;
+mod operator;
 
 pub use cluster::*;
-pub use sequencer::*;
+pub use operator::*;
 
 pub mod prelude {
     pub use std::sync::Arc;

@@ -1,6 +1,6 @@
 use sequencer::types::{Address, IpAddress};
 
-use crate::{models::SequencerModel, rpc::prelude::*};
+use crate::{models::OperatorModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RegisterRpcUrl {
@@ -25,7 +25,7 @@ impl RegisterRpcUrl {
         // TODO: Remove this code
         // health_check(&parameter.rpc_url).await?;
 
-        let sequencer = SequencerModel::new(parameter.address.into(), parameter.rpc_url.into());
+        let sequencer = OperatorModel::new(parameter.address.into(), parameter.rpc_url.into());
 
         sequencer.put()?;
 

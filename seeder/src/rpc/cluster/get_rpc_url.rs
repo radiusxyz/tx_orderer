@@ -1,7 +1,7 @@
 use sequencer::types::{Address, IpAddress};
 use tracing::info;
 
-use crate::{models::SequencerModel, rpc::prelude::*};
+use crate::{models::OperatorModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRpcUrl {
@@ -24,7 +24,7 @@ impl GetRpcUrl {
 
         info!("get_rpc_url: {:?}", parameter.address);
 
-        let sequencer_model = SequencerModel::get(parameter.address)?;
+        let sequencer_model = OperatorModel::get(parameter.address)?;
 
         Ok(GetRpcUrlResponse {
             rpc_url: sequencer_model.rpc_url,

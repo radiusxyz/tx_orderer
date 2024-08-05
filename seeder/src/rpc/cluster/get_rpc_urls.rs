@@ -6,7 +6,7 @@ use sequencer::types::{
 use tracing::info;
 
 use crate::{
-    models::{LivenessClusterModel, SequencerModel},
+    models::{LivenessClusterModel, OperatorModel},
     rpc::prelude::*,
 };
 
@@ -68,10 +68,10 @@ impl GetRpcUrls {
         let rpc_urls = address_list
             .iter()
             .filter_map(
-                |sequencer_address| match SequencerModel::get(sequencer_address.clone()) {
-                    Ok(sequencer_model) => {
-                        if let Some(rpc_url) = sequencer_model.rpc_url {
-                            Some((sequencer_model.address, rpc_url))
+                |operator_address| match OperatorModel::get(operator_address.clone()) {
+                    Ok(operator_model) => {
+                        if let Some(rpc_url) = operator_model.rpc_url {
+                            Some((operator_model.address, rpc_url))
                         } else {
                             None
                         }

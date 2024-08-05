@@ -1,18 +1,18 @@
 use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SequencerModel {
+pub struct OperatorModel {
     pub address: Address,
     pub rpc_url: Option<IpAddress>,
 }
 
-impl SequencerModel {
+impl OperatorModel {
     pub fn new(address: Address, rpc_url: Option<IpAddress>) -> Self {
         Self { address, rpc_url }
     }
 }
-impl SequencerModel {
-    pub const ID: &'static str = stringify!(SequencerModel);
+impl OperatorModel {
+    pub const ID: &'static str = stringify!(OperatorModel);
 
     pub fn get(address: Address) -> Result<Self, DbError> {
         let key = (Self::ID, address);
