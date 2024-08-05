@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetSequencerRpcUrls {
+pub struct GetRpcUrls {
     pub platform: PlatForm,
     pub sequencing_function_type: SequencingFunctionType,
     pub service_type: ServiceType,
@@ -24,14 +24,14 @@ pub struct GetRpcUrlsResponse {
     pub rpc_urls: HashMap<Address, IpAddress>,
 }
 
-impl GetSequencerRpcUrls {
+impl GetRpcUrls {
     pub const METHOD_NAME: &'static str = "get_rpc_urls";
 
     pub async fn handler(
         parameter: RpcParameter,
         _context: Arc<()>,
     ) -> Result<GetRpcUrlsResponse, RpcError> {
-        let parameter = parameter.parse::<GetSequencerRpcUrls>()?;
+        let parameter = parameter.parse::<GetRpcUrls>()?;
 
         info!("get_rpc_urls: {:?}", parameter.cluster_id);
 

@@ -18,8 +18,6 @@ pub enum Error {
 
     ConnectEventListener,
     ParseContractAddress,
-
-    NotRegisteredSequencer,
 }
 
 impl std::fmt::Debug for Error {
@@ -66,9 +64,6 @@ impl std::fmt::Display for Error {
             }
             Self::ParseContractAddress => {
                 write!(f, "Failed to parse contract address")
-            }
-            Self::NotRegisteredSequencer => {
-                write!(f, "Not registered sequencer")
             }
         }
     }
