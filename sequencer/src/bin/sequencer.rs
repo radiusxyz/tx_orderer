@@ -10,11 +10,17 @@ use sequencer::{
     cli::{Cli, Commands, Config, ConfigPath},
     client::SeederClient,
     error::Error,
-    models::{ClusterIdListModel, RollupIdListModel, RollupModel, SequencingInfoModel},
+    models::{
+        ClusterIdListModel, RollupIdListModel, RollupMetadataModel, RollupModel,
+        SequencingInfoModel,
+    },
     rpc::{cluster, external, internal},
     state::AppState,
     task::radius_liveness_event_listener,
-    types::{PlatForm, SequencingFunctionType, ServiceType, SigningKey},
+    types::{
+        ClusterId, PlatForm, RollupId, RollupMetadata, SequencingFunctionType, ServiceType,
+        SigningKey,
+    },
     util::initialize_liveness_cluster,
 };
 use tokio::task::JoinHandle;
@@ -98,20 +104,28 @@ async fn main() -> Result<(), Error> {
                 seeder_rpc_url,
             );
 
-            // let rollup_id_list_model = RollupIdListModel::get()?;
-            // let rollup_id_list = rollup_id_list_model.rollup_id_list();
+            let rollup_id_list_model = RollupIdListModel::get()?;
+            let rollup_id_list = rollup_id_list_model.rollup_id_list();
 
-            // let mut rollup_cluster_ids: HashMap<RollupId, ClusterId> = HashMap::new();
+            let mut rollup_metadatas: HashMap<RollupId, RollupMetadata> = HashMap::new();
+            let mut rollup_cluster_ids: HashMap<RollupId, ClusterId> = HashMap::new();
 
-            // rollup_id_list.iter().for_each(|rollup_id| {
-            //     let rollup_model = RollupModel::get(rollup_id).unwrap();
-            //     rollup_cluster_ids.insert(rollup_id, rollup_model.cluster_id().clone());
-            // });
+            rollup_id_list.iter().for_each(|rollup_id| {
+                let rollup_model = RollupModel::get(rollup_id).unwrap();
+                let rollup_metadata_model = RollupMetadataModel::get(rollup_id).unwrap();
+
+                let cluster_id = rollup_model.cluster_id().clone();
+                let rollup_metadata = rollup_metadata_model.rollup_metadata().clone();
+
+                rollup_metadatas.insert(rollup_id.clone(), rollup_metadata);
+                rollup_cluster_ids.insert(rollup_id.clone(), cluster_id);
+            });
 
             // Initialize an application-wide state instance
             let app_state = AppState::new(
                 config.clone(),
-                HashMap::new(), // rollup_cluster_ids,
+                rollup_metadatas,
+                rollup_cluster_ids, // rollup_cluster_ids,
                 sequencing_infos.clone(),
                 seeder_client,
             );
@@ -240,6 +254,10 @@ async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Erro
         .register_rpc_method(
             internal::GetClusterIdList::METHOD_NAME,
             internal::GetClusterIdList::handler,
+        )?
+        .register_rpc_method(
+            internal::GetContext::METHOD_NAME,
+            internal::GetContext::handler,
         )?
         .init(app_state.config().internal_rpc_url().to_string())
         .await?;

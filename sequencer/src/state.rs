@@ -6,7 +6,10 @@ use crate::{
     cli::Config,
     client::SeederClient,
     error::Error,
-    types::{Cluster, ClusterId, RollupId, SequencingInfo, SequencingInfoKey, SigningKey},
+    types::{
+        BlockHeight, Cluster, ClusterId, RollupId, RollupMetadata, SequencingInfo,
+        SequencingInfoKey, SigningKey, TransactionOrder,
+    },
 };
 
 pub struct AppState {
@@ -16,11 +19,12 @@ pub struct AppState {
 struct AppStateInner {
     config: Config,
 
+    rollup_metadatas: Mutex<HashMap<RollupId, RollupMetadata>>,
     rollup_cluster_ids: Mutex<HashMap<RollupId, ClusterId>>,
     sequencing_infos: Mutex<HashMap<SequencingInfoKey, SequencingInfo>>,
+    clusters: Mutex<HashMap<ClusterId, Cluster>>,
 
     seeder_client: SeederClient,
-    clusters: Mutex<HashMap<ClusterId, Cluster>>,
 }
 
 unsafe impl Send for AppState {}
@@ -38,12 +42,14 @@ impl Clone for AppState {
 impl AppState {
     pub fn new(
         config: Config,
+        rollup_metadatas: HashMap<RollupId, RollupMetadata>,
         rollup_cluster_ids: HashMap<RollupId, ClusterId>,
         sequencing_infos: HashMap<SequencingInfoKey, SequencingInfo>,
         seeder_client: SeederClient,
     ) -> Self {
         let inner = AppStateInner {
             config,
+            rollup_metadatas: Mutex::new(rollup_metadatas),
             rollup_cluster_ids: Mutex::new(rollup_cluster_ids),
             sequencing_infos: Mutex::new(sequencing_infos),
             seeder_client,
@@ -59,10 +65,53 @@ impl AppState {
         &self.inner.config
     }
 
+    pub async fn rollup_metadatas(&self) -> HashMap<RollupId, RollupMetadata> {
+        let rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
+
+        rollup_metadatas_lock.clone()
+    }
+
+    pub async fn rollup_cluster_ids(&self) -> HashMap<RollupId, ClusterId> {
+        let rollup_cluster_ids_lock = self.inner.rollup_cluster_ids.lock().await;
+
+        rollup_cluster_ids_lock.clone()
+    }
+
+    pub async fn get_current_transaction_order_and_increase_transaction_order(
+        &self,
+        rollup_id: &RollupId,
+    ) -> Result<TransactionOrder, Error> {
+        let mut rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
+
+        if let Some(rollup_metadata) = rollup_metadatas_lock.get_mut(rollup_id) {
+            let transaction_order = rollup_metadata.transaction_order();
+            rollup_metadata.increment_transaction_order();
+            return Ok(transaction_order);
+        }
+
+        Err(Error::Uninitialized)
+    }
+
+    pub async fn block_height(&self, rollup_id: &RollupId) -> Result<BlockHeight, Error> {
+        let mut rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
+
+        if let Some(rollup_metadata) = rollup_metadatas_lock.get_mut(rollup_id) {
+            return Ok(rollup_metadata.block_height());
+        }
+
+        Err(Error::Uninitialized)
+    }
+
     pub async fn sequencing_infos(&self) -> HashMap<SequencingInfoKey, SequencingInfo> {
         let sequencing_infos_lock = self.inner.sequencing_infos.lock().await;
 
         sequencing_infos_lock.clone()
+    }
+
+    pub async fn clusters(&self) -> HashMap<ClusterId, Cluster> {
+        let clusters_lock = self.inner.clusters.lock().await;
+
+        clusters_lock.clone()
     }
 
     pub fn signing_key(&self) -> &SigningKey {

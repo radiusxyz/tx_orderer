@@ -19,8 +19,8 @@ impl SyncTransaction {
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
 
         // TODO: compare block height and transaction order with order commitment
-        rollup_metadata.increment_transaction_order();
-        rollup_metadata.update()?;
+        // rollup_metadata.increment_transaction_order();
+        // rollup_metadata.update()?;
 
         parameter.transaction.put(
             &parameter.rollup_id,

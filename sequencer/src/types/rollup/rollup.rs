@@ -1,14 +1,5 @@
 use crate::types::prelude::*;
 
-pub type RollupId = String;
-pub type RollupIdList = Vec<RollupId>;
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum RollupType {
-    PolygonCdk,
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Rollup {
     rollup_id: RollupId,

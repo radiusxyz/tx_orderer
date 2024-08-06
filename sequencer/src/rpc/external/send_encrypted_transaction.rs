@@ -38,15 +38,10 @@ impl SendEncryptedTransaction {
 
         let transaction_model = TransactionModel::Encrypted(encrypted_transaction_model);
 
-        let (transaction_order, block_height) = {
-            let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
-            let transaction_order = rollup_metadata.transaction_order();
-            let rollup_block_heigth = rollup_metadata.rollup_block_height();
-            rollup_metadata.increment_transaction_order();
-            rollup_metadata.update()?;
-
-            (transaction_order, rollup_block_heigth)
-        };
+        let block_height = context.block_height(&parameter.rollup_id).await?;
+        let transaction_order = context
+            .get_current_transaction_order_and_increase_transaction_order(&parameter.rollup_id)
+            .await?;
 
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),

@@ -2,49 +2,24 @@ use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RollupMetadataModel {
-    cluster_id: ClusterId,
     rollup_id: RollupId,
-
-    rollup_block_height: BlockHeight,
-    liveness_block_height: BlockHeight,
-    transaction_order: TransactionOrder,
-    is_leader: bool,
+    rollup_metadata: RollupMetadata,
 }
 
 impl RollupMetadataModel {
-    pub fn new(cluster_id: ClusterId, rollup_id: RollupId) -> Self {
+    pub fn new(rollup_id: RollupId, rollup_metadata: RollupMetadata) -> Self {
         Self {
-            cluster_id,
             rollup_id,
-            rollup_block_height: 0,
-            liveness_block_height: 0,
-            transaction_order: 0.into(),
-            is_leader: false,
+            rollup_metadata,
         }
     }
 
-    pub fn get_transaction_order(&self) -> TransactionOrder {
-        self.transaction_order.clone()
+    pub fn rollup_id(&self) -> &RollupId {
+        &self.rollup_id
     }
 
-    pub fn increment_transaction_order(&mut self) {
-        self.transaction_order.increment();
-    }
-
-    pub fn rollup_block_height(&self) -> BlockHeight {
-        self.rollup_block_height.clone()
-    }
-
-    pub fn liveness_block_height(&self) -> BlockHeight {
-        self.liveness_block_height.clone()
-    }
-
-    pub fn transaction_order(&self) -> TransactionOrder {
-        self.transaction_order.clone()
-    }
-
-    pub fn is_leader(&self) -> bool {
-        self.is_leader
+    pub fn rollup_metadata(&self) -> &RollupMetadata {
+        &self.rollup_metadata
     }
 }
 
@@ -62,7 +37,7 @@ impl RollupMetadataModel {
     }
 
     pub fn put(&self) -> Result<(), DbError> {
-        let key = (Self::ID, self.cluster_id.clone());
+        let key = (Self::ID, self.rollup_id());
         database()?.put(&key, self)
     }
 }
