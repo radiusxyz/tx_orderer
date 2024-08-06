@@ -19,7 +19,7 @@ pub fn sync_block(
             transaction_order,
         };
 
-        for ((_, _), rpc_client) in cluster.sequencer_rpc_clients().await {
+        for rpc_client in cluster.get_other_sequencer_rpc_clients().await {
             let rpc_client = rpc_client.clone();
             let rpc_method = rpc_method.clone();
 
@@ -45,7 +45,7 @@ pub fn sync_transaction(
             order_commitment,
         };
 
-        for ((_, _), rpc_client) in cluster.sequencer_rpc_clients().await {
+        for rpc_client in cluster.get_other_sequencer_rpc_clients().await {
             let rpc_client = rpc_client.clone();
             let rpc_method = rpc_method.clone();
 

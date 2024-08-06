@@ -16,6 +16,7 @@ pub struct Cluster {
 struct ClusterInner {
     cluster_id: ClusterId,
 
+    node_address: Address,
     sequencer_rpc_clients: Mutex<HashMap<(SequencerIndex, Address), RpcClient>>,
 }
 
@@ -32,9 +33,10 @@ impl Clone for Cluster {
 }
 
 impl Cluster {
-    pub fn new(cluster_id: ClusterId) -> Self {
+    pub fn new(cluster_id: ClusterId, node_address: Address) -> Self {
         let inner = ClusterInner {
             cluster_id,
+            node_address,
             sequencer_rpc_clients: Mutex::new(HashMap::new()),
         };
 
@@ -56,10 +58,32 @@ impl Cluster {
         &self.inner.cluster_id
     }
 
-    pub async fn sequencer_rpc_clients(&self) -> HashMap<(SequencerIndex, Address), RpcClient> {
+    pub async fn get_other_sequencer_rpc_clients(&self) -> Vec<RpcClient> {
         let sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
-        sequencer_rpc_clients_lock.clone()
+        sequencer_rpc_clients_lock
+            .iter()
+            .filter_map(|((_, address), rpc_client)| {
+                if address != &self.inner.node_address {
+                    Some(rpc_client.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<RpcClient>>()
+    }
+
+    pub async fn is_leader(&self, rollup_block_height: BlockHeight) -> bool {
+        let sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
+
+        let leader_index = rollup_block_height % sequencer_rpc_clients_lock.len() as BlockHeight;
+
+        let leader_address = sequencer_rpc_clients_lock
+            .keys()
+            .find(|(index, _)| *index == leader_index as usize)
+            .unwrap();
+
+        leader_address.1 == self.inner.node_address
     }
 
     pub async fn get_leader_rpc_client(&self, rollup_block_height: BlockHeight) -> RpcClient {
@@ -90,8 +114,8 @@ impl Cluster {
 
         let follower_rpc_client_list = sequencer_rpc_clients_lock
             .iter()
-            .filter_map(|((index, _), rpc_client)| {
-                if *index == leader_index as usize {
+            .filter_map(|((index, address), rpc_client)| {
+                if *index == leader_index as usize && address != &self.inner.node_address {
                     Some(rpc_client.clone())
                 } else {
                     None
