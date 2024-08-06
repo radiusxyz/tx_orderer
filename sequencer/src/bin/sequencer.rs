@@ -1,11 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
-use ethers::abi::Hash;
-use radius_sequencer_sdk::{
-    json_rpc::{RpcClient, RpcServer},
-    kvstore::KvStore as Database,
-    liveness::publisher::Publisher,
-};
+use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
 use sequencer::{
     cli::{Cli, Commands, Config, ConfigPath},
     client::SeederClient,
@@ -19,7 +14,7 @@ use sequencer::{
     task::radius_liveness_event_listener,
     types::{
         ClusterId, PlatForm, RollupId, RollupMetadata, SequencingFunctionType, ServiceType,
-        SigningKey,
+        SigningKey, SyncInfo,
     },
     util::initialize_liveness_cluster,
 };
@@ -55,47 +50,6 @@ async fn main() -> Result<(), Error> {
             let sequencing_info_model = SequencingInfoModel::get()?;
             let sequencing_infos = sequencing_info_model.sequencing_infos();
 
-            // Add listener for each sequencing info
-            sequencing_infos.iter().for_each(
-                |(sequencing_info_key, sequencing_info)| {
-                    info!(
-                        "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
-                        sequencing_info_key.platform(), sequencing_info_key.sequencing_function_type(), sequencing_info_key.service_type()
-                    );
-
-                    match sequencing_info_key.platform() {
-                        PlatForm::Local => {
-                            // TODO:
-                            info!("Init local platform (TODO)");
-                        }
-                        PlatForm::Ethereum => match sequencing_info_key.sequencing_function_type() {
-                            sequencer::types::SequencingFunctionType::Liveness => {
-                                match sequencing_info_key.service_type() {
-                                    ServiceType::Radius => {
-                                        info!(
-                                            "Init radius liveness - provider_websocket_url: {:?}",
-                                            sequencing_info.provider_websocket_url
-                                        );
-
-                                        radius_liveness_event_listener::init(
-                                            sequencing_info.clone(),
-                                        );
-                                    }
-                                    _ => {
-                                        // TODO:
-                                        info!(
-                                            "Init other liveness (TODO) - provider_websocket_url: {:?}",
-                                            sequencing_info.provider_websocket_url
-                                        );
-                                    }
-                                }
-                            }
-                            sequencer::types::SequencingFunctionType::Validation => {}
-                        },
-                    }
-                },
-            );
-
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
             let seeder_client = SeederClient::new(seeder_rpc_url)?;
@@ -128,6 +82,51 @@ async fn main() -> Result<(), Error> {
                 rollup_cluster_ids, // rollup_cluster_ids,
                 sequencing_infos.clone(),
                 seeder_client,
+            );
+
+            // Add listener for each sequencing info
+            sequencing_infos.iter().for_each(
+                |(sequencing_info_key, sequencing_info)| {
+                    info!(
+                        "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
+                        sequencing_info_key.platform(), sequencing_info_key.sequencing_function_type(), sequencing_info_key.service_type()
+                    );
+
+                    match sequencing_info_key.platform() {
+                        PlatForm::Local => {
+                            // TODO:
+                            info!("Init local platform (TODO)");
+                        }
+                        PlatForm::Ethereum => match sequencing_info_key.sequencing_function_type() {
+                            sequencer::types::SequencingFunctionType::Liveness => {
+                                match sequencing_info_key.service_type() {
+                                    ServiceType::Radius => {
+                                        info!(
+                                            "Init radius liveness - provider_websocket_url: {:?}",
+                                            sequencing_info.provider_websocket_url
+                                        );
+
+                                        let sync_info = SyncInfo::new(
+                                            sequencing_info.clone(),
+                                            Arc::new(app_state.clone()),
+                                        );
+                                        radius_liveness_event_listener::init(
+                                            Arc::new(sync_info),
+                                        );
+                                    }
+                                    _ => {
+                                        // TODO:
+                                        info!(
+                                            "Init other liveness (TODO) - provider_websocket_url: {:?}",
+                                            sequencing_info.provider_websocket_url
+                                        );
+                                    }
+                                }
+                            }
+                            sequencer::types::SequencingFunctionType::Validation => {}
+                        },
+                    }
+                },
             );
 
             // Initialize the internal RPC server
@@ -307,6 +306,10 @@ async fn initialize_external_rpc_server(app_state: &AppState) -> Result<JoinHand
         .register_rpc_method(
             external::SendEncryptedTransaction::METHOD_NAME,
             external::SendEncryptedTransaction::handler,
+        )?
+        .register_rpc_method(
+            external::GetEncryptedTransaction::METHOD_NAME,
+            external::GetEncryptedTransaction::handler,
         )?
         .init(sequencer_rpc_url.clone())
         .await?;

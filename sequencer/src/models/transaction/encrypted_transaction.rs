@@ -18,6 +18,14 @@ impl EncryptedTransactionModel {
             time_lock_puzzle,
         }
     }
+
+    pub fn encrypted_transaction(&self) -> &EncryptedTransaction {
+        &self.encrypted_transaction
+    }
+
+    pub fn time_lock_puzzle(&self) -> &TimeLockPuzzle {
+        &self.time_lock_puzzle
+    }
 }
 
 impl EncryptedTransactionModel {

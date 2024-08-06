@@ -29,6 +29,11 @@ struct GetRpcUrlsResponse {
     pub rpc_urls: HashMap<Address, IpAddress>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct GetRpcUrlResponse {
+    pub rpc_url: IpAddress,
+}
+
 impl SeederClient {
     pub fn new(seeder_rpc_url: impl AsRef<str>) -> Result<Self, Error> {
         let client = RpcClient::new(seeder_rpc_url).map_err(|error| {
@@ -80,5 +85,18 @@ impl SeederClient {
             self.0.request("get_rpc_urls", rpc_method).await?;
 
         Ok(get_rpc_urls_response.rpc_urls)
+    }
+
+    pub async fn get_rpc_url(&self, address: &Address) -> Result<IpAddress, Error> {
+        let rpc_method = json!({
+          "address": address,
+        });
+
+        info!("Get rpc urls - rpc_method: {:?}", rpc_method);
+
+        let get_rpc_url_response: GetRpcUrlResponse =
+            self.0.request("get_rpc_url", rpc_method).await?;
+
+        Ok(get_rpc_url_response.rpc_url)
     }
 }

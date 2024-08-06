@@ -1,7 +1,7 @@
 use tracing::info;
 
 use crate::{
-    models::{EncryptedTransactionModel, RollupMetadataModel, TransactionModel},
+    models::{EncryptedTransactionModel, TransactionModel},
     rpc::prelude::*,
     types::*,
 };

@@ -5,9 +5,11 @@ use serde::de::DeserializeOwned;
 
 use crate::rpc::prelude::*;
 
+mod get_encrypted_transaction;
 mod send_encrypted_transaction;
 
-pub use send_encrypted_transaction::SendEncryptedTransaction;
+pub use get_encrypted_transaction::*;
+pub use send_encrypted_transaction::*;
 
 mod get_block;
 

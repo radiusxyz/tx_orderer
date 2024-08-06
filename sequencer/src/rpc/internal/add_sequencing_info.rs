@@ -36,11 +36,14 @@ impl AddSequencingInfo {
         );
 
         // TODO
+
+        let sync_info = SyncInfo::new(sequencing_info.clone(), context.clone());
+
         if parameter.platform != PlatForm::Local {
             if parameter.sequencing_function_type == SequencingFunctionType::Liveness {
                 match parameter.service_type {
                     ServiceType::Radius => {
-                        radius_liveness_event_listener::init(sequencing_info.clone());
+                        radius_liveness_event_listener::init(Arc::new(sync_info));
                     }
                     _ => {}
                 }

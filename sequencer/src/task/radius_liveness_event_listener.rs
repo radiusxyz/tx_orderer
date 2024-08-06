@@ -1,43 +1,53 @@
 use std::{sync::Arc, time::Duration};
 
-use radius_sequencer_sdk::liveness::{
-    subscriber::Subscriber,
-    types::{Events, Ssal::SsalEvents},
+use radius_sequencer_sdk::{
+    json_rpc::RpcClient,
+    liveness::{
+        subscriber::Subscriber,
+        types::{Events, Ssal::SsalEvents},
+    },
 };
 use tokio::time::sleep;
 use tracing::info;
 
 use crate::{
+    client::SequencerClient,
     error::Error,
     models::LivenessClusterModel,
-    types::{Address, ClusterId, PlatForm, SequencingInfo, ServiceType},
+    types::{Address, ClusterId, PlatForm, SequencerIndex, SequencingInfo, ServiceType, SyncInfo},
 };
 
-pub fn init(sequencing_info: SequencingInfo) {
+pub fn init(sync_info: Arc<SyncInfo>) {
     tokio::spawn(async move {
         loop {
-            if sequencing_info.contract_address.is_none() {
+            if sync_info.sequencing_info().contract_address.is_none() {
                 tracing::warn!("Radius liveness contract address is not set.");
                 return;
             }
 
             tracing::info!(
                 "Start event listener {:?} / {:?}",
-                sequencing_info.provider_websocket_url.clone(),
-                sequencing_info.contract_address.clone().unwrap()
+                sync_info.sequencing_info().provider_websocket_url.clone(),
+                sync_info
+                    .sequencing_info()
+                    .contract_address
+                    .clone()
+                    .unwrap()
             );
 
-            let sequencing_info_context = Arc::new(sequencing_info.clone());
-
-            let liveness_contract_address =
-                sequencing_info.contract_address.clone().unwrap().clone();
+            let liveness_contract_address = sync_info
+                .sequencing_info()
+                .contract_address
+                .clone()
+                .unwrap()
+                .clone();
 
             match Subscriber::new(
-                sequencing_info.provider_websocket_url.clone(),
+                sync_info.sequencing_info().provider_websocket_url.clone(),
                 liveness_contract_address.to_string(),
             ) {
                 Ok(subscriber) => match subscriber
-                    .initialize_event_handler(callback, sequencing_info_context)
+                    .initialize_event_handler(callback, sync_info.clone())
                     .await
                 {
                     Ok(_) => {
@@ -58,7 +68,7 @@ pub fn init(sequencing_info: SequencingInfo) {
     });
 }
 
-async fn callback(event: Events, context: Arc<SequencingInfo>) {
+async fn callback(event: Events, context: Arc<SyncInfo>) {
     match event {
         Events::Block(_) => {}
         Events::SsalEvents(ssal_events) => match ssal_events {
@@ -69,9 +79,11 @@ async fn callback(event: Events, context: Arc<SequencingInfo>) {
                     data.proposerSetId, data.sequencerAddress
                 );
 
+                // TODO:
                 let _ = register_sequencer(
-                    context.platform.clone(),
+                    context.clone(),
                     data.proposerSetId.to_string(),
+                    0,
                     data.sequencerAddress.to_string().into(),
                 );
             }
@@ -82,7 +94,7 @@ async fn callback(event: Events, context: Arc<SequencingInfo>) {
                 );
 
                 let _ = deregister_sequencer(
-                    context.platform.clone(),
+                    context,
                     data.proposerSetId.to_string(),
                     data.sequencerAddress.to_string().into(),
                 );
@@ -92,9 +104,9 @@ async fn callback(event: Events, context: Arc<SequencingInfo>) {
 }
 
 pub fn register_sequencer(
-    platform: PlatForm,
-
+    context: Arc<SyncInfo>,
     cluster_id: ClusterId,
+    sequencer_index: SequencerIndex,
     sequencer_address: Address,
 ) -> Result<(), Error> {
     info!(
@@ -104,17 +116,48 @@ pub fn register_sequencer(
         sequencer_address
     );
 
-    let mut liveness_cluster_model =
-        LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
+    let mut liveness_cluster_model = LivenessClusterModel::get_mut(
+        &context.sequencing_info().platform,
+        &ServiceType::Radius,
+        &cluster_id,
+    )?;
 
-    liveness_cluster_model.add_seqeuncer(sequencer_address);
+    liveness_cluster_model.add_seqeuncer(sequencer_address.clone());
     let _ = liveness_cluster_model.update()?;
+
+    tokio::spawn(async move {
+        loop {
+            match context
+                .app_state()
+                .seeder_client()
+                .get_rpc_url(&sequencer_address)
+                .await
+            {
+                Ok(rpc_url) => {
+                    let rpc_client = SequencerClient::new(rpc_url).unwrap();
+                    let cluster = context.app_state().get_cluster(&cluster_id).await.unwrap();
+
+                    cluster
+                        .add_sequencer_rpc_client(sequencer_index, sequencer_address, rpc_client)
+                        .await;
+
+                    break;
+                }
+                Err(err) => {
+                    tracing::warn!("Failed to get rpc url: {}", err);
+                }
+            };
+
+            // TODO:
+            sleep(Duration::from_secs(10)).await;
+        }
+    });
 
     Ok(())
 }
 
-pub fn deregister_sequencer(
-    platform: PlatForm,
+pub async fn deregister_sequencer(
+    context: Arc<SyncInfo>,
 
     cluster_id: ClusterId,
     sequencer_address: Address,
@@ -126,11 +169,17 @@ pub fn deregister_sequencer(
         sequencer_address
     );
 
-    let mut liveness_cluster_model =
-        LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
+    let mut liveness_cluster_model = LivenessClusterModel::get_mut(
+        &context.sequencing_info().platform,
+        &ServiceType::Radius,
+        &cluster_id,
+    )?;
 
     liveness_cluster_model.remove_sequencer(&sequencer_address);
     let _ = liveness_cluster_model.update()?;
+
+    let cluster = context.app_state().get_cluster(&cluster_id).await.unwrap();
+    cluster.remove_sequencer_rpc_client(sequencer_address).await;
 
     Ok(())
 }

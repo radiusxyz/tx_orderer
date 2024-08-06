@@ -21,7 +21,9 @@ struct AppStateInner {
 
     rollup_metadatas: Mutex<HashMap<RollupId, RollupMetadata>>,
     rollup_cluster_ids: Mutex<HashMap<RollupId, ClusterId>>,
+
     sequencing_infos: Mutex<HashMap<SequencingInfoKey, SequencingInfo>>,
+
     clusters: Mutex<HashMap<ClusterId, Cluster>>,
 
     seeder_client: SeederClient,

@@ -3,7 +3,12 @@ use std::collections::HashMap;
 use radius_sequencer_sdk::{json_rpc::RpcClient, liveness::publisher::Publisher};
 use tracing::info;
 
-use crate::{client::SeederClient, error::Error, models::LivenessClusterModel, types::*};
+use crate::{
+    client::{SeederClient, SequencerClient},
+    error::Error,
+    models::LivenessClusterModel,
+    types::*,
+};
 
 pub async fn initialize_liveness_cluster(
     signing_key: &SigningKey,
@@ -72,7 +77,7 @@ pub async fn initialize_liveness_cluster(
     let mut sequencer_rpc_clients = HashMap::new();
     for (index, sequencer_address) in sequencer_list.iter().enumerate() {
         let rpc_url = sequencer_rpc_urls.get(&sequencer_address).unwrap();
-        let rpc_client = RpcClient::new(rpc_url.clone()).unwrap();
+        let rpc_client = SequencerClient::new(rpc_url.clone()).unwrap();
 
         sequencer_rpc_clients.insert((index, sequencer_address.clone()), rpc_client);
     }

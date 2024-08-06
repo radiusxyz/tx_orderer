@@ -1,9 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
-use radius_sequencer_sdk::json_rpc::RpcClient;
 use tokio::sync::Mutex;
 
 use super::prelude::*;
+use crate::client::SequencerClient;
 
 pub type SequencerIndex = usize;
 pub type ClusterId = String;
@@ -17,7 +17,7 @@ struct ClusterInner {
     cluster_id: ClusterId,
 
     node_address: Address,
-    sequencer_rpc_clients: Mutex<HashMap<(SequencerIndex, Address), RpcClient>>,
+    sequencer_rpc_clients: Mutex<HashMap<(SequencerIndex, Address), SequencerClient>>,
 }
 
 unsafe impl Send for Cluster {}
@@ -45,9 +45,27 @@ impl Cluster {
         }
     }
 
+    pub async fn add_sequencer_rpc_client(
+        &self,
+        sequencer_index: SequencerIndex,
+        address: Address,
+        sequencer_client: SequencerClient,
+    ) {
+        let mut sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
+
+        sequencer_rpc_clients_lock.insert((sequencer_index, address), sequencer_client);
+    }
+
+    pub async fn remove_sequencer_rpc_client(&self, address: Address) {
+        let mut sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
+
+        sequencer_rpc_clients_lock
+            .retain(|(_, sequencer_address), _| sequencer_address != &address);
+    }
+
     pub async fn set_sequencer_rpc_clients(
         &mut self,
-        sequencer_rpc_clients: HashMap<(SequencerIndex, Address), RpcClient>,
+        sequencer_rpc_clients: HashMap<(SequencerIndex, Address), SequencerClient>,
     ) {
         let mut sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
@@ -58,7 +76,7 @@ impl Cluster {
         &self.inner.cluster_id
     }
 
-    pub async fn get_other_sequencer_rpc_clients(&self) -> Vec<RpcClient> {
+    pub async fn get_other_sequencer_rpc_clients(&self) -> Vec<SequencerClient> {
         let sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
         sequencer_rpc_clients_lock
@@ -70,7 +88,7 @@ impl Cluster {
                     None
                 }
             })
-            .collect::<Vec<RpcClient>>()
+            .collect::<Vec<SequencerClient>>()
     }
 
     pub async fn is_leader(&self, rollup_block_height: BlockHeight) -> bool {
@@ -86,7 +104,7 @@ impl Cluster {
         leader_address.1 == self.inner.node_address
     }
 
-    pub async fn get_leader_rpc_client(&self, rollup_block_height: BlockHeight) -> RpcClient {
+    pub async fn get_leader_rpc_client(&self, rollup_block_height: BlockHeight) -> SequencerClient {
         let sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
         let leader_index = rollup_block_height % sequencer_rpc_clients_lock.len() as BlockHeight;
@@ -107,7 +125,7 @@ impl Cluster {
     pub async fn get_follower_rpc_client_list(
         &self,
         rollup_block_height: BlockHeight,
-    ) -> Vec<RpcClient> {
+    ) -> Vec<SequencerClient> {
         let sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
         let leader_index = rollup_block_height % sequencer_rpc_clients_lock.len() as BlockHeight;
@@ -121,7 +139,7 @@ impl Cluster {
                     None
                 }
             })
-            .collect::<Vec<RpcClient>>();
+            .collect::<Vec<SequencerClient>>();
 
         follower_rpc_client_list
     }

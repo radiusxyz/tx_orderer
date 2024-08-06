@@ -22,11 +22,22 @@ impl SyncTransaction {
         // rollup_metadata.increment_transaction_order();
         // rollup_metadata.update()?;
 
-        parameter.transaction.put(
-            &parameter.rollup_id,
-            &parameter.order_commitment.data.block_height,
-            &parameter.order_commitment.data.transaction_order,
-        )?;
+        // match parameter.transaction {
+        //     TransactionModel::Encrypted(encrypted_transaction_model) => {
+        //         encrypted_transaction_model.put(
+        //             &parameter.rollup_id,
+        //             &parameter.order_commitment.data.block_height,
+        //             &parameter.order_commitment.data.transaction_order,
+        //         )?;
+        //     }
+        //     TransactionModel::Raw(raw_transaction_model) => {
+        //         raw_transaction_model.put(
+        //             &parameter.rollup_id,
+        //             &parameter.order_commitment.data.block_height,
+        //             &parameter.order_commitment.data.transaction_order,
+        //         )?;
+        //     }
+        // }
 
         Ok(())
     }

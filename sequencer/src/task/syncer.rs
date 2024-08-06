@@ -12,7 +12,7 @@ pub fn sync_block(
     transaction_order: TransactionOrder,
 ) {
     tokio::spawn(async move {
-        let rpc_method = SyncBlock {
+        let parameter = SyncBlock {
             rollup_id,
             liveness_block_height,
             rollup_block_height,
@@ -21,12 +21,10 @@ pub fn sync_block(
 
         for rpc_client in cluster.get_other_sequencer_rpc_clients().await {
             let rpc_client = rpc_client.clone();
-            let rpc_method = rpc_method.clone();
+            let parameter = parameter.clone();
 
             tokio::spawn(async move {
-                let _ = rpc_client
-                    .request::<SyncBlock, ()>(SyncBlock::METHOD_NAME, rpc_method)
-                    .await;
+                let _ = rpc_client.sync_block(parameter).await;
             });
         }
     });
@@ -39,7 +37,7 @@ pub fn sync_transaction(
     order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {
-        let rpc_method = SyncTransaction {
+        let parameter = SyncTransaction {
             rollup_id,
             transaction,
             order_commitment,
@@ -47,12 +45,10 @@ pub fn sync_transaction(
 
         for rpc_client in cluster.get_other_sequencer_rpc_clients().await {
             let rpc_client = rpc_client.clone();
-            let rpc_method = rpc_method.clone();
+            let parameter = parameter.clone();
 
             tokio::spawn(async move {
-                let _ = rpc_client
-                    .request::<SyncTransaction, ()>(SyncTransaction::METHOD_NAME, rpc_method)
-                    .await;
+                let _ = rpc_client.sync_transaction(parameter).await;
             });
         }
     });
