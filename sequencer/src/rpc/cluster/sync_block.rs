@@ -14,7 +14,7 @@ impl SyncBlock {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let cluster = context.get_rollup_cluster(&parameter.rollup_id).await?;
+        let cluster = context.get_cluster(&parameter.rollup_id).await?;
 
         // let cluster = context.cluster().await?;
 

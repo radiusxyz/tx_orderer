@@ -7,8 +7,8 @@ pub struct LivenessClusterModel {
 
     pub cluster_id: ClusterId,
 
-    // TODO: change this propoerty to RpcClients
-    pub sequencer_addresses: Addresses,
+    // TODO: change this property to RpcClients
+    pub sequencer_address_list: AddressList,
 }
 
 impl LivenessClusterModel {
@@ -18,8 +18,31 @@ impl LivenessClusterModel {
             cluster_id,
             service_type,
 
-            sequencer_addresses: Addresses::new(),
+            sequencer_address_list: AddressList::new(),
         }
+    }
+
+    pub fn set_sequencer_list(&mut self, sequencer_addresses: AddressList) {
+        self.sequencer_address_list = sequencer_addresses;
+    }
+
+    pub fn add_seqeuncer(&mut self, sequencer_address: Address) {
+        let is_exist_sequencer_address = self.sequencer_address_list.contains(&sequencer_address);
+
+        if !is_exist_sequencer_address {
+            self.sequencer_address_list.push(sequencer_address);
+        }
+    }
+
+    pub fn remove_sequencer(&mut self, sequencer_address: &Address) {
+        let sequencer_address_list = self
+            .sequencer_address_list
+            .iter()
+            .cloned()
+            .filter(|address| address != sequencer_address)
+            .collect();
+
+        self.set_sequencer_list(sequencer_address_list);
     }
 }
 

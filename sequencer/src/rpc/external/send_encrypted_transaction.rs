@@ -1,6 +1,10 @@
 use tracing::info;
 
-use crate::{models::EncryptedTransactionModel, rpc::prelude::*, types::*};
+use crate::{
+    models::{EncryptedTransactionModel, TransactionModel},
+    rpc::prelude::*,
+    types::*,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
@@ -14,24 +18,29 @@ impl SendEncryptedTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<AppState>,
+        context: Arc<AppState>,
     ) -> Result<OrderCommitment, RpcError> {
         info!("SendEncryptedTransaction - {:?}", parameter);
 
         let parameter = parameter.parse::<SendEncryptedTransaction>()?;
 
         let encrypted_transaction_model = EncryptedTransactionModel::new(
-            parameter.encrypted_transaction,
-            parameter.time_lock_puzzle,
+            parameter.encrypted_transaction.clone(),
+            parameter.time_lock_puzzle.clone(),
         );
 
         encrypted_transaction_model.put(&parameter.rollup_id, &0, &TransactionOrder::from(0))?;
 
         // TODO: verify encrypted_transaction
 
+        let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
+        let cluster = context.get_cluster(&cluster_id).await?;
+
+        let transaction_model = TransactionModel::Encrypted(encrypted_transaction_model);
+
         // TODO
         let order_commitment_data = OrderCommitmentData {
-            rollup_id: parameter.rollup_id,
+            rollup_id: parameter.rollup_id.clone(),
             block_height: 0,
             transaction_order: TransactionOrder::from(0),
             previous_order_hash: OrderHash::default(),
@@ -42,6 +51,13 @@ impl SendEncryptedTransaction {
             data: order_commitment_data,
             signature: Signature::default(),
         };
+
+        syncer::sync_transaction(
+            cluster,
+            parameter.rollup_id,
+            transaction_model,
+            order_commitment.clone(),
+        );
 
         Ok(order_commitment)
     }

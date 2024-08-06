@@ -1,6 +1,6 @@
 use sequencer::{
-    models::{SequencingInfoKey, SequencingInfoModel},
-    types::SequencingInfo,
+    models::SequencingInfoModel,
+    types::{SequencingInfo, SequencingInfoKey},
 };
 
 use crate::{error::Error, rpc::prelude::*};

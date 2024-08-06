@@ -1,7 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
 use radius_sequencer_sdk::json_rpc::{Error as JsonRpcError, ErrorKind, RpcClient};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::info;
 
 use crate::{error::Error, types::*};
 
@@ -17,6 +19,16 @@ impl Clone for SeederClient {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct RegisterRpcUrlResponse {
+    pub success: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct GetRpcUrlsResponse {
+    pub rpc_urls: HashMap<Address, IpAddress>,
+}
+
 impl SeederClient {
     pub fn new(seeder_rpc_url: impl AsRef<str>) -> Result<Self, Error> {
         let client = RpcClient::new(seeder_rpc_url).map_err(|error| {
@@ -26,31 +38,47 @@ impl SeederClient {
         Ok(Self(Arc::new(client)))
     }
 
-    pub async fn register_sequencer_rpc_url(
+    pub async fn register_rpc_url(
         &self,
-        sequencer_address: Address,
-        sequencer_rpc_url: IpAddress,
+        address: Address,
+        rpc_url: IpAddress,
     ) -> Result<(), Error> {
         let rpc_method = json!({
-            "sequencer_address": sequencer_address,
-            "sequencer_rpc_url": sequencer_rpc_url,
+            "address": address,
+            "rpc_url": rpc_url,
         });
 
-        self.0
-            .request("register_sequencer_rpc_url", rpc_method)
-            .await
-            .map_err(|_| Error::RegisterSequencer)
+        info!("Get register_rpc_url - rpc_method: {:?}", rpc_method);
+
+        let register_rpc_url_response: RegisterRpcUrlResponse =
+            self.0.request("register_rpc_url", rpc_method).await?;
+
+        if !register_rpc_url_response.success {
+            return Err(Error::RegisterRpcUrl);
+        }
+
+        Ok(())
     }
 
-    pub async fn get_sequencer_rpc_urls(
+    pub async fn get_rpc_urls(
         &self,
-        proposer_set_id: &ClusterId,
+        platform: &PlatForm,
+        sequencing_function_type: &SequencingFunctionType,
+        service_type: &ServiceType,
+        cluster_id: &ClusterId,
     ) -> Result<HashMap<Address, IpAddress>, Error> {
-        let rpc_method = json! { proposer_set_id };
+        let rpc_method = json!({
+          "platform": platform,
+          "sequencing_function_type": sequencing_function_type,
+          "service_type": service_type,
+          "cluster_id": cluster_id
+        });
 
-        self.0
-            .request("get_sequencer_rpc_urls", rpc_method)
-            .await
-            .map_err(|_| Error::GetSequencerRpcUrlList)
+        info!("Get rpc urls - rpc_method: {:?}", rpc_method);
+
+        let get_rpc_urls_response: GetRpcUrlsResponse =
+            self.0.request("get_rpc_urls", rpc_method).await?;
+
+        Ok(get_rpc_urls_response.rpc_urls)
     }
 }

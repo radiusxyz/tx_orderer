@@ -3,7 +3,10 @@ use std::{fs, path::PathBuf};
 use serde::{Deserialize, Serialize};
 
 use super::{ConfigOption, ConfigPath, CONFIG_FILE_NAME, DATABASE_DIR_NAME, SIGNING_KEY};
-use crate::error::Error;
+use crate::{
+    error::Error,
+    types::{Address, SigningKey},
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -14,6 +17,8 @@ pub struct Config {
     cluster_rpc_url: String,
 
     seeder_rpc_url: String,
+
+    signing_key: SigningKey,
 }
 
 impl Config {
@@ -39,12 +44,17 @@ impl Config {
         // Merge configs from CLI input
         let merged_config_option = config_file.merge(config_option);
 
+        // Read signing key
+        let signing_key_path = config_path.join(SIGNING_KEY);
+        let signing_key = SigningKey::from(fs::read_to_string(signing_key_path).unwrap());
+
         Ok(Config {
             path: config_path,
             sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
             internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
             cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
             seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
+            signing_key,
         })
     }
 
@@ -56,10 +66,13 @@ impl Config {
         self.path.join(DATABASE_DIR_NAME)
     }
 
-    pub fn signing_key(&self) -> String {
-        let signing_key_path = self.path.join(SIGNING_KEY);
+    pub fn signing_key(&self) -> &SigningKey {
+        &self.signing_key
+    }
 
-        fs::read_to_string(signing_key_path).unwrap()
+    // TODO:
+    pub fn address(&self) -> Address {
+        Address::from("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
     }
 
     pub fn sequencer_rpc_url(&self) -> &String {

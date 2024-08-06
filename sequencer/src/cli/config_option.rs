@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 
 use super::ConfigPath;
 
-const DEFAULT_SEQUENCER_RPC_URL: &str = "127.0.0.1:3000";
-const DEFAULT_INTERNAL_RPC_URL: &str = "127.0.0.1:3001";
-const DEFAULT_CLUSTER_RPC_URL: &str = "127.0.0.1:3002";
+const DEFAULT_SEQUENCER_RPC_URL: &str = "http://127.0.0.1:3000";
+const DEFAULT_INTERNAL_RPC_URL: &str = "http://127.0.0.1:3001";
+const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:3002";
 
-const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:4000";
+const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:4000";
 const DEFAULT_CLUSTER_TYPE: &str = "local";
 
 const DEFAULT_LIVENESS_PROVIDER_RPC_URL: &str = "http://127.0.0.1:8545";

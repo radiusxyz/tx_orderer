@@ -10,8 +10,12 @@ impl ClusterIdListModel {
         Self { cluster_id_list }
     }
 
-    pub fn push(&mut self, cluster_id: ClusterId) {
-        &self.cluster_id_list.push(cluster_id);
+    pub fn add_cluster_id(&mut self, cluster_id: ClusterId) {
+        let is_exist_cluster_id = self.cluster_id_list.contains(&cluster_id);
+
+        if !is_exist_cluster_id {
+            self.cluster_id_list.push(cluster_id);
+        }
     }
 }
 
@@ -24,7 +28,16 @@ impl ClusterIdListModel {
         service_type: &ServiceType,
     ) -> Result<Self, DbError> {
         let key = (Self::ID, platform, sequencing_function_type, service_type);
-        database()?.get(&key)
+        match database()?.get(&key) {
+            Ok(cluster_id_list_model) => Ok(cluster_id_list_model),
+            Err(error) => {
+                if error.is_none_type() {
+                    Ok(Self::new(ClusterIdList::default()))
+                } else {
+                    Err(error)
+                }
+            }
+        }
     }
 
     pub fn entry(

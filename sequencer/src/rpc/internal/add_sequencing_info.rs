@@ -22,7 +22,7 @@ impl AddSequencingInfo {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<AppState>,
+        context: Arc<AppState>,
     ) -> Result<AddSequencingInfoResponse, RpcError> {
         let parameter = parameter.parse::<AddSequencingInfo>()?;
 
@@ -49,7 +49,9 @@ impl AddSequencingInfo {
             if parameter.sequencing_function_type == SequencingFunctionType::Validation {}
         }
 
-        SequencingInfoModel::add(sequencing_info)?;
+        SequencingInfoModel::add(sequencing_info.clone())?;
+
+        let _ = context.set_sequencing_info(sequencing_info).await;
 
         Ok(AddSequencingInfoResponse { success: true })
     }

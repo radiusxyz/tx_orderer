@@ -73,7 +73,7 @@ impl InitializeCluster {
             &parameter.service_type,
         )?;
 
-        cluster_id_list_model.push(parameter.cluster_id.clone());
+        cluster_id_list_model.add_cluster_id(parameter.cluster_id.clone());
         cluster_id_list_model.update()?;
 
         Ok(InitializeClusterResponse { success: true })

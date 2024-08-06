@@ -23,7 +23,7 @@ pub enum Error {
     CreateConfigFile,
     CreatePrivateKeyFile,
 
-    RegisterSequencer,
+    RegisterRpcUrl,
     GetSequencerRpcUrlList,
 
     GetSequencingInfo,

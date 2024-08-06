@@ -1,13 +1,21 @@
-use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
+use std::collections::HashMap;
+
+use ethers::abi::Hash;
+use radius_sequencer_sdk::{
+    json_rpc::{RpcClient, RpcServer},
+    kvstore::KvStore as Database,
+    liveness::publisher::Publisher,
+};
 use sequencer::{
     cli::{Cli, Commands, Config, ConfigPath},
     client::SeederClient,
     error::Error,
-    models::{ClusterIdListModel, SequencingInfoModel},
+    models::{ClusterIdListModel, RollupIdListModel, RollupModel, SequencingInfoModel},
     rpc::{cluster, external, internal},
     state::AppState,
     task::radius_liveness_event_listener,
-    types::{PlatForm, ServiceType},
+    types::{PlatForm, SequencingFunctionType, ServiceType, SigningKey},
+    util::initialize_liveness_cluster,
 };
 use tokio::task::JoinHandle;
 use tracing::info;
@@ -39,9 +47,10 @@ async fn main() -> Result<(), Error> {
             );
 
             let sequencing_info_model = SequencingInfoModel::get()?;
+            let sequencing_infos = sequencing_info_model.sequencing_infos();
 
             // Add listener for each sequencing info
-            sequencing_info_model.sequencing_infos().iter().for_each(
+            sequencing_infos.iter().for_each(
                 |(sequencing_info_key, sequencing_info)| {
                     info!(
                         "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
@@ -81,8 +90,31 @@ async fn main() -> Result<(), Error> {
                 },
             );
 
+            // Initialize seeder client
+            let seeder_rpc_url = config.seeder_rpc_url();
+            let seeder_client = SeederClient::new(seeder_rpc_url)?;
+            tracing::info!(
+                "Successfully initialized seeder client {:?}.",
+                seeder_rpc_url,
+            );
+
+            // let rollup_id_list_model = RollupIdListModel::get()?;
+            // let rollup_id_list = rollup_id_list_model.rollup_id_list();
+
+            // let mut rollup_cluster_ids: HashMap<RollupId, ClusterId> = HashMap::new();
+
+            // rollup_id_list.iter().for_each(|rollup_id| {
+            //     let rollup_model = RollupModel::get(rollup_id).unwrap();
+            //     rollup_cluster_ids.insert(rollup_id, rollup_model.cluster_id().clone());
+            // });
+
             // Initialize an application-wide state instance
-            let mut app_state = AppState::new(config.clone());
+            let app_state = AppState::new(
+                config.clone(),
+                HashMap::new(), // rollup_cluster_ids,
+                sequencing_infos.clone(),
+                seeder_client,
+            );
 
             // Initialize the internal RPC server
             initialize_internal_rpc_server(&app_state).await?;
@@ -91,7 +123,7 @@ async fn main() -> Result<(), Error> {
             initialize_cluster_rpc_server(&app_state).await?;
 
             // Initialize clusters
-            // initialize_cluster(&mut app_state).await?;
+            initialize_clusters(&app_state).await?;
 
             // Initialize the external RPC server.
             let server_handle = initialize_external_rpc_server(&app_state).await?;
@@ -103,91 +135,66 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-async fn register_sequencer_rpc_url(
-    seeder_client: &SeederClient,
-    sequencer_address: &str,
-    sequencer_rpc_url: &str,
-) -> Result<(), Error> {
-    seeder_client
-        .register_sequencer_rpc_url(
-            sequencer_address.to_string().into(),
-            sequencer_rpc_url.to_string(),
+async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
+    let config = app_state.config();
+    let seeder_client = app_state.seeder_client();
+    let signing_key = config.signing_key();
+
+    let address = config.address();
+
+    // The cluster rpc url is the rpc url of the sequencer
+    let cluster_rpc_url = config.cluster_rpc_url().to_string();
+
+    // Register sequencer rpc url (with cluster rpc url) to seeder
+    tracing::info!("Registering rpc url: {:?} {:?}", address, cluster_rpc_url);
+    let _ = seeder_client
+        .register_rpc_url(address, cluster_rpc_url.to_string())
+        .await?;
+
+    let sequencing_info_model = SequencingInfoModel::get()?;
+    let sequencing_infos = sequencing_info_model.sequencing_infos();
+
+    for (sequencing_info_key, sequencing_info) in sequencing_infos.iter() {
+        info!(
+            "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
+            sequencing_info_key.platform(),
+            sequencing_info_key.sequencing_function_type(),
+            sequencing_info_key.service_type()
+        );
+
+        // Get all cluster ids for each sequencing info
+        let cluster_id_list_model = ClusterIdListModel::get(
+            sequencing_info_key.platform(),
+            sequencing_info_key.sequencing_function_type(),
+            sequencing_info_key.service_type(),
         )
-        .await
+        .unwrap();
+
+        // Initialize each cluster
+        for cluster_id in cluster_id_list_model.cluster_id_list.iter() {
+            info!("initialize_cluster: {:?}", cluster_id);
+
+            match sequencing_info_key.sequencing_function_type() {
+                SequencingFunctionType::Liveness => {
+                    let cluster = initialize_liveness_cluster(
+                        &SigningKey::from(signing_key.clone()),
+                        &seeder_client,
+                        &sequencing_info_key,
+                        &sequencing_info,
+                        &cluster_id,
+                    )
+                    .await?;
+
+                    app_state.set_cluster(cluster).await;
+                }
+                SequencingFunctionType::Validation => {
+                    // TODO:
+                }
+            }
+        }
+    }
+    Ok(())
 }
-
-// async fn initialize_cluster(app_state: &mut AppState) -> Result<(), Error> {
-//     let cluster_id_list = ClusterIdListModel::get()?.rollup_id_list().clone();
-//     tracing::info!("Current rollup ids {:?}.", cluster_id_list);
-
-//     if cluster_id_list.is_empty() {
-//         return Ok(());
-//     }
-
-//     let config = app_state.config();
-//     let signing_key = config.signing_key();
-//     // TODO: change
-//     let sequencer_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-
-//     // Initialize seeder client
-//     let seeder_rpc_url = config.seeder_rpc_url().to_string();
-//     let seeder_client = SeederClient::new(seeder_rpc_url)?;
-
-//     // The cluster rpc url is the rpc url of the sequencer
-//     let cluster_rpc_url = config.cluster_rpc_url().to_string();
-
-//     // Register sequencer rpc url (with cluster rpc url) to seeder
-//     tracing::info!(
-//         "Registering sequencer rpc url: {:?} {:?}",
-//         sequencer_address,
-//         cluster_rpc_url
-//     );
-
-//     // let _ = register_sequencer_rpc_url(&seeder_client, sequencer_address, &cluster_rpc_url).await?;
-
-//     for cluster_id in cluster_id_list.iter() {
-//         let mut rollup_cluster: RollupCluster = RollupCluster::new(cluster_id.clone());
-//         let rollup_id = cluster_id.clone();
-
-//         let rollup = RollupModel::get(&rollup_id.clone())?;
-//         let rollup = rollup.rollup();
-
-//         // Get sequencer rpc urls from seeder
-//         let rollup_sequencer_rpc_urls = seeder_client.get_sequencer_rpc_urls(&rollup_id).await?;
-
-//         let rollup_sequencer_address_list = rollup_sequencer_rpc_urls
-//             .keys()
-//             .cloned()
-//             .collect::<Vec<Address>>();
-
-//         let mut sequencer_rpc_clients = HashMap::new();
-//         for rollup_sequencer_address in rollup_sequencer_address_list.iter() {
-//             let rpc_client =
-//                 RpcClient::new(rollup_sequencer_rpc_urls[rollup_sequencer_address].clone())?;
-//             sequencer_rpc_clients.insert(rollup_sequencer_address.clone(), rpc_client);
-//         }
-
-//         // Leader selection
-//         // let leader_sequencer_index =
-//         // rollup.block_height() % rollup_sequencer_address_list.len() as u64;
-//         let leader_sequencer_index = 0;
-//         let leader_sequencer_address =
-//             rollup_sequencer_address_list[leader_sequencer_index as usize].clone();
-
-//         let _ = rollup_cluster
-//             .set_sequencer_rpc_clients(sequencer_rpc_clients)
-//             .await;
-//         let _ = rollup_cluster
-//             .set_leader_address(leader_sequencer_address)
-//             .await;
-
-//         let _ = app_state
-//             .set_rollup_cluster(&rollup_id, rollup_cluster)
-//             .await;
-//     }
-
-//     Ok(())
-// }
 
 async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Error> {
     let internal_rpc_url = app_state.config().internal_rpc_url().to_string();
@@ -211,8 +218,8 @@ async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Erro
             internal::GetSequencingInfos::handler,
         )?
         .register_rpc_method(
-            internal::RegisterSequencerRpcUrl::METHOD_NAME,
-            internal::RegisterSequencerRpcUrl::handler,
+            internal::RegisterRpcUrl::METHOD_NAME,
+            internal::RegisterRpcUrl::handler,
         )?
         .register_rpc_method(
             internal::AddRollup::METHOD_NAME,

@@ -108,7 +108,7 @@ pub fn initialize_cluster(platform: PlatForm, cluster_id: ClusterId) -> Result<(
         &ServiceType::Radius,
     )?;
 
-    cluster_id_list_model.push(cluster_id.clone());
+    cluster_id_list_model.add_cluster_id(cluster_id.clone());
     cluster_id_list_model.update()?;
 
     let cluster_model = LivenessClusterModel::new(platform, ServiceType::Radius, cluster_id);
@@ -131,14 +131,11 @@ pub fn register_sequencer(
         sequencer_address
     );
 
-    let mut cluster_model =
+    let mut liveness_cluster_model =
         LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
 
-    cluster_model
-        .sequencer_addresses
-        .insert(sequencer_address, true);
-
-    let _ = cluster_model.update()?;
+    liveness_cluster_model.add_seqeuncer(sequencer_address);
+    let _ = liveness_cluster_model.update()?;
 
     Ok(())
 }
@@ -156,12 +153,11 @@ pub fn deregister_sequencer(
         sequencer_address
     );
 
-    let mut cluster_model =
+    let mut liveness_cluster_model =
         LivenessClusterModel::get_mut(&platform, &ServiceType::Radius, &cluster_id)?;
 
-    cluster_model.sequencer_addresses.remove(&sequencer_address);
-
-    let _ = cluster_model.update()?;
+    liveness_cluster_model.remove_sequencer(&sequencer_address);
+    let _ = liveness_cluster_model.update()?;
 
     Ok(())
 }

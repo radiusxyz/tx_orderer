@@ -1,6 +1,7 @@
 use crate::{
     models::{ClusterIdListModel, LivenessClusterModel, ValidationClusterModel},
     rpc::prelude::*,
+    util::initialize_liveness_cluster,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -22,7 +23,7 @@ impl AddCluster {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<AppState>,
+        context: Arc<AppState>,
     ) -> Result<AddClusterResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
@@ -72,8 +73,30 @@ impl AddCluster {
             &parameter.service_type,
         )?;
 
-        cluster_id_list_model.push(parameter.cluster_id.clone());
+        cluster_id_list_model.add_cluster_id(parameter.cluster_id.clone());
         cluster_id_list_model.update()?;
+
+        let signing_key = context.signing_key();
+        let seeder_client = context.seeder_client();
+        let sequencing_info_key = SequencingInfoKey::new(
+            parameter.platform.clone(),
+            parameter.sequencing_function_type.clone(),
+            parameter.service_type.clone(),
+        );
+
+        let sequencing_infos = context.sequencing_infos().await;
+        let sequencing_info = sequencing_infos.get(&sequencing_info_key).unwrap();
+
+        let cluster = initialize_liveness_cluster(
+            signing_key,
+            &seeder_client,
+            &sequencing_info_key,
+            &sequencing_info,
+            &parameter.cluster_id,
+        )
+        .await?;
+
+        let _ = context.set_cluster(cluster).await;
 
         Ok(AddClusterResponse { success: true })
     }

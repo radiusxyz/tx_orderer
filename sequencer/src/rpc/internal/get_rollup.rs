@@ -1,7 +1,4 @@
-use crate::{
-    models::{RollupModel, SequencingInfoKey},
-    rpc::prelude::*,
-};
+use crate::{models::RollupModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRollup {

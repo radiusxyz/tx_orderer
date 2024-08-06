@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use sequencer::{
-    models::LivenessClusterModel,
+    models::{LivenessClusterModel, ValidationClusterModel},
     types::{
         Address, AddressList, ClusterId, IpAddress, PlatForm, SequencingFunctionType, ServiceType,
     },
@@ -35,7 +35,6 @@ impl GetRpcUrls {
 
         info!("get_rpc_urls: {:?}", parameter.cluster_id);
 
-        // TODO:
         let address_list = match parameter.sequencing_function_type {
             SequencingFunctionType::Liveness => {
                 let cluster_model = LivenessClusterModel::get(
@@ -43,23 +42,15 @@ impl GetRpcUrls {
                     &parameter.service_type,
                     &parameter.cluster_id,
                 )?;
-                cluster_model
-                    .sequencer_addresses
-                    .keys()
-                    .cloned()
-                    .collect::<AddressList>()
+                cluster_model.sequencer_address_list
             }
             SequencingFunctionType::Validation => {
-                let cluster_model = LivenessClusterModel::get(
+                let cluster_model = ValidationClusterModel::get(
                     &parameter.platform,
                     &parameter.service_type,
                     &parameter.cluster_id,
                 )?;
-                cluster_model
-                    .sequencer_addresses
-                    .keys()
-                    .cloned()
-                    .collect::<AddressList>()
+                cluster_model.validator_address_list
             }
         };
 

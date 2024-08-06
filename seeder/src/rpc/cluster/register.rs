@@ -37,10 +37,7 @@ impl Register {
                     &parameter.cluster_id,
                 )?;
 
-                liveness_cluster_model
-                    .sequencer_addresses
-                    .insert(parameter.address, true);
-
+                liveness_cluster_model.add_seqeuncer(parameter.address);
                 let _ = liveness_cluster_model.update()?;
             }
 
@@ -51,11 +48,16 @@ impl Register {
                     &parameter.cluster_id,
                 )?;
 
-                validation_cluster_model
-                    .validator_addresses
-                    .insert(parameter.address, true);
+                let is_exist_validator_address = validation_cluster_model
+                    .validator_address_list
+                    .contains(&parameter.address);
 
-                let _ = validation_cluster_model.update()?;
+                if !is_exist_validator_address {
+                    validation_cluster_model
+                        .validator_address_list
+                        .push(parameter.address);
+                    let _ = validation_cluster_model.update()?;
+                }
             }
         }
         Ok(RegisterResponse { success: true })

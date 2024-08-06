@@ -1,4 +1,3 @@
-use super::SequencingInfoKey;
 use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -38,12 +37,12 @@ impl RollupModel {
         }
     }
 
-    pub fn get(rollup_id: &ClusterId) -> Result<Self, DbError> {
+    pub fn get(rollup_id: &RollupId) -> Result<Self, DbError> {
         let key = (Self::ID, rollup_id);
         database()?.get(&key)
     }
 
-    pub fn get_mut(rollup_id: &ClusterId) -> Result<Lock<'static, Self>, DbError> {
+    pub fn get_mut(rollup_id: &RollupId) -> Result<Lock<'static, Self>, DbError> {
         let key = (Self::ID, rollup_id);
         database()?.get_mut(&key)
     }
@@ -107,7 +106,7 @@ impl ClusterMetadataModel {
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct RollupIdListModel {
-    pub rollup_id_list: RollupIdList,
+    rollup_id_list: RollupIdList,
 }
 
 impl RollupIdListModel {
@@ -117,6 +116,18 @@ impl RollupIdListModel {
 
     pub fn push(&mut self, rollup_id: RollupId) {
         &self.rollup_id_list.push(rollup_id);
+    }
+
+    pub fn rollup_id_list(&self) -> &RollupIdList {
+        &self.rollup_id_list
+    }
+
+    pub fn add_rollup_id(&mut self, rollup_id: RollupId) {
+        let is_exist_rollup_id = self.rollup_id_list.contains(&rollup_id);
+
+        if !is_exist_rollup_id {
+            self.rollup_id_list.push(rollup_id);
+        }
     }
 }
 

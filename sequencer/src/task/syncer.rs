@@ -5,7 +5,7 @@ use crate::{
 };
 
 pub fn sync_block(
-    cluster: RollupCluster,
+    cluster: Cluster,
     rollup_id: ClusterId,
     liveness_block_height: BlockHeight,
     rollup_block_height: BlockHeight,
@@ -19,7 +19,7 @@ pub fn sync_block(
             transaction_order,
         };
 
-        for rpc_client in cluster.get_follower_rpc_client_list().await {
+        for ((_, _), rpc_client) in cluster.sequencer_rpc_clients().await {
             let rpc_client = rpc_client.clone();
             let rpc_method = rpc_method.clone();
 
@@ -33,7 +33,7 @@ pub fn sync_block(
 }
 
 pub fn sync_transaction(
-    cluster: RollupCluster,
+    cluster: Cluster,
     rollup_id: ClusterId,
     transaction: TransactionModel,
     order_commitment: OrderCommitment,
@@ -45,7 +45,7 @@ pub fn sync_transaction(
             order_commitment,
         };
 
-        for rpc_client in cluster.get_follower_rpc_client_list().await {
+        for ((_, _), rpc_client) in cluster.sequencer_rpc_clients().await {
             let rpc_client = rpc_client.clone();
             let rpc_method = rpc_method.clone();
 

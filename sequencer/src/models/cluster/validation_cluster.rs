@@ -6,7 +6,7 @@ pub struct ValidationClusterModel {
     pub service_type: ServiceType,
 
     pub cluster_id: ClusterId,
-    pub validator_addresses: Addresses,
+    pub validator_address_list: AddressList,
 }
 
 impl ValidationClusterModel {
@@ -16,8 +16,31 @@ impl ValidationClusterModel {
             service_type,
 
             cluster_id,
-            validator_addresses: Addresses::new(),
+            validator_address_list: AddressList::new(),
         }
+    }
+
+    pub fn set_validator_list(&mut self, validator_addresses: AddressList) {
+        self.validator_address_list = validator_addresses;
+    }
+
+    pub fn add_seqeuncer(&mut self, validator_address: &Address) {
+        let is_exist_validator_address = self.validator_address_list.contains(&validator_address);
+
+        if !is_exist_validator_address {
+            self.validator_address_list.push(validator_address.clone());
+        }
+    }
+
+    pub fn remove_validator(&mut self, validator_address: &Address) {
+        let validator_address_list = self
+            .validator_address_list
+            .iter()
+            .cloned()
+            .filter(|address| address != validator_address)
+            .collect();
+
+        self.set_validator_list(validator_address_list);
     }
 }
 

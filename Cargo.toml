@@ -28,4 +28,4 @@ pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf
 
 # radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev="34ef3b93a2833582123f5e963786d820f24eccf0", features = ["liveness-evm"] }
 
-radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev="c7fcc06891c07dfeb1e8d6a380e6ef810355fd6b", features = ["full", "liveness-evm", "validation-eigenlayer"] }
+radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev="37b31eafb4d007ad9caff98ab2e64a4be556f1f4", features = ["full", "liveness-evm", "validation-eigenlayer"] }

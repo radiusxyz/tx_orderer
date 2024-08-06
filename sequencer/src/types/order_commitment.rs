@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::types::prelude::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct TransactionOrder(u64);
 
 impl TransactionOrder {

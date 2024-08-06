@@ -1,5 +1,5 @@
 use crate::{
-    models::{ClusterIdListModel, RollupIdListModel, RollupModel, SequencingInfoKey},
+    models::{ClusterIdListModel, RollupIdListModel, RollupModel},
     rpc::prelude::*,
 };
 
@@ -44,7 +44,6 @@ impl AddRollup {
             .contains(&parameter.cluster_id);
 
         if !is_added_cluster {
-            // TODO:
             return Ok(AddRollupResponse { success: false });
         }
 
@@ -56,17 +55,15 @@ impl AddRollup {
         )?;
 
         let is_added_rollup = rollup_id_list_model
-            .rollup_id_list
+            .rollup_id_list()
             .contains(&parameter.rollup_id);
 
         if is_added_rollup {
-            // TODO:
             return Ok(AddRollupResponse { success: false });
         }
 
-        rollup_id_list_model
-            .rollup_id_list
-            .push(parameter.rollup_id.clone());
+        rollup_id_list_model.add_rollup_id(parameter.rollup_id.clone());
+
         rollup_id_list_model.update()?;
 
         let rollup = Rollup::new(

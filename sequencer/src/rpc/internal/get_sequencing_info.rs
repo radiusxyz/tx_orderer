@@ -1,7 +1,4 @@
-use crate::{
-    models::{SequencingInfoKey, SequencingInfoModel},
-    rpc::prelude::*,
-};
+use crate::{models::SequencingInfoModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfo {

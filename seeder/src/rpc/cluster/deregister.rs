@@ -37,10 +37,7 @@ impl Deregister {
                     &parameter.cluster_id,
                 )?;
 
-                liveness_cluster_model
-                    .sequencer_addresses
-                    .remove(&parameter.address);
-
+                liveness_cluster_model.remove_sequencer(&parameter.address);
                 let _ = liveness_cluster_model.update()?;
             }
 
@@ -51,10 +48,7 @@ impl Deregister {
                     &parameter.cluster_id,
                 )?;
 
-                validation_cluster_model
-                    .validator_addresses
-                    .remove(&parameter.address);
-
+                validation_cluster_model.remove_validator(&parameter.address);
                 let _ = validation_cluster_model.update()?;
             }
         }

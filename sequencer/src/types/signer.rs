@@ -7,13 +7,35 @@ use crate::types::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SigningKey(String);
 
+impl SigningKey {
+    pub fn new(value: impl AsRef<str>) -> Self {
+        Self(value.as_ref().to_owned())
+    }
+}
+
+impl From<String> for SigningKey {
+    fn from(signing_key: String) -> Self {
+        Self(signing_key)
+    }
+}
+
+impl From<&str> for SigningKey {
+    fn from(signing_key: &str) -> Self {
+        Self(signing_key.to_owned())
+    }
+}
+
+impl From<SigningKey> for String {
+    fn from(signing_key: SigningKey) -> String {
+        signing_key.0
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PublicKey(String);
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Address(String);
-
-pub type Addresses = HashMap<Address, bool>;
 
 impl Default for Address {
     fn default() -> Self {
