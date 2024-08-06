@@ -34,3 +34,9 @@ pub struct Block {
 
     block_commitment: BlockCommitment,
 }
+
+impl Block {
+    pub fn block_height(&self) -> &BlockHeight {
+        &self.block_height
+    }
+}

@@ -1,12 +1,12 @@
+mod block;
 mod cluster;
 mod rollup;
-mod rollup_block;
 mod sequencing;
 mod transaction;
 
+pub use block::*;
 pub use cluster::*;
 pub use rollup::*;
-pub use rollup_block::*;
 pub use sequencing::*;
 pub use transaction::*;
 
