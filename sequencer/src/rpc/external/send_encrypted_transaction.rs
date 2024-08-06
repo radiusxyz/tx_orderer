@@ -1,7 +1,7 @@
 use tracing::info;
 
 use crate::{
-    models::{EncryptedTransactionModel, TransactionModel},
+    models::{EncryptedTransactionModel, RollupMetadataModel, TransactionModel},
     rpc::prelude::*,
     types::*,
 };
@@ -38,11 +38,20 @@ impl SendEncryptedTransaction {
 
         let transaction_model = TransactionModel::Encrypted(encrypted_transaction_model);
 
-        // TODO
+        let (transaction_order, block_height) = {
+            let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+            let transaction_order = rollup_metadata.transaction_order();
+            let rollup_block_heigth = rollup_metadata.rollup_block_height();
+            rollup_metadata.increment_transaction_order();
+            rollup_metadata.update()?;
+
+            (transaction_order, rollup_block_heigth)
+        };
+
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),
-            block_height: 0,
-            transaction_order: TransactionOrder::from(0),
+            block_height,
+            transaction_order,
             previous_order_hash: OrderHash::default(),
         };
 

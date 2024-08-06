@@ -1,4 +1,4 @@
-use crate::{models::ClusterMetadataModel, rpc::prelude::*};
+use crate::{models::RollupMetadataModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncBlock {
@@ -18,8 +18,10 @@ impl SyncBlock {
 
         // let cluster = context.cluster().await?;
 
-        match ClusterMetadataModel::get_mut(&parameter.rollup_id) {
-            Ok(mut cluster_metadata_model) => {
+        match RollupMetadataModel::get_mut(&parameter.rollup_id) {
+            Ok(mut rollup_metadata_model) => {
+                // let previous_rollup_block_number = rollup_metadata_model.rollup_block_height();
+
                 // builder::build_block(
                 //     context.ssal_client(),
                 //     cluster,
