@@ -29,25 +29,25 @@ impl SendEncryptedTransaction {
             parameter.time_lock_puzzle.clone(),
         );
 
-        encrypted_transaction_model.put(&parameter.rollup_id, &0, &TransactionOrder::from(0))?;
-
         // TODO: verify encrypted_transaction
 
         let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
         let cluster = context.get_cluster(&cluster_id).await?;
-
-        let transaction_model = TransactionModel::Encrypted(encrypted_transaction_model);
 
         let block_height = context.block_height(&parameter.rollup_id).await?;
         let transaction_order = context
             .get_current_transaction_order_and_increase_transaction_order(&parameter.rollup_id)
             .await?;
 
+        encrypted_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
+
+        let transaction_model = TransactionModel::Encrypted(encrypted_transaction_model);
+
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),
             block_height,
             transaction_order,
-            previous_order_hash: OrderHash::default(),
+            previous_order_hash: OrderHash::default(), // TODO
         };
 
         // TODO

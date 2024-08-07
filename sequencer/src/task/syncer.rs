@@ -1,3 +1,5 @@
+use tracing::info;
+
 use crate::{
     models::TransactionModel,
     rpc::cluster::{SyncBlock, SyncTransaction},
@@ -42,8 +44,15 @@ pub fn sync_transaction(
             transaction,
             order_commitment,
         };
+        let rpc_clients = cluster.get_other_sequencer_rpc_clients().await;
 
-        for rpc_client in cluster.get_other_sequencer_rpc_clients().await {
+        info!(
+            "sync_transaction - parameter: {:?} / rpc_client_count: {:?}",
+            parameter,
+            rpc_clients.len()
+        );
+
+        for rpc_client in rpc_clients {
             let rpc_client = rpc_client.clone();
             let parameter = parameter.clone();
 
