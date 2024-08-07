@@ -10,7 +10,7 @@ impl TransactionOrder {
         Self(value)
     }
 
-    pub fn increment(&mut self) {
+    pub fn increase(&mut self) {
         self.0 += 1;
     }
 

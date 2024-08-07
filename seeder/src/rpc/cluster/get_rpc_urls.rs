@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use sequencer::{
     models::{LivenessClusterModel, ValidationClusterModel},
-    types::{
-        Address, AddressList, ClusterId, IpAddress, PlatForm, SequencingFunctionType, ServiceType,
-    },
+    types::{Address, ClusterId, IpAddress, PlatForm, SequencingFunctionType, ServiceType},
 };
 use tracing::info;
 

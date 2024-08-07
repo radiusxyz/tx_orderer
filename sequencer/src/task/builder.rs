@@ -8,11 +8,7 @@ use radius_sequencer_sdk::json_rpc::RpcClient;
 use serde::{de::DeserializeOwned, ser::Serialize};
 use ssal::avs::LivenessClient;
 
-use crate::{
-    error::Error,
-    models::{EncryptedTransactionModel, RawTransactionModel},
-    types::*,
-};
+use crate::{error::Error, types::*};
 
 pub fn build_block(
     cluster: Cluster,

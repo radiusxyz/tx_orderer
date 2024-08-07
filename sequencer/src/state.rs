@@ -87,7 +87,7 @@ impl AppState {
 
         if let Some(rollup_metadata) = rollup_metadatas_lock.get_mut(rollup_id) {
             let transaction_order = rollup_metadata.transaction_order();
-            rollup_metadata.increment_transaction_order();
+            rollup_metadata.increase_transaction_order();
             return Ok(transaction_order);
         }
 

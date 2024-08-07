@@ -18,8 +18,8 @@ impl RollupMetadata {
         self.transaction_order.clone()
     }
 
-    pub fn increment_transaction_order(&mut self) {
-        self.transaction_order.increment();
+    pub fn increase_transaction_order(&mut self) {
+        self.transaction_order.increase();
     }
 
     pub fn block_height(&self) -> BlockHeight {
