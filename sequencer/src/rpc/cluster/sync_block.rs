@@ -2,8 +2,8 @@ use crate::{models::RollupMetadataModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncBlock {
-    pub rollup_id: ClusterId,
-    pub liveness_block_height: BlockHeight,
+    pub rollup_id: RollupId,
+    pub cluster_block_height: BlockHeight,
     pub rollup_block_height: BlockHeight,
     pub transaction_order: TransactionOrder,
 }

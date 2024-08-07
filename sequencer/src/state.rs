@@ -79,6 +79,19 @@ impl AppState {
         rollup_cluster_ids_lock.clone()
     }
 
+    pub async fn get_transaction_order(
+        &self,
+        rollup_id: &RollupId,
+    ) -> Result<TransactionOrder, Error> {
+        let rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
+
+        if let Some(rollup_metadata) = rollup_metadatas_lock.get(rollup_id) {
+            return Ok(rollup_metadata.transaction_order());
+        }
+
+        Err(Error::Uninitialized)
+    }
+
     pub async fn get_current_transaction_order_and_increase_transaction_order(
         &self,
         rollup_id: &RollupId,

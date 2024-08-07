@@ -2,7 +2,13 @@ use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BlockModel {
-    pub block: Block,
+    rollup_id: RollupId,
+    block: Block,
+}
+impl BlockModel {
+    pub fn new(rollup_id: RollupId, block: Block) -> Self {
+        Self { rollup_id, block }
+    }
 }
 
 impl BlockModel {
@@ -13,8 +19,8 @@ impl BlockModel {
         database()?.get(&key)
     }
 
-    pub fn put(&self, rollup_id: &RollupId) -> Result<(), DbError> {
-        let key = (Self::ID, rollup_id, self.block.block_height());
+    pub fn put(&self) -> Result<(), DbError> {
+        let key = (Self::ID, &self.rollup_id, self.block.block_height());
         database()?.put(&key, self)
     }
 }

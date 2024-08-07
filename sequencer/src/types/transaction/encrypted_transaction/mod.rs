@@ -84,3 +84,13 @@ impl EncryptedData {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EncryptedTransactionList(Vec<Option<EncryptedTransaction>>);
+
+impl EncryptedTransactionList {
+    pub fn new(value: Vec<Option<EncryptedTransaction>>) -> Self {
+        Self(value)
+    }
+
+    pub fn into_inner(self) -> Vec<Option<EncryptedTransaction>> {
+        self.0
+    }
+}

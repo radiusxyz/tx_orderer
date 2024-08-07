@@ -20,46 +20,41 @@ impl SendEncryptedTransaction {
         parameter: RpcParameter,
         context: Arc<AppState>,
     ) -> Result<OrderCommitment, RpcError> {
-        info!("SendEncryptedTransaction - {:?}", parameter);
-
         let parameter = parameter.parse::<SendEncryptedTransaction>()?;
 
-        let encrypted_transaction_model = EncryptedTransactionModel::new(
-            parameter.encrypted_transaction.clone(),
-            parameter.time_lock_puzzle.clone(),
-        );
+        // TODO: 1. verify encrypted_transaction
 
-        // TODO: verify encrypted_transaction
-
-        let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
-        let cluster = context.get_cluster(&cluster_id).await?;
-
+        // 2. Issue order_commitment
         let block_height = context.block_height(&parameter.rollup_id).await?;
         let transaction_order = context
             .get_current_transaction_order_and_increase_transaction_order(&parameter.rollup_id)
             .await?;
-
-        encrypted_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
-
-        let transaction_model = TransactionModel::Encrypted(encrypted_transaction_model);
-
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),
             block_height,
-            transaction_order,
+            transaction_order: transaction_order.clone(),
             previous_order_hash: OrderHash::default(), // TODO
         };
-
-        // TODO
+        let order_commitment_signature = Signature::default(); // TODO
         let order_commitment = OrderCommitment {
             data: order_commitment_data,
-            signature: Signature::default(),
+            signature: order_commitment_signature,
         };
 
+        // 3. Save encrypted_transaction
+        let encrypted_transaction_model = EncryptedTransactionModel::new(
+            parameter.encrypted_transaction.clone(),
+            parameter.time_lock_puzzle.clone(),
+        );
+        encrypted_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
+
+        // 4. Sync transaction
+        let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
+        let cluster = context.get_cluster(&cluster_id).await?;
         syncer::sync_transaction(
             cluster,
             parameter.rollup_id,
-            transaction_model,
+            TransactionModel::Encrypted(encrypted_transaction_model),
             order_commitment.clone(),
         );
 

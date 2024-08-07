@@ -1,7 +1,11 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, pin::Pin, sync::Arc};
 
+use futures::{
+    future::{select_ok, Fuse},
+    FutureExt,
+};
 use radius_sequencer_sdk::json_rpc::{Error as JsonRpcError, ErrorKind, RpcClient};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use tracing::info;
 
@@ -10,7 +14,6 @@ use crate::{
     rpc::cluster::{SyncBlock, SyncTransaction},
     types::*,
 };
-
 pub struct SequencerClient(Arc<RpcClient>);
 
 unsafe impl Send for SequencerClient {}
@@ -65,18 +68,53 @@ impl SequencerClient {
     }
 
     pub async fn sync_transaction(&self, parameter: SyncTransaction) -> Result<(), Error> {
-        self.0
-            .request::<SyncTransaction, ()>(SyncTransaction::METHOD_NAME, parameter)
+        self.request::<SyncTransaction, ()>(SyncTransaction::METHOD_NAME, parameter)
             .await?;
 
         Ok(())
     }
 
     pub async fn sync_block(&self, parameter: SyncBlock) -> Result<(), Error> {
-        self.0
-            .request::<SyncBlock, ()>(SyncBlock::METHOD_NAME, parameter)
+        self.request::<SyncBlock, ()>(SyncBlock::METHOD_NAME, parameter)
             .await?;
 
         Ok(())
+    }
+
+    pub async fn request<P, R>(&self, method: &'static str, params: P) -> Result<R, Error>
+    where
+        P: Clone + Serialize + Send,
+        R: DeserializeOwned,
+    {
+        let result = self.0.request::<P, R>(method, params).await?;
+
+        Ok(result)
+    }
+
+    async fn fetch<P, R>(
+        sequencer_rpc_client_list: &Vec<Self>,
+        method: &'static str,
+        params: P,
+    ) -> Result<R, Error>
+    where
+        P: Clone + Serialize + Send,
+        R: DeserializeOwned,
+    {
+        let fused_futures: Vec<Pin<Box<Fuse<_>>>> = sequencer_rpc_client_list
+            .iter()
+            .map(|sequencer_rpc_client| {
+                Box::pin(
+                    sequencer_rpc_client
+                        .request::<P, R>(method, params.clone())
+                        .fuse(),
+                )
+            })
+            .collect();
+
+        let (rpc_response, _): (R, Vec<_>) = select_ok(fused_futures)
+            .await
+            .map_err(|_| Error::FetchResponse)?;
+
+        Ok(rpc_response)
     }
 }

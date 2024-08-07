@@ -1,14 +1,14 @@
-use crate::{models::ClusterMetadataModel, rpc::prelude::*};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct BuildBlock {
+pub struct FinalizeBlock {
     pub rollup_id: RollupId,
-    pub liveness_block_height: BlockHeight,
+    pub cluster_block_height: BlockHeight, // TODO
     pub rollup_block_height: BlockHeight,
 }
 
-impl BuildBlock {
-    pub const METHOD_NAME: &'static str = stringify!(BuildBlock);
+impl FinalizeBlock {
+    pub const METHOD_NAME: &'static str = "finalize_block";
 
     pub async fn handler(
         parameter: RpcParameter,
@@ -16,65 +16,32 @@ impl BuildBlock {
     ) -> Result<SequencerStatus, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let cluster = context.get_rollup_cluster(&parameter.rollup_id);
-
-        match cluster {
-            None => Ok(SequencerStatus::Uninitialized), // TODO: check
-            Some(cluster) => {
-                let client = cluster.get_liveness_client().unwrap();
-
-                match ClusterMetadataModel::get_mut(&parameter.rollup_id) {
-                    Ok(cluster_metadata) => {
-                        let finalized_block_height = cluster_metadata.rollup_block_height.clone();
-                        let transaction_count = cluster_metadata.transaction_order.clone();
-
-                        syncer::sync_block(
-                            cluster.clone(),
-                            parameter.rollup_id.clone(),
-                            parameter.liveness_block_height,
-                            parameter.rollup_block_height,
-                            transaction_count.clone(),
-                        );
-
-                        builder::build_block(
-                            client.clone(),
-                            cluster,
-                            parameter.rollup_id,
-                            finalized_block_height,
-                            transaction_count,
-                            true,
-                        );
-
-                        Ok(SequencerStatus::Running)
-                    }
-                    Err(error) => {
-                        if error.kind() == database::ErrorKind::KeyDoesNotExist {
-                            let transaction_count = TransactionOrder::new(0);
-                            let cluster_metadata = ClusterMetadataModel::new(
-                                parameter.rollup_id.clone(),
-                                parameter.liveness_block_height.clone(),
-                                parameter.rollup_block_height.clone(),
-                                transaction_count.clone(),
-                                false, // TODO: check
-                            );
-
-                            cluster_metadata.put()?;
-
-                            syncer::sync_block(
-                                cluster,
-                                parameter.rollup_id,
-                                parameter.liveness_block_height,
-                                parameter.rollup_block_height,
-                                transaction_count,
-                            );
-
-                            Ok(SequencerStatus::Uninitialized)
-                        } else {
-                            Err(error.into())
-                        }
-                    }
-                }
-            }
+        // TODO: verify rollup signature
+        let finalizing_block_height = context.block_height(&parameter.rollup_id).await?;
+        if finalizing_block_height != parameter.rollup_block_height {
+            return Ok(SequencerStatus::Uninitialized); // TODO
         }
+
+        let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
+        let cluster = context.get_cluster(&cluster_id).await?;
+
+        let transaction_order = context.get_transaction_order(&parameter.rollup_id).await?;
+
+        syncer::sync_block(
+            cluster.clone(),
+            parameter.rollup_id.clone(),
+            parameter.cluster_block_height,
+            parameter.rollup_block_height,
+            transaction_order.clone(),
+        );
+
+        builder::finalize_block(
+            parameter.rollup_id,
+            cluster,
+            finalizing_block_height,
+            transaction_order,
+        );
+
+        Ok(SequencerStatus::Running)
     }
 }
