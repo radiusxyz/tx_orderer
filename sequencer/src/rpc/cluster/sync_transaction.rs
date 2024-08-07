@@ -13,31 +13,41 @@ pub struct SyncTransaction {
 impl SyncTransaction {
     pub const METHOD_NAME: &'static str = stringify!(SyncRequest);
 
-    pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
+    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        let mut rollup_metadata_model = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+
+        context
+            .rollup_metadatas()
+            .await
+            .get_mut(&parameter.rollup_id)
+            .unwrap()
+            .increase_transaction_order();
+
+        let mut new_rollup_metadata_model = rollup_metadata_model.rollup_metadata().clone();
+        new_rollup_metadata_model.increase_transaction_order();
+
+        rollup_metadata_model.update_rollup_metadata(new_rollup_metadata_model);
+        rollup_metadata_model.update()?;
 
         // TODO: compare block height and transaction order with order commitment
-        // rollup_metadata.increment_transaction_order();
-        // rollup_metadata.update()?;
-
-        // match parameter.transaction {
-        //     TransactionModel::Encrypted(encrypted_transaction_model) => {
-        //         encrypted_transaction_model.put(
-        //             &parameter.rollup_id,
-        //             &parameter.order_commitment.data.block_height,
-        //             &parameter.order_commitment.data.transaction_order,
-        //         )?;
-        //     }
-        //     TransactionModel::Raw(raw_transaction_model) => {
-        //         raw_transaction_model.put(
-        //             &parameter.rollup_id,
-        //             &parameter.order_commitment.data.block_height,
-        //             &parameter.order_commitment.data.transaction_order,
-        //         )?;
-        //     }
-        // }
+        match parameter.transaction {
+            TransactionModel::Encrypted(encrypted_transaction_model) => {
+                encrypted_transaction_model.put(
+                    &parameter.rollup_id,
+                    &parameter.order_commitment.data.block_height,
+                    &parameter.order_commitment.data.transaction_order,
+                )?;
+            }
+            TransactionModel::Raw(raw_transaction_model) => {
+                raw_transaction_model.put(
+                    &parameter.rollup_id,
+                    &parameter.order_commitment.data.block_height,
+                    &parameter.order_commitment.data.transaction_order,
+                )?;
+            }
+        }
 
         Ok(())
     }

@@ -73,6 +73,16 @@ impl AppState {
         rollup_metadatas_lock.clone()
     }
 
+    pub async fn update_rollup_metadata(
+        &self,
+        rollup_id: RollupId,
+        rollup_metadata: RollupMetadata,
+    ) {
+        let mut rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
+
+        rollup_metadatas_lock.insert(rollup_id, rollup_metadata);
+    }
+
     pub async fn rollup_cluster_ids(&self) -> HashMap<RollupId, ClusterId> {
         let rollup_cluster_ids_lock = self.inner.rollup_cluster_ids.lock().await;
 
