@@ -8,6 +8,16 @@ pub struct RawTransactionModel {
 }
 
 impl RawTransactionModel {
+    pub fn new(raw_transaction: RawTransaction) -> Self {
+        Self { raw_transaction }
+    }
+
+    pub fn raw_transaction(&self) -> &RawTransaction {
+        &self.raw_transaction
+    }
+}
+
+impl RawTransactionModel {
     pub const ID: &'static str = stringify!(RawTransactionModel);
 
     pub fn get(

@@ -8,6 +8,7 @@ name = "sequencer"
 path = "src/bin/sequencer.rs"
 
 [dependencies]
+chrono = { workspace = true }
 futures = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }

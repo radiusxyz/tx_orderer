@@ -8,6 +8,7 @@ resolver = "2"
 
 [workspace.dependencies]
 async-trait = "0.1.73"
+chrono = "0.4.38"
 futures = "0.3.30"
 rand = "0.8.5"
 reqwest = { version = "0.12.4", features = ["json"] }

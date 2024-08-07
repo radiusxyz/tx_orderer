@@ -8,7 +8,7 @@ doctest = false
 
 [dependencies]
 alloy = { version = "0.1.1", features = ["full", "signer-keystore", "signer-local"], optional = true }
-chrono = "0.4.38"
+chrono = { workspace = true }
 futures = { workspace = true }
 radius-sequencer-sdk = { workspace = true }
 pin-project = "1.1.5"

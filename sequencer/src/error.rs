@@ -14,6 +14,7 @@ pub enum Error {
     FetchResponse,
     ClusterDown,
     InvalidSequencerPort,
+    InvalidBlockHeight,
 
     LoadConfigOption,
     ParseTomlString,

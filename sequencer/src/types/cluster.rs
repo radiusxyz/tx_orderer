@@ -45,6 +45,10 @@ impl Cluster {
         }
     }
 
+    pub fn node_address(&self) -> &Address {
+        &self.inner.node_address
+    }
+
     pub async fn add_sequencer_rpc_client(
         &self,
         sequencer_index: SequencerIndex,

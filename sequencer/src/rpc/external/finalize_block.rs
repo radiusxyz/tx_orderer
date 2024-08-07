@@ -19,7 +19,7 @@ impl FinalizeBlock {
         // TODO: verify rollup signature
         let finalizing_block_height = context.block_height(&parameter.rollup_id).await?;
         if finalizing_block_height != parameter.rollup_block_height {
-            return Ok(SequencerStatus::Uninitialized); // TODO
+            return Err(Error::InvalidBlockHeight.into());
         }
 
         let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
