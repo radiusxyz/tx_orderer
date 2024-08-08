@@ -1,14 +1,14 @@
 use tracing::info;
 
 use crate::{
-    models::{EncryptedTransactionModel, TransactionModel},
+    models::{EncryptedTransactionModel, RollupMetadataModel, TransactionModel},
     rpc::prelude::*,
     types::*,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
-    rollup_id: ClusterId,
+    rollup_id: RollupId,
     encrypted_transaction: EncryptedTransaction,
     time_lock_puzzle: TimeLockPuzzle,
 }
@@ -25,15 +25,33 @@ impl SendEncryptedTransaction {
         // TODO: 1. verify encrypted_transaction
 
         // 2. Issue order_commitment
+        // Todo: Change Mutex
         let block_height = context.block_height(&parameter.rollup_id).await?;
         let transaction_order = context
             .get_current_transaction_order_and_increase_transaction_order(&parameter.rollup_id)
             .await?;
+
+        let previous_order_hash = context.get_order_hash(&parameter.rollup_id).await?;
+        let raw_transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
+        let issued_order_hash = previous_order_hash.issue_order_hash(&raw_transaction_hash);
+
+        context
+            .update_order_hash(&parameter.rollup_id, issued_order_hash.clone())
+            .await?;
+
+        let mut rollup_metadata_model = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        let mut new_rollup_metadata_model = rollup_metadata_model.rollup_metadata().clone();
+        new_rollup_metadata_model.update_order_hash(issued_order_hash.clone());
+        new_rollup_metadata_model.increase_transaction_order();
+
+        rollup_metadata_model.update_rollup_metadata(new_rollup_metadata_model);
+        rollup_metadata_model.update()?;
+
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),
             block_height,
             transaction_order: transaction_order.clone(),
-            previous_order_hash: OrderHash::default(), // TODO
+            previous_order_hash: issued_order_hash,
         };
         let order_commitment_signature = Signature::default(); // TODO
         let order_commitment = OrderCommitment {

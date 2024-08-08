@@ -76,7 +76,7 @@ impl AddRollup {
         rollup_model.put()?;
 
         // TODO: get rollup_block_height from the rollup
-        let rollup_metadata = RollupMetadata::new(0, TransactionOrder::from(0));
+        let rollup_metadata = RollupMetadata::new(0, TransactionOrder::from(0), OrderHash::new());
 
         let rollup_metadata_model = RollupMetadataModel::new(rollup_id, rollup_metadata);
         rollup_metadata_model.put()?;

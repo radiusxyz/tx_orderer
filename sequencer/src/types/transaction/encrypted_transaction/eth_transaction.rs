@@ -46,7 +46,7 @@ impl EthEncryptedTransaction {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EthOpenData {
-    pub raw_tx_hash: RawTxHash,
+    pub raw_tx_hash: RawTransactionHash,
     pub from: eth_types::Address,
     pub nonce: eth_types::U256,
     pub gas_price: Option<eth_types::U256>,
@@ -68,7 +68,10 @@ pub struct EthOpenData {
 impl From<eth_types::Transaction> for EthOpenData {
     fn from(transaction: eth_types::Transaction) -> Self {
         Self {
-            raw_tx_hash: RawTxHash::new(format!("0x{}", hex::encode(transaction.hash.as_bytes()))),
+            raw_tx_hash: RawTransactionHash::new(format!(
+                "0x{}",
+                hex::encode(transaction.hash.as_bytes())
+            )),
             from: transaction.from,
             nonce: transaction.nonce.into(),
             gas_price: transaction.gas_price,
@@ -92,7 +95,7 @@ impl From<eth_types::Transaction> for EthOpenData {
 }
 
 impl EthOpenData {
-    pub fn to_raw_transaction(&self, payload: &EthEncryptData) -> eth_types::Transaction {
+    pub fn to_raw_transaction(&self, eth_encrypt_data: &EthEncryptData) -> eth_types::Transaction {
         eth_types::Transaction {
             hash: eth_types::H256::from_slice(
                 hex::decode(self.raw_tx_hash.clone().into_inner())
@@ -106,9 +109,9 @@ impl EthOpenData {
             from: self.from.clone(),
             gas_price: self.gas_price.clone(),
             gas: self.gas_limit.clone(),
-            to: payload.to.clone(),
-            value: payload.value.clone(),
-            input: payload.input.clone(),
+            to: eth_encrypt_data.to.clone(),
+            value: eth_encrypt_data.value.clone(),
+            input: eth_encrypt_data.input.clone(),
             v: self.signature.v.clone().into(),
             r: self.signature.r.clone(),
             s: self.signature.s.clone(),
@@ -119,6 +122,10 @@ impl EthOpenData {
             chain_id: self.chain_id.clone(),
             other: self.other.clone(),
         }
+    }
+
+    pub fn raw_tx_hash(&self) -> &RawTransactionHash {
+        &self.raw_tx_hash
     }
 }
 

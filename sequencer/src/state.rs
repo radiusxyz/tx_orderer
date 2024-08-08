@@ -7,7 +7,7 @@ use crate::{
     client::SeederClient,
     error::Error,
     types::{
-        BlockHeight, Cluster, ClusterId, RollupId, RollupMetadata, SequencingInfo,
+        BlockHeight, Cluster, ClusterId, OrderHash, RollupId, RollupMetadata, SequencingInfo,
         SequencingInfoKey, SigningKey, TransactionOrder,
     },
 };
@@ -95,11 +95,32 @@ impl AppState {
     ) -> Result<TransactionOrder, Error> {
         let rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
 
-        if let Some(rollup_metadata) = rollup_metadatas_lock.get(rollup_id) {
-            return Ok(rollup_metadata.transaction_order());
-        }
+        rollup_metadatas_lock
+            .get(rollup_id)
+            .map(|metadata| metadata.transaction_order())
+            .ok_or(Error::GetRollupMetadata)
+    }
 
-        Err(Error::Uninitialized)
+    pub async fn get_order_hash(&self, rollup_id: &RollupId) -> Result<OrderHash, Error> {
+        let rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
+
+        rollup_metadatas_lock
+            .get(rollup_id)
+            .map(|metadata| metadata.order_hash().clone())
+            .ok_or(Error::GetRollupMetadata)
+    }
+
+    pub async fn update_order_hash(
+        &self,
+        rollup_id: &RollupId,
+        order_hash: OrderHash,
+    ) -> Result<(), Error> {
+        let mut rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
+
+        rollup_metadatas_lock
+            .get_mut(rollup_id)
+            .map(|metadata| metadata.update_order_hash(order_hash))
+            .ok_or(Error::GetRollupMetadata)
     }
 
     pub async fn get_current_transaction_order_and_increase_transaction_order(

@@ -5,7 +5,7 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncTransaction {
-    pub rollup_id: ClusterId,
+    pub rollup_id: RollupId,
     pub transaction: TransactionModel,
     pub order_commitment: OrderCommitment,
 }
@@ -18,14 +18,17 @@ impl SyncTransaction {
 
         let mut rollup_metadata_model = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
 
-        context
-            .rollup_metadatas()
-            .await
-            .get_mut(&parameter.rollup_id)
-            .unwrap()
-            .increase_transaction_order();
+        let mut rollup_metadatas = context.rollup_metadatas().await;
+
+        let rollup_metadata = rollup_metadatas.get_mut(&parameter.rollup_id).unwrap();
+
+        let new_order_hash = parameter.order_commitment.data.previous_order_hash;
+
+        rollup_metadata.update_order_hash(new_order_hash.clone());
+        rollup_metadata.increase_transaction_order();
 
         let mut new_rollup_metadata_model = rollup_metadata_model.rollup_metadata().clone();
+        new_rollup_metadata_model.update_order_hash(new_order_hash);
         new_rollup_metadata_model.increase_transaction_order();
 
         rollup_metadata_model.update_rollup_metadata(new_rollup_metadata_model);

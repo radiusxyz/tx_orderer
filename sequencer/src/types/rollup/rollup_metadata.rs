@@ -4,13 +4,19 @@ use crate::models::prelude::*;
 pub struct RollupMetadata {
     block_height: BlockHeight,
     transaction_order: TransactionOrder,
+    order_hash: OrderHash,
 }
 
 impl RollupMetadata {
-    pub fn new(block_height: BlockHeight, transaction_order: TransactionOrder) -> Self {
+    pub fn new(
+        block_height: BlockHeight,
+        transaction_order: TransactionOrder,
+        order_hash: OrderHash,
+    ) -> Self {
         Self {
             block_height,
             transaction_order,
+            order_hash,
         }
     }
 
@@ -24,5 +30,13 @@ impl RollupMetadata {
 
     pub fn block_height(&self) -> BlockHeight {
         self.block_height
+    }
+
+    pub fn order_hash(&self) -> &OrderHash {
+        &self.order_hash
+    }
+
+    pub fn update_order_hash(&mut self, order_hash: OrderHash) {
+        self.order_hash = order_hash;
     }
 }

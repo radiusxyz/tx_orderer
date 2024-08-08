@@ -1,5 +1,8 @@
 use std::fmt;
 
+use sha3::{Digest, Sha3_256};
+use ssal::avs::types::hex;
+
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
@@ -50,6 +53,23 @@ impl fmt::Display for TransactionOrder {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderHash(String);
 
+impl OrderHash {
+    pub fn new() -> Self {
+        OrderHash("0000000000000000000000000000000000000000000000000000000000000000".to_string())
+    }
+
+    pub fn issue_order_hash(&self, raw_tx_hash: &RawTransactionHash) -> OrderHash {
+        let mut hasher = Sha3_256::new();
+
+        // TODO(jaemin): check hasher params
+        hasher.update(self.0.as_bytes());
+        hasher.update(raw_tx_hash.clone().into_inner().as_bytes());
+
+        let order_hash_bytes = hasher.finalize();
+        OrderHash(hex::encode(order_hash_bytes))
+    }
+}
+
 impl Default for OrderHash {
     fn default() -> Self {
         Self("".to_string())
@@ -61,7 +81,7 @@ pub struct OrderHashList(Vec<OrderHash>);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitmentData {
-    pub rollup_id: ClusterId,
+    pub rollup_id: RollupId,
     pub block_height: BlockHeight,
     pub transaction_order: TransactionOrder,
     pub previous_order_hash: OrderHash,

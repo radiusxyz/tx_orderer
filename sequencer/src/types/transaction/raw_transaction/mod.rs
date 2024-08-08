@@ -7,9 +7,9 @@ pub use eth_bundle_transaction::EthRawBundleTransaction;
 pub use eth_transaction::EthRawTransaction;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-pub struct RawTxHash(String);
+pub struct RawTransactionHash(String);
 
-impl RawTxHash {
+impl RawTransactionHash {
     pub fn new(value: impl AsRef<str>) -> Self {
         Self(value.as_ref().to_owned())
     }
@@ -34,6 +34,15 @@ impl From<EthRawTransaction> for RawTransaction {
 impl From<EthRawBundleTransaction> for RawTransaction {
     fn from(raw_transaction: EthRawBundleTransaction) -> Self {
         RawTransaction::EthBundle(raw_transaction)
+    }
+}
+
+impl RawTransaction {
+    pub fn raw_transaction_hash(&self) -> RawTransactionHash {
+        match self {
+            RawTransaction::Eth(eth) => eth.raw_transaction_hash(),
+            RawTransaction::EthBundle(eth_bundle) => eth_bundle.raw_transaction_hash(),
+        }
     }
 }
 

@@ -1,3 +1,5 @@
+use ethers::types as eth_types;
+
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -28,5 +30,20 @@ impl EthEncryptedBundleTransaction {
 // TODO: stompesi
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EthBundleOpenData {
-    pub raw_tx_hash: String,
+    pub raw_tx_hash: RawTransactionHash,
+}
+
+impl EthBundleOpenData {
+    pub fn raw_tx_hash(&self) -> &RawTransactionHash {
+        &self.raw_tx_hash
+    }
+}
+
+// TODO(jaemin): change to actual type
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct EthBundleEncryptData {
+    pub to: Option<eth_types::Address>,
+    pub value: eth_types::U256,
+    #[serde(rename = "data")]
+    pub input: eth_types::Bytes,
 }

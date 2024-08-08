@@ -1,3 +1,5 @@
+use ethers::types as eth_types;
+
 use crate::types::prelude::*;
 
 mod eth_bundle_transaction;
@@ -24,6 +26,34 @@ impl From<EthBundleOpenData> for OpenData {
     }
 }
 
+impl OpenData {
+    pub fn to_raw_transaction(&self, encrypted_data: &EncryptData) -> Transaction {
+        match (self, encrypted_data) {
+            (OpenData::Eth(open_data), EncryptData::Eth(encrypt_data)) => {
+                Transaction::Eth(open_data.to_raw_transaction(encrypt_data))
+            }
+            // tODO(jaemin): impl EthBundle
+            (OpenData::EthBundle(_open_data), EncryptData::EthBundle(_encrypt_data)) => {
+                Transaction::EthBundle
+            }
+            _ => panic!("Invalid combination of OpenData and EncryptData"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum EncryptData {
+    Eth(EthEncryptData),
+    EthBundle(EthBundleEncryptData),
+}
+
+// TODO(jaemin): Add Ethbundle
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum Transaction {
+    Eth(eth_types::Transaction),
+    EthBundle,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum EncryptedTransaction {
     Eth(EthEncryptedTransaction),
@@ -44,7 +74,6 @@ impl EncryptedTransaction {
             EncryptedTransaction::EthBundle(eth_bundle) => {
                 OpenData::from(eth_bundle.open_data().clone())
             }
-            _ => unreachable!(),
         }
     }
 
@@ -59,6 +88,13 @@ impl EncryptedTransaction {
         match self {
             EncryptedTransaction::Eth(eth) => eth.update_pvde_zkp(pvde_zkp),
             EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.update_pvde_zkp(pvde_zkp),
+        }
+    }
+
+    pub fn raw_transaction_hash(&self) -> &RawTransactionHash {
+        match self {
+            EncryptedTransaction::Eth(eth) => eth.open_data().raw_tx_hash(),
+            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.open_data().raw_tx_hash(),
         }
     }
 }

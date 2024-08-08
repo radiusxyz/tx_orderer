@@ -42,7 +42,7 @@ pub fn sync_block(
 
 pub fn sync_transaction(
     cluster: Cluster,
-    rollup_id: ClusterId,
+    rollup_id: RollupId,
     transaction: TransactionModel,
     order_commitment: OrderCommitment,
 ) {
