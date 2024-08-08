@@ -53,6 +53,10 @@ pub struct ConfigOption {
     #[doc = "Set the liveness contract address"]
     #[clap(long = "liveness-contract-address")]
     pub liveness_contract_address: Option<String>,
+
+    #[doc = "Set using zkp"]
+    #[clap(long = "is-using-zkp")]
+    pub is_using_zkp: Option<bool>,
 }
 
 impl Default for ConfigOption {
@@ -70,6 +74,8 @@ impl Default for ConfigOption {
             liveness_provider_rpc_url: Some(DEFAULT_LIVENESS_PROVIDER_RPC_URL.into()),
             liveness_provider_websocket_url: Some(DEFAULT_LIVENESS_PROVIDER_WEBSOCKET_URL.into()),
             liveness_contract_address: Some(DEFAULT_LIVENESS_CONTRACT_ADDRESS.into()),
+
+            is_using_zkp: Some(false),
         }
     }
 }
@@ -118,6 +124,9 @@ impl ConfigOption {
             &self.liveness_contract_address,
         );
 
+        set_toml_comment(&mut toml_string, "Set using zkp");
+        set_toml_name_value(&mut toml_string, "is_using_zkp", &self.is_using_zkp);
+
         toml_string
     }
 
@@ -156,6 +165,10 @@ impl ConfigOption {
 
         if other.liveness_contract_address.is_some() {
             self.liveness_contract_address = other.liveness_contract_address.clone();
+        }
+
+        if other.is_using_zkp.is_some() {
+            self.is_using_zkp = other.is_using_zkp.clone();
         }
 
         self

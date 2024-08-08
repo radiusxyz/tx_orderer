@@ -31,6 +31,8 @@ pub enum Error {
     GetRollupMetadata,
 
     LivenessPublisher(radius_sequencer_sdk::liveness::publisher::PublisherError),
+
+    PvdeZkpInvalid,
 }
 
 unsafe impl Send for Error {}

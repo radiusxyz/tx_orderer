@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use radius_sequencer_sdk::context::SharedContext;
 use tokio::sync::Mutex;
 
 use crate::{
@@ -7,8 +8,8 @@ use crate::{
     client::SeederClient,
     error::Error,
     types::{
-        BlockHeight, Cluster, ClusterId, OrderHash, RollupId, RollupMetadata, SequencingInfo,
-        SequencingInfoKey, SigningKey, TransactionOrder,
+        BlockHeight, Cluster, ClusterId, OrderHash, PvdeParams, RollupId, RollupMetadata,
+        SequencingInfo, SequencingInfoKey, SigningKey, TransactionOrder,
     },
 };
 
@@ -27,6 +28,8 @@ struct AppStateInner {
     clusters: Mutex<HashMap<ClusterId, Cluster>>,
 
     seeder_client: SeederClient,
+
+    pvde_params: SharedContext<Option<PvdeParams>>,
 }
 
 unsafe impl Send for AppState {}
@@ -48,6 +51,7 @@ impl AppState {
         rollup_cluster_ids: HashMap<RollupId, ClusterId>,
         sequencing_infos: HashMap<SequencingInfoKey, SequencingInfo>,
         seeder_client: SeederClient,
+        pvde_params: SharedContext<Option<PvdeParams>>,
     ) -> Self {
         let inner = AppStateInner {
             config,
@@ -56,6 +60,7 @@ impl AppState {
             sequencing_infos: Mutex::new(sequencing_infos),
             seeder_client,
             clusters: HashMap::new().into(),
+            pvde_params: pvde_params,
         };
 
         Self {
@@ -190,6 +195,10 @@ impl AppState {
             .get(cluster_id)
             .cloned()
             .ok_or(Error::Uninitialized)
+    }
+
+    pub fn pvde_params(&self) -> SharedContext<Option<PvdeParams>> {
+        self.inner.pvde_params.clone()
     }
 
     pub async fn set_cluster(&self, cluster: Cluster) {
