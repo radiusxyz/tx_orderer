@@ -29,19 +29,25 @@ pub fn finalize_block(
         let mut raw_transaction_list: Vec<RawTransaction> =
             Vec::with_capacity(transaction_order.value() as usize);
 
-        EncryptedTransactionModel::get(&rollup_id, &rollup_block_height, &transaction_order)
+        // TODO: change
+        for i in 0..=transaction_order.value() + 1 {
+            EncryptedTransactionModel::get(
+                &rollup_id,
+                &rollup_block_height,
+                &TransactionOrder::new(i),
+            )
             .map(|encrypted_transaction| {
                 encrypted_transaction_list
                     .push(Some(encrypted_transaction.encrypted_transaction().clone()));
             })
             .unwrap_or_else(|_| encrypted_transaction_list.push(None));
 
-        RawTransactionModel::get(&rollup_id, &rollup_block_height, &transaction_order)
-            .map(|raw_transaction| {
-                raw_transaction_list.push(raw_transaction.raw_transaction().clone());
-            })
-            .unwrap();
-
+            RawTransactionModel::get(&rollup_id, &rollup_block_height, &TransactionOrder::new(i))
+                .map(|raw_transaction| {
+                    raw_transaction_list.push(raw_transaction.raw_transaction().clone());
+                })
+                .unwrap();
+        }
         // TODO: 2. make block commitment
         // get block_commitment option from config or cluster
         // change calculate logic
@@ -71,9 +77,22 @@ pub fn finalize_block(
 
         // TODO: 6. sign block (set signature)
 
-        let block_model = BlockModel::new(rollup_id, block);
+        let block_model = BlockModel::new(rollup_id.clone(), block);
 
-        let _ = block_model.put();
+        let _ = block_model.put().unwrap();
+
+        let block = BlockModel::get(&rollup_id, &rollup_block_height).unwrap();
+
+        println!("jaemin - block: {:?}", block);
+
+        let encrypted_transaction =
+            EncryptedTransactionModel::get(&rollup_id, &rollup_block_height, &transaction_order)
+                .unwrap();
+
+        println!(
+            "jaemin - encrypted_transaction: {:?}",
+            encrypted_transaction
+        );
 
         // let followers = cluster.followers();
 
@@ -103,5 +122,6 @@ pub fn finalize_block(
         // RollupBlock::from(block)
         //     .put(rollup_id, rollup_block_height)
         //     .unwrap();
+        block_model.put().unwrap();
     });
 }

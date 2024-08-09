@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use radius_sequencer_sdk::context::SharedContext;
+use radius_sequencer_sdk::{context::SharedContext, liveness::publisher::Publisher};
 use tokio::sync::Mutex;
 
 use crate::{
@@ -12,6 +12,16 @@ use crate::{
         SequencingInfo, SequencingInfoKey, SigningKey, TransactionOrder,
     },
 };
+
+// Todo: split this mod into (internal, cluster, external)
+pub struct InternalAppState {
+    config: Config,
+
+    sequencing_info: SequencingInfo,
+    seeder_client: SeederClient,
+    cluster_ids: ClusterId,
+    publisher: Mutex<Option<Publisher>>,
+}
 
 pub struct AppState {
     inner: Arc<AppStateInner>,
@@ -140,7 +150,7 @@ impl AppState {
             return Ok(transaction_order);
         }
 
-        Err(Error::Uninitialized)
+        Err(Error::NotFoundRollupMetadata)
     }
 
     pub async fn block_height(&self, rollup_id: &RollupId) -> Result<BlockHeight, Error> {
@@ -150,7 +160,7 @@ impl AppState {
             return Ok(rollup_metadata.block_height());
         }
 
-        Err(Error::Uninitialized)
+        Err(Error::NotFoundRollupMetadata)
     }
 
     pub async fn sequencing_infos(&self) -> HashMap<SequencingInfoKey, SequencingInfo> {
@@ -179,7 +189,7 @@ impl AppState {
         rollup_cluster_ids_lock
             .get(rollup_id)
             .cloned()
-            .ok_or(Error::Uninitialized)
+            .ok_or(Error::NotFoundClusterId)
     }
 
     pub async fn set_cluster_id(&self, rollup_id: RollupId, cluster_id: ClusterId) {
@@ -194,7 +204,7 @@ impl AppState {
         clusters_lock
             .get(cluster_id)
             .cloned()
-            .ok_or(Error::Uninitialized)
+            .ok_or(Error::NotFoundCluster)
     }
 
     pub fn pvde_params(&self) -> SharedContext<Option<PvdeParams>> {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, path::PathBuf, sync::Arc, thread::sleep};
+use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
 use pvde::{
     encryption::poseidon_encryption_zkp::{
@@ -72,6 +72,7 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
+            // get or init sequencing info model
             let sequencing_info_model = SequencingInfoModel::get()?;
             let sequencing_infos = sequencing_info_model.sequencing_infos();
 
@@ -83,6 +84,7 @@ async fn main() -> Result<(), Error> {
                 seeder_rpc_url,
             );
 
+            // get or init rollup id list model
             let rollup_id_list_model = RollupIdListModel::get()?;
             let rollup_id_list = rollup_id_list_model.rollup_id_list();
 
@@ -247,6 +249,7 @@ async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Erro
 
     // Initialize the internal RPC server.
     let internal_rpc_server = RpcServer::new(app_state.clone())
+        // Todo: implement
         .register_rpc_method(
             internal::Deregister::METHOD_NAME,
             internal::Deregister::handler,
@@ -347,6 +350,10 @@ async fn initialize_external_rpc_server(app_state: &AppState) -> Result<JoinHand
         .register_rpc_method(
             external::DecryptTransaction::METHOD_NAME,
             external::DecryptTransaction::handler,
+        )?
+        .register_rpc_method(
+            external::FinalizeBlock::METHOD_NAME,
+            external::FinalizeBlock::handler,
         )?
         .init(sequencer_rpc_url.clone())
         .await?;

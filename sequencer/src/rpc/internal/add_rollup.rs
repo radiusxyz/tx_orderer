@@ -1,5 +1,7 @@
 use crate::{
-    models::{ClusterIdListModel, RollupIdListModel, RollupMetadataModel, RollupModel},
+    models::{
+        ClusterIdListModel, ClusterModel, RollupIdListModel, RollupMetadataModel, RollupModel,
+    },
     rpc::prelude::*,
 };
 
@@ -29,7 +31,7 @@ impl AddRollup {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<AppState>,
+        context: Arc<AppState>,
     ) -> Result<AddRollupResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
@@ -72,13 +74,20 @@ impl AddRollup {
             parameter.service_type,
         );
 
-        let rollup_model = RollupModel::new(rollup, sequencing_info_key, parameter.cluster_id);
+        let rollup_model =
+            RollupModel::new(rollup, sequencing_info_key, parameter.cluster_id.clone());
         rollup_model.put()?;
 
         // TODO: get rollup_block_height from the rollup
         let rollup_metadata = RollupMetadata::new(0, TransactionOrder::from(0), OrderHash::new());
+        context
+            .update_rollup_metadata(rollup_id.clone(), rollup_metadata.clone())
+            .await;
+        context
+            .set_cluster_id(rollup_id.clone(), parameter.cluster_id.clone())
+            .await;
 
-        let rollup_metadata_model = RollupMetadataModel::new(rollup_id, rollup_metadata);
+        let rollup_metadata_model = RollupMetadataModel::new(rollup_id.clone(), rollup_metadata);
         rollup_metadata_model.put()?;
 
         Ok(AddRollupResponse { success: true })

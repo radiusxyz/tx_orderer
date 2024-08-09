@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ConfigPath;
 
-const DEFAULT_SEEDER_RPC_URL: &str = "127.0.0.1:4000";
+const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:4000";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 pub struct ConfigOption {

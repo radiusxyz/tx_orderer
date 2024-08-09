@@ -7,7 +7,7 @@ pub struct GetBlock {
 }
 
 impl GetBlock {
-    pub const METHOD_NAME: &'static str = stringify!(GetBlock);
+    pub const METHOD_NAME: &'static str = "get_block";
 
     pub async fn handler(
         parameter: RpcParameter,
