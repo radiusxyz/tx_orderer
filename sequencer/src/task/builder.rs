@@ -30,11 +30,11 @@ pub fn finalize_block(
             Vec::with_capacity(transaction_order.value() as usize);
 
         // TODO: change
-        for i in 0..=transaction_order.value() + 1 {
+        for order_index in 0..transaction_order.value() {
             EncryptedTransactionModel::get(
                 &rollup_id,
                 &rollup_block_height,
-                &TransactionOrder::new(i),
+                &TransactionOrder::new(order_index),
             )
             .map(|encrypted_transaction| {
                 encrypted_transaction_list
@@ -45,7 +45,7 @@ pub fn finalize_block(
             match RawTransactionModel::get(
                 &rollup_id,
                 &rollup_block_height,
-                &TransactionOrder::new(i),
+                &TransactionOrder::new(order_index),
             ) {
                 Ok(raw_transaction) => {
                     raw_transaction_list.push(raw_transaction.raw_transaction().clone());
@@ -86,15 +86,6 @@ pub fn finalize_block(
         let block_model = BlockModel::new(rollup_id.clone(), block);
 
         block_model.put().unwrap();
-
-        let encrypted_transaction =
-            EncryptedTransactionModel::get(&rollup_id, &rollup_block_height, &transaction_order)
-                .unwrap();
-
-        println!(
-            "jaemin - encrypted_transaction: {:?}",
-            encrypted_transaction
-        );
 
         // let followers = cluster.followers();
 
