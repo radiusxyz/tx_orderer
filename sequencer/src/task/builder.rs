@@ -85,11 +85,7 @@ pub fn finalize_block(
 
         let block_model = BlockModel::new(rollup_id.clone(), block);
 
-        let _ = block_model.put().unwrap();
-
-        let block = BlockModel::get(&rollup_id, &rollup_block_height).unwrap();
-
-        println!("jaemin - block: {:?}", block);
+        block_model.put().unwrap();
 
         let encrypted_transaction =
             EncryptedTransactionModel::get(&rollup_id, &rollup_block_height, &transaction_order)
@@ -128,6 +124,5 @@ pub fn finalize_block(
         // RollupBlock::from(block)
         //     .put(rollup_id, rollup_block_height)
         //     .unwrap();
-        block_model.put().unwrap();
     });
 }

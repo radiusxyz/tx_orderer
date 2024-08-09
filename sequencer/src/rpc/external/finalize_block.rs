@@ -43,11 +43,22 @@ impl FinalizeBlock {
         );
 
         builder::finalize_block(
-            parameter.rollup_id,
+            parameter.rollup_id.clone(),
             cluster,
             finalizing_block_height,
             transaction_order,
         );
+
+        context
+            .update_rollup_metadata(
+                parameter.rollup_id,
+                RollupMetadata::new(
+                    parameter.rollup_block_height,
+                    TransactionOrder::new(0),
+                    OrderHash::new(),
+                ),
+            )
+            .await;
 
         Ok(SequencerStatus::Running)
     }

@@ -91,10 +91,10 @@ type AvsContract = Avs::AvsInstance<
 >;
 
 pub struct LivenessClient {
-    inner: Arc<SsalClientInner>,
+    inner: Arc<LivenessClientInner>,
 }
 
-struct SsalClientInner {
+struct LivenessClientInner {
     provider: EthereumProvider,
     signer: LocalSigner<SigningKey>,
     ssal_contract: SsalContract,
@@ -171,7 +171,7 @@ impl LivenessClient {
             .map_err(|error| (ErrorKind::ParseAvsContractAddress, error))?;
         let avs_contract = Avs::AvsInstance::new(avs_contract_address, provider.clone());
 
-        let inner = SsalClientInner {
+        let inner = LivenessClientInner {
             provider,
             signer,
             ssal_contract,
