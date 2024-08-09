@@ -42,11 +42,17 @@ pub fn finalize_block(
             })
             .unwrap_or_else(|_| encrypted_transaction_list.push(None));
 
-            RawTransactionModel::get(&rollup_id, &rollup_block_height, &TransactionOrder::new(i))
-                .map(|raw_transaction| {
+            match RawTransactionModel::get(
+                &rollup_id,
+                &rollup_block_height,
+                &TransactionOrder::new(i),
+            ) {
+                Ok(raw_transaction) => {
                     raw_transaction_list.push(raw_transaction.raw_transaction().clone());
-                })
-                .unwrap();
+                }
+                // TODO: change
+                Err(_) => {}
+            }
         }
         // TODO: 2. make block commitment
         // get block_commitment option from config or cluster
