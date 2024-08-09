@@ -53,7 +53,7 @@ impl FinalizeBlock {
             .update_rollup_metadata(
                 parameter.rollup_id,
                 RollupMetadata::new(
-                    parameter.rollup_block_height,
+                    parameter.rollup_block_height + 1,
                     TransactionOrder::new(0),
                     OrderHash::new(),
                 ),
