@@ -11,6 +11,23 @@ impl SigningKey {
     pub fn new(value: impl AsRef<str>) -> Self {
         Self(value.as_ref().to_owned())
     }
+
+    // TODO: change
+    pub fn get_address(&self) -> Address {
+        if self.0 == "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" {
+            return Address::new("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+        } else if self.0 == "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff81" {
+            return Address::new("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92267");
+        } else if self.0 == "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff82" {
+            return Address::new("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92268");
+        } else if self.0 == "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff83" {
+            return Address::new("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92269");
+        } else if self.0 == "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff84" {
+            return Address::new("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92270");
+        }
+
+        Address::new("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92271")
+    }
 }
 
 impl From<String> for SigningKey {

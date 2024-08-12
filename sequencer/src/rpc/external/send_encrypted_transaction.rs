@@ -98,9 +98,16 @@ impl SendEncryptedTransaction {
         let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
         let cluster = context.get_cluster(&cluster_id).await?;
         syncer::sync_transaction(
+            cluster.clone(),
+            parameter.rollup_id.clone(),
+            TransactionModel::Encrypted(encrypted_transaction_model),
+            order_commitment.clone(),
+        );
+
+        syncer::sync_transaction(
             cluster,
             parameter.rollup_id,
-            TransactionModel::Encrypted(encrypted_transaction_model),
+            TransactionModel::Raw(raw_transaction_model),
             order_commitment.clone(),
         );
 

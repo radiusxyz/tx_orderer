@@ -21,6 +21,7 @@ pub fn sync_block(
             transaction_order,
         };
 
+        // Todo: change unwrap
         let sequencer_rpc_clients = cluster.get_other_sequencer_rpc_clients().await;
 
         info!(
@@ -55,8 +56,7 @@ pub fn sync_transaction(
         let rpc_clients = cluster.get_other_sequencer_rpc_clients().await;
 
         info!(
-            "sync_transaction - parameter: {:?} / rpc_client_count: {:?}",
-            parameter,
+            "sync_transaction - rpc_client_count: {:?}",
             rpc_clients.len()
         );
 

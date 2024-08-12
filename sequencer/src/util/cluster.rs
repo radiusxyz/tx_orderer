@@ -98,7 +98,7 @@ pub async fn initialize_liveness_cluster(
     };
     // Initialize sequencer_rpc_clients
     // TODO: Implement RpcClient
-    let node_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+    let node_address = signing_key.get_address();
     let mut cluster = Cluster::new(cluster_id.clone(), Address::from(node_address));
 
     let mut sequencer_indexes = HashMap::new();

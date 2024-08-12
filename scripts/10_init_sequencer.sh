@@ -24,6 +24,11 @@ for (( node_index=0; node_index<NODE_COUNT; node_index++ )) do
     sed -i.temp "s/internal_rpc_url = \"http:\/\/127.0.0.1:4000\"/internal_rpc_url = \"http:\/\/127.0.0.1:400$node_index\"/g" $config_file_path
     sed -i.temp "s/cluster_rpc_url = \"http:\/\/127.0.0.1:5000\"/cluster_rpc_url = \"http:\/\/127.0.0.1:500$node_index\"/g" $config_file_path
 
+    # TODO: remove
+    private_key_path=$data_path/signing_key
+    sed -i.temp "s/0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80/0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff8$node_index/g" $private_key_path
+
     rm $config_file_path.temp
+    rm $private_key_path.temp
 done  
 

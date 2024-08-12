@@ -37,6 +37,10 @@ impl SyncTransaction {
         // TODO: compare block height and transaction order with order commitment
         match parameter.transaction {
             TransactionModel::Encrypted(encrypted_transaction_model) => {
+                println!(
+                    "sync_transaction - encrypted_transaction_model: {:?}",
+                    encrypted_transaction_model
+                );
                 encrypted_transaction_model.put(
                     &parameter.rollup_id,
                     &parameter.order_commitment.data.block_height,
@@ -44,6 +48,10 @@ impl SyncTransaction {
                 )?;
             }
             TransactionModel::Raw(raw_transaction_model) => {
+                println!(
+                    "sync_transaction - raw_transaction_model: {:?}",
+                    raw_transaction_model
+                );
                 raw_transaction_model.put(
                     &parameter.rollup_id,
                     &parameter.order_commitment.data.block_height,
