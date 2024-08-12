@@ -230,6 +230,7 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
                         &sequencing_info_key,
                         &sequencing_info,
                         &cluster_id,
+                        &cluster_rpc_url,
                     )
                     .await?;
 

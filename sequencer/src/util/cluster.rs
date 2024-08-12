@@ -16,6 +16,7 @@ pub async fn initialize_liveness_cluster(
     sequencing_info_key: &SequencingInfoKey,
     sequencing_info: &SequencingInfo,
     cluster_id: &ClusterId,
+    rpc_url: &str,
 ) -> Result<Cluster, Error> {
     info!(
         "Start initializing the liveness cluster - cluster_id: {:?}",
@@ -98,15 +99,34 @@ pub async fn initialize_liveness_cluster(
     };
     // Initialize sequencer_rpc_clients
     // TODO: Implement RpcClient
-    let node_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-    let mut cluster = Cluster::new(cluster_id.clone(), Address::from(node_address));
+    // Todo: change node_address
+    let mut node_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_string();
+
+    let node_rpc_index = rpc_url.chars().last().unwrap().to_digit(10).unwrap();
+
+    println!("jaemin - node_rpc_index: {:?}", node_rpc_index);
+
     let mut sequencer_rpc_clients = HashMap::new();
     for (index, sequencer_address) in sequencer_list.iter().enumerate() {
-        let rpc_url = sequencer_rpc_urls.get(&sequencer_address).unwrap();
-        let rpc_client = SequencerClient::new(rpc_url.clone()).unwrap();
+        let rpc_url = sequencer_rpc_urls
+            .get(&sequencer_address)
+            .ok_or(Error::NotfoundRpcUrl)?;
+        let rpc_index = rpc_url.chars().last().unwrap().to_digit(10).unwrap();
+        println!("jaemin - rpc_index: {:?}", rpc_index);
+
+        if node_rpc_index == rpc_index {
+            node_address = sequencer_address.clone().to_string();
+            println!(
+                "jaemin - node address: {:?}, rpc_url: {:?}",
+                node_address, rpc_url
+            );
+        }
+        let rpc_client = SequencerClient::new(rpc_url.clone())?;
 
         sequencer_rpc_clients.insert((index, sequencer_address.clone()), rpc_client);
     }
+
+    let mut cluster = Cluster::new(cluster_id.clone(), Address::from(node_address));
 
     // Update liveness_cluster_model
     liveness_cluster_model.set_sequencer_list(sequencer_list);

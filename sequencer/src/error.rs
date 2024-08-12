@@ -34,9 +34,12 @@ pub enum Error {
 
     PvdeZkpInvalid,
 
+    NotfoundRpcUrl,
     NotFoundRollupMetadata,
     NotFoundCluster,
     NotFoundClusterId,
+
+    OtherSequencerRpcClientsCountNotCorrect,
 }
 
 unsafe impl Send for Error {}

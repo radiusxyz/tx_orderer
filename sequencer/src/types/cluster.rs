@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
 use super::prelude::*;
-use crate::client::SequencerClient;
+use crate::{client::SequencerClient, error::Error};
 
 pub type SequencerIndex = usize;
 pub type ClusterId = String;
@@ -80,19 +80,33 @@ impl Cluster {
         &self.inner.cluster_id
     }
 
-    pub async fn get_other_sequencer_rpc_clients(&self) -> Vec<SequencerClient> {
+    pub async fn get_other_sequencer_rpc_clients(&self) -> Result<Vec<SequencerClient>, Error> {
         let sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
-        sequencer_rpc_clients_lock
+        let rpc_clients_len = sequencer_rpc_clients_lock.len();
+
+        let other_rpc_clients = sequencer_rpc_clients_lock
             .iter()
             .filter_map(|((_, address), rpc_client)| {
-                if address != &self.inner.node_address {
+                if address != self.node_address() {
                     Some(rpc_client.clone())
                 } else {
                     None
                 }
             })
-            .collect::<Vec<SequencerClient>>()
+            .collect::<Vec<SequencerClient>>();
+
+        if rpc_clients_len != other_rpc_clients.len() + 1 {
+            tracing::error!(
+                "Other sequencer rpc clients count is not correct - rpc_clients_len: {:?} / other_rpc_clients_len: {:?}",
+                rpc_clients_len,
+                other_rpc_clients.len(),
+            );
+
+            return Err(Error::OtherSequencerRpcClientsCountNotCorrect);
+        }
+
+        Ok(other_rpc_clients)
     }
 
     pub async fn is_leader(&self, rollup_block_height: BlockHeight) -> bool {

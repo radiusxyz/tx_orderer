@@ -85,7 +85,10 @@ impl AddCluster {
         );
 
         let sequencing_infos = context.sequencing_infos().await;
+        println!("jaemin - success to get seuqencing_infos");
         let sequencing_info = sequencing_infos.get(&sequencing_info_key).unwrap();
+
+        println!("jaemin - sequencing_info: {:?}", sequencing_info);
 
         let cluster = initialize_liveness_cluster(
             signing_key,
@@ -93,6 +96,7 @@ impl AddCluster {
             &sequencing_info_key,
             &sequencing_info,
             &parameter.cluster_id,
+            &context.config().cluster_rpc_url(),
         )
         .await?;
 

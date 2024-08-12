@@ -22,7 +22,7 @@ do
     "id": 1
   }'
   echo "add_sequencing_info done"
-  sleep 1
+  sleep 0.5
 
   echo "add_cluster"
   curl --location ${INTERNAL_RPC_URLS[$i]} \
@@ -40,7 +40,7 @@ do
     "id": 1
   }'
   echo "add_cluster done"
-  sleep 1
+  sleep 0.5
 
   echo "add_rollup"
   curl --location ${INTERNAL_RPC_URLS[$i]} \

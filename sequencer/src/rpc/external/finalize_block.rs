@@ -25,15 +25,6 @@ impl FinalizeBlock {
         let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
         let cluster = context.get_cluster(&cluster_id).await?;
 
-        // TODO: change Tx order index
-        // let transaction_order = TransactionOrder::new(
-        //     context
-        //         .get_transaction_order(&parameter.rollup_id)
-        //         .await?
-        //         .value()
-        //         - 1,
-        // );
-
         let transaction_order = context.get_transaction_order(&parameter.rollup_id).await?;
 
         println!("jaemin: transaction_order: {:?}", transaction_order);

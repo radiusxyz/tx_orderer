@@ -21,7 +21,8 @@ pub fn sync_block(
             transaction_order,
         };
 
-        let sequencer_rpc_clients = cluster.get_other_sequencer_rpc_clients().await;
+        // Todo: change unwrap
+        let sequencer_rpc_clients = cluster.get_other_sequencer_rpc_clients().await.unwrap();
 
         info!(
             "sync_block - parameter: {:?} / rpc_client_count: {:?}",
@@ -52,13 +53,18 @@ pub fn sync_transaction(
             transaction,
             order_commitment,
         };
-        let rpc_clients = cluster.get_other_sequencer_rpc_clients().await;
+        let rpc_clients = cluster.get_other_sequencer_rpc_clients().await.unwrap();
 
-        info!(
-            "sync_transaction - parameter: {:?} / rpc_client_count: {:?}",
-            parameter,
+        println!(
+            "jaemin - sync transaction - rpc_clients_len: {:?}",
             rpc_clients.len()
         );
+
+        // info!(
+        //     "sync_transaction - parameter: {:?} / rpc_client_count: {:?}",
+        //     parameter,
+        //     rpc_clients.len()
+        // );
 
         for sequencer_rpc_client in rpc_clients {
             let sequencer_rpc_client = sequencer_rpc_client.clone();

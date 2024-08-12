@@ -37,6 +37,10 @@ pub fn finalize_block(
                 &TransactionOrder::new(order_index),
             )
             .map(|encrypted_transaction| {
+                tracing::info!(
+                    "jaemin - Push encrypted transaction, order_index: {:?}",
+                    order_index
+                );
                 encrypted_transaction_list
                     .push(Some(encrypted_transaction.encrypted_transaction().clone()));
             })
@@ -54,6 +58,11 @@ pub fn finalize_block(
                 Err(_) => {}
             }
         }
+
+        tracing::info!(
+            "jaemin - block_height: {:?}, finish pushing",
+            rollup_block_height
+        );
         // TODO: 2. make block commitment
         // get block_commitment option from config or cluster
         // change calculate logic
