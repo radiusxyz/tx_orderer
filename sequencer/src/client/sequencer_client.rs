@@ -11,7 +11,7 @@ use tracing::info;
 
 use crate::{
     error::Error,
-    rpc::cluster::{SyncBlock, SyncTransaction},
+    rpc::cluster::{SyncBlock, SyncPartialKey, SyncTransaction},
     types::*,
 };
 pub struct SequencerClient(Arc<RpcClient>);
@@ -116,5 +116,14 @@ impl SequencerClient {
             .map_err(|_| Error::FetchResponse)?;
 
         Ok(rpc_response)
+    }
+}
+
+impl SequencerClient {
+    pub async fn sync_partial_key(&self, parameter: SyncPartialKey) -> Result<(), Error> {
+        self.request::<SyncPartialKey, ()>(SyncPartialKey::METHOD_NAME, parameter)
+            .await?;
+
+        Ok(())
     }
 }

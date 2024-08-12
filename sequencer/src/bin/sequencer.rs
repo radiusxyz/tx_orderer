@@ -36,7 +36,7 @@ use sequencer::{
     },
     rpc::{cluster, external, internal},
     state::AppState,
-    task::radius_liveness_event_listener,
+    task::{radius_liveness_event_listener, single_key_generator::init_single_key_generator},
     types::{
         ClusterId, PlatForm, PvdeParams, RollupId, RollupMetadata, SequencingFunctionType,
         ServiceType, SigningKey, SyncInfo,
@@ -172,6 +172,16 @@ async fn main() -> Result<(), Error> {
 
             // Initialize clusters
             initialize_clusters(&app_state).await?;
+
+            for rollup_id in rollup_id_list.iter() {
+                let rollup_model = RollupModel::get(rollup_id).unwrap();
+                let cluster_id = rollup_model.cluster_id().clone();
+
+                let cluster = app_state.get_cluster(&cluster_id).await.unwrap();
+
+                // TODO: only skde
+                init_single_key_generator(rollup_id.clone(), cluster);
+            }
 
             // Initialize the external RPC server.
             let server_handle = initialize_external_rpc_server(&app_state).await?;
@@ -317,6 +327,10 @@ async fn initialize_cluster_rpc_server(app_state: &AppState) -> Result<(), Error
         .register_rpc_method(
             cluster::SyncTransaction::METHOD_NAME,
             cluster::SyncTransaction::handler,
+        )?
+        .register_rpc_method(
+            cluster::SyncPartialKey::METHOD_NAME,
+            cluster::SyncPartialKey::handler,
         )?
         .init(cluster_rpc_url.clone())
         .await?;

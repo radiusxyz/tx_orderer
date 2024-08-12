@@ -1,5 +1,6 @@
 pub mod builder;
 pub mod radius_liveness_event_listener;
+pub mod single_key_generator;
 pub mod syncer;
 
 /// Using unwrap() inside the task block is caught by tracing::error!().

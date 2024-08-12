@@ -25,3 +25,4 @@ radius-sequencer-sdk = { workspace = true }
 ethers = "2.0"
 pvde = { workspace = true }
 sha3 = "0.10.4"
+skde = { workspace = true }
