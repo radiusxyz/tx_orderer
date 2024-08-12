@@ -1,17 +1,29 @@
 #!/bin/bash
 if [ "$#" -ne 1 ]; then
-    echo "Usage: ./10_init_sequencer.sh <sequencer_id>"
+    echo "Usage: ./10_init_sequencer.sh <NODE_COUNT>"
     exit 1
 fi
 
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source $SCRIPT_PATH/env.sh
 
-SEQUENCER_ID=$1
+NODE_COUNT=$1
 
-DATA_PATH=$CURRENT_PATH/sequencers/sequencer_$SEQUENCER_ID
+rm -rf $CURRENT_PATH/sequencers
+mkdir -p $CURRENT_PATH/sequencers
 
-rm -rf $DATA_PATH
-mkdir -p $DATA_PATH 
+for (( node_index=0; node_index<NODE_COUNT; node_index++ )) do
+    echo "Initialize sequencer $node_index" 
+    data_path=$CURRENT_PATH/sequencers/sequencer_$node_index
+    
+    $SEQUENCER_BIN_PATH init --path $data_path
 
-$SEQUENCER_BIN_PATH init --path $DATA_PATH
+    config_file_path=$data_path/config.toml
+    
+    sed -i.temp "s/sequencer_rpc_url = \"http:\/\/127.0.0.1:3000\"/sequencer_rpc_url = \"http:\/\/127.0.0.1:300$node_index\"/g" $config_file_path
+    sed -i.temp "s/internal_rpc_url = \"http:\/\/127.0.0.1:4000\"/internal_rpc_url = \"http:\/\/127.0.0.1:400$node_index\"/g" $config_file_path
+    sed -i.temp "s/cluster_rpc_url = \"http:\/\/127.0.0.1:5000\"/cluster_rpc_url = \"http:\/\/127.0.0.1:500$node_index\"/g" $config_file_path
+
+    rm $config_file_path.temp
+done  
+
