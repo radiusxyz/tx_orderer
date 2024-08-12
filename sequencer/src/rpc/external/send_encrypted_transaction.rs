@@ -100,14 +100,8 @@ impl SendEncryptedTransaction {
         syncer::sync_transaction(
             cluster.clone(),
             parameter.rollup_id.clone(),
-            TransactionModel::Encrypted(encrypted_transaction_model),
-            order_commitment.clone(),
-        );
-
-        syncer::sync_transaction(
-            cluster,
-            parameter.rollup_id,
-            TransactionModel::Raw(raw_transaction_model),
+            Some(encrypted_transaction_model),
+            raw_transaction_model,
             order_commitment.clone(),
         );
 

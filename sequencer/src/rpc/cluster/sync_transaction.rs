@@ -1,12 +1,15 @@
 use crate::{
-    models::{RollupMetadataModel, TransactionModel},
+    models::{
+        EncryptedTransactionModel, RawTransactionModel, RollupMetadataModel, TransactionModel,
+    },
     rpc::prelude::*,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncTransaction {
     pub rollup_id: RollupId,
-    pub transaction: TransactionModel,
+    pub encrypted_transaction: Option<EncryptedTransactionModel>,
+    pub raw_transaction: RawTransactionModel,
     pub order_commitment: OrderCommitment,
 }
 
@@ -34,31 +37,19 @@ impl SyncTransaction {
         rollup_metadata_model.update_rollup_metadata(new_rollup_metadata_model);
         rollup_metadata_model.update()?;
 
-        // TODO: compare block height and transaction order with order commitment
-        match parameter.transaction {
-            TransactionModel::Encrypted(encrypted_transaction_model) => {
-                println!(
-                    "sync_transaction - encrypted_transaction_model: {:?}",
-                    encrypted_transaction_model
-                );
-                encrypted_transaction_model.put(
-                    &parameter.rollup_id,
-                    &parameter.order_commitment.data.block_height,
-                    &parameter.order_commitment.data.transaction_order,
-                )?;
-            }
-            TransactionModel::Raw(raw_transaction_model) => {
-                println!(
-                    "sync_transaction - raw_transaction_model: {:?}",
-                    raw_transaction_model
-                );
-                raw_transaction_model.put(
-                    &parameter.rollup_id,
-                    &parameter.order_commitment.data.block_height,
-                    &parameter.order_commitment.data.transaction_order,
-                )?;
-            }
+        if let Some(encrypted_transaction) = parameter.encrypted_transaction {
+            encrypted_transaction.put(
+                &parameter.rollup_id,
+                &parameter.order_commitment.data.block_height,
+                &parameter.order_commitment.data.transaction_order,
+            )?;
         }
+
+        parameter.raw_transaction.put(
+            &parameter.rollup_id,
+            &parameter.order_commitment.data.block_height,
+            &parameter.order_commitment.data.transaction_order,
+        )?;
 
         Ok(())
     }
