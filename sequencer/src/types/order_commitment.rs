@@ -24,6 +24,10 @@ impl TransactionOrder {
     pub fn is_zero(&self) -> bool {
         self.0 == 0
     }
+
+    pub fn into_inner(self) -> u64 {
+        self.0
+    }
 }
 
 impl From<u64> for TransactionOrder {
@@ -50,7 +54,7 @@ impl fmt::Display for TransactionOrder {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct OrderHash(String);
 
 impl OrderHash {

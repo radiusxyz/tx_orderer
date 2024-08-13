@@ -18,21 +18,6 @@ impl SyncBlock {
 
         match RollupMetadataModel::get_mut(&parameter.rollup_id) {
             Ok(mut rollup_metadata_model) => {
-                let previous_rollup_block_number =
-                    rollup_metadata_model.rollup_metadata().block_height();
-
-                let previous_rollup_transaction_order =
-                    rollup_metadata_model.rollup_metadata().transaction_order();
-
-                println!(
-                    "stompesi - previous_rollup_block_number: {:?}",
-                    previous_rollup_block_number
-                );
-                println!(
-                    "stompesi - previous_rollup_transaction_order: {:?}",
-                    previous_rollup_transaction_order
-                );
-
                 let rollup_metadata = RollupMetadata::new(
                     parameter.rollup_block_height + 1,
                     0.into(),
@@ -49,8 +34,8 @@ impl SyncBlock {
                 builder::finalize_block(
                     parameter.rollup_id,
                     cluster,
-                    previous_rollup_block_number,
-                    previous_rollup_transaction_order,
+                    parameter.rollup_block_height,
+                    parameter.transaction_order,
                 );
             }
             Err(error) => {

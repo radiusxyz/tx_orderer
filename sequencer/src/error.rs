@@ -39,6 +39,8 @@ pub enum Error {
     NotFoundCluster,
     NotFoundClusterId,
 
+    InvalidTransactionOrder,
+
     OtherSequencerRpcClientsCountNotCorrect,
 }
 

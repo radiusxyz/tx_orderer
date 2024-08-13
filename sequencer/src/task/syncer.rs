@@ -1,7 +1,7 @@
 use tracing::info;
 
 use crate::{
-    models::{EncryptedTransactionModel, RawTransactionModel},
+    models::{EncryptedTransactionModel, RawTransactionModel, TransactionModel},
     rpc::cluster::{SyncBlock, SyncTransaction},
     types::*,
 };
@@ -44,15 +44,13 @@ pub fn sync_block(
 pub fn sync_transaction(
     cluster: Cluster,
     rollup_id: RollupId,
-    encrypted_transaction: Option<EncryptedTransactionModel>,
-    raw_transaction: RawTransactionModel,
+    transaction: TransactionModel,
     order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {
         let parameter = SyncTransaction {
             rollup_id,
-            encrypted_transaction,
-            raw_transaction,
+            transaction,
             order_commitment,
         };
         let rpc_clients = cluster.get_other_sequencer_rpc_clients().await;

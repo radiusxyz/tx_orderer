@@ -43,21 +43,16 @@ impl SendEncryptedTransaction {
         // TODO: 1. verify encrypted_transaction
 
         // 2. Issue order_commitment
-        // Todo: Change Mutex
         let block_height = context.block_height(&parameter.rollup_id).await?;
-        let transaction_order = context
-            .get_current_transaction_order_and_increase_transaction_order(&parameter.rollup_id)
-            .await?;
 
-        let previous_order_hash = context.get_order_hash(&parameter.rollup_id).await?;
         let raw_transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
-        let issued_order_hash = previous_order_hash.issue_order_hash(&raw_transaction_hash);
-
-        context
-            .update_order_hash(&parameter.rollup_id, issued_order_hash.clone())
-            .await?;
 
         let mut rollup_metadata_model = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        let transaction_order = rollup_metadata_model.rollup_metadata().transaction_order();
+
+        let previous_order_hash = rollup_metadata_model.rollup_metadata().order_hash();
+        let issued_order_hash = previous_order_hash.issue_order_hash(&raw_transaction_hash);
+
         let mut new_rollup_metadata_model = rollup_metadata_model.rollup_metadata().clone();
         new_rollup_metadata_model.update_order_hash(issued_order_hash.clone());
         new_rollup_metadata_model.increase_transaction_order();
@@ -69,8 +64,9 @@ impl SendEncryptedTransaction {
             rollup_id: parameter.rollup_id.clone(),
             block_height,
             transaction_order: transaction_order.clone(),
-            previous_order_hash: issued_order_hash,
+            previous_order_hash: issued_order_hash.clone(),
         };
+        println!("issued_order_hash: {:?}", issued_order_hash);
         let order_commitment_signature = Signature::default(); // TODO
         let order_commitment = OrderCommitment {
             data: order_commitment_data,
@@ -97,11 +93,18 @@ impl SendEncryptedTransaction {
         // 4. Sync transaction
         let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
         let cluster = context.get_cluster(&cluster_id).await?;
+
         syncer::sync_transaction(
             cluster.clone(),
             parameter.rollup_id.clone(),
-            Some(encrypted_transaction_model),
-            raw_transaction_model,
+            TransactionModel::Encrypted(encrypted_transaction_model),
+            order_commitment.clone(),
+        );
+
+        syncer::sync_transaction(
+            cluster.clone(),
+            parameter.rollup_id.clone(),
+            TransactionModel::Raw(raw_transaction_model),
             order_commitment.clone(),
         );
 
