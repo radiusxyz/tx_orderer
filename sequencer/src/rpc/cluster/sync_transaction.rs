@@ -1,7 +1,5 @@
 use crate::{
-    models::{
-        EncryptedTransactionModel, RawTransactionModel, RollupMetadataModel, TransactionModel,
-    },
+    models::{RollupMetadataModel, TransactionModel},
     rpc::prelude::*,
 };
 
@@ -22,8 +20,7 @@ impl SyncTransaction {
 
         let rollup_metadata = rollup_metadata_model.rollup_metadata();
         let block_height = rollup_metadata.block_height();
-        // let mut transaction_order = rollup_metadata.transaction_order();
-        let transaction_order = parameter.order_commitment.data.transaction_order.clone();
+        let transaction_order = parameter.order_commitment.data.transaction_order;
 
         let new_order_hash = parameter.order_commitment.data.previous_order_hash;
 
@@ -34,14 +31,7 @@ impl SyncTransaction {
 
             rollup_metadata_model.update_rollup_metadata(new_rollup_metadata_model.clone());
             rollup_metadata_model.update()?;
-            println!(
-                "jaemin - update rollup metadata: transaction order: {:?},",
-                new_rollup_metadata_model.transaction_order()
-            );
         }
-        // else {
-        //     transaction_order = TransactionOrder::from(transaction_order.into_inner() - 1)
-        // }
 
         match parameter.transaction {
             TransactionModel::Raw(raw_transaction_model) => {

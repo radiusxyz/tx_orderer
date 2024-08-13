@@ -66,7 +66,7 @@ impl SendEncryptedTransaction {
             transaction_order: transaction_order.clone(),
             previous_order_hash: issued_order_hash.clone(),
         };
-        println!("issued_order_hash: {:?}", issued_order_hash);
+
         let order_commitment_signature = Signature::default(); // TODO
         let order_commitment = OrderCommitment {
             data: order_commitment_data,

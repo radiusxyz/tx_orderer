@@ -18,10 +18,6 @@ impl FinalizeBlock {
 
         // TODO: verify rollup signature
         let finalizing_block_height = context.block_height(&parameter.rollup_id).await?;
-        println!(
-            "jaemin: finalizing_block_height: {:?}, parameter.rollup_block_height: {:?}",
-            finalizing_block_height, parameter.rollup_block_height
-        );
         if finalizing_block_height != parameter.rollup_block_height {
             return Err(Error::InvalidBlockHeight.into());
         }
@@ -32,9 +28,6 @@ impl FinalizeBlock {
         let transaction_order = RollupMetadataModel::get(&parameter.rollup_id)?
             .rollup_metadata()
             .transaction_order();
-        // context.get_transaction_order(&parameter.rollup_id).await?;
-
-        println!("jaemin: transaction_order: {:?}", transaction_order);
 
         syncer::sync_block(
             cluster.clone(),

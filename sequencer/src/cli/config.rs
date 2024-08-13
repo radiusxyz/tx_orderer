@@ -73,9 +73,8 @@ impl Config {
         &self.signing_key
     }
 
-    // TODO:
     pub fn address(&self) -> Address {
-        Address::from("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+        self.signing_key().get_address()
     }
 
     pub fn sequencer_rpc_url(&self) -> &String {

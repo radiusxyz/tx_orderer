@@ -55,11 +55,6 @@ pub fn sync_transaction(
         };
         let rpc_clients = cluster.get_other_sequencer_rpc_clients().await;
 
-        info!(
-            "sync_transaction - rpc_client_count: {:?}",
-            rpc_clients.len()
-        );
-
         for sequencer_rpc_client in rpc_clients {
             let sequencer_rpc_client = sequencer_rpc_client.clone();
             let parameter = parameter.clone();

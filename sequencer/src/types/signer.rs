@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use radius_sequencer_sdk::liveness::types::Address as AlloyAddress;
 
 use crate::types::prelude::*;
@@ -85,7 +83,7 @@ impl From<&str> for Address {
 // TODO:
 impl PartialEq<AlloyAddress> for Address {
     fn eq(&self, other: &AlloyAddress) -> bool {
-        true
+        self.0 == other.to_string()
     }
 }
 
