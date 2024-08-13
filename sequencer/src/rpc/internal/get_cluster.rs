@@ -1,7 +1,6 @@
 use crate::{
     models::{ClusterModel, LivenessClusterModel, ValidationClusterModel},
     rpc::prelude::*,
-    types::{ClusterId, PlatForm, SequencingFunctionType, ServiceType},
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

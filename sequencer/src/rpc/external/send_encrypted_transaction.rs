@@ -43,7 +43,7 @@ impl SendEncryptedTransaction {
         // TODO: 1. verify encrypted_transaction
 
         // 2. Issue order_commitment
-        let block_height = context.block_height(&parameter.rollup_id).await?;
+        let block_height = context.block_height(&parameter.rollup_id)?;
 
         let raw_transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
 
@@ -63,7 +63,7 @@ impl SendEncryptedTransaction {
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),
             block_height,
-            transaction_order: transaction_order.clone(),
+            transaction_order: transaction_order,
             previous_order_hash: issued_order_hash.clone(),
         };
 
@@ -81,6 +81,7 @@ impl SendEncryptedTransaction {
         encrypted_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
 
         // 4. Save raw_transaction
+        // Todo: change waiting decrypted raw transaction
         let raw_transaction = decrypt_transaction(
             parameter.encrypted_transaction.clone(),
             parameter.time_lock_puzzle.clone(),

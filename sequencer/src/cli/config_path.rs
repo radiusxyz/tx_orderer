@@ -61,7 +61,7 @@ impl ConfigPath {
         let signing_key_path = self.as_ref().join(SIGNING_KEY);
         // TODO: Generate a sign key.
         let signing_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-        fs::write(&signing_key_path, signing_key).map_err(|_| Error::CreatePrivateKeyFile)?;
+        fs::write(signing_key_path, signing_key).map_err(|_| Error::CreatePrivateKeyFile)?;
 
         tracing::info!("Created a sign key {:?}", signing_key);
 

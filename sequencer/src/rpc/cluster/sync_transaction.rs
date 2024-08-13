@@ -24,7 +24,9 @@ impl SyncTransaction {
 
         let new_order_hash = parameter.order_commitment.data.previous_order_hash;
 
-        if rollup_metadata.order_hash() != &new_order_hash {
+        if rollup_metadata.order_hash() != &new_order_hash
+            && rollup_metadata.transaction_order() == transaction_order
+        {
             let mut new_rollup_metadata_model = rollup_metadata_model.rollup_metadata().clone();
             new_rollup_metadata_model.update_order_hash(new_order_hash);
             new_rollup_metadata_model.increase_transaction_order();

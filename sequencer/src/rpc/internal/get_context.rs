@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use serde_json::{json, Value};
 
-use super::get_cluster_id_list;
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -16,7 +15,7 @@ impl GetContext {
         context: Arc<AppState>,
     ) -> Result<Value, RpcError> {
         let config = context.config();
-        let rollup_metadatas = context.rollup_metadatas().await;
+        let rollup_metadatas = context.rollup_metadatas().as_ref().clone();
         let rollup_cluster_ids = context.rollup_cluster_ids().as_ref().clone();
 
         let sequencing_infos = context

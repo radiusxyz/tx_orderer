@@ -36,7 +36,7 @@ use sequencer::{
     },
     rpc::{cluster, external, internal},
     state::AppState,
-    task::{radius_liveness_event_listener, single_key_generator::init_single_key_generator},
+    task::radius_liveness_event_listener,
     types::{
         ClusterId, PlatForm, PvdeParams, RollupId, RollupMetadata, SequencingFunctionType,
         ServiceType, SigningKey, SyncInfo,
@@ -237,9 +237,9 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
                     let cluster = initialize_liveness_cluster(
                         &SigningKey::from(signing_key.clone()),
                         &seeder_client,
-                        &sequencing_info_key,
-                        &sequencing_info,
-                        &cluster_id,
+                        sequencing_info_key,
+                        sequencing_info,
+                        cluster_id,
                     )
                     .await?;
 

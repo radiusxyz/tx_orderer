@@ -16,7 +16,7 @@ impl RegisterRpcUrl {
         let seeder_client = SeederClient::new(seeder_rpc_url)?;
 
         seeder_client
-            .register_rpc_url(parameter.address.into(), parameter.rpc_url.into())
+            .register_rpc_url(parameter.address, parameter.rpc_url)
             .await
             .map_err(|error| error.into())
     }

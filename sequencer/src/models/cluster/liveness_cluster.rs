@@ -38,8 +38,8 @@ impl LivenessClusterModel {
         let sequencer_address_list = self
             .sequencer_address_list
             .iter()
+            .filter(|&address| address != sequencer_address)
             .cloned()
-            .filter(|address| address != sequencer_address)
             .collect();
 
         self.set_sequencer_list(sequencer_address_list);

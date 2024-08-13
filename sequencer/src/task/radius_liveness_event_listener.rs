@@ -1,11 +1,8 @@
 use std::{sync::Arc, time::Duration};
 
-use radius_sequencer_sdk::{
-    json_rpc::RpcClient,
-    liveness::{
-        subscriber::Subscriber,
-        types::{Events, Ssal::SsalEvents},
-    },
+use radius_sequencer_sdk::liveness::{
+    subscriber::Subscriber,
+    types::{Events, Ssal::SsalEvents},
 };
 use tokio::time::sleep;
 use tracing::info;
@@ -14,7 +11,7 @@ use crate::{
     client::SequencerClient,
     error::Error,
     models::LivenessClusterModel,
-    types::{Address, ClusterId, PlatForm, SequencerIndex, SequencingInfo, ServiceType, SyncInfo},
+    types::{Address, ClusterId, SequencerIndex, ServiceType, SyncInfo},
 };
 
 pub fn init(sync_info: Arc<SyncInfo>) {
@@ -123,7 +120,7 @@ pub fn register_sequencer(
     )?;
 
     liveness_cluster_model.add_seqeuncer(sequencer_address.clone());
-    let _ = liveness_cluster_model.update()?;
+    liveness_cluster_model.update()?;
 
     tokio::spawn(async move {
         loop {
@@ -133,23 +130,35 @@ pub fn register_sequencer(
                 .get_rpc_url(&sequencer_address)
                 .await
             {
-                Ok(rpc_url) => {
-                    // Todo change unwrap
-                    let rpc_client = SequencerClient::new(rpc_url).unwrap();
-                    let cluster = context.app_state().cluster(&cluster_id).unwrap();
+                Ok(rpc_url) => match SequencerClient::new(rpc_url) {
+                    Ok(rpc_client) => {
+                        if let Ok(cluster) = context.app_state().cluster(&cluster_id) {
+                            cluster
+                                .add_sequencer_rpc_client(
+                                    sequencer_index,
+                                    sequencer_address,
+                                    rpc_client,
+                                )
+                                .await;
 
-                    cluster
-                        .add_sequencer_rpc_client(sequencer_index, sequencer_address, rpc_client)
-                        .await;
-
-                    break;
-                }
+                            tracing::info!(
+                                "Successfully added SequencerClient for id: {}",
+                                cluster_id
+                            );
+                            break;
+                        } else {
+                            tracing::warn!("Failed to get cluster for id: {}", cluster_id);
+                        }
+                    }
+                    Err(err) => {
+                        tracing::error!("Failed to create SequencerClient: {}", err);
+                    }
+                },
                 Err(err) => {
                     tracing::warn!("Failed to get rpc url: {}", err);
                 }
             };
 
-            // TODO:
             sleep(Duration::from_secs(10)).await;
         }
     });

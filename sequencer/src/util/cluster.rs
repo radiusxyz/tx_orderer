@@ -35,7 +35,7 @@ pub async fn initialize_liveness_cluster(
                     sequencing_info_key.platform(),
                     sequencing_info_key.sequencing_function_type(),
                     sequencing_info_key.service_type(),
-                    &cluster_id,
+                    cluster_id,
                 )
                 .await?;
             info!(
@@ -43,10 +43,7 @@ pub async fn initialize_liveness_cluster(
                 sequencer_rpc_urls,
             );
 
-            let sequencer_list = sequencer_rpc_urls
-                .keys()
-                .map(|address| address.clone())
-                .collect::<Vec<Address>>();
+            let sequencer_list = sequencer_rpc_urls.keys().cloned().collect::<Vec<Address>>();
 
             (sequencer_list, sequencer_rpc_urls)
         }
@@ -99,13 +96,13 @@ pub async fn initialize_liveness_cluster(
     // Initialize sequencer_rpc_clients
     // TODO: Implement RpcClient
     let node_address = signing_key.get_address();
-    let mut cluster = Cluster::new(cluster_id.clone(), Address::from(node_address));
+    let mut cluster = Cluster::new(cluster_id.clone(), node_address);
 
     let mut sequencer_indexes = HashMap::new();
     let mut sequencer_rpc_clients = HashMap::new();
 
     for (index, sequencer_address) in sequencer_list.iter().enumerate() {
-        let rpc_url = sequencer_rpc_urls.get(&sequencer_address).unwrap();
+        let rpc_url = sequencer_rpc_urls.get(sequencer_address).unwrap();
         let rpc_client = SequencerClient::new(rpc_url.clone()).unwrap();
 
         sequencer_rpc_clients.insert(sequencer_address.clone(), rpc_client);
@@ -114,7 +111,7 @@ pub async fn initialize_liveness_cluster(
 
     // Update liveness_cluster_model
     liveness_cluster_model.set_sequencer_list(sequencer_list);
-    let _ = liveness_cluster_model.update()?;
+    liveness_cluster_model.update()?;
 
     // Update sequencer_rpc_clients in cluster
     cluster

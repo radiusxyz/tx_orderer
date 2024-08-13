@@ -27,9 +27,7 @@ impl SyncBlock {
                 rollup_metadata_model.update()?;
 
                 // update context rollup metadata
-                context
-                    .update_rollup_metadata(parameter.rollup_id.clone(), rollup_metadata)
-                    .await;
+                context.set_rollup_metadata(parameter.rollup_id.clone(), rollup_metadata);
 
                 builder::finalize_block(
                     parameter.rollup_id,
@@ -51,9 +49,7 @@ impl SyncBlock {
                     );
                     rollup_metadata_model.put()?;
 
-                    context
-                        .update_rollup_metadata(parameter.rollup_id.clone(), rollup_metadata)
-                        .await;
+                    context.set_rollup_metadata(parameter.rollup_id.clone(), rollup_metadata);
                 } else {
                     return Err(error.into());
                 }

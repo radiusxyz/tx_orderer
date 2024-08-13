@@ -1,5 +1,6 @@
-use std::{borrow::BorrowMut, collections::HashMap, ops::DerefMut, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
+use futures::future::Shared;
 use radius_sequencer_sdk::{
     context::{Context, SharedContext},
     liveness::publisher::Publisher,
@@ -11,8 +12,8 @@ use crate::{
     client::SeederClient,
     error::Error,
     types::{
-        BlockHeight, Cluster, ClusterId, OrderHash, PvdeParams, RollupId, RollupMetadata,
-        SequencingInfo, SequencingInfoKey, SigningKey, TransactionOrder,
+        BlockHeight, Cluster, ClusterId, PvdeParams, RollupId, RollupMetadata, SequencingInfo,
+        SequencingInfoKey, SigningKey,
     },
 };
 
@@ -34,7 +35,7 @@ struct AppStateInner {
     config: Config,
 
     // Todo remove
-    rollup_metadatas: Mutex<HashMap<RollupId, RollupMetadata>>,
+    rollup_metadatas: SharedContext<HashMap<RollupId, RollupMetadata>>,
 
     rollup_cluster_ids: SharedContext<HashMap<RollupId, ClusterId>>,
     sequencing_infos: SharedContext<HashMap<SequencingInfoKey, SequencingInfo>>,
@@ -68,7 +69,7 @@ impl AppState {
     ) -> Self {
         let inner = AppStateInner {
             config,
-            rollup_metadatas: Mutex::new(rollup_metadatas),
+            rollup_metadatas: SharedContext::from(rollup_metadatas),
             rollup_cluster_ids: SharedContext::from(rollup_cluster_ids),
             sequencing_infos: SharedContext::from(sequencing_infos),
             seeder_client,
@@ -85,34 +86,30 @@ impl AppState {
         &self.inner.config
     }
 
-    pub async fn rollup_metadatas(&self) -> HashMap<RollupId, RollupMetadata> {
-        let rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
-
-        rollup_metadatas_lock.clone()
+    pub fn block_height(&self, rollup_id: &RollupId) -> Result<BlockHeight, Error> {
+        self.rollup_metadatas()
+            .as_ref()
+            .get(rollup_id)
+            .map(|rollup_metadata| rollup_metadata.block_height())
+            .ok_or(Error::NotFoundRollupMetadata)
     }
 
-    pub async fn update_rollup_metadata(
-        &self,
-        rollup_id: RollupId,
-        rollup_metadata: RollupMetadata,
-    ) {
-        let mut rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
+    pub fn rollup_metadatas(&self) -> Context<HashMap<RollupId, RollupMetadata>> {
+        self.inner.rollup_metadatas.load()
+    }
 
-        rollup_metadatas_lock.insert(rollup_id, rollup_metadata);
+    pub fn rollup_metadata(&self, rollup_id: &RollupId) -> Result<RollupMetadata, Error> {
+        self.inner
+            .rollup_metadatas
+            .load()
+            .as_ref()
+            .get(rollup_id)
+            .cloned()
+            .ok_or(Error::NotFoundRollupMetadata)
     }
 
     pub fn rollup_cluster_ids(&self) -> Context<HashMap<RollupId, ClusterId>> {
         self.inner.rollup_cluster_ids.load()
-    }
-
-    pub async fn block_height(&self, rollup_id: &RollupId) -> Result<BlockHeight, Error> {
-        let mut rollup_metadatas_lock = self.inner.rollup_metadatas.lock().await;
-
-        if let Some(rollup_metadata) = rollup_metadatas_lock.get_mut(rollup_id) {
-            return Ok(rollup_metadata.block_height());
-        }
-
-        Err(Error::NotFoundRollupMetadata)
     }
 
     pub fn sequencing_infos(&self) -> Context<HashMap<SequencingInfoKey, SequencingInfo>> {
@@ -163,6 +160,14 @@ impl AppState {
 
     pub fn pvde_params(&self) -> Context<Option<PvdeParams>> {
         self.inner.pvde_params.load()
+    }
+
+    pub fn set_rollup_metadata(&self, rollup_id: RollupId, rollup_metadata: RollupMetadata) {
+        let mut rollup_metadatas = self.rollup_metadatas().as_ref().clone();
+
+        rollup_metadatas.insert(rollup_id, rollup_metadata);
+
+        self.inner.rollup_metadatas.store(rollup_metadatas);
     }
 
     pub fn set_cluster(&self, cluster: Cluster) {

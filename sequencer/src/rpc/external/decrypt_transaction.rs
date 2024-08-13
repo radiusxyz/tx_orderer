@@ -105,14 +105,11 @@ impl DecryptTransaction {
                 if !is_valid {
                     return Err(RpcError::from(Error::PvdeZkpInvalid));
                 }
-                // log::info!("Done verify_sigma_protocol: {:?}", is_valid);
+                tracing::info!("Done verify_sigma_protocol: {:?}", is_valid);
 
                 let key_validation_public_input =
                     pvde_zkp.public_input().to_key_validation_public_input();
-                // let key_validation_public_input = KeyValidationPublicInput {
-                //     k_two: pvde_zkp.public_input.k_two.clone(),
-                //     k_hash_value: pvde_zkp.public_input.k_hash_value.clone(),
-                // };
+
                 let is_valid = verify_key_validation(
                     &key_validation_zkp_param,
                     &key_validation_verify_key,
@@ -123,7 +120,7 @@ impl DecryptTransaction {
                 if !is_valid {
                     return Err(RpcError::from(Error::PvdeZkpInvalid));
                 }
-                // log::info!("Done verify_key_validation: {:?}", is_valid);
+                tracing::info!("Done verify_key_validation: {:?}", is_valid);
 
                 let poseidon_encryption_public_input = PoseidonEncryptionPublicInput {
                     encrypted_data: encrypted_data.clone().into_inner(),
@@ -139,7 +136,7 @@ impl DecryptTransaction {
                 if !is_valid {
                     return Err(RpcError::from(Error::PvdeZkpInvalid));
                 }
-                // log::info!("Done verify_poseidon_encryption: {:?}", is_valid);
+                tracing::info!("Done verify_poseidon_encryption: {:?}", is_valid);
             }
             false => {}
         }

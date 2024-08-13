@@ -17,7 +17,7 @@ impl FinalizeBlock {
         let parameter = parameter.parse::<Self>()?;
 
         // TODO: verify rollup signature
-        let finalizing_block_height = context.block_height(&parameter.rollup_id).await?;
+        let finalizing_block_height = context.block_height(&parameter.rollup_id)?;
         if finalizing_block_height != parameter.rollup_block_height {
             return Err(Error::InvalidBlockHeight.into());
         }
@@ -34,7 +34,7 @@ impl FinalizeBlock {
             parameter.rollup_id.clone(),
             parameter.cluster_block_height,
             parameter.rollup_block_height,
-            transaction_order.clone(),
+            transaction_order,
         );
 
         builder::finalize_block(
@@ -50,9 +50,7 @@ impl FinalizeBlock {
             OrderHash::new(),
         );
 
-        context
-            .update_rollup_metadata(parameter.rollup_id.clone(), new_rollup_metadata.clone())
-            .await;
+        context.set_rollup_metadata(parameter.rollup_id.clone(), new_rollup_metadata.clone());
 
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
         rollup_metadata.update_rollup_metadata(new_rollup_metadata);

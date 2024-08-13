@@ -22,15 +22,6 @@ pub fn finalize_block(
     transaction_order: TransactionOrder,
 ) {
     tokio::spawn(async move {
-        println!(
-            "finalize_block - rollup_id: {:?} / transaction_order: {:?}",
-            rollup_id, transaction_order
-        );
-
-        println!("stompesi - rollup_id: {:?}", rollup_id);
-        println!("stompesi - rollup_block_height: {:?}", rollup_block_height);
-        println!("stompesi - transaction_order: {:?}", transaction_order);
-
         // TODO: 1. make encrypted / raw transaction list
         let mut encrypted_transaction_list: Vec<Option<EncryptedTransaction>> =
             Vec::with_capacity(transaction_order.value() as usize);

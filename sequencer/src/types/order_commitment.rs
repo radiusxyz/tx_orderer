@@ -5,7 +5,7 @@ use ssal::avs::types::hex;
 
 use crate::types::prelude::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Default)]
 pub struct TransactionOrder(u64);
 
 impl TransactionOrder {

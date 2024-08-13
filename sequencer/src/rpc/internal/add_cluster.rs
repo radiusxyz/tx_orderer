@@ -42,7 +42,7 @@ impl AddCluster {
                             parameter.cluster_id.clone(),
                         );
 
-                        let _ = cluster_model.put()?;
+                        cluster_model.put()?;
                     }
                 }
             }
@@ -60,7 +60,7 @@ impl AddCluster {
                             parameter.cluster_id.clone(),
                         );
 
-                        let _ = cluster_model.put()?;
+                        cluster_model.put()?;
                     }
                 }
             }
@@ -95,7 +95,7 @@ impl AddCluster {
         )
         .await?;
 
-        let _ = context.set_cluster(cluster);
+        context.set_cluster(cluster);
 
         Ok(AddClusterResponse { success: true })
     }

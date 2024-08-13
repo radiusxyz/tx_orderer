@@ -118,6 +118,7 @@ impl Clone for LivenessClient {
 }
 
 impl LivenessClient {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         ethereum_rpc_url: impl AsRef<str>,
         signing_key: impl AsRef<str>,

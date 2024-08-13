@@ -74,7 +74,7 @@ impl Cluster {
         let sorted_partial_key_list: Vec<PartialKey> = sequencer_indexes_lock
             .iter()
             .map(|(_, address)| partial_keys_lock.get(address).cloned())
-            .filter_map(|key| key)
+            .flatten()
             .collect();
 
         sorted_partial_key_list
@@ -142,7 +142,7 @@ impl Cluster {
         // TODO
         sequencer_rpc_clients_lock
             .iter()
-            .filter_map(|(_, rpc_client)| Some(rpc_client.clone()))
+            .map(|(_, rpc_client)| rpc_client.clone())
             .collect::<Vec<SequencerClient>>()
     }
 

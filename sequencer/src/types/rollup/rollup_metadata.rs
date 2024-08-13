@@ -21,7 +21,7 @@ impl RollupMetadata {
     }
 
     pub fn transaction_order(&self) -> TransactionOrder {
-        self.transaction_order.clone()
+        self.transaction_order
     }
 
     pub fn increase_transaction_order(&mut self) {
