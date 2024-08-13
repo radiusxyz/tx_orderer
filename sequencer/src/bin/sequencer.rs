@@ -243,7 +243,7 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
                     )
                     .await?;
 
-                    app_state.set_cluster(cluster).await;
+                    app_state.set_cluster(cluster);
                 }
                 SequencingFunctionType::Validation => {
                     // TODO:

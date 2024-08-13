@@ -84,8 +84,7 @@ impl AddCluster {
             parameter.service_type.clone(),
         );
 
-        let sequencing_infos = context.sequencing_infos().await;
-        let sequencing_info = sequencing_infos.get(&sequencing_info_key).unwrap();
+        let sequencing_info = context.sequencing_info(&sequencing_info_key)?;
 
         let cluster = initialize_liveness_cluster(
             signing_key,
@@ -96,7 +95,7 @@ impl AddCluster {
         )
         .await?;
 
-        let _ = context.set_cluster(cluster).await;
+        let _ = context.set_cluster(cluster);
 
         Ok(AddClusterResponse { success: true })
     }

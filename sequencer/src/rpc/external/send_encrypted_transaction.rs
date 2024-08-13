@@ -85,14 +85,14 @@ impl SendEncryptedTransaction {
             parameter.encrypted_transaction.clone(),
             parameter.time_lock_puzzle.clone(),
             context.config().is_using_zkp(),
-            context.pvde_params().load().as_ref(),
+            context.pvde_params().as_ref(),
         )?;
         let raw_transaction_model = RawTransactionModel::new(raw_transaction);
         raw_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
 
         // 4. Sync transaction
-        let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
-        let cluster = context.get_cluster(&cluster_id).await?;
+        let cluster_id = context.cluster_id(&parameter.rollup_id)?;
+        let cluster = context.cluster(&cluster_id)?;
 
         syncer::sync_transaction(
             cluster.clone(),

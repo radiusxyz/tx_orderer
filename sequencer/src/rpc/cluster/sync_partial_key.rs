@@ -59,7 +59,7 @@ impl SyncPartialKey {
             return Ok(());
         }
 
-        let cluster = context.get_cluster(&parameter.cluster_id).await?;
+        let cluster = context.cluster(&parameter.cluster_id)?;
 
         cluster
             .add_partial_key(parameter.node_address, parameter.partial_key)

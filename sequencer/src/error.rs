@@ -38,6 +38,7 @@ pub enum Error {
     NotFoundRollupMetadata,
     NotFoundCluster,
     NotFoundClusterId,
+    NotFoundSequencingInfo,
 
     InvalidTransactionOrder,
 

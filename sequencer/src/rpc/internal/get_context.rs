@@ -17,20 +17,20 @@ impl GetContext {
     ) -> Result<Value, RpcError> {
         let config = context.config();
         let rollup_metadatas = context.rollup_metadatas().await;
-        let rollup_cluster_ids = context.rollup_cluster_ids().await;
+        let rollup_cluster_ids = context.rollup_cluster_ids().as_ref().clone();
 
-        let sequencing_infos = context.sequencing_infos().await;
-        let sequencing_infos = sequencing_infos
-            .clone()
-            .into_iter()
+        let sequencing_infos = context
+            .sequencing_infos()
+            .as_ref()
+            .iter()
             .map(|(sequencing_info_key, sequencing_info)| {
-                (sequencing_info_key.to_string(), sequencing_info)
+                (sequencing_info_key.to_string(), sequencing_info.clone())
             })
             .collect::<HashMap<String, SequencingInfo>>();
 
         let get_cluster_id_list = context
             .clusters()
-            .await
+            .as_ref()
             .keys()
             .cloned()
             .collect::<Vec<ClusterId>>();

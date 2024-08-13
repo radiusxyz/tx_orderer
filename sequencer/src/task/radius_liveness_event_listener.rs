@@ -134,8 +134,9 @@ pub fn register_sequencer(
                 .await
             {
                 Ok(rpc_url) => {
+                    // Todo change unwrap
                     let rpc_client = SequencerClient::new(rpc_url).unwrap();
-                    let cluster = context.app_state().get_cluster(&cluster_id).await.unwrap();
+                    let cluster = context.app_state().cluster(&cluster_id).unwrap();
 
                     cluster
                         .add_sequencer_rpc_client(sequencer_index, sequencer_address, rpc_client)
@@ -178,7 +179,7 @@ pub async fn deregister_sequencer(
     liveness_cluster_model.remove_sequencer(&sequencer_address);
     let _ = liveness_cluster_model.update()?;
 
-    let cluster = context.app_state().get_cluster(&cluster_id).await.unwrap();
+    let cluster = context.app_state().cluster(&cluster_id)?;
     cluster.remove_sequencer_rpc_client(sequencer_address).await;
 
     Ok(())

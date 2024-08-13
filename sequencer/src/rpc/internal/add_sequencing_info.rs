@@ -54,7 +54,7 @@ impl AddSequencingInfo {
 
         SequencingInfoModel::add(sequencing_info.clone())?;
 
-        let _ = context.set_sequencing_info(sequencing_info).await;
+        context.set_sequencing_info(sequencing_info);
 
         Ok(AddSequencingInfoResponse { success: true })
     }

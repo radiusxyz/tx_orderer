@@ -22,8 +22,8 @@ impl FinalizeBlock {
             return Err(Error::InvalidBlockHeight.into());
         }
 
-        let cluster_id = context.get_cluster_id(&parameter.rollup_id).await?;
-        let cluster = context.get_cluster(&cluster_id).await?;
+        let cluster_id = context.cluster_id(&parameter.rollup_id)?;
+        let cluster = context.cluster(&cluster_id)?;
 
         let transaction_order = RollupMetadataModel::get(&parameter.rollup_id)?
             .rollup_metadata()
