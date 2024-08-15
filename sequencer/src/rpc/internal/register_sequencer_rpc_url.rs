@@ -7,7 +7,7 @@ pub struct RegisterRpcUrl {
 }
 
 impl RegisterRpcUrl {
-    pub const METHOD_NAME: &'static str = stringify!(RegisterSequencerRpcUrl);
+    pub const METHOD_NAME: &'static str = "register_sequencer_rpc_url";
 
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let seeder_rpc_url = context.config().seeder_rpc_url();

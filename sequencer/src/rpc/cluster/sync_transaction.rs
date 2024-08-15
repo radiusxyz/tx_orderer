@@ -11,7 +11,7 @@ pub struct SyncTransaction {
 }
 
 impl SyncTransaction {
-    pub const METHOD_NAME: &'static str = stringify!(SyncRequest);
+    pub const METHOD_NAME: &'static str = "sync_transaction";
 
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;

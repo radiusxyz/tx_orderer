@@ -8,9 +8,8 @@ pub struct SyncBlock {
     pub transaction_order: TransactionOrder,
 }
 
-// Todo(jaemin): change stringfy to literal string
 impl SyncBlock {
-    pub const METHOD_NAME: &'static str = stringify!(SyncBuildBlock);
+    pub const METHOD_NAME: &'static str = "sync_block";
 
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
