@@ -84,7 +84,7 @@ impl AddCluster {
             parameter.service_type.clone(),
         );
 
-        let sequencing_info = context.sequencing_info(&sequencing_info_key)?;
+        let sequencing_info = context.get_sequencing_info(&sequencing_info_key)?;
 
         let cluster = initialize_liveness_cluster(
             signing_key,

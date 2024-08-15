@@ -20,7 +20,8 @@ struct ClusterInner {
     node_address: Address,
 
     sequencer_indexes: Mutex<HashMap<SequencerIndex, Address>>,
-    sequencer_rpc_clients: Mutex<HashMap<Address, SequencerClient>>,
+    // Todo: change HashMap to Vec
+    sequencer_rpc_clients: Mutex<HashMap<Address, (SequencerIndex, SequencerClient)>>,
     partial_keys: Mutex<HashMap<Address, PartialKey>>,
 }
 
@@ -90,13 +91,37 @@ impl Cluster {
         sequencer_indexes_lock.insert(sequencer_index, address.clone());
 
         let mut sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
-        sequencer_rpc_clients_lock.insert(address, sequencer_client);
+        sequencer_rpc_clients_lock.insert(address, (sequencer_index, sequencer_client));
     }
 
+    // Todo: after remove, sort sequencer index
     pub async fn remove_sequencer_rpc_client(&self, address: Address) {
         let mut sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
-        sequencer_rpc_clients_lock.retain(|sequencer_address, _| sequencer_address != &address);
+        sequencer_rpc_clients_lock.remove(&address);
+
+        let mut sequencer_vec: Vec<(Address, SequencerIndex, SequencerClient)> =
+            sequencer_rpc_clients_lock
+                .iter()
+                .map(|(address, (sequencer_index, sequencer_client))| {
+                    (address.clone(), *sequencer_index, sequencer_client.clone())
+                })
+                .collect();
+
+        sequencer_vec.sort_by_key(|(_, sequencer_index, _)| *sequencer_index);
+
+        let sorted_sequencer_clients = sequencer_vec
+            .iter()
+            .enumerate()
+            .map(|(sorted_sequencer_index, (address, _, sequencer_client))| {
+                (
+                    address.clone(),
+                    (sorted_sequencer_index, sequencer_client.clone()),
+                )
+            })
+            .collect::<HashMap<Address, (SequencerIndex, SequencerClient)>>();
+
+        *sequencer_rpc_clients_lock = sorted_sequencer_clients
     }
 
     pub async fn set_sequencer_indexes(
@@ -110,7 +135,7 @@ impl Cluster {
 
     pub async fn set_sequencer_rpc_clients(
         &mut self,
-        sequencer_rpc_clients: HashMap<Address, SequencerClient>,
+        sequencer_rpc_clients: HashMap<Address, (SequencerIndex, SequencerClient)>,
     ) {
         let mut sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
@@ -126,7 +151,7 @@ impl Cluster {
 
         sequencer_rpc_clients_lock
             .iter()
-            .filter_map(|(address, rpc_client)| {
+            .filter_map(|(address, (_sequencer_index, rpc_client))| {
                 if address != &self.inner.node_address {
                     Some(rpc_client.clone())
                 } else {
@@ -139,11 +164,10 @@ impl Cluster {
     pub async fn sequencer_rpc_clients(&self) -> Vec<SequencerClient> {
         let sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
-        // TODO
         sequencer_rpc_clients_lock
             .iter()
-            .map(|(_, rpc_client)| rpc_client.clone())
-            .collect::<Vec<SequencerClient>>()
+            .map(|(_, (_, rpc_client))| rpc_client.clone())
+            .collect()
     }
 
     pub async fn is_leader(&self, rollup_block_height: BlockHeight) -> bool {
@@ -166,7 +190,7 @@ impl Cluster {
 
         let sequencer_rpc_clients_lock = self.inner.sequencer_rpc_clients.lock().await;
 
-        let leader_rpc_client = sequencer_rpc_clients_lock
+        let (_sequencer_index, leader_rpc_client) = sequencer_rpc_clients_lock
             .get(leader_address)
             .cloned()
             .unwrap();
@@ -188,7 +212,7 @@ impl Cluster {
         // TODO
         let follower_rpc_client_list = sequencer_rpc_clients_lock
             .iter()
-            .filter_map(|(address, rpc_client)| {
+            .filter_map(|(address, (_sequencer_index, rpc_client))| {
                 if address != self.node_address() && address != leader_address {
                     Some(rpc_client.clone())
                 } else {

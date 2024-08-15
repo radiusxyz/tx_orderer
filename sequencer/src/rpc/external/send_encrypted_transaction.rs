@@ -31,6 +31,7 @@ pub struct SendEncryptedTransaction {
     time_lock_puzzle: TimeLockPuzzle,
 }
 
+// TODO(jaemin): Check leader verification for order commitment
 impl SendEncryptedTransaction {
     pub const METHOD_NAME: &'static str = "send_encrypted_transaction";
 
@@ -40,14 +41,29 @@ impl SendEncryptedTransaction {
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<SendEncryptedTransaction>()?;
 
+        let block_height = context.get_block_height(&parameter.rollup_id)?;
+
+        let cluster_id = context.get_cluster_id(&parameter.rollup_id)?;
+        let cluster = context.get_cluster(&cluster_id)?;
+        let is_leader = cluster.is_leader(block_height).await;
+
+        // forward to leader
+        if !is_leader {
+            let leader_rpc_client = cluster.get_leader_rpc_client(block_height).await;
+            return leader_rpc_client
+                .send_encrypted_transaction(parameter)
+                .await
+                .map_err(RpcError::from);
+        }
+
         // TODO: 1. verify encrypted_transaction
 
         // 2. Issue order_commitment
-        let block_height = context.block_height(&parameter.rollup_id)?;
 
         let raw_transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
 
         let mut rollup_metadata_model = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+
         let transaction_order = rollup_metadata_model.rollup_metadata().transaction_order();
 
         let previous_order_hash = rollup_metadata_model.rollup_metadata().order_hash();
@@ -63,8 +79,8 @@ impl SendEncryptedTransaction {
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),
             block_height,
-            transaction_order: transaction_order,
-            previous_order_hash: issued_order_hash.clone(),
+            transaction_order,
+            previous_order_hash: issued_order_hash,
         };
 
         let order_commitment_signature = Signature::default(); // TODO
@@ -92,8 +108,6 @@ impl SendEncryptedTransaction {
         raw_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
 
         // 4. Sync transaction
-        let cluster_id = context.cluster_id(&parameter.rollup_id)?;
-        let cluster = context.cluster(&cluster_id)?;
 
         syncer::sync_transaction(
             cluster.clone(),
@@ -103,8 +117,8 @@ impl SendEncryptedTransaction {
         );
 
         syncer::sync_transaction(
-            cluster.clone(),
-            parameter.rollup_id.clone(),
+            cluster,
+            parameter.rollup_id,
             TransactionModel::Raw(raw_transaction_model),
             order_commitment.clone(),
         );

@@ -43,7 +43,21 @@ pub async fn initialize_liveness_cluster(
                 sequencer_rpc_urls,
             );
 
-            let sequencer_list = sequencer_rpc_urls.keys().cloned().collect::<Vec<Address>>();
+            // Change sequencer_rpc_urls(hashmap) to sequencer_list(vec)
+            let mut sequencer_list = sequencer_rpc_urls
+                .iter()
+                .map(|(address, (sequencer_index, _))| (address.clone(), *sequencer_index))
+                .collect::<Vec<(Address, SequencerIndex)>>();
+
+            // Sort sequencer_list by sequencer_index
+            sequencer_list.sort_by(|(_, sequencer_index1), (_, sequencer_index2)| {
+                sequencer_index1.cmp(sequencer_index2)
+            });
+
+            let sequencer_list: Vec<Address> = sequencer_list
+                .into_iter()
+                .map(|(address, _)| address)
+                .collect();
 
             (sequencer_list, sequencer_rpc_urls)
         }
@@ -93,6 +107,7 @@ pub async fn initialize_liveness_cluster(
             (sequencer_list, sequencer_rpc_urls)
         }
     };
+
     // Initialize sequencer_rpc_clients
     // TODO: Implement RpcClient
     let node_address = signing_key.get_address();
@@ -101,12 +116,12 @@ pub async fn initialize_liveness_cluster(
     let mut sequencer_indexes = HashMap::new();
     let mut sequencer_rpc_clients = HashMap::new();
 
-    for (index, sequencer_address) in sequencer_list.iter().enumerate() {
-        let rpc_url = sequencer_rpc_urls.get(sequencer_address).unwrap();
+    for sequencer_address in sequencer_list.iter() {
+        let (sequencer_index, rpc_url) = sequencer_rpc_urls.get(sequencer_address).unwrap();
         let rpc_client = SequencerClient::new(rpc_url.clone()).unwrap();
 
-        sequencer_rpc_clients.insert(sequencer_address.clone(), rpc_client);
-        sequencer_indexes.insert(index as SequencerIndex, sequencer_address.clone());
+        sequencer_rpc_clients.insert(sequencer_address.clone(), (*sequencer_index, rpc_client));
+        sequencer_indexes.insert(*sequencer_index, sequencer_address.clone());
     }
 
     // Update liveness_cluster_model

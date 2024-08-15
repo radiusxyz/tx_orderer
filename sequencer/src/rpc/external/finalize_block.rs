@@ -1,4 +1,4 @@
-use crate::{models::RollupMetadataModel, rpc::prelude::*};
+use crate::{models::RollupMetadataModel, rpc::prelude::*, state::RollupState};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlock {
@@ -16,18 +16,18 @@ impl FinalizeBlock {
     ) -> Result<SequencerStatus, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        let finalizing_block_height = context.get_block_height(&parameter.rollup_id)?;
+
         // TODO: verify rollup signature
-        let finalizing_block_height = context.block_height(&parameter.rollup_id)?;
         if finalizing_block_height != parameter.rollup_block_height {
             return Err(Error::InvalidBlockHeight.into());
         }
 
-        let cluster_id = context.cluster_id(&parameter.rollup_id)?;
-        let cluster = context.cluster(&cluster_id)?;
+        let rollup_metadata_model = RollupMetadataModel::get(&parameter.rollup_id)?;
+        let transaction_order = rollup_metadata_model.rollup_metadata().transaction_order();
 
-        let transaction_order = RollupMetadataModel::get(&parameter.rollup_id)?
-            .rollup_metadata()
-            .transaction_order();
+        let cluster_id = context.get_cluster_id(&parameter.rollup_id)?;
+        let cluster = context.get_cluster(&cluster_id)?;
 
         syncer::sync_block(
             cluster.clone(),
@@ -50,7 +50,10 @@ impl FinalizeBlock {
             OrderHash::new(),
         );
 
-        context.set_rollup_metadata(parameter.rollup_id.clone(), new_rollup_metadata.clone());
+        context.set_rollup_state(
+            parameter.rollup_id.clone(),
+            RollupState::new(new_rollup_metadata.block_height()),
+        );
 
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
         rollup_metadata.update_rollup_metadata(new_rollup_metadata);

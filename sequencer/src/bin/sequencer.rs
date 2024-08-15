@@ -23,23 +23,21 @@ use pvde::{
         setup as setup_time_lock_puzzle_param,
     },
 };
-use radius_sequencer_sdk::{
-    context::SharedContext, json_rpc::RpcServer, kvstore::KvStore as Database,
-};
+use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
 use sequencer::{
     cli::{Cli, Commands, Config, ConfigPath},
-    client::SeederClient,
+    client::{LivenessClient, SeederClient},
     error::Error,
     models::{
         ClusterIdListModel, RollupIdListModel, RollupMetadataModel, RollupModel,
         SequencingInfoModel,
     },
     rpc::{cluster, external, internal},
-    state::AppState,
+    state::{AppState, RollupState},
     task::radius_liveness_event_listener,
     types::{
         ClusterId, PlatForm, PvdeParams, RollupId, RollupMetadata, SequencingFunctionType,
-        ServiceType, SigningKey, SyncInfo,
+        SequencingInfoKey, ServiceType, SigningKey, SyncInfo,
     },
     util::initialize_liveness_cluster,
 };
@@ -72,9 +70,9 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
-            // get or init sequencing info model
-            let sequencing_info_model = SequencingInfoModel::get()?;
-            let sequencing_infos = sequencing_info_model.sequencing_infos();
+            // // get or init sequencing info model
+            // let sequencing_info_model = SequencingInfoModel::get()?;
+            // let sequencing_infos = sequencing_info_model.sequencing_infos();
 
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
@@ -84,11 +82,31 @@ async fn main() -> Result<(), Error> {
                 seeder_rpc_url,
             );
 
+            // sequencing_infos from seeder
+            let sequencing_infos = seeder_client
+                .get_sequencing_infos()
+                .await?
+                .iter()
+                .map(|(_, sequencing_info)| {
+                    (
+                        (SequencingInfoKey::new(
+                            sequencing_info.platform.clone(),
+                            sequencing_info.sequencing_function_type.clone(),
+                            sequencing_info.service_type.clone(),
+                        )),
+                        sequencing_info.clone(),
+                    )
+                })
+                .collect::<HashMap<_, _>>();
+
+            SequencingInfoModel::new(sequencing_infos.clone()).put()?;
+
             // get or init rollup id list model
             let rollup_id_list_model = RollupIdListModel::get()?;
             let rollup_id_list = rollup_id_list_model.rollup_id_list();
 
             let mut rollup_metadatas: HashMap<RollupId, RollupMetadata> = HashMap::new();
+            let mut rollup_states: HashMap<RollupId, RollupState> = HashMap::new();
             let mut rollup_cluster_ids: HashMap<RollupId, ClusterId> = HashMap::new();
 
             rollup_id_list.iter().for_each(|rollup_id| {
@@ -98,6 +116,10 @@ async fn main() -> Result<(), Error> {
                 let cluster_id = rollup_model.cluster_id().clone();
                 let rollup_metadata = rollup_metadata_model.rollup_metadata().clone();
 
+                rollup_states.insert(
+                    rollup_id.clone(),
+                    RollupState::new(rollup_metadata.block_height()),
+                );
                 rollup_metadatas.insert(rollup_id.clone(), rollup_metadata);
                 rollup_cluster_ids.insert(rollup_id.clone(), cluster_id);
             });
@@ -111,12 +133,12 @@ async fn main() -> Result<(), Error> {
 
             // Initialize an application-wide state instance
             let app_state = AppState::new(
-                config.clone(),
-                rollup_metadatas,
+                config,
+                rollup_states,
                 rollup_cluster_ids, // rollup_cluster_ids,
                 sequencing_infos.clone(),
                 seeder_client,
-                SharedContext::from(pvde_params),
+                pvde_params,
             );
 
             // Add listener for each sequencing info
@@ -173,6 +195,7 @@ async fn main() -> Result<(), Error> {
             // Initialize clusters
             initialize_clusters(&app_state).await?;
 
+            // SKDE
             // for rollup_id in rollup_id_list.iter() {
             //     let rollup_model = RollupModel::get(rollup_id).unwrap();
             //     let cluster_id = rollup_model.cluster_id().clone();
@@ -327,6 +350,11 @@ async fn initialize_cluster_rpc_server(app_state: &AppState) -> Result<(), Error
         .register_rpc_method(
             cluster::SyncTransaction::METHOD_NAME,
             cluster::SyncTransaction::handler,
+        )?
+        // fowarded from follower external rpc
+        .register_rpc_method(
+            external::SendEncryptedTransaction::METHOD_NAME,
+            external::SendEncryptedTransaction::handler,
         )?
         .register_rpc_method(
             cluster::SyncPartialKey::METHOD_NAME,

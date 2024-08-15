@@ -51,6 +51,7 @@ impl AddSequencingInfo {
                 }
             }
 
+            // TODO
             if parameter.sequencing_function_type == SequencingFunctionType::Validation {}
         }
 

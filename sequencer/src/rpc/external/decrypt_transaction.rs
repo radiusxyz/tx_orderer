@@ -55,7 +55,6 @@ impl DecryptTransaction {
             &solved_k_hash_value,
         );
 
-        // TODO(jaemin): verify zkp(modify pvde library)
         match context.config().is_using_zkp() {
             true => {
                 let pvde_params = context.pvde_params().as_ref().clone().unwrap();

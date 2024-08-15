@@ -26,12 +26,17 @@ struct RegisterRpcUrlResponse {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct GetRpcUrlsResponse {
-    pub rpc_urls: HashMap<Address, IpAddress>,
+    pub rpc_urls: HashMap<Address, (SequencerIndex, IpAddress)>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct GetRpcUrlResponse {
     pub rpc_url: IpAddress,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct GetSequencingInfosResponse {
+    sequencing_infos: HashMap<String, SequencingInfo>,
 }
 
 impl SeederClient {
@@ -71,7 +76,7 @@ impl SeederClient {
         sequencing_function_type: &SequencingFunctionType,
         service_type: &ServiceType,
         cluster_id: &ClusterId,
-    ) -> Result<HashMap<Address, IpAddress>, Error> {
+    ) -> Result<HashMap<Address, (SequencerIndex, IpAddress)>, Error> {
         let rpc_method = json!({
           "platform": platform,
           "sequencing_function_type": sequencing_function_type,
@@ -98,5 +103,16 @@ impl SeederClient {
             self.0.request("get_rpc_url", rpc_method).await?;
 
         Ok(get_rpc_url_response.rpc_url)
+    }
+
+    pub async fn get_sequencing_infos(&self) -> Result<HashMap<String, SequencingInfo>, Error> {
+        let rpc_method = json!({});
+
+        info!("Get sequencing infos - rpc_method: {:?}", rpc_method);
+
+        let get_sequencing_infos_response: GetSequencingInfosResponse =
+            self.0.request("get_sequencing_infos", rpc_method).await?;
+
+        Ok(get_sequencing_infos_response.sequencing_infos)
     }
 }

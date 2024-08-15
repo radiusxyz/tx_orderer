@@ -11,7 +11,10 @@ use tracing::info;
 
 use crate::{
     error::Error,
-    rpc::cluster::{SyncBlock, SyncPartialKey, SyncTransaction},
+    rpc::{
+        cluster::{SyncBlock, SyncPartialKey, SyncTransaction},
+        external::SendEncryptedTransaction,
+    },
     types::*,
 };
 pub struct SequencerClient(Arc<RpcClient>);
@@ -91,6 +94,28 @@ impl SequencerClient {
         Ok(result)
     }
 
+    pub async fn sync_partial_key(&self, parameter: SyncPartialKey) -> Result<(), Error> {
+        self.request::<SyncPartialKey, ()>(SyncPartialKey::METHOD_NAME, parameter)
+            .await?;
+
+        Ok(())
+    }
+
+    // Todo: change(Register with cluster rpc to forward to leader)
+    pub async fn send_encrypted_transaction(
+        &self,
+        parameter: SendEncryptedTransaction,
+    ) -> Result<OrderCommitment, Error> {
+        let response = self
+            .request::<SendEncryptedTransaction, OrderCommitment>(
+                SendEncryptedTransaction::METHOD_NAME,
+                parameter,
+            )
+            .await?;
+
+        Ok(response)
+    }
+
     async fn fetch<P, R>(
         sequencer_rpc_client_list: &Vec<Self>,
         method: &'static str,
@@ -116,14 +141,5 @@ impl SequencerClient {
             .map_err(|_| Error::FetchResponse)?;
 
         Ok(rpc_response)
-    }
-}
-
-impl SequencerClient {
-    pub async fn sync_partial_key(&self, parameter: SyncPartialKey) -> Result<(), Error> {
-        self.request::<SyncPartialKey, ()>(SyncPartialKey::METHOD_NAME, parameter)
-            .await?;
-
-        Ok(())
     }
 }

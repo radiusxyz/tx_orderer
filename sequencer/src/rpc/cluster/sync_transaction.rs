@@ -24,6 +24,7 @@ impl SyncTransaction {
 
         let new_order_hash = parameter.order_commitment.data.previous_order_hash;
 
+        // TODO check
         if rollup_metadata.order_hash() != &new_order_hash
             && rollup_metadata.transaction_order() == transaction_order
         {

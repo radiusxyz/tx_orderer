@@ -1,7 +1,7 @@
 use tracing::info;
 
 use crate::{
-    models::{EncryptedTransactionModel, RawTransactionModel, TransactionModel},
+    models::TransactionModel,
     rpc::cluster::{SyncBlock, SyncTransaction},
     types::*,
 };

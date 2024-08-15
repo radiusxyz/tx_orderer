@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
-use futures::future::Shared;
 use radius_sequencer_sdk::{
     context::{Context, SharedContext},
     liveness::publisher::Publisher,
 };
+use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
 use crate::{
@@ -23,9 +23,16 @@ pub struct InternalAppState {
 
     sequencing_info: SequencingInfo,
     seeder_client: SeederClient,
-    cluster_ids: ClusterId,
     publisher: Mutex<Option<Publisher>>,
 }
+
+pub struct ExternalAppState {
+    config: Config,
+
+    rollup_metadatas: SharedContext<HashMap<RollupId, RollupMetadata>>,
+}
+
+pub struct ClusterAppState {}
 
 pub struct AppState {
     inner: Arc<AppStateInner>,
@@ -34,8 +41,8 @@ pub struct AppState {
 struct AppStateInner {
     config: Config,
 
-    // Todo remove
-    rollup_metadatas: SharedContext<HashMap<RollupId, RollupMetadata>>,
+    // Todo: change add field or remove. now it has only block_height
+    rollup_states: SharedContext<HashMap<RollupId, RollupState>>,
 
     rollup_cluster_ids: SharedContext<HashMap<RollupId, ClusterId>>,
     sequencing_infos: SharedContext<HashMap<SequencingInfoKey, SequencingInfo>>,
@@ -58,23 +65,24 @@ impl Clone for AppState {
     }
 }
 
+// TODO(jaemin): 필드값 아니면 getter로 사용
 impl AppState {
     pub fn new(
         config: Config,
-        rollup_metadatas: HashMap<RollupId, RollupMetadata>,
+        rollup_states: HashMap<RollupId, RollupState>,
         rollup_cluster_ids: HashMap<RollupId, ClusterId>,
         sequencing_infos: HashMap<SequencingInfoKey, SequencingInfo>,
         seeder_client: SeederClient,
-        pvde_params: SharedContext<Option<PvdeParams>>,
+        pvde_params: Option<PvdeParams>,
     ) -> Self {
         let inner = AppStateInner {
             config,
-            rollup_metadatas: SharedContext::from(rollup_metadatas),
+            rollup_states: SharedContext::from(rollup_states),
             rollup_cluster_ids: SharedContext::from(rollup_cluster_ids),
             sequencing_infos: SharedContext::from(sequencing_infos),
             seeder_client,
             clusters: HashMap::new().into(),
-            pvde_params: pvde_params,
+            pvde_params: SharedContext::from(pvde_params),
         };
 
         Self {
@@ -86,26 +94,8 @@ impl AppState {
         &self.inner.config
     }
 
-    pub fn block_height(&self, rollup_id: &RollupId) -> Result<BlockHeight, Error> {
-        self.rollup_metadatas()
-            .as_ref()
-            .get(rollup_id)
-            .map(|rollup_metadata| rollup_metadata.block_height())
-            .ok_or(Error::NotFoundRollupMetadata)
-    }
-
-    pub fn rollup_metadatas(&self) -> Context<HashMap<RollupId, RollupMetadata>> {
-        self.inner.rollup_metadatas.load()
-    }
-
-    pub fn rollup_metadata(&self, rollup_id: &RollupId) -> Result<RollupMetadata, Error> {
-        self.inner
-            .rollup_metadatas
-            .load()
-            .as_ref()
-            .get(rollup_id)
-            .cloned()
-            .ok_or(Error::NotFoundRollupMetadata)
+    pub fn rollup_states(&self) -> Context<HashMap<RollupId, RollupState>> {
+        self.inner.rollup_states.load()
     }
 
     pub fn rollup_cluster_ids(&self) -> Context<HashMap<RollupId, ClusterId>> {
@@ -114,16 +104,6 @@ impl AppState {
 
     pub fn sequencing_infos(&self) -> Context<HashMap<SequencingInfoKey, SequencingInfo>> {
         self.inner.sequencing_infos.load()
-    }
-
-    pub fn sequencing_info(&self, key: &SequencingInfoKey) -> Result<SequencingInfo, Error> {
-        self.inner
-            .sequencing_infos
-            .load()
-            .as_ref()
-            .get(key)
-            .cloned()
-            .ok_or(Error::NotFoundSequencingInfo)
     }
 
     pub fn clusters(&self) -> Context<HashMap<ClusterId, Cluster>> {
@@ -138,7 +118,20 @@ impl AppState {
         self.inner.seeder_client.clone()
     }
 
-    pub fn cluster_id(&self, rollup_id: &RollupId) -> Result<ClusterId, Error> {
+    pub fn pvde_params(&self) -> Context<Option<PvdeParams>> {
+        self.inner.pvde_params.load()
+    }
+
+    // Todo: change type
+    pub fn get_block_height(&self, rollup_id: &RollupId) -> Result<BlockHeight, Error> {
+        self.rollup_states()
+            .as_ref()
+            .get(rollup_id)
+            .map(|rollup_metadata| rollup_metadata.block_height())
+            .ok_or(Error::NotFoundRollupState)
+    }
+
+    pub fn get_cluster_id(&self, rollup_id: &RollupId) -> Result<ClusterId, Error> {
         self.inner
             .rollup_cluster_ids
             .load()
@@ -148,7 +141,7 @@ impl AppState {
             .ok_or(Error::NotFoundClusterId)
     }
 
-    pub fn cluster(&self, cluster_id: &ClusterId) -> Result<Cluster, Error> {
+    pub fn get_cluster(&self, cluster_id: &ClusterId) -> Result<Cluster, Error> {
         self.inner
             .clusters
             .load()
@@ -158,16 +151,32 @@ impl AppState {
             .ok_or(Error::NotFoundCluster)
     }
 
-    pub fn pvde_params(&self) -> Context<Option<PvdeParams>> {
-        self.inner.pvde_params.load()
+    pub fn get_sequencing_info(&self, key: &SequencingInfoKey) -> Result<SequencingInfo, Error> {
+        self.inner
+            .sequencing_infos
+            .load()
+            .as_ref()
+            .get(key)
+            .cloned()
+            .ok_or(Error::NotFoundSequencingInfo)
     }
 
-    pub fn set_rollup_metadata(&self, rollup_id: RollupId, rollup_metadata: RollupMetadata) {
-        let mut rollup_metadatas = self.rollup_metadatas().as_ref().clone();
+    pub fn get_rollup_state(&self, rollup_id: &RollupId) -> Result<RollupState, Error> {
+        self.inner
+            .rollup_states
+            .load()
+            .as_ref()
+            .get(rollup_id)
+            .cloned()
+            .ok_or(Error::NotFoundRollupState)
+    }
 
-        rollup_metadatas.insert(rollup_id, rollup_metadata);
+    pub fn set_rollup_state(&self, rollup_id: RollupId, rollup_state: RollupState) {
+        let mut rollup_states = self.rollup_states().as_ref().clone();
 
-        self.inner.rollup_metadatas.store(rollup_metadatas);
+        rollup_states.insert(rollup_id, rollup_state);
+
+        self.inner.rollup_states.store(rollup_states);
     }
 
     pub fn set_cluster(&self, cluster: Cluster) {
@@ -198,5 +207,21 @@ impl AppState {
         new_sequencing_infos.insert(sequencing_info_key, sequencing_info);
 
         self.inner.sequencing_infos.store(new_sequencing_infos);
+    }
+}
+
+// Todo: Add fields or remove
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RollupState {
+    pub block_height: BlockHeight,
+}
+
+impl RollupState {
+    pub fn new(block_height: BlockHeight) -> Self {
+        Self { block_height }
+    }
+
+    pub fn block_height(&self) -> BlockHeight {
+        self.block_height
     }
 }

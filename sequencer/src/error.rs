@@ -35,7 +35,7 @@ pub enum Error {
     PvdeZkpInvalid,
 
     NotfoundRpcUrl,
-    NotFoundRollupMetadata,
+    NotFoundRollupState,
     NotFoundCluster,
     NotFoundClusterId,
     NotFoundSequencingInfo,

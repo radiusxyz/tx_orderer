@@ -1,6 +1,7 @@
 use crate::{
     models::{ClusterIdListModel, RollupIdListModel, RollupMetadataModel, RollupModel},
     rpc::prelude::*,
+    state::RollupState,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -78,10 +79,14 @@ impl AddRollup {
 
         // TODO: get rollup_block_height from the rollup
         let rollup_metadata = RollupMetadata::new(0, TransactionOrder::from(0), OrderHash::new());
-        context.set_rollup_metadata(rollup_id.clone(), rollup_metadata.clone());
-        context.set_cluster_id(rollup_id.clone(), parameter.cluster_id.clone());
 
-        let rollup_metadata_model = RollupMetadataModel::new(rollup_id.clone(), rollup_metadata);
+        context.set_rollup_state(
+            rollup_id.clone(),
+            RollupState::new(rollup_metadata.block_height()),
+        );
+        context.set_cluster_id(rollup_id.clone(), parameter.cluster_id);
+
+        let rollup_metadata_model = RollupMetadataModel::new(rollup_id, rollup_metadata);
         rollup_metadata_model.put()?;
 
         Ok(AddRollupResponse { success: true })

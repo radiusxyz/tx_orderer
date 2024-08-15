@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use sequencer::{
     models::{LivenessClusterModel, ValidationClusterModel},
-    types::{Address, ClusterId, IpAddress, PlatForm, SequencingFunctionType, ServiceType},
+    types::{
+        Address, ClusterId, IpAddress, PlatForm, SequencerIndex, SequencingFunctionType,
+        ServiceType,
+    },
 };
 use tracing::info;
 
@@ -19,7 +22,7 @@ pub struct GetRpcUrls {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRpcUrlsResponse {
-    pub rpc_urls: HashMap<Address, IpAddress>,
+    pub rpc_urls: HashMap<Address, (SequencerIndex, IpAddress)>,
 }
 
 impl GetRpcUrls {
@@ -56,19 +59,20 @@ impl GetRpcUrls {
 
         let rpc_urls = address_list
             .iter()
-            .filter_map(
-                |operator_address| match OperatorModel::get(operator_address.clone()) {
+            .enumerate()
+            .filter_map(|(sequencer_index, operator_address)| {
+                match OperatorModel::get(operator_address.clone()) {
                     Ok(operator_model) => {
                         if let Some(rpc_url) = operator_model.rpc_url {
-                            Some((operator_model.address, rpc_url))
+                            Some((operator_model.address, (sequencer_index, rpc_url)))
                         } else {
                             None
                         }
                     }
                     Err(_) => None,
-                },
-            )
-            .collect::<HashMap<Address, IpAddress>>();
+                }
+            })
+            .collect::<HashMap<Address, (SequencerIndex, IpAddress)>>();
 
         Ok(GetRpcUrlsResponse { rpc_urls })
     }
