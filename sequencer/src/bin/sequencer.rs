@@ -70,10 +70,6 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
-            // // get or init sequencing info model
-            // let sequencing_info_model = SequencingInfoModel::get()?;
-            // let sequencing_infos = sequencing_info_model.sequencing_infos();
-
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
             let seeder_client = SeederClient::new(seeder_rpc_url)?;
@@ -228,7 +224,7 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
 
     // Register sequencer rpc url (with cluster rpc url) to seeder
     tracing::info!("Registering rpc url: {:?} {:?}", address, cluster_rpc_url);
-    let _ = seeder_client
+    seeder_client
         .register_rpc_url(address, cluster_rpc_url.to_string())
         .await?;
 

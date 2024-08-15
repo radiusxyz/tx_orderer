@@ -38,7 +38,7 @@ impl Register {
                 )?;
 
                 liveness_cluster_model.add_seqeuncer(parameter.address);
-                let _ = liveness_cluster_model.update()?;
+                liveness_cluster_model.update()?;
             }
 
             SequencingFunctionType::Validation => {
@@ -56,7 +56,7 @@ impl Register {
                     validation_cluster_model
                         .validator_address_list
                         .push(parameter.address);
-                    let _ = validation_cluster_model.update()?;
+                    validation_cluster_model.update()?;
                 }
             }
         }

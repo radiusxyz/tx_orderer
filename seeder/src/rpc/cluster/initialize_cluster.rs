@@ -43,7 +43,7 @@ impl InitializeCluster {
                             parameter.cluster_id.clone(),
                         );
 
-                        let _ = cluster_model.put()?;
+                        cluster_model.put()?;
                     }
                 }
             }
@@ -61,7 +61,7 @@ impl InitializeCluster {
                             parameter.cluster_id.clone(),
                         );
 
-                        let _ = cluster_model.put()?;
+                        cluster_model.put()?;
                     }
                 }
             }

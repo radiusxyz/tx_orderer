@@ -38,7 +38,7 @@ impl Deregister {
                 )?;
 
                 liveness_cluster_model.remove_sequencer(&parameter.address);
-                let _ = liveness_cluster_model.update()?;
+                liveness_cluster_model.update()?;
             }
 
             SequencingFunctionType::Validation => {
@@ -49,7 +49,7 @@ impl Deregister {
                 )?;
 
                 validation_cluster_model.remove_validator(&parameter.address);
-                let _ = validation_cluster_model.update()?;
+                validation_cluster_model.update()?;
             }
         }
         Ok(DeregisterResponse { success: true })
