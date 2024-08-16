@@ -134,11 +134,7 @@ pub fn register_sequencer(
                     Ok(rpc_client) => {
                         if let Ok(cluster) = context.app_state().get_cluster(&cluster_id) {
                             cluster
-                                .add_sequencer_rpc_client(
-                                    sequencer_index,
-                                    sequencer_address,
-                                    rpc_client,
-                                )
+                                .add_sequencer_rpc_client(sequencer_address, rpc_client)
                                 .await;
 
                             tracing::info!(
@@ -189,7 +185,7 @@ pub async fn deregister_sequencer(
     liveness_cluster_model.update()?;
 
     let cluster = context.app_state().get_cluster(&cluster_id)?;
-    cluster.remove_sequencer_rpc_client(sequencer_address).await;
+    cluster.remove_sequencer_rpc_client(sequencer_address);
 
     Ok(())
 }

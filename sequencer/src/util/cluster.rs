@@ -114,13 +114,13 @@ pub async fn initialize_liveness_cluster(
     let mut cluster = Cluster::new(cluster_id.clone(), node_address);
 
     let mut sequencer_indexes = HashMap::new();
-    let mut sequencer_rpc_clients = HashMap::new();
+    let mut sequencer_rpc_clients = Vec::with_capacity(sequencer_list.len());
 
     for sequencer_address in sequencer_list.iter() {
         let (sequencer_index, rpc_url) = sequencer_rpc_urls.get(sequencer_address).unwrap();
         let rpc_client = SequencerClient::new(rpc_url.clone()).unwrap();
 
-        sequencer_rpc_clients.insert(sequencer_address.clone(), (*sequencer_index, rpc_client));
+        sequencer_rpc_clients.push((sequencer_address.clone(), rpc_client));
         sequencer_indexes.insert(*sequencer_index, sequencer_address.clone());
     }
 
@@ -129,9 +129,7 @@ pub async fn initialize_liveness_cluster(
     liveness_cluster_model.update()?;
 
     // Update sequencer_rpc_clients in cluster
-    cluster
-        .set_sequencer_rpc_clients(sequencer_rpc_clients)
-        .await;
+    cluster.set_sequencer_rpc_clients(sequencer_rpc_clients);
 
     cluster.set_sequencer_indexes(sequencer_indexes).await;
 

@@ -13,7 +13,7 @@ use crate::{
     error::Error,
     rpc::{
         cluster::{SyncBlock, SyncPartialKey, SyncTransaction},
-        external::SendEncryptedTransaction,
+        external::{SendEncryptedTransaction, SendRawTransaction},
     },
     types::*,
 };
@@ -109,6 +109,21 @@ impl SequencerClient {
         let response = self
             .request::<SendEncryptedTransaction, OrderCommitment>(
                 SendEncryptedTransaction::METHOD_NAME,
+                parameter,
+            )
+            .await?;
+
+        Ok(response)
+    }
+
+    // Todo: change(Register with cluster rpc to forward to leader)
+    pub async fn send_raw_transaction(
+        &self,
+        parameter: SendRawTransaction,
+    ) -> Result<OrderCommitment, Error> {
+        let response = self
+            .request::<SendRawTransaction, OrderCommitment>(
+                SendRawTransaction::METHOD_NAME,
                 parameter,
             )
             .await?;

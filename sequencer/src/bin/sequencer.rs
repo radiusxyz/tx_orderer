@@ -308,6 +308,10 @@ async fn initialize_internal_rpc_server(app_state: &AppState) -> Result<(), Erro
             internal::GetRollup::handler,
         )?
         .register_rpc_method(
+            internal::GetRollupIdList::METHOD_NAME,
+            internal::GetRollupIdList::handler,
+        )?
+        .register_rpc_method(
             internal::AddCluster::METHOD_NAME,
             internal::AddCluster::handler,
         )?
@@ -353,6 +357,10 @@ async fn initialize_cluster_rpc_server(app_state: &AppState) -> Result<(), Error
             external::SendEncryptedTransaction::handler,
         )?
         .register_rpc_method(
+            external::SendRawTransaction::METHOD_NAME,
+            external::SendRawTransaction::handler,
+        )?
+        .register_rpc_method(
             cluster::SyncPartialKey::METHOD_NAME,
             cluster::SyncPartialKey::handler,
         )?
@@ -382,8 +390,16 @@ async fn initialize_external_rpc_server(app_state: &AppState) -> Result<JoinHand
             external::SendEncryptedTransaction::handler,
         )?
         .register_rpc_method(
+            external::SendRawTransaction::METHOD_NAME,
+            external::SendRawTransaction::handler,
+        )?
+        .register_rpc_method(
             external::GetEncryptedTransaction::METHOD_NAME,
             external::GetEncryptedTransaction::handler,
+        )?
+        .register_rpc_method(
+            external::GetRawTransaction::METHOD_NAME,
+            external::GetRawTransaction::handler,
         )?
         .register_rpc_method(
             external::DecryptTransaction::METHOD_NAME,

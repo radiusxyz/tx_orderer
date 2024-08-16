@@ -50,7 +50,7 @@ impl AddRollup {
             return Ok(AddRollupResponse { success: false });
         }
 
-        let mut rollup_id_list_model = RollupIdListModel::entry()?;
+        let mut rollup_id_list_model = RollupIdListModel::get_mut_or_init()?;
 
         if rollup_id_list_model.is_exist_rollup_id(&rollup_id) {
             return Ok(AddRollupResponse { success: false });

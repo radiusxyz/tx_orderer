@@ -25,11 +25,16 @@ impl RollupIdListModel {
             self.rollup_id_list.push(rollup_id);
         }
     }
+
+    pub fn update_rollup_id_list(&mut self, rollup_id_list: RollupIdList) {
+        self.rollup_id_list = rollup_id_list;
+    }
 }
 
 impl RollupIdListModel {
     pub const ID: &'static str = stringify!(RollupIdListModel);
 
+    // change func name or separate
     pub fn get() -> Result<Self, DbError> {
         let key = Self::ID;
         match database()?.get(&key) {
@@ -48,7 +53,8 @@ impl RollupIdListModel {
         }
     }
 
-    pub fn entry() -> Result<Lock<'static, Self>, DbError> {
+    // change func name or separate
+    pub fn get_mut_or_init() -> Result<Lock<'static, Self>, DbError> {
         let key = Self::ID;
         match database()?.get_mut(&key) {
             Ok(lock) => Ok(lock),

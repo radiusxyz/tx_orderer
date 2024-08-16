@@ -20,6 +20,10 @@ impl RollupModel {
     pub fn cluster_id(&self) -> &ClusterId {
         &self.cluster_id
     }
+
+    pub fn update_rollup(&mut self, rollup: Rollup) {
+        self.rollup = rollup;
+    }
 }
 
 impl RollupModel {
