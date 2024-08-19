@@ -40,6 +40,13 @@ impl TimeLockPuzzleProof {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum ZkpParams {
+    Pvde(PvdeZkp),
+    // Skde(SkdeZkp),
+    None,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PvdePublicInput {
     r1: BigUint,
     r2: BigUint,

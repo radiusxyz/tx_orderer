@@ -10,7 +10,7 @@ pub struct GetEncryptedTransaction {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetEncryptedTransactionResponse {
     encrypted_transaction: EncryptedTransaction,
-    time_lock_puzzle: TimeLockPuzzle,
+    time_lock_puzzle: Option<TimeLockPuzzle>,
 }
 
 impl GetEncryptedTransaction {

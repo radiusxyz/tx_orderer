@@ -36,6 +36,7 @@ struct GetRpcUrlResponse {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct GetSequencingInfosResponse {
+    // todo: change string to type
     sequencing_infos: HashMap<String, SequencingInfo>,
 }
 
@@ -105,6 +106,7 @@ impl SeederClient {
         Ok(get_rpc_url_response.rpc_url)
     }
 
+    // todo(jaemin): remove get_sequencing_infos
     pub async fn get_sequencing_infos(&self) -> Result<HashMap<String, SequencingInfo>, Error> {
         let rpc_method = json!({});
 

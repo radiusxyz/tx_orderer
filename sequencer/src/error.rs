@@ -33,6 +33,7 @@ pub enum Error {
     LivenessPublisher(radius_sequencer_sdk::liveness::publisher::PublisherError),
 
     PvdeZkpInvalid,
+    TryDecryptRawTransaction,
 
     NotfoundRpcUrl,
     NotFoundRollupState,

@@ -70,6 +70,10 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
+            // get or init sequencing info model
+            let sequencing_info_model = SequencingInfoModel::get()?;
+            let sequencing_infos = sequencing_info_model.sequencing_infos();
+
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
             let seeder_client = SeederClient::new(seeder_rpc_url)?;
@@ -78,23 +82,6 @@ async fn main() -> Result<(), Error> {
                 seeder_rpc_url,
             );
 
-            // sequencing_infos from seeder
-            let sequencing_infos = seeder_client
-                .get_sequencing_infos()
-                .await?
-                .iter()
-                .map(|(_, sequencing_info)| {
-                    (
-                        (SequencingInfoKey::new(
-                            sequencing_info.platform.clone(),
-                            sequencing_info.sequencing_function_type.clone(),
-                            sequencing_info.service_type.clone(),
-                        )),
-                        sequencing_info.clone(),
-                    )
-                })
-                .collect::<HashMap<_, _>>();
-
             SequencingInfoModel::new(sequencing_infos.clone()).put()?;
 
             // get or init rollup id list model
@@ -102,6 +89,7 @@ async fn main() -> Result<(), Error> {
             let rollup_id_list = rollup_id_list_model.rollup_id_list();
 
             let mut rollup_metadatas: HashMap<RollupId, RollupMetadata> = HashMap::new();
+            // todo(jaemin): rollup cluster_ids into rollup states
             let mut rollup_states: HashMap<RollupId, RollupState> = HashMap::new();
             let mut rollup_cluster_ids: HashMap<RollupId, ClusterId> = HashMap::new();
 
@@ -114,7 +102,7 @@ async fn main() -> Result<(), Error> {
 
                 rollup_states.insert(
                     rollup_id.clone(),
-                    RollupState::new(rollup_metadata.block_height()),
+                    RollupState::new(cluster_id.clone(), rollup_metadata.block_height()),
                 );
                 rollup_metadatas.insert(rollup_id.clone(), rollup_metadata);
                 rollup_cluster_ids.insert(rollup_id.clone(), cluster_id);

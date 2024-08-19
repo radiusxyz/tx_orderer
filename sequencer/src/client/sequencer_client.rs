@@ -94,13 +94,6 @@ impl SequencerClient {
         Ok(result)
     }
 
-    pub async fn sync_partial_key(&self, parameter: SyncPartialKey) -> Result<(), Error> {
-        self.request::<SyncPartialKey, ()>(SyncPartialKey::METHOD_NAME, parameter)
-            .await?;
-
-        Ok(())
-    }
-
     // Todo: change(Register with cluster rpc to forward to leader)
     pub async fn send_encrypted_transaction(
         &self,
@@ -156,5 +149,14 @@ impl SequencerClient {
             .map_err(|_| Error::FetchResponse)?;
 
         Ok(rpc_response)
+    }
+}
+
+impl SequencerClient {
+    pub async fn sync_partial_key(&self, parameter: SyncPartialKey) -> Result<(), Error> {
+        self.request::<SyncPartialKey, ()>(SyncPartialKey::METHOD_NAME, parameter)
+            .await?;
+
+        Ok(())
     }
 }

@@ -23,7 +23,7 @@ struct ClusterInner {
     // Todo: remove
     sequencer_indexes: Mutex<HashMap<SequencerIndex, Address>>,
     // Todo: change HashMap to Vec
-    sequencer_rpc_clients: SharedContext<Vec<(Address, SequencerClient)>>,
+    sequencer_rpc_client_list: SharedContext<Vec<(Address, SequencerClient)>>,
     partial_keys: Mutex<HashMap<Address, PartialKey>>,
 }
 
@@ -45,7 +45,7 @@ impl Cluster {
             cluster_id,
             node_address,
             sequencer_indexes: Mutex::new(HashMap::new()),
-            sequencer_rpc_clients: SharedContext::from(Vec::new()),
+            sequencer_rpc_client_list: SharedContext::from(Vec::new()),
             partial_keys: Mutex::new(HashMap::new()),
         };
 
@@ -88,12 +88,13 @@ impl Cluster {
         address: Address,
         sequencer_client: SequencerClient,
     ) {
-        let mut sequencer_rpc_clients = self.inner.sequencer_rpc_clients.load().as_ref().clone();
+        let mut sequencer_rpc_clients =
+            self.inner.sequencer_rpc_client_list.load().as_ref().clone();
         let sequencer_index = sequencer_rpc_clients.len();
         sequencer_rpc_clients.push((address.clone(), sequencer_client));
 
         self.inner
-            .sequencer_rpc_clients
+            .sequencer_rpc_client_list
             .store(sequencer_rpc_clients);
 
         let mut sequencer_indexes_lock = self.inner.sequencer_indexes.lock().await;
@@ -102,13 +103,14 @@ impl Cluster {
 
     // Todo: after remove, sort sequencer index
     pub fn remove_sequencer_rpc_client(&self, address: Address) {
-        let mut sequencer_rpc_clients = self.inner.sequencer_rpc_clients.load().as_ref().clone();
+        let mut sequencer_rpc_client_list =
+            self.inner.sequencer_rpc_client_list.load().as_ref().clone();
 
-        sequencer_rpc_clients.retain(|(rpc_address, _)| rpc_address != &address);
+        sequencer_rpc_client_list.retain(|(rpc_address, _)| rpc_address != &address);
 
         self.inner
-            .sequencer_rpc_clients
-            .store(sequencer_rpc_clients);
+            .sequencer_rpc_client_list
+            .store(sequencer_rpc_client_list);
     }
 
     pub async fn set_sequencer_indexes(
@@ -120,12 +122,12 @@ impl Cluster {
         *sequencer_indexes_lock = sequencer_indexes;
     }
 
-    pub fn set_sequencer_rpc_clients(
+    pub fn set_sequencer_rpc_client_list(
         &mut self,
         sequencer_rpc_clients: Vec<(Address, SequencerClient)>,
     ) {
         self.inner
-            .sequencer_rpc_clients
+            .sequencer_rpc_client_list
             .store(sequencer_rpc_clients)
     }
 
@@ -135,7 +137,7 @@ impl Cluster {
 
     pub async fn get_other_sequencer_rpc_clients(&self) -> Vec<SequencerClient> {
         self.inner
-            .sequencer_rpc_clients
+            .sequencer_rpc_client_list
             .load()
             .as_ref()
             .iter()
@@ -147,7 +149,7 @@ impl Cluster {
 
     pub async fn sequencer_rpc_clients(&self) -> Vec<SequencerClient> {
         self.inner
-            .sequencer_rpc_clients
+            .sequencer_rpc_client_list
             .load()
             .as_ref()
             .iter()
@@ -180,7 +182,7 @@ impl Cluster {
 
         let leader_rpc_client = self
             .inner
-            .sequencer_rpc_clients
+            .sequencer_rpc_client_list
             .load()
             .as_ref()
             .iter()
@@ -204,7 +206,7 @@ impl Cluster {
         // TODO
         let follower_rpc_client_list = self
             .inner
-            .sequencer_rpc_clients
+            .sequencer_rpc_client_list
             .load()
             .as_ref()
             .iter()

@@ -41,15 +41,15 @@ impl SendEncryptedTransaction {
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<SendEncryptedTransaction>()?;
 
-        let block_height = context.get_block_height(&parameter.rollup_id)?;
+        let rollup_block_height = context.get_block_height(&parameter.rollup_id)?;
 
         let cluster_id = context.get_cluster_id(&parameter.rollup_id)?;
         let cluster = context.get_cluster(&cluster_id)?;
-        let is_leader = cluster.is_leader(block_height).await;
+        let is_leader = cluster.is_leader(rollup_block_height).await;
 
         // forward to leader
         if !is_leader {
-            let leader_rpc_client = cluster.get_leader_rpc_client(block_height).await;
+            let leader_rpc_client = cluster.get_leader_rpc_client(rollup_block_height).await;
             return leader_rpc_client
                 .send_encrypted_transaction(parameter)
                 .await
@@ -78,7 +78,7 @@ impl SendEncryptedTransaction {
 
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),
-            block_height,
+            block_height: rollup_block_height,
             transaction_order,
             previous_order_hash: issued_order_hash,
         };
@@ -92,9 +92,13 @@ impl SendEncryptedTransaction {
         // 3. Save encrypted_transaction
         let encrypted_transaction_model = EncryptedTransactionModel::new(
             parameter.encrypted_transaction.clone(),
-            parameter.time_lock_puzzle.clone(),
+            Some(parameter.time_lock_puzzle.clone()),
         );
-        encrypted_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
+        encrypted_transaction_model.put(
+            &parameter.rollup_id,
+            &rollup_block_height,
+            &transaction_order,
+        )?;
 
         // 4. Save raw_transaction
         // Todo: change waiting decrypted raw transaction
@@ -105,7 +109,11 @@ impl SendEncryptedTransaction {
             context.pvde_params().as_ref(),
         )?;
         let raw_transaction_model = RawTransactionModel::new(raw_transaction);
-        raw_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
+        raw_transaction_model.put(
+            &parameter.rollup_id,
+            &rollup_block_height,
+            &transaction_order,
+        )?;
 
         // 4. Sync transaction
 
@@ -133,6 +141,10 @@ pub fn decrypt_transaction(
     is_using_zkp: bool,
     pvde_params: &Option<PvdeParams>,
 ) -> Result<RawTransaction, Error> {
+    if encrypted_transaction.is_unencrypted() {
+        return Err(Error::TryDecryptRawTransaction);
+    }
+
     let time_lock_puzzle = time_lock_puzzle.clone();
     let encrypted_data = encrypted_transaction.encrypted_data().clone();
     let open_data = encrypted_transaction.open_data().clone();

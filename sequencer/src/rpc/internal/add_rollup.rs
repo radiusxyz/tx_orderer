@@ -82,9 +82,8 @@ impl AddRollup {
 
         context.set_rollup_state(
             rollup_id.clone(),
-            RollupState::new(rollup_metadata.block_height()),
+            RollupState::new(parameter.cluster_id, rollup_metadata.block_height()),
         );
-        context.set_cluster_id(rollup_id.clone(), parameter.cluster_id);
 
         let rollup_metadata_model = RollupMetadataModel::new(rollup_id, rollup_metadata);
         rollup_metadata_model.put()?;

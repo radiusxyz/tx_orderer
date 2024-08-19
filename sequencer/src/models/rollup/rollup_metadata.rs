@@ -25,6 +25,10 @@ impl RollupMetadataModel {
     pub fn update_rollup_metadata(&mut self, rollup_metadata: RollupMetadata) {
         self.rollup_metadata = rollup_metadata;
     }
+
+    pub fn issue_new_block(&mut self) {
+        self.rollup_metadata.issue_new_block()
+    }
 }
 
 impl RollupMetadataModel {

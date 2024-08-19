@@ -18,19 +18,11 @@ impl SyncBlock {
 
         match RollupMetadataModel::get_mut(&parameter.rollup_id) {
             Ok(mut rollup_metadata_model) => {
-                let rollup_metadata = RollupMetadata::new(
-                    parameter.rollup_block_height + 1,
-                    0.into(),
-                    OrderHash::new(),
-                );
-                rollup_metadata_model.update_rollup_metadata(rollup_metadata.clone());
+                rollup_metadata_model.issue_new_block();
                 rollup_metadata_model.update()?;
 
                 // update context rollup state
-                context.set_rollup_state(
-                    parameter.rollup_id.clone(),
-                    RollupState::new(rollup_metadata.block_height()),
-                );
+                context.issue_new_block(&parameter.rollup_id)?;
 
                 builder::finalize_block(
                     parameter.rollup_id,
@@ -54,7 +46,10 @@ impl SyncBlock {
 
                     context.set_rollup_state(
                         parameter.rollup_id,
-                        RollupState::new(parameter.rollup_block_height),
+                        RollupState::new(
+                            cluster.cluster_id().clone(),
+                            parameter.rollup_block_height,
+                        ),
                     );
                 } else {
                     return Err(error.into());

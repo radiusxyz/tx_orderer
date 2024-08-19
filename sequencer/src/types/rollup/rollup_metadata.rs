@@ -39,4 +39,10 @@ impl RollupMetadata {
     pub fn update_order_hash(&mut self, order_hash: OrderHash) {
         self.order_hash = order_hash;
     }
+
+    pub fn issue_new_block(&mut self) {
+        self.block_height += 1;
+        self.transaction_order = 0.into();
+        self.order_hash = OrderHash::new();
+    }
 }

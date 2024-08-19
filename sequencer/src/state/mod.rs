@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use radius_sequencer_sdk::{
     context::{Context, SharedContext},
-    liveness::publisher::Publisher,
+    liveness::{publisher::Publisher, types::Block},
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
@@ -50,6 +50,7 @@ struct AppStateInner {
 
     seeder_client: SeederClient,
 
+    // todo(jaemin): change Option<PvdeParams> to ZkpParams(3 variants)
     pvde_params: SharedContext<Option<PvdeParams>>,
 }
 
@@ -65,7 +66,6 @@ impl Clone for AppState {
     }
 }
 
-// TODO(jaemin): 필드값 아니면 getter로 사용
 impl AppState {
     pub fn new(
         config: Config,
@@ -122,6 +122,21 @@ impl AppState {
         self.inner.pvde_params.load()
     }
 
+    pub fn issue_new_block(&self, rollup_id: &RollupId) -> Result<BlockHeight, Error> {
+        let mut rollup_states = self.rollup_states().as_ref().clone();
+
+        let rollup_state = rollup_states
+            .get_mut(rollup_id)
+            .ok_or(Error::NotFoundRollupState)?;
+
+        rollup_state.block_height += 1;
+        let rollup_block_height = rollup_state.block_height;
+
+        self.inner.rollup_states.store(rollup_states);
+
+        Ok(rollup_block_height)
+    }
+
     // Todo: change type
     pub fn get_block_height(&self, rollup_id: &RollupId) -> Result<BlockHeight, Error> {
         self.rollup_states()
@@ -133,11 +148,11 @@ impl AppState {
 
     pub fn get_cluster_id(&self, rollup_id: &RollupId) -> Result<ClusterId, Error> {
         self.inner
-            .rollup_cluster_ids
+            .rollup_states
             .load()
             .as_ref()
             .get(rollup_id)
-            .cloned()
+            .and_then(|rollup_state| Some(rollup_state.cluster_id().clone()))
             .ok_or(Error::NotFoundClusterId)
     }
 
@@ -210,15 +225,23 @@ impl AppState {
     }
 }
 
-// Todo: Add fields or remove
+// Todo: Add fields
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RollupState {
+    pub cluster_id: ClusterId,
     pub block_height: BlockHeight,
 }
 
 impl RollupState {
-    pub fn new(block_height: BlockHeight) -> Self {
-        Self { block_height }
+    pub fn new(cluster_id: ClusterId, block_height: BlockHeight) -> Self {
+        Self {
+            cluster_id,
+            block_height,
+        }
+    }
+
+    pub fn cluster_id(&self) -> &ClusterId {
+        &self.cluster_id
     }
 
     pub fn block_height(&self) -> BlockHeight {

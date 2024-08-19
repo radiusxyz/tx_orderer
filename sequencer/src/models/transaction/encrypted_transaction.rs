@@ -5,13 +5,13 @@ use crate::models::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EncryptedTransactionModel {
     encrypted_transaction: EncryptedTransaction,
-    time_lock_puzzle: TimeLockPuzzle,
+    time_lock_puzzle: Option<TimeLockPuzzle>,
 }
 
 impl EncryptedTransactionModel {
     pub fn new(
         encrypted_transaction: EncryptedTransaction,
-        time_lock_puzzle: TimeLockPuzzle,
+        time_lock_puzzle: Option<TimeLockPuzzle>,
     ) -> Self {
         Self {
             encrypted_transaction,
@@ -19,11 +19,18 @@ impl EncryptedTransactionModel {
         }
     }
 
+    pub fn unencrypted_transaction() -> Self {
+        Self {
+            encrypted_transaction: EncryptedTransaction::UnEncrypted,
+            time_lock_puzzle: None,
+        }
+    }
+
     pub fn encrypted_transaction(&self) -> &EncryptedTransaction {
         &self.encrypted_transaction
     }
 
-    pub fn time_lock_puzzle(&self) -> &TimeLockPuzzle {
+    pub fn time_lock_puzzle(&self) -> &Option<TimeLockPuzzle> {
         &self.time_lock_puzzle
     }
 }

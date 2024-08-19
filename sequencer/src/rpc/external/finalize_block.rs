@@ -44,19 +44,10 @@ impl FinalizeBlock {
             transaction_order,
         );
 
-        let new_rollup_metadata = RollupMetadata::new(
-            parameter.rollup_block_height + 1,
-            TransactionOrder::new(0),
-            OrderHash::new(),
-        );
-
-        context.set_rollup_state(
-            parameter.rollup_id.clone(),
-            RollupState::new(new_rollup_metadata.block_height()),
-        );
+        context.issue_new_block(&parameter.rollup_id)?;
 
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
-        rollup_metadata.update_rollup_metadata(new_rollup_metadata);
+        rollup_metadata.issue_new_block();
         rollup_metadata.update()?;
 
         Ok(SequencerStatus::Running)

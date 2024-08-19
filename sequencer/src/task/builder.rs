@@ -23,7 +23,7 @@ pub fn finalize_block(
 ) {
     tokio::spawn(async move {
         // TODO: 1. make encrypted / raw transaction list
-        let mut encrypted_transaction_list: Vec<Option<EncryptedTransaction>> =
+        let mut encrypted_transaction_list: Vec<EncryptedTransaction> =
             Vec::with_capacity(transaction_order.value() as usize);
 
         let mut raw_transaction_list: Vec<RawTransaction> =
@@ -31,16 +31,18 @@ pub fn finalize_block(
 
         // TODO: change
         for order_index in 0..transaction_order.value() {
-            EncryptedTransactionModel::get(
+            match EncryptedTransactionModel::get(
                 &rollup_id,
                 &rollup_block_height,
                 &TransactionOrder::new(order_index),
-            )
-            .map(|encrypted_transaction| {
-                encrypted_transaction_list
-                    .push(Some(encrypted_transaction.encrypted_transaction().clone()));
-            })
-            .unwrap_or_else(|_| encrypted_transaction_list.push(None));
+            ) {
+                Ok(encrypted_transaction) => {
+                    encrypted_transaction_list
+                        .push(encrypted_transaction.encrypted_transaction().clone());
+                }
+                // Todo: handling error
+                Err(_) => {}
+            }
 
             match RawTransactionModel::get(
                 &rollup_id,
@@ -50,7 +52,7 @@ pub fn finalize_block(
                 Ok(raw_transaction) => {
                     raw_transaction_list.push(raw_transaction.raw_transaction().clone());
                 }
-                // TODO: change
+                // TODO: handling error
                 Err(_) => {}
             }
         }
@@ -76,8 +78,10 @@ pub fn finalize_block(
             EncryptedTransactionList::new(encrypted_transaction_list),
             RawTransactionList::new(raw_transaction_list),
             proposer_address.clone(),
+            // Todo: change
             Signature::default(),
             timestamp,
+            // Todo: change
             vec![0u8; 32].into(),
         );
 

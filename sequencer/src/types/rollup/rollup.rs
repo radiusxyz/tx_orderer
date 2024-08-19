@@ -31,4 +31,8 @@ impl Rollup {
     pub fn rollup_id(&self) -> &RollupId {
         &self.rollup_id
     }
+
+    pub fn rollup_type(&self) -> &RollupType {
+        &self.rollup_type
+    }
 }

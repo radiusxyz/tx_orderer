@@ -1,5 +1,7 @@
 use crate::{
-    models::{RawTransactionModel, RollupMetadataModel, TransactionModel},
+    models::{
+        EncryptedTransactionModel, RawTransactionModel, RollupMetadataModel, TransactionModel,
+    },
     rpc::prelude::*,
     types::*,
 };
@@ -11,6 +13,7 @@ pub struct SendRawTransaction {
 }
 
 // TODO(jaemin): Check leader verification for order commitment
+// Todo(jaemin): Add to empty encrypted transaction after send raw transaction
 impl SendRawTransaction {
     pub const METHOD_NAME: &'static str = "send_raw_transaction";
 
@@ -20,15 +23,15 @@ impl SendRawTransaction {
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<SendRawTransaction>()?;
 
-        let block_height = context.get_block_height(&parameter.rollup_id)?;
+        let rollup_block_height = context.get_block_height(&parameter.rollup_id)?;
 
         let cluster_id = context.get_cluster_id(&parameter.rollup_id)?;
         let cluster = context.get_cluster(&cluster_id)?;
-        let is_leader = cluster.is_leader(block_height).await;
+        let is_leader = cluster.is_leader(rollup_block_height).await;
 
         // forward to leader
         if !is_leader {
-            let leader_rpc_client = cluster.get_leader_rpc_client(block_height).await;
+            let leader_rpc_client = cluster.get_leader_rpc_client(rollup_block_height).await;
             return leader_rpc_client
                 .send_raw_transaction(parameter)
                 .await
@@ -55,7 +58,7 @@ impl SendRawTransaction {
 
         let order_commitment_data = OrderCommitmentData {
             rollup_id: parameter.rollup_id.clone(),
-            block_height,
+            block_height: rollup_block_height,
             transaction_order,
             previous_order_hash: issued_order_hash,
         };
@@ -66,12 +69,31 @@ impl SendRawTransaction {
             signature: order_commitment_signature,
         };
 
-        // 3. Save raw_transaction
-        // Todo: change waiting decrypted raw transaction
-        let raw_transaction_model = RawTransactionModel::new(parameter.raw_transaction);
-        raw_transaction_model.put(&parameter.rollup_id, &block_height, &transaction_order)?;
+        // 3. Save empty encrypted transaction
+        let encrypted_transaction_model = EncryptedTransactionModel::unencrypted_transaction();
+        encrypted_transaction_model.put(
+            &parameter.rollup_id,
+            &rollup_block_height,
+            &transaction_order,
+        )?;
 
-        // 4. Sync transaction
+        // 4. Save raw_transaction
+        let raw_transaction_model = RawTransactionModel::new(parameter.raw_transaction);
+        raw_transaction_model.put(
+            &parameter.rollup_id,
+            &rollup_block_height,
+            &transaction_order,
+        )?;
+
+        // 5. Sync empty encrypted transaction
+        syncer::sync_transaction(
+            cluster.clone(),
+            parameter.rollup_id.clone(),
+            TransactionModel::Encrypted(encrypted_transaction_model),
+            order_commitment.clone(),
+        );
+
+        // 6. Sync raw transaction
         syncer::sync_transaction(
             cluster,
             parameter.rollup_id,

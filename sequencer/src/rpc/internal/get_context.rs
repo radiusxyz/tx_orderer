@@ -15,7 +15,7 @@ impl GetContext {
         context: Arc<AppState>,
     ) -> Result<Value, RpcError> {
         let config = context.config();
-        let rollup_metadatas = context.rollup_states().as_ref().clone();
+        let rollup_states = context.rollup_states().as_ref().clone();
         let rollup_cluster_ids = context.rollup_cluster_ids().as_ref().clone();
 
         let sequencing_infos = context
@@ -38,7 +38,7 @@ impl GetContext {
 
         let result = json!({
           "config": config,
-          "rollup_metadatas": rollup_metadatas,
+          "rollup_states": rollup_states,
           "rollup_cluster_ids": rollup_cluster_ids,
           "sequencing_infos": sequencing_infos,
           "get_cluster_id_list": get_cluster_id_list,
