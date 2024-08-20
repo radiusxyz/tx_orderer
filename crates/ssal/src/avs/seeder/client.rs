@@ -49,7 +49,7 @@ impl SeederClient {
             .map_err(|error| (ErrorKind::DeregisterSequencer, error).into())
     }
 
-    pub async fn get_sequencer_rpc_urls(
+    pub async fn get_sequencer_rpc_url_list(
         &self,
         sequencer_address_list: Vec<Address>,
     ) -> Result<Vec<Option<String>>, Error> {

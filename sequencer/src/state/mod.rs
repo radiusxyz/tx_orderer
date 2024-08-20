@@ -41,10 +41,8 @@ pub struct AppState {
 struct AppStateInner {
     config: Config,
 
-    // Todo: change add field or remove. now it has only block_height
     rollup_states: SharedContext<HashMap<RollupId, RollupState>>,
 
-    rollup_cluster_ids: SharedContext<HashMap<RollupId, ClusterId>>,
     sequencing_infos: SharedContext<HashMap<SequencingInfoKey, SequencingInfo>>,
     clusters: SharedContext<HashMap<ClusterId, Cluster>>,
 
@@ -70,7 +68,6 @@ impl AppState {
     pub fn new(
         config: Config,
         rollup_states: HashMap<RollupId, RollupState>,
-        rollup_cluster_ids: HashMap<RollupId, ClusterId>,
         sequencing_infos: HashMap<SequencingInfoKey, SequencingInfo>,
         seeder_client: SeederClient,
         pvde_params: Option<PvdeParams>,
@@ -78,7 +75,6 @@ impl AppState {
         let inner = AppStateInner {
             config,
             rollup_states: SharedContext::from(rollup_states),
-            rollup_cluster_ids: SharedContext::from(rollup_cluster_ids),
             sequencing_infos: SharedContext::from(sequencing_infos),
             seeder_client,
             clusters: HashMap::new().into(),
@@ -96,10 +92,6 @@ impl AppState {
 
     pub fn rollup_states(&self) -> Context<HashMap<RollupId, RollupState>> {
         self.inner.rollup_states.load()
-    }
-
-    pub fn rollup_cluster_ids(&self) -> Context<HashMap<RollupId, ClusterId>> {
-        self.inner.rollup_cluster_ids.load()
     }
 
     pub fn sequencing_infos(&self) -> Context<HashMap<SequencingInfoKey, SequencingInfo>> {
@@ -129,8 +121,8 @@ impl AppState {
             .get_mut(rollup_id)
             .ok_or(Error::NotFoundRollupState)?;
 
-        rollup_state.block_height += 1;
-        let rollup_block_height = rollup_state.block_height;
+        rollup_state.rollup_block_height += 1;
+        let rollup_block_height = rollup_state.rollup_block_height;
 
         self.inner.rollup_states.store(rollup_states);
 
@@ -202,14 +194,6 @@ impl AppState {
         self.inner.clusters.store(new_clusters);
     }
 
-    pub fn set_cluster_id(&self, rollup_id: RollupId, cluster_id: ClusterId) {
-        let mut rollup_cluster_ids = self.inner.rollup_cluster_ids.load().as_ref().clone();
-
-        rollup_cluster_ids.insert(rollup_id, cluster_id);
-
-        self.inner.rollup_cluster_ids.store(rollup_cluster_ids);
-    }
-
     pub fn set_sequencing_info(&self, sequencing_info: SequencingInfo) {
         let mut new_sequencing_infos = self.inner.sequencing_infos.load().as_ref().clone();
 
@@ -229,14 +213,14 @@ impl AppState {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RollupState {
     pub cluster_id: ClusterId,
-    pub block_height: BlockHeight,
+    pub rollup_block_height: BlockHeight,
 }
 
 impl RollupState {
     pub fn new(cluster_id: ClusterId, block_height: BlockHeight) -> Self {
         Self {
             cluster_id,
-            block_height,
+            rollup_block_height: block_height,
         }
     }
 
@@ -245,6 +229,6 @@ impl RollupState {
     }
 
     pub fn block_height(&self) -> BlockHeight {
-        self.block_height
+        self.rollup_block_height
     }
 }

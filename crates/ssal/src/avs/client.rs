@@ -469,7 +469,7 @@ impl LivenessClient {
         let sequencer_rpc_url_list = self
             .inner
             .seeder_client
-            .get_sequencer_rpc_urls(sequencer_address_list.clone())
+            .get_sequencer_rpc_url_list(sequencer_address_list.clone())
             .await?;
 
         let sequencer_list = zip(sequencer_address_list, sequencer_rpc_url_list).collect();

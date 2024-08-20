@@ -17,13 +17,9 @@ pub struct Cluster {
 
 struct ClusterInner {
     cluster_id: ClusterId,
-
     node_address: Address,
-
-    // Todo: remove
-    sequencer_indexes: Mutex<HashMap<SequencerIndex, Address>>,
-    // Todo: change HashMap to Vec
     sequencer_rpc_client_list: SharedContext<Vec<(Address, SequencerClient)>>,
+
     partial_keys: Mutex<HashMap<Address, PartialKey>>,
 }
 
@@ -44,7 +40,6 @@ impl Cluster {
         let inner = ClusterInner {
             cluster_id,
             node_address,
-            sequencer_indexes: Mutex::new(HashMap::new()),
             sequencer_rpc_client_list: SharedContext::from(Vec::new()),
             partial_keys: Mutex::new(HashMap::new()),
         };
@@ -65,18 +60,16 @@ impl Cluster {
 
     pub async fn get_partial_key_list(&self) -> Vec<PartialKey> {
         // TODO
-        let sequencer_indexes_lock = self.inner.sequencer_indexes.lock().await;
-        let partial_keys_lock = self.inner.partial_keys.lock().await;
-
-        println!(
-            "stompesi - sequencer_indexes_lock: {:?}",
-            sequencer_indexes_lock
-        );
+        let partial_keys_lock = self.inner.partial_keys.lock().await.clone();
         println!("stompesi - partial_keys_lock: {:?}", partial_keys_lock);
 
-        let sorted_partial_key_list: Vec<PartialKey> = sequencer_indexes_lock
+        let sorted_partial_key_list: Vec<PartialKey> = self
+            .inner
+            .sequencer_rpc_client_list
+            .load()
+            .as_ref()
             .iter()
-            .map(|(_, address)| partial_keys_lock.get(address).cloned())
+            .map(|(address, _)| partial_keys_lock.get(address).cloned())
             .flatten()
             .collect();
 
@@ -90,15 +83,11 @@ impl Cluster {
     ) {
         let mut sequencer_rpc_clients =
             self.inner.sequencer_rpc_client_list.load().as_ref().clone();
-        let sequencer_index = sequencer_rpc_clients.len();
         sequencer_rpc_clients.push((address.clone(), sequencer_client));
 
         self.inner
             .sequencer_rpc_client_list
             .store(sequencer_rpc_clients);
-
-        let mut sequencer_indexes_lock = self.inner.sequencer_indexes.lock().await;
-        sequencer_indexes_lock.insert(sequencer_index, address);
     }
 
     // Todo: after remove, sort sequencer index
@@ -111,15 +100,6 @@ impl Cluster {
         self.inner
             .sequencer_rpc_client_list
             .store(sequencer_rpc_client_list);
-    }
-
-    pub async fn set_sequencer_indexes(
-        &mut self,
-        sequencer_indexes: HashMap<SequencerIndex, Address>,
-    ) {
-        let mut sequencer_indexes_lock = self.inner.sequencer_indexes.lock().await;
-
-        *sequencer_indexes_lock = sequencer_indexes;
     }
 
     pub fn set_sequencer_rpc_client_list(
@@ -158,64 +138,50 @@ impl Cluster {
     }
 
     pub async fn is_leader(&self, rollup_block_height: BlockHeight) -> bool {
-        let sequencer_indexes_lock = self.inner.sequencer_indexes.lock().await;
+        let sequencer_rpc_client_list_context = self.inner.sequencer_rpc_client_list.load();
 
-        let leader_index =
-            (rollup_block_height % sequencer_indexes_lock.len() as BlockHeight) as SequencerIndex;
+        let sequencer_rpc_client_list = sequencer_rpc_client_list_context.as_ref();
+        let leader_index = (rollup_block_height % sequencer_rpc_client_list.len() as BlockHeight)
+            as SequencerIndex;
 
-        let leader_address = sequencer_indexes_lock.get(&leader_index).unwrap();
-
-        leader_address == self.node_address()
+        sequencer_rpc_client_list
+            .get(leader_index)
+            .and_then(|(address, _)| Some(address == self.node_address()))
+            .unwrap_or(false)
     }
 
     pub async fn get_leader_rpc_client(&self, rollup_block_height: BlockHeight) -> SequencerClient {
-        let sequencer_indexes_lock = self.inner.sequencer_indexes.lock().await;
-        let leader_index =
-            (rollup_block_height % sequencer_indexes_lock.len() as BlockHeight) as SequencerIndex;
+        let sequencer_rpc_client_list_context = self.inner.sequencer_rpc_client_list.load();
 
-        println!("jaemin - sequencer_indexes: {:?}", sequencer_indexes_lock);
+        let sequencer_rpc_client_list = sequencer_rpc_client_list_context.as_ref();
+        let leader_index = (rollup_block_height % sequencer_rpc_client_list.len() as BlockHeight)
+            as SequencerIndex;
 
         println!("jaemin - leader_index: {:?}", leader_index);
 
-        let leader_address = sequencer_indexes_lock.get(&leader_index).unwrap();
-        println!("jaemin - leader_address: {:?}", leader_address);
+        let leader = sequencer_rpc_client_list.get(leader_index).unwrap();
+        println!("jaemin - leader_address: {:?}", leader.0);
 
-        let leader_rpc_client = self
-            .inner
-            .sequencer_rpc_client_list
-            .load()
-            .as_ref()
-            .iter()
-            .find(|(address, _)| address == leader_address)
-            .map(|(_, sequencer_client)| sequencer_client.clone())
-            .unwrap();
-
-        leader_rpc_client
+        leader.1.clone()
     }
 
     pub async fn get_follower_rpc_client_list(
         &self,
         rollup_block_height: BlockHeight,
     ) -> Vec<SequencerClient> {
-        let sequencer_indexes_lock = self.inner.sequencer_indexes.lock().await;
-        let leader_index =
-            (rollup_block_height % sequencer_indexes_lock.len() as BlockHeight) as SequencerIndex;
+        let sequencer_rpc_client_list_context = self.inner.sequencer_rpc_client_list.load();
 
-        let leader_address = sequencer_indexes_lock.get(&leader_index).unwrap();
+        let sequencer_rpc_client_list = sequencer_rpc_client_list_context.as_ref();
+        let leader_index = (rollup_block_height % sequencer_rpc_client_list.len() as BlockHeight)
+            as SequencerIndex;
 
-        // TODO
-        let follower_rpc_client_list = self
-            .inner
-            .sequencer_rpc_client_list
-            .load()
-            .as_ref()
+        sequencer_rpc_client_list
             .iter()
-            .filter_map(|(address, rpc_client)| {
-                (address != self.node_address() && address != leader_address)
+            .enumerate()
+            .filter_map(|(sequencer_index, (address, rpc_client))| {
+                (address != self.node_address() && sequencer_index != leader_index)
                     .then(|| rpc_client.clone())
             })
-            .collect::<Vec<SequencerClient>>();
-
-        follower_rpc_client_list
+            .collect()
     }
 }

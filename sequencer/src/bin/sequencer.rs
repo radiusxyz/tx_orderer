@@ -91,7 +91,6 @@ async fn main() -> Result<(), Error> {
             let mut rollup_metadatas: HashMap<RollupId, RollupMetadata> = HashMap::new();
             // todo(jaemin): rollup cluster_ids into rollup states
             let mut rollup_states: HashMap<RollupId, RollupState> = HashMap::new();
-            let mut rollup_cluster_ids: HashMap<RollupId, ClusterId> = HashMap::new();
 
             rollup_id_list.iter().for_each(|rollup_id| {
                 let rollup_model = RollupModel::get(rollup_id).unwrap();
@@ -105,7 +104,6 @@ async fn main() -> Result<(), Error> {
                     RollupState::new(cluster_id.clone(), rollup_metadata.block_height()),
                 );
                 rollup_metadatas.insert(rollup_id.clone(), rollup_metadata);
-                rollup_cluster_ids.insert(rollup_id.clone(), cluster_id);
             });
 
             let pvde_params = if let Some(ref path) = config_option.path {
@@ -119,7 +117,6 @@ async fn main() -> Result<(), Error> {
             let app_state = AppState::new(
                 config,
                 rollup_states,
-                rollup_cluster_ids, // rollup_cluster_ids,
                 sequencing_infos.clone(),
                 seeder_client,
                 pvde_params,

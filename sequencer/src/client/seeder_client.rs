@@ -25,8 +25,8 @@ struct RegisterRpcUrlResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-struct GetRpcUrlsResponse {
-    pub rpc_urls: HashMap<Address, (SequencerIndex, IpAddress)>,
+struct GetRpcUrlListResponse {
+    pub rpc_url_list: Vec<(Address, IpAddress)>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -71,13 +71,13 @@ impl SeederClient {
         Ok(())
     }
 
-    pub async fn get_rpc_urls(
+    pub async fn get_rpc_url_list(
         &self,
         platform: &PlatForm,
         sequencing_function_type: &SequencingFunctionType,
         service_type: &ServiceType,
         cluster_id: &ClusterId,
-    ) -> Result<HashMap<Address, (SequencerIndex, IpAddress)>, Error> {
+    ) -> Result<Vec<(Address, IpAddress)>, Error> {
         let rpc_method = json!({
           "platform": platform,
           "sequencing_function_type": sequencing_function_type,
@@ -87,10 +87,10 @@ impl SeederClient {
 
         info!("Get rpc urls - rpc_method: {:?}", rpc_method);
 
-        let get_rpc_urls_response: GetRpcUrlsResponse =
-            self.0.request("get_rpc_urls", rpc_method).await?;
+        let get_rpc_url_list_response: GetRpcUrlListResponse =
+            self.0.request("get_rpc_url_list", rpc_method).await?;
 
-        Ok(get_rpc_urls_response.rpc_urls)
+        Ok(get_rpc_url_list_response.rpc_url_list)
     }
 
     pub async fn get_rpc_url(&self, address: &Address) -> Result<IpAddress, Error> {

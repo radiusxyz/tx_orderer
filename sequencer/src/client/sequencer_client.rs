@@ -34,11 +34,6 @@ struct RegisterRpcUrlResponse {
     pub success: bool,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-struct GetRpcUrlsResponse {
-    pub rpc_urls: HashMap<Address, IpAddress>,
-}
-
 impl SequencerClient {
     pub fn new(rpc_url: impl AsRef<str>) -> Result<Self, Error> {
         let client = RpcClient::new(rpc_url).map_err(|error| {

@@ -81,7 +81,7 @@ async fn main() -> Result<(), Error> {
                 .register_rpc_method(Register::METHOD_NAME, Register::handler)?
                 .register_rpc_method(Deregister::METHOD_NAME, Deregister::handler)?
                 .register_rpc_method(RegisterRpcUrl::METHOD_NAME, RegisterRpcUrl::handler)?
-                .register_rpc_method(GetRpcUrls::METHOD_NAME, GetRpcUrls::handler)?
+                .register_rpc_method(GetRpcUrlList::METHOD_NAME, GetRpcUrlList::handler)?
                 .register_rpc_method(GetClusterList::METHOD_NAME, GetClusterList::handler)?
                 .init(seeder_rpc_url)
                 .await?;
