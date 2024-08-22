@@ -39,8 +39,9 @@ impl TimeLockPuzzleProof {
     }
 }
 
+// Todo(jaemin): Add Skde and handling
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum ZkpParams {
+pub enum Zkp {
     Pvde(PvdeZkp),
     // Skde(SkdeZkp),
     None,

@@ -48,16 +48,8 @@ impl Register {
                     &parameter.cluster_id,
                 )?;
 
-                let is_exist_validator_address = validation_cluster_model
-                    .validator_address_list
-                    .contains(&parameter.address);
-
-                if !is_exist_validator_address {
-                    validation_cluster_model
-                        .validator_address_list
-                        .push(parameter.address);
-                    validation_cluster_model.update()?;
-                }
+                validation_cluster_model.add_seqeuncer(parameter.address);
+                validation_cluster_model.update()?;
             }
         }
         Ok(RegisterResponse { success: true })

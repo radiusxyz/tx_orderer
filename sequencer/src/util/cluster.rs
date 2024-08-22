@@ -13,7 +13,6 @@ use crate::{
 pub async fn initialize_liveness_cluster(
     signing_key: &SigningKey,
     seeder_client: &SeederClient,
-    sequencing_info_key: &SequencingInfoKey,
     sequencing_info: &SequencingInfo,
     cluster_id: &ClusterId,
 ) -> Result<Cluster, Error> {
@@ -22,20 +21,14 @@ pub async fn initialize_liveness_cluster(
         cluster_id
     );
 
-    let mut liveness_cluster_model = LivenessClusterModel::get_mut(
-        sequencing_info_key.platform(),
-        sequencing_info_key.service_type(),
-        cluster_id,
-    )?;
-
     let (sequencer_list, sequencer_rpc_client_list) = match sequencing_info.platform {
         PlatForm::Local => {
             // get rpc urls from seeder
             let sequencer_rpc_urls: Vec<(Address, IpAddress)> = seeder_client
                 .get_rpc_url_list(
-                    sequencing_info_key.platform(),
-                    sequencing_info_key.sequencing_function_type(),
-                    sequencing_info_key.service_type(),
+                    sequencing_info.platform(),
+                    sequencing_info.sequencing_function_type(),
+                    sequencing_info.service_type(),
                     cluster_id,
                 )
                 .await?;
@@ -90,9 +83,9 @@ pub async fn initialize_liveness_cluster(
             // get rpc urls from seeder
             let sequencer_rpc_urls: HashMap<Address, IpAddress> = seeder_client
                 .get_rpc_url_list(
-                    sequencing_info_key.platform(),
-                    sequencing_info_key.sequencing_function_type(),
-                    sequencing_info_key.service_type(),
+                    sequencing_info.platform(),
+                    sequencing_info.sequencing_function_type(),
+                    sequencing_info.service_type(),
                     &cluster_id,
                 )
                 .await?
@@ -122,13 +115,19 @@ pub async fn initialize_liveness_cluster(
 
     // Initialize sequencer_rpc_clients
     let node_address = signing_key.get_address();
-    let mut cluster = Cluster::new(cluster_id.clone(), node_address);
 
     // Update liveness_cluster_model
+    let mut liveness_cluster_model = LivenessClusterModel::get_mut(
+        sequencing_info.platform(),
+        sequencing_info.service_type(),
+        cluster_id,
+    )?;
     liveness_cluster_model.set_sequencer_list(sequencer_list);
     liveness_cluster_model.update()?;
 
     // Update sequencer_rpc_clients in cluster
+    // Todo: check(get cluster first or not)
+    let mut cluster = Cluster::new(cluster_id.clone(), node_address);
     cluster.set_sequencer_rpc_client_list(sequencer_rpc_client_list);
 
     Ok(cluster)

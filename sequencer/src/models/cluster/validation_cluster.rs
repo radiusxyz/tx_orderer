@@ -24,11 +24,11 @@ impl ValidationClusterModel {
         self.validator_address_list = validator_addresses;
     }
 
-    pub fn add_seqeuncer(&mut self, validator_address: &Address) {
-        let is_exist_validator_address = self.validator_address_list.contains(validator_address);
+    pub fn add_seqeuncer(&mut self, validator_address: Address) {
+        let is_exist_validator_address = self.validator_address_list.contains(&validator_address);
 
         if !is_exist_validator_address {
-            self.validator_address_list.push(validator_address.clone());
+            self.validator_address_list.push(validator_address);
         }
     }
 

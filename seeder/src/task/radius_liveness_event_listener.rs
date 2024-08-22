@@ -102,14 +102,29 @@ async fn callback(event: Events, context: Arc<SequencingInfo>) {
 pub fn initialize_cluster(platform: PlatForm, cluster_id: ClusterId) -> Result<(), Error> {
     info!("initialize_cluster: {:?}", cluster_id);
 
-    let mut cluster_id_list_model = ClusterIdListModel::entry(
+    match ClusterIdListModel::get_mut(
         &platform,
         &SequencingFunctionType::Liveness,
         &ServiceType::Radius,
-    )?;
-
-    cluster_id_list_model.add_cluster_id(cluster_id.clone());
-    cluster_id_list_model.update()?;
+    ) {
+        Ok(mut cluster_id_list) => {
+            cluster_id_list.add_cluster_id(cluster_id.clone());
+            cluster_id_list.update()?;
+        }
+        Err(err) => {
+            if err.is_none_type() {
+                let mut cluster_id_list_model = ClusterIdListModel::default();
+                cluster_id_list_model.add_cluster_id(cluster_id.clone());
+                cluster_id_list_model.put(
+                    &platform,
+                    &SequencingFunctionType::Liveness,
+                    &ServiceType::Radius,
+                )?;
+            } else {
+                return Err(err.into());
+            }
+        }
+    };
 
     let cluster_model = LivenessClusterModel::new(platform, ServiceType::Radius, cluster_id);
     cluster_model.put()?;

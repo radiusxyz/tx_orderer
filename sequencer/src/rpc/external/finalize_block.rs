@@ -1,4 +1,4 @@
-use crate::{models::RollupMetadataModel, rpc::prelude::*, state::RollupState};
+use crate::{models::RollupMetadataModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlock {

@@ -40,26 +40,14 @@ impl ClusterIdListModel {
         }
     }
 
-    pub fn entry(
+    pub fn get_mut(
         platform: &PlatForm,
         sequencing_function_type: &SequencingFunctionType,
         service_type: &ServiceType,
     ) -> Result<Lock<'static, Self>, DbError> {
         let key = (Self::ID, platform, sequencing_function_type, service_type);
-        match database()?.get_mut(&key) {
-            Ok(lock) => Ok(lock),
-            Err(error) => {
-                if error.is_none_type() {
-                    let cluster_id_list_model = Self::new(ClusterIdList::default());
 
-                    cluster_id_list_model.put(platform, sequencing_function_type, service_type)?;
-
-                    Ok(database()?.get_mut(&key)?)
-                } else {
-                    Err(error)
-                }
-            }
-        }
+        database()?.get_mut(&key)
     }
 
     pub fn put(

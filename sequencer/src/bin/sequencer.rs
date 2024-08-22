@@ -70,8 +70,17 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
-            // get or init sequencing info model
-            let sequencing_info_model = SequencingInfoModel::get()?;
+            // get or init sequencing infos, can be loaded after restarting
+            let sequencing_info_model = match SequencingInfoModel::get() {
+                Ok(sequencing_info_model) => sequencing_info_model,
+                Err(err) => {
+                    if err.is_none_type() {
+                        SequencingInfoModel::new(HashMap::new())
+                    } else {
+                        return Err(err.into());
+                    }
+                }
+            };
             let sequencing_infos = sequencing_info_model.sequencing_infos();
 
             // Initialize seeder client
@@ -82,14 +91,11 @@ async fn main() -> Result<(), Error> {
                 seeder_rpc_url,
             );
 
-            SequencingInfoModel::new(sequencing_infos.clone()).put()?;
-
             // get or init rollup id list model
             let rollup_id_list_model = RollupIdListModel::get()?;
             let rollup_id_list = rollup_id_list_model.rollup_id_list();
 
             let mut rollup_metadatas: HashMap<RollupId, RollupMetadata> = HashMap::new();
-            // todo(jaemin): rollup cluster_ids into rollup states
             let mut rollup_states: HashMap<RollupId, RollupState> = HashMap::new();
 
             rollup_id_list.iter().for_each(|rollup_id| {
@@ -208,12 +214,34 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
     let cluster_rpc_url = config.cluster_rpc_url().to_string();
 
     // Register sequencer rpc url (with cluster rpc url) to seeder
-    tracing::info!("Registering rpc url: {:?} {:?}", address, cluster_rpc_url);
-    seeder_client
-        .register_rpc_url(address, cluster_rpc_url.to_string())
-        .await?;
+    match seeder_client.get_rpc_url(&address).await {
+        Ok(rpc_url) => {
+            if rpc_url != cluster_rpc_url {
+                // TODO: Check
+                seeder_client
+                    .register_rpc_url(address.clone(), cluster_rpc_url.to_string())
+                    .await?;
+            }
+        }
+        Err(_) => {
+            seeder_client
+                .register_rpc_url(address.clone(), cluster_rpc_url.to_string())
+                .await?;
+        }
+    }
 
-    let sequencing_info_model = SequencingInfoModel::get()?;
+    // get or init sequencing infos, can be loaded after restarting
+    let sequencing_info_model = match SequencingInfoModel::get() {
+        Ok(sequencing_info_model) => sequencing_info_model,
+        Err(err) => {
+            if err.is_none_type() {
+                SequencingInfoModel::new(HashMap::new())
+            } else {
+                return Err(err.into());
+            }
+        }
+    };
+
     let sequencing_infos = sequencing_info_model.sequencing_infos();
 
     for (sequencing_info_key, sequencing_info) in sequencing_infos.iter() {
@@ -241,7 +269,6 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
                     let cluster = initialize_liveness_cluster(
                         &SigningKey::from(signing_key.clone()),
                         &seeder_client,
-                        sequencing_info_key,
                         sequencing_info,
                         cluster_id,
                     )

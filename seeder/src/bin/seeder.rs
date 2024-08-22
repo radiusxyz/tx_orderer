@@ -29,7 +29,17 @@ async fn main() -> Result<(), Error> {
             // Initialize a local database.
             Database::new(config.path().join(DATABASE_DIR_NAME))?.init();
 
-            let sequencing_info_model = SequencingInfoModel::get()?;
+            // get or init sequencing infos, can be loaded after restarting
+            let sequencing_info_model = match SequencingInfoModel::get() {
+                Ok(sequencing_info_model) => sequencing_info_model,
+                Err(err) => {
+                    if err.is_none_type() {
+                        SequencingInfoModel::default()
+                    } else {
+                        return Err(err.into());
+                    }
+                }
+            };
 
             sequencing_info_model.sequencing_infos().iter().for_each(
                 |(sequencing_info_key, sequencing_info)| {

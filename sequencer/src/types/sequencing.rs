@@ -80,6 +80,18 @@ impl SequencingInfo {
             contract_address,
         }
     }
+
+    pub fn platform(&self) -> &PlatForm {
+        &self.platform
+    }
+
+    pub fn sequencing_function_type(&self) -> &SequencingFunctionType {
+        &self.sequencing_function_type
+    }
+
+    pub fn service_type(&self) -> &ServiceType {
+        &self.service_type
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]

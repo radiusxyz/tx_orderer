@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::models::prelude::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct SequencingInfoModel {
     sequencing_infos: HashMap<SequencingInfoKey, SequencingInfo>,
 }
@@ -60,13 +60,7 @@ impl SequencingInfoModel {
     pub fn get() -> Result<Self, DbError> {
         let key = Self::ID;
 
-        match database()?.get(&key) {
-            Ok(sequencing_info_model) => Ok(sequencing_info_model),
-            // Todo: change
-            Err(_) => Ok(Self {
-                sequencing_infos: HashMap::new(),
-            }),
-        }
+        database()?.get(&key)
     }
 
     pub fn get_mut() -> Result<Lock<'static, Self>, DbError> {

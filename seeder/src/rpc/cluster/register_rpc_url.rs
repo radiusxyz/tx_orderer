@@ -25,9 +25,28 @@ impl RegisterRpcUrl {
         // TODO: Remove this code
         // health_check(&parameter.rpc_url).await?;
 
-        let sequencer = OperatorModel::new(parameter.address.into(), parameter.rpc_url.into());
+        match OperatorModel::get(parameter.address.clone()) {
+            // TODO: change(tmp logic when already registered)
+            Ok(sequencer) => {
+                tracing::warn!("Already registered sequencer: {:?}", sequencer);
 
-        sequencer.put()?;
+                let sequencer =
+                    OperatorModel::new(parameter.address.into(), parameter.rpc_url.into());
+
+                sequencer.put()?;
+            }
+            Err(err) => {
+                if err.is_none_type() {
+                    let sequencer =
+                        OperatorModel::new(parameter.address.into(), parameter.rpc_url.into());
+
+                    sequencer.put()?;
+                } else {
+                    tracing::error!("Failed to add sequencer: {:?}", err);
+                    return Err(err.into());
+                }
+            }
+        };
 
         Ok(RegisterRpcUrlResponse { success: true })
     }

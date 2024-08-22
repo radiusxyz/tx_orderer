@@ -67,14 +67,29 @@ impl AddCluster {
         }
 
         // TODO: get operator information
-        let mut cluster_id_list_model = ClusterIdListModel::entry(
+        match ClusterIdListModel::get_mut(
             &parameter.platform,
             &parameter.sequencing_function_type,
             &parameter.service_type,
-        )?;
-
-        cluster_id_list_model.add_cluster_id(parameter.cluster_id.clone());
-        cluster_id_list_model.update()?;
+        ) {
+            Ok(mut cluster_id_list) => {
+                cluster_id_list.add_cluster_id(parameter.cluster_id.clone());
+                cluster_id_list.update()?;
+            }
+            Err(err) => {
+                if err.is_none_type() {
+                    let mut cluster_id_list_model = ClusterIdListModel::default();
+                    cluster_id_list_model.add_cluster_id(parameter.cluster_id.clone());
+                    cluster_id_list_model.put(
+                        &parameter.platform,
+                        &parameter.sequencing_function_type,
+                        &parameter.service_type,
+                    )?;
+                } else {
+                    return Err(err.into());
+                }
+            }
+        };
 
         let signing_key = context.signing_key();
         let seeder_client = context.seeder_client();
@@ -89,7 +104,6 @@ impl AddCluster {
         let cluster = initialize_liveness_cluster(
             signing_key,
             &seeder_client,
-            &sequencing_info_key,
             &sequencing_info,
             &parameter.cluster_id,
         )

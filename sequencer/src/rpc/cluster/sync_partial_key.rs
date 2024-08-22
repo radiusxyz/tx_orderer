@@ -6,10 +6,7 @@ use skde::{
 };
 use tracing::info;
 
-use crate::{
-    models::{RollupMetadataModel, TransactionModel},
-    rpc::prelude::*,
-};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncPartialKey {

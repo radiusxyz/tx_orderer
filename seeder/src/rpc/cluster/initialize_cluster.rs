@@ -67,14 +67,29 @@ impl InitializeCluster {
             }
         }
 
-        let mut cluster_id_list_model = ClusterIdListModel::entry(
+        match ClusterIdListModel::get_mut(
             &parameter.platform,
             &parameter.sequencing_function_type,
             &parameter.service_type,
-        )?;
-
-        cluster_id_list_model.add_cluster_id(parameter.cluster_id.clone());
-        cluster_id_list_model.update()?;
+        ) {
+            Ok(mut cluster_id_list) => {
+                cluster_id_list.add_cluster_id(parameter.cluster_id);
+                cluster_id_list.update()?;
+            }
+            Err(err) => {
+                if err.is_none_type() {
+                    let mut cluster_id_list_model = ClusterIdListModel::default();
+                    cluster_id_list_model.add_cluster_id(parameter.cluster_id);
+                    cluster_id_list_model.put(
+                        &parameter.platform,
+                        &parameter.sequencing_function_type,
+                        &parameter.service_type,
+                    )?;
+                } else {
+                    return Err(err.into());
+                }
+            }
+        };
 
         Ok(InitializeClusterResponse { success: true })
     }
