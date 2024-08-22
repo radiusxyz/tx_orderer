@@ -1,3 +1,4 @@
+use radius_sequencer_sdk::kvstore::KvStoreError;
 use sequencer::{
     models::{ClusterIdListModel, ClusterModel, LivenessClusterModel, ValidationClusterModel},
     types::{PlatForm, SequencingFunctionType, ServiceType},
@@ -30,31 +31,30 @@ impl GetClusterList {
             &parameter.platform,
             &parameter.sequencing_function_type,
             &parameter.service_type,
-        )
-        .unwrap_or_default();
+        )?;
 
-        let cluster_list: Vec<ClusterModel> = cluster_id_list_model
-            .cluster_id_list
+        let cluster_list = cluster_id_list_model
+            .cluster_id_list()
             .iter()
-            .map(|cluster_id| match parameter.sequencing_function_type {
-                SequencingFunctionType::Liveness => ClusterModel::Liveness(
-                    LivenessClusterModel::get(
-                        &parameter.platform,
-                        &parameter.service_type,
-                        &cluster_id,
-                    )
-                    .unwrap(),
-                ),
-                SequencingFunctionType::Validation => ClusterModel::Validation(
-                    ValidationClusterModel::get(
-                        &parameter.platform,
-                        &parameter.service_type,
-                        &cluster_id,
-                    )
-                    .unwrap(),
-                ),
+            .map(|cluster_id| {
+                Ok(match parameter.sequencing_function_type {
+                    SequencingFunctionType::Liveness => {
+                        ClusterModel::Liveness(LivenessClusterModel::get(
+                            &parameter.platform,
+                            &parameter.service_type,
+                            cluster_id,
+                        )?)
+                    }
+                    SequencingFunctionType::Validation => {
+                        ClusterModel::Validation(ValidationClusterModel::get(
+                            &parameter.platform,
+                            &parameter.service_type,
+                            cluster_id,
+                        )?)
+                    }
+                })
             })
-            .collect();
+            .collect::<Result<Vec<ClusterModel>, KvStoreError>>()?;
 
         Ok(GetClusterListResponse { cluster_list })
     }

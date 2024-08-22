@@ -1,4 +1,4 @@
-use std::{collections::HashMap, pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc};
 
 use futures::{
     future::{select_ok, Fuse},
@@ -119,7 +119,7 @@ impl SequencerClient {
         Ok(response)
     }
 
-    async fn fetch<P, R>(
+    async fn _fetch<P, R>(
         sequencer_rpc_client_list: &Vec<Self>,
         method: &'static str,
         params: P,

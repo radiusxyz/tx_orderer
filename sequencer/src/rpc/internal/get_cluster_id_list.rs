@@ -21,14 +21,13 @@ impl GetClusterIdList {
     ) -> Result<GetClusterIdListResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let cluster_id_list_model = ClusterIdListModel::get(
+        let cluster_id_list = ClusterIdListModel::get(
             &parameter.platform,
             &parameter.sequencing_function_type,
             &parameter.service_type,
-        )?;
+        )?
+        .cluster_id_list();
 
-        Ok(GetClusterIdListResponse {
-            cluster_id_list: cluster_id_list_model.cluster_id_list,
-        })
+        Ok(GetClusterIdListResponse { cluster_id_list })
     }
 }

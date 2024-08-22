@@ -36,28 +36,45 @@ impl AddRollup {
 
         let rollup_id = parameter.rollup_id.clone();
 
-        let cluster_id_list_model = ClusterIdListModel::get(
+        let cluster_id_list_model = match ClusterIdListModel::get(
             &parameter.platform,
             &parameter.sequencing_function_type,
             &parameter.service_type,
-        )?;
+        ) {
+            Ok(cluster_id_list_model) => cluster_id_list_model,
+            Err(err) => {
+                if err.is_none_type() {
+                    tracing::error!("Cluster is not registered");
+                    return Ok(AddRollupResponse { success: false });
+                } else {
+                    return Err(err.into());
+                }
+            }
+        };
 
-        let is_added_cluster = cluster_id_list_model
-            .cluster_id_list
-            .contains(&parameter.cluster_id);
-
-        if !is_added_cluster {
+        if !cluster_id_list_model.is_added_cluster_id(&parameter.cluster_id) {
             return Ok(AddRollupResponse { success: false });
         }
 
-        let mut rollup_id_list_model = RollupIdListModel::get_mut_or_init()?;
-
-        if rollup_id_list_model.is_exist_rollup_id(&rollup_id) {
-            return Ok(AddRollupResponse { success: false });
-        }
-
-        rollup_id_list_model.add_rollup_id(rollup_id.clone());
-        rollup_id_list_model.update()?;
+        match RollupIdListModel::get_mut() {
+            Ok(mut rollup_id_list_model) => {
+                if rollup_id_list_model.is_exist_rollup_id(&rollup_id) {
+                    return Ok(AddRollupResponse { success: false });
+                } else {
+                    rollup_id_list_model.add_rollup_id(rollup_id.clone());
+                    rollup_id_list_model.update()?;
+                }
+            }
+            Err(error) => {
+                if error.is_none_type() {
+                    let mut rollup_id_list_model = RollupIdListModel::default();
+                    rollup_id_list_model.add_rollup_id(rollup_id.clone());
+                    rollup_id_list_model.put()?;
+                } else {
+                    return Err(error.into());
+                }
+            }
+        };
 
         let rollup = Rollup::new(
             parameter.rollup_id,

@@ -26,7 +26,7 @@ use pvde::{
 use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
 use sequencer::{
     cli::{Cli, Commands, Config, ConfigPath},
-    client::{LivenessClient, SeederClient},
+    client::SeederClient,
     error::Error,
     models::{
         ClusterIdListModel, RollupIdListModel, RollupMetadataModel, RollupModel,
@@ -36,8 +36,7 @@ use sequencer::{
     state::{AppState, RollupState},
     task::radius_liveness_event_listener,
     types::{
-        ClusterId, PlatForm, PvdeParams, RollupId, RollupMetadata, SequencingFunctionType,
-        SequencingInfoKey, ServiceType, SigningKey, SyncInfo,
+        PlatForm, PvdeParams, RollupId, SequencingFunctionType, ServiceType, SigningKey, SyncInfo,
     },
     util::initialize_liveness_cluster,
 };
@@ -70,6 +69,53 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
+            // Initialize seeder client
+            let seeder_rpc_url = config.seeder_rpc_url();
+            let seeder_client = SeederClient::new(seeder_rpc_url)?;
+            tracing::info!(
+                "Successfully initialized seeder client {:?}.",
+                seeder_rpc_url,
+            );
+
+            // get or init rollup id list model
+            let rollup_id_list_model = match RollupIdListModel::get() {
+                Ok(rollup_id_list_model) => rollup_id_list_model,
+                Err(err) => {
+                    if err.is_none_type() {
+                        let new_rollup_id_list_model = RollupIdListModel::default();
+                        new_rollup_id_list_model.put()?;
+                        new_rollup_id_list_model
+                    } else {
+                        return Err(err.into());
+                    }
+                }
+            };
+
+            let rollup_id_list = rollup_id_list_model.rollup_id_list();
+
+            let rollup_states = rollup_id_list
+                .iter()
+                .map(|rollup_id| -> Result<(RollupId, RollupState), Error> {
+                    let rollup_model = RollupModel::get(rollup_id)?;
+                    let cluster_id = rollup_model.cluster_id().clone();
+                    let rollup_block_height = RollupMetadataModel::get(rollup_id)?
+                        .rollup_metadata()
+                        .block_height();
+
+                    Ok((
+                        rollup_id.clone(),
+                        RollupState::new(cluster_id, rollup_block_height),
+                    ))
+                })
+                .collect::<Result<HashMap<RollupId, RollupState>, Error>>()?;
+
+            let pvde_params = if let Some(ref path) = config_option.path {
+                // Initialize the time lock puzzle parameters.
+                Some(init_time_lock_puzzle_param(path, config.is_using_zkp())?)
+            } else {
+                None
+            };
+
             // get or init sequencing infos, can be loaded after restarting
             let sequencing_info_model = match SequencingInfoModel::get() {
                 Ok(sequencing_info_model) => sequencing_info_model,
@@ -82,42 +128,6 @@ async fn main() -> Result<(), Error> {
                 }
             };
             let sequencing_infos = sequencing_info_model.sequencing_infos();
-
-            // Initialize seeder client
-            let seeder_rpc_url = config.seeder_rpc_url();
-            let seeder_client = SeederClient::new(seeder_rpc_url)?;
-            tracing::info!(
-                "Successfully initialized seeder client {:?}.",
-                seeder_rpc_url,
-            );
-
-            // get or init rollup id list model
-            let rollup_id_list_model = RollupIdListModel::get()?;
-            let rollup_id_list = rollup_id_list_model.rollup_id_list();
-
-            let mut rollup_metadatas: HashMap<RollupId, RollupMetadata> = HashMap::new();
-            let mut rollup_states: HashMap<RollupId, RollupState> = HashMap::new();
-
-            rollup_id_list.iter().for_each(|rollup_id| {
-                let rollup_model = RollupModel::get(rollup_id).unwrap();
-                let rollup_metadata_model = RollupMetadataModel::get(rollup_id).unwrap();
-
-                let cluster_id = rollup_model.cluster_id().clone();
-                let rollup_metadata = rollup_metadata_model.rollup_metadata().clone();
-
-                rollup_states.insert(
-                    rollup_id.clone(),
-                    RollupState::new(cluster_id.clone(), rollup_metadata.block_height()),
-                );
-                rollup_metadatas.insert(rollup_id.clone(), rollup_metadata);
-            });
-
-            let pvde_params = if let Some(ref path) = config_option.path {
-                // Initialize the time lock puzzle parameters.
-                Some(init_time_lock_puzzle_param(path, config.is_using_zkp())?)
-            } else {
-                None
-            };
 
             // Initialize an application-wide state instance
             let app_state = AppState::new(
@@ -235,16 +245,14 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
         Ok(sequencing_info_model) => sequencing_info_model,
         Err(err) => {
             if err.is_none_type() {
-                SequencingInfoModel::new(HashMap::new())
+                SequencingInfoModel::default()
             } else {
                 return Err(err.into());
             }
         }
     };
 
-    let sequencing_infos = sequencing_info_model.sequencing_infos();
-
-    for (sequencing_info_key, sequencing_info) in sequencing_infos.iter() {
+    for (sequencing_info_key, sequencing_info) in sequencing_info_model.sequencing_infos().iter() {
         info!(
             "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
             sequencing_info_key.platform(),
@@ -253,15 +261,23 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
         );
 
         // Get all cluster ids for each sequencing info
-        let cluster_id_list_model = ClusterIdListModel::get(
+        let cluster_id_list_model = match ClusterIdListModel::get(
             sequencing_info_key.platform(),
             sequencing_info_key.sequencing_function_type(),
             sequencing_info_key.service_type(),
-        )
-        .unwrap();
+        ) {
+            Ok(cluster_id_list_model) => cluster_id_list_model,
+            Err(err) => {
+                if err.is_none_type() {
+                    continue;
+                } else {
+                    return Err(err.into());
+                }
+            }
+        };
 
         // Initialize each cluster
-        for cluster_id in cluster_id_list_model.cluster_id_list.iter() {
+        for cluster_id in cluster_id_list_model.cluster_id_list().iter() {
             info!("initialize_cluster: {:?}", cluster_id);
 
             match sequencing_info_key.sequencing_function_type() {

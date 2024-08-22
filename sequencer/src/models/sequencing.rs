@@ -59,13 +59,11 @@ impl SequencingInfoModel {
 
     pub fn get() -> Result<Self, DbError> {
         let key = Self::ID;
-
         database()?.get(&key)
     }
 
     pub fn get_mut() -> Result<Lock<'static, Self>, DbError> {
         let key = Self::ID;
-
         database()?.get_mut(&key)
     }
 

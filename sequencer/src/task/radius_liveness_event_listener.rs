@@ -11,7 +11,7 @@ use crate::{
     client::SequencerClient,
     error::Error,
     models::LivenessClusterModel,
-    types::{Address, ClusterId, SequencerIndex, ServiceType, SyncInfo},
+    types::{Address, ClusterId, ServiceType, SyncInfo},
 };
 
 pub fn init(sync_info: Arc<SyncInfo>) {
@@ -80,7 +80,6 @@ async fn callback(event: Events, context: Arc<SyncInfo>) {
                 let _ = register_sequencer(
                     context.clone(),
                     data.proposerSetId.to_string(),
-                    0,
                     data.sequencerAddress.to_string().into(),
                 );
             }
@@ -103,7 +102,6 @@ async fn callback(event: Events, context: Arc<SyncInfo>) {
 pub fn register_sequencer(
     context: Arc<SyncInfo>,
     cluster_id: ClusterId,
-    sequencer_index: SequencerIndex,
     sequencer_address: Address,
 ) -> Result<(), Error> {
     info!(

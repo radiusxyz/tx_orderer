@@ -1,5 +1,6 @@
 use crate::{models::RollupIdListModel, rpc::prelude::*};
 
+// todo(jaemin): 필요성 체크
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRollupIdList {}
 
@@ -15,7 +16,7 @@ impl GetRollupIdList {
         _parameter: RpcParameter,
         _context: Arc<AppState>,
     ) -> Result<GetRollupIdListResponse, RpcError> {
-        let rollup_id_list = RollupIdListModel::get()?.rollup_id_list().clone();
+        let rollup_id_list = RollupIdListModel::get()?.rollup_id_list();
 
         Ok(GetRollupIdListResponse { rollup_id_list })
     }

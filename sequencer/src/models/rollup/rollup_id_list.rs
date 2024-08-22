@@ -10,12 +10,12 @@ impl RollupIdListModel {
         Self { rollup_id_list }
     }
 
-    pub fn is_exist_rollup_id(&self, rollup_id: &RollupId) -> bool {
-        self.rollup_id_list.contains(rollup_id)
+    pub fn rollup_id_list(self) -> RollupIdList {
+        self.rollup_id_list
     }
 
-    pub fn rollup_id_list(&self) -> &RollupIdList {
-        &self.rollup_id_list
+    pub fn is_exist_rollup_id(&self, rollup_id: &RollupId) -> bool {
+        self.rollup_id_list.contains(rollup_id)
     }
 
     pub fn add_rollup_id(&mut self, rollup_id: RollupId) {
@@ -34,42 +34,15 @@ impl RollupIdListModel {
 impl RollupIdListModel {
     pub const ID: &'static str = stringify!(RollupIdListModel);
 
-    // change func name or separate
     pub fn get() -> Result<Self, DbError> {
         let key = Self::ID;
-        match database()?.get(&key) {
-            Ok(rollup_id_list_model) => Ok(rollup_id_list_model),
-            Err(error) => {
-                if error.is_none_type() {
-                    let rollup_id_list_model = Self::new(RollupIdList::default());
-
-                    rollup_id_list_model.put()?;
-
-                    Ok(rollup_id_list_model)
-                } else {
-                    Err(error)
-                }
-            }
-        }
+        database()?.get(&key)
     }
 
     // change func name or separate
-    pub fn get_mut_or_init() -> Result<Lock<'static, Self>, DbError> {
+    pub fn get_mut() -> Result<Lock<'static, Self>, DbError> {
         let key = Self::ID;
-        match database()?.get_mut(&key) {
-            Ok(lock) => Ok(lock),
-            Err(error) => {
-                if error.is_none_type() {
-                    let rollup_id_list_model = Self::new(RollupIdList::default());
-
-                    rollup_id_list_model.put()?;
-
-                    Ok(database()?.get_mut(&key)?)
-                } else {
-                    Err(error)
-                }
-            }
-        }
+        database()?.get_mut(&key)
     }
 
     pub fn put(&self) -> Result<(), DbError> {

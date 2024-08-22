@@ -146,7 +146,7 @@ impl Cluster {
 
         sequencer_rpc_client_list
             .get(leader_index)
-            .and_then(|(address, _)| Some(address == self.node_address()))
+            .map(|(address, _)| address == self.node_address())
             .unwrap_or(false)
     }
 

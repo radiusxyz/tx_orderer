@@ -37,21 +37,37 @@ impl UpdateRollup {
 
         let rollup_id = parameter.rollup_id.clone();
 
-        let cluster_id_list_model = ClusterIdListModel::get(
+        let cluster_id_list_model = match ClusterIdListModel::get(
             &parameter.platform,
             &parameter.sequencing_function_type,
             &parameter.service_type,
-        )?;
+        ) {
+            Ok(cluster_id_list_model) => cluster_id_list_model,
+            Err(err) => {
+                if err.is_none_type() {
+                    tracing::error!("Cluster is not registered");
+                    return Ok(UpdateRollupResponse { success: false });
+                } else {
+                    return Err(err.into());
+                }
+            }
+        };
 
-        let is_added_cluster = cluster_id_list_model
-            .cluster_id_list
-            .contains(&parameter.cluster_id);
-
-        if !is_added_cluster {
+        if !cluster_id_list_model.is_added_cluster_id(&parameter.cluster_id) {
             return Ok(UpdateRollupResponse { success: false });
         }
 
-        let rollup_id_list_model = RollupIdListModel::get()?;
+        let rollup_id_list_model = match RollupIdListModel::get() {
+            Ok(rollup_id_list_model) => rollup_id_list_model,
+            Err(err) => {
+                if err.is_none_type() {
+                    tracing::error!("Rollup is not registered");
+                    return Ok(UpdateRollupResponse { success: false });
+                } else {
+                    return Err(err.into());
+                }
+            }
+        };
 
         if !rollup_id_list_model.is_exist_rollup_id(&rollup_id) {
             return Ok(UpdateRollupResponse { success: false });
