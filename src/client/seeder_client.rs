@@ -2,7 +2,6 @@ use std::{collections::HashMap, sync::Arc};
 
 use radius_sequencer_sdk::json_rpc::{Error as JsonRpcError, ErrorKind, RpcClient};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tracing::info;
 
 use crate::{error::Error, types::*};
@@ -49,72 +48,72 @@ impl SeederClient {
         Ok(Self(Arc::new(client)))
     }
 
-    pub async fn register_rpc_url(
-        &self,
-        address: Address,
-        rpc_url: IpAddress,
-    ) -> Result<(), Error> {
-        let rpc_method = json!({
-            "address": address,
-            "rpc_url": rpc_url,
-        });
+    // pub async fn register_rpc_url(
+    //     &self,
+    //     address: Address,
+    //     rpc_url: IpAddress,
+    // ) -> Result<(), Error> {
+    //     let rpc_method = json!({
+    //         "address": address,
+    //         "rpc_url": rpc_url,
+    //     });
 
-        info!("Get register_rpc_url - rpc_method: {:?}", rpc_method);
+    //     info!("Get register_rpc_url - rpc_method: {:?}", rpc_method);
 
-        let register_rpc_url_response: RegisterRpcUrlResponse =
-            self.0.request("register_rpc_url", rpc_method).await?;
+    //     let register_rpc_url_response: RegisterRpcUrlResponse =
+    //         self.0.request("register_rpc_url", rpc_method).await?;
 
-        if !register_rpc_url_response.success {
-            return Err(Error::RegisterRpcUrl);
-        }
+    //     if !register_rpc_url_response.success {
+    //         return Err(Error::RegisterRpcUrl);
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    pub async fn get_rpc_url_list(
-        &self,
-        platform: &PlatForm,
-        sequencing_function_type: &SequencingFunctionType,
-        service_type: &ServiceType,
-        cluster_id: &ClusterId,
-    ) -> Result<Vec<(Address, IpAddress)>, Error> {
-        let rpc_method = json!({
-          "platform": platform,
-          "sequencing_function_type": sequencing_function_type,
-          "service_type": service_type,
-          "cluster_id": cluster_id
-        });
+    // pub async fn get_rpc_url_list(
+    //     &self,
+    //     platform: &Platform,
+    //     sequencing_function_type: &SequencingFunctionType,
+    //     service_type: &ServiceType,
+    //     cluster_id: &ClusterId,
+    // ) -> Result<Vec<(Address, IpAddress)>, Error> {
+    //     let rpc_method = json!({
+    //       "platform": platform,
+    //       "sequencing_function_type": sequencing_function_type,
+    //       "service_type": service_type,
+    //       "cluster_id": cluster_id
+    //     });
 
-        info!("Get rpc urls - rpc_method: {:?}", rpc_method);
+    //     info!("Get rpc urls - rpc_method: {:?}", rpc_method);
 
-        let get_rpc_url_list_response: GetRpcUrlListResponse =
-            self.0.request("get_rpc_url_list", rpc_method).await?;
+    //     let get_rpc_url_list_response: GetRpcUrlListResponse =
+    //         self.0.request("get_rpc_url_list", rpc_method).await?;
 
-        Ok(get_rpc_url_list_response.rpc_url_list)
-    }
+    //     Ok(get_rpc_url_list_response.rpc_url_list)
+    // }
 
-    pub async fn get_rpc_url(&self, address: &Address) -> Result<IpAddress, Error> {
-        let rpc_method = json!({
-          "address": address,
-        });
+    // pub async fn get_rpc_url(&self, address: &Address) -> Result<IpAddress, Error> {
+    //     let rpc_method = json!({
+    //       "address": address,
+    //     });
 
-        info!("Get rpc urls - rpc_method: {:?}", rpc_method);
+    //     info!("Get rpc urls - rpc_method: {:?}", rpc_method);
 
-        let get_rpc_url_response: GetRpcUrlResponse =
-            self.0.request("get_rpc_url", rpc_method).await?;
+    //     let get_rpc_url_response: GetRpcUrlResponse =
+    //         self.0.request("get_rpc_url", rpc_method).await?;
 
-        Ok(get_rpc_url_response.rpc_url)
-    }
+    //     Ok(get_rpc_url_response.rpc_url)
+    // }
 
-    // todo(jaemin): remove get_sequencing_infos
-    pub async fn get_sequencing_infos(&self) -> Result<HashMap<String, SequencingInfo>, Error> {
-        let rpc_method = json!({});
+    // // todo(jaemin): remove get_sequencing_infos
+    // pub async fn get_sequencing_infos(&self) -> Result<HashMap<String, SequencingInfo>, Error> {
+    //     let rpc_method = json!({});
 
-        info!("Get sequencing infos - rpc_method: {:?}", rpc_method);
+    //     info!("Get sequencing infos - rpc_method: {:?}", rpc_method);
 
-        let get_sequencing_infos_response: GetSequencingInfosResponse =
-            self.0.request("get_sequencing_infos", rpc_method).await?;
+    //     let get_sequencing_infos_response: GetSequencingInfosResponse =
+    //         self.0.request("get_sequencing_infos", rpc_method).await?;
 
-        Ok(get_sequencing_infos_response.sequencing_infos)
-    }
+    //     Ok(get_sequencing_infos_response.sequencing_infos)
+    // }
 }

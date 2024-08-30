@@ -2,7 +2,7 @@ use crate::{models::ClusterIdListModel, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterIdList {
-    platform: PlatForm,
+    platform: Platform,
     sequencing_function_type: SequencingFunctionType,
     service_type: ServiceType,
 }

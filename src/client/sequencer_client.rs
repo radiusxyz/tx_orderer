@@ -6,7 +6,6 @@ use futures::{
 };
 use radius_sequencer_sdk::json_rpc::{Error as JsonRpcError, ErrorKind, RpcClient};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::json;
 use tracing::info;
 
 use crate::{

@@ -1,8 +1,5 @@
 use std::fmt;
 
-use sha3::{Digest, Sha3_256};
-use ssal::avs::types::hex;
-
 use crate::types::prelude::*;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Default)]

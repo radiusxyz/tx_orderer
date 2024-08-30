@@ -3,9 +3,13 @@ name = "sequencer"
 version = "0.1.0"
 edition = "2021"
 
+# [[bin]]
+# name = "sequencer"
+# path = "src/bin/sequencer.rs"
+
 [[bin]]
 name = "sequencer"
-path = "src/bin/sequencer.rs"
+path = "src/bin/main.rs"
 
 [dependencies]
 chrono = "0.4.38"

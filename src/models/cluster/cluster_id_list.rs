@@ -31,7 +31,7 @@ impl ClusterIdListModel {
     pub const ID: &'static str = stringify!(ClusterIdListModel);
 
     pub fn get(
-        platform: &PlatForm,
+        platform: &Platform,
         sequencing_function_type: &SequencingFunctionType,
         service_type: &ServiceType,
     ) -> Result<Self, DbError> {
@@ -40,7 +40,7 @@ impl ClusterIdListModel {
     }
 
     pub fn get_mut(
-        platform: &PlatForm,
+        platform: &Platform,
         sequencing_function_type: &SequencingFunctionType,
         service_type: &ServiceType,
     ) -> Result<Lock<'static, Self>, DbError> {
@@ -50,7 +50,7 @@ impl ClusterIdListModel {
 
     pub fn put(
         &self,
-        platform: &PlatForm,
+        platform: &Platform,
         sequencing_function_type: &SequencingFunctionType,
         service_type: &ServiceType,
     ) -> Result<(), DbError> {

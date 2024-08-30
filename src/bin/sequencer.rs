@@ -36,7 +36,7 @@ use sequencer::{
     state::{AppState, RollupState},
     task::radius_liveness_event_listener,
     types::{
-        PlatForm, PvdeParams, RollupId, SequencingFunctionType, ServiceType, SigningKey, SyncInfo,
+        Platform, PvdeParams, RollupId, SequencingFunctionType, ServiceType, SigningKey, SyncInfo,
     },
     util::initialize_liveness_cluster,
 };
@@ -147,11 +147,11 @@ async fn main() -> Result<(), Error> {
                     );
 
                     match sequencing_info_key.platform() {
-                        PlatForm::Local => {
+                        Platform::Local => {
                             // TODO:
                             info!("Init local platform (TODO)");
                         }
-                        PlatForm::Ethereum => match sequencing_info_key.sequencing_function_type() {
+                        Platform::Ethereum => match sequencing_info_key.sequencing_function_type() {
                             sequencer::types::SequencingFunctionType::Liveness => {
                                 match sequencing_info_key.service_type() {
                                     ServiceType::Radius => {

@@ -22,7 +22,7 @@ pub async fn initialize_liveness_cluster(
     );
 
     let (sequencer_list, sequencer_rpc_client_list) = match sequencing_info.platform {
-        PlatForm::Local => {
+        Platform::Local => {
             // get rpc urls from seeder
             let sequencer_rpc_urls: Vec<(Address, IpAddress)> = seeder_client
                 .get_rpc_url_list(
@@ -48,7 +48,7 @@ pub async fn initialize_liveness_cluster(
                 })
                 .unzip()
         }
-        PlatForm::Ethereum => {
+        Platform::Ethereum => {
             let provider = Publisher::new(
                 sequencing_info.provider_rpc_url.clone(),
                 String::from(signing_key.clone()),

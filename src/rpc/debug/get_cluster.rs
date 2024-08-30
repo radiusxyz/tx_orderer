@@ -5,7 +5,7 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetCluster {
-    platform: PlatForm,
+    platform: Platform,
     sequencing_function_type: SequencingFunctionType,
     service_type: ServiceType,
 

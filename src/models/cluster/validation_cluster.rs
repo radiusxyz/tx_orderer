@@ -2,7 +2,7 @@ use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValidationClusterModel {
-    pub platform: PlatForm,
+    pub platform: Platform,
     pub service_type: ServiceType,
 
     pub cluster_id: ClusterId,
@@ -10,7 +10,7 @@ pub struct ValidationClusterModel {
 }
 
 impl ValidationClusterModel {
-    pub fn new(platform: PlatForm, service_type: ServiceType, cluster_id: ClusterId) -> Self {
+    pub fn new(platform: Platform, service_type: ServiceType, cluster_id: ClusterId) -> Self {
         Self {
             platform,
             service_type,
@@ -48,7 +48,7 @@ impl ValidationClusterModel {
     pub const ID: &'static str = stringify!(ValidationClusterModel);
 
     pub fn get(
-        platform: &PlatForm,
+        platform: &Platform,
         service_type: &ServiceType,
 
         cluster_id: &ClusterId,
@@ -58,7 +58,7 @@ impl ValidationClusterModel {
     }
 
     pub fn get_mut(
-        platform: &PlatForm,
+        platform: &Platform,
         service_type: &ServiceType,
 
         cluster_id: &ClusterId,

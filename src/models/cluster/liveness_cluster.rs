@@ -2,7 +2,7 @@ use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LivenessClusterModel {
-    pub platform: PlatForm,
+    pub platform: Platform,
     pub service_type: ServiceType,
 
     pub cluster_id: ClusterId,
@@ -12,7 +12,7 @@ pub struct LivenessClusterModel {
 }
 
 impl LivenessClusterModel {
-    pub fn new(platform: PlatForm, service_type: ServiceType, cluster_id: ClusterId) -> Self {
+    pub fn new(platform: Platform, service_type: ServiceType, cluster_id: ClusterId) -> Self {
         Self {
             platform,
             cluster_id,
@@ -50,7 +50,7 @@ impl LivenessClusterModel {
     pub const ID: &'static str = stringify!(LivenessClusterModel);
 
     pub fn get(
-        platform: &PlatForm,
+        platform: &Platform,
         service_type: &ServiceType,
 
         cluster_id: &ClusterId,
@@ -60,7 +60,7 @@ impl LivenessClusterModel {
     }
 
     pub fn get_mut(
-        platform: &PlatForm,
+        platform: &Platform,
         service_type: &ServiceType,
 
         cluster_id: &ClusterId,

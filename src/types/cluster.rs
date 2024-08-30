@@ -8,8 +8,16 @@ use super::prelude::*;
 use crate::client::SequencerClient;
 
 pub type SequencerIndex = usize;
-pub type ClusterId = String;
 pub type ClusterIdList = Vec<ClusterId>;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ClusterId(String);
+
+impl From<String> for ClusterId {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
 
 pub struct Cluster {
     inner: Arc<ClusterInner>,
