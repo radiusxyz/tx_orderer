@@ -1,12 +1,10 @@
-use radius_sequencer_sdk::{json_rpc::Error as RpcError, kvstore::KvStoreError as DbError};
-
 #[derive(Debug)]
 pub enum Error {
     OpenConfig(std::io::Error),
     ParseConfig(toml::de::Error),
-    Database(DbError),
-    RpcError(RpcError),
-    Ssal(ssal::avs::Error),
+    Database(radius_sequencer_sdk::kvstore::KvStoreError),
+    RpcError(radius_sequencer_sdk::json_rpc::Error),
+    InitializeLivenessClient(Box<dyn std::error::Error>),
     Uninitialized,
     EmptySequencerList,
     LeaderIndexOutOfBound,
@@ -29,8 +27,6 @@ pub enum Error {
 
     GetSequencingInfo,
     GetRollupMetadata,
-
-    LivenessPublisher(radius_sequencer_sdk::liveness::publisher::PublisherError),
 
     PvdeZkpInvalid,
     TryDecryptRawTransaction,
@@ -55,27 +51,3 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
-
-impl From<radius_sequencer_sdk::liveness::publisher::PublisherError> for Error {
-    fn from(value: radius_sequencer_sdk::liveness::publisher::PublisherError) -> Self {
-        Self::LivenessPublisher(value)
-    }
-}
-
-impl From<DbError> for Error {
-    fn from(value: DbError) -> Self {
-        Self::Database(value)
-    }
-}
-
-impl From<RpcError> for Error {
-    fn from(value: RpcError) -> Self {
-        Self::RpcError(value)
-    }
-}
-
-impl From<ssal::avs::Error> for Error {
-    fn from(value: ssal::avs::Error) -> Self {
-        Self::Ssal(value)
-    }
-}

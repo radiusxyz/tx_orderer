@@ -1,6 +1,6 @@
 pub mod cli;
-pub mod client;
 pub mod error;
+pub mod liveness;
 pub mod models;
 pub mod rpc;
 pub mod state;
