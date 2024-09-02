@@ -1,9 +1,9 @@
+use std::collections::HashMap;
+
 use crate::models::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
-pub struct ClusterIdListModel {
-    cluster_id_list: ClusterIdList,
-}
+pub struct ClusterIdListModel {}
 
 impl ClusterIdListModel {
     pub fn new(cluster_id_list: ClusterIdList) -> Self {

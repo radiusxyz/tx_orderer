@@ -4,7 +4,6 @@ use radius_sequencer_sdk::liveness_evm::{
     publisher::Publisher, subscriber::Subscriber, types::Events,
 };
 use tokio::time::{sleep, Duration};
-use crate::models::ClusterIdListModel;
 
 use crate::error::Error;
 
@@ -61,8 +60,8 @@ impl LivenessClient {
 
         tokio::spawn(async move {
             loop {
-                let subscriber = liveness_client.subscriber();
-                subscriber
+                liveness_client
+                    .subscriber()
                     .initialize_event_handler(callback, ())
                     .await
                     .unwrap();
@@ -76,9 +75,7 @@ impl LivenessClient {
 
 async fn callback(events: Events, context: ()) {
     match events {
-        Events::Block(block) => {
-            let cluster_id_list = ClusterIdListModel::
-        }
+        Events::Block(block) => {}
         // Skip handling other events.
         _others => {}
     }

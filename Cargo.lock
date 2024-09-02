@@ -3823,6 +3823,7 @@ dependencies = [
  "pvde",
  "radius-sequencer-sdk",
  "serde",
+ "serde_json",
  "skde",
  "tokio",
  "toml",

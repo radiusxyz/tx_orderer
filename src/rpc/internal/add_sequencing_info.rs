@@ -1,10 +1,47 @@
-use crate::{models::SequencingInfoModel, rpc::prelude::*};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "SequencingInfo")]
 pub struct AddSequencingInfo {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
-    pub payload: Payload,
+    pub payload: SequencingInfoPayload,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct SequencingInfo {
+    platform: Platform,
+    service_provider: ServiceProvider,
+    payload: serde_json::Value,
+}
+
+impl TryFrom<SequencingInfo> for AddSequencingInfo {
+    type Error = Error;
+
+    fn try_from(value: SequencingInfo) -> Result<Self, Self::Error> {
+        match value.platform {
+            Platform::Ethereum => {
+                let payload: LivenessEthereum =
+                    serde_json::from_value(value.payload).map_err(Error::Deserialize)?;
+
+                Ok(Self {
+                    platform: value.platform,
+                    service_provider: value.service_provider,
+                    payload: SequencingInfoPayload::Ethereum(payload),
+                })
+            }
+            Platform::Local => {
+                let payload: LivenessLocal =
+                    serde_json::from_value(value.payload).map_err(Error::Deserialize)?;
+
+                Ok(Self {
+                    platform: value.platform,
+                    service_provider: value.service_provider,
+                    payload: SequencingInfoPayload::Local(payload),
+                })
+            }
+        }
+    }
 }
 
 impl AddSequencingInfo {
