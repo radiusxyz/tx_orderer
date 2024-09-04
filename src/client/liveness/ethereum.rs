@@ -5,6 +5,7 @@ use radius_sequencer_sdk::liveness_evm::{
 };
 use tokio::time::{sleep, Duration};
 
+use super::seeder::SeederClient;
 use crate::{error::Error, models::*, types::*};
 
 pub struct LivenessClient {
@@ -16,6 +17,7 @@ struct LivenessClientInner {
     service_provider: ServiceProvider,
     publisher: Publisher,
     subscriber: Subscriber,
+    seeder: SeederClient,
 }
 
 unsafe impl Send for LivenessClient {}
@@ -35,17 +37,25 @@ impl LivenessClient {
         platform: Platform,
         service_provider: ServiceProvider,
         signing_key: impl AsRef<str>,
-        rpc_url: impl AsRef<str>,
+        ethereum_rpc_url: impl AsRef<str>,
         websocket_url: impl AsRef<str>,
         contract_address: impl AsRef<str>,
+        seeder_rpc_url: impl AsRef<str>,
     ) -> Result<Self, Error> {
+        let publisher = Publisher::new(ethereum_rpc_url, signing_key, &contract_address)
+            .map_err(|error| Error::InitializeLivenessClient(error.into()))?;
+        let subscriber = Subscriber::new(websocket_url, contract_address)
+            .map_err(|error| Error::InitializeLivenessClient(error.into()))?;
+
+        let seeder = SeederClient::new(seeder_rpc_url)
+            .map_err(|error| Error::InitializeLivenessClient(error.into()))?;
+
         let inner = LivenessClientInner {
             platform,
             service_provider,
-            publisher: Publisher::new(rpc_url, signing_key, &contract_address)
-                .map_err(|error| Error::InitializeLivenessClient(error.into()))?,
-            subscriber: Subscriber::new(websocket_url, contract_address)
-                .map_err(|error| Error::InitializeLivenessClient(error.into()))?,
+            publisher,
+            subscriber,
+            seeder,
         };
 
         Ok(Self {
@@ -67,6 +77,10 @@ impl LivenessClient {
 
     pub fn subscriber(&self) -> &Subscriber {
         &self.inner.subscriber
+    }
+
+    pub fn seeder(&self) -> &SeederClient {
+        &self.inner.seeder
     }
 
     pub fn initialize_event_listener(&self) {
@@ -91,11 +105,9 @@ async fn callback(events: Events, context: LivenessClient) {
     match events {
         Events::Block(block) => {
             // Get the cluster ID list for a given liveness client.
-            let cluster_id_list = ClusterIdListModel::get_or_default_mut(
-                context.platform(),
-                context.service_provider(),
-            )
-            .unwrap();
+            let cluster_id_list =
+                ClusterIdListModel::get_or_default(context.platform(), context.service_provider())
+                    .unwrap();
 
             for cluster_id in cluster_id_list.iter() {
                 let block_number = block.header.number.unwrap();
@@ -105,7 +117,27 @@ async fn callback(events: Events, context: LivenessClient) {
                     .publisher()
                     .get_sequencer_list(cluster_id, block_number)
                     .await
-                    .unwrap();
+                    .unwrap()
+                    .into_iter()
+                    .map(|address| address.to_string())
+                    .collect();
+
+                // Get Sequencer RPC URLs from the seeder.
+                let sequencer_url_list: ClusterInfo = context
+                    .seeder()
+                    .get_sequencer_url_list(sequencer_address_list)
+                    .await
+                    .unwrap()
+                    .into();
+
+                // Store the cluster information for the corresponding block number.
+                ClusterInfoModel::put(
+                    context.platform(),
+                    context.service_provider(),
+                    block_number,
+                    &sequencer_url_list,
+                )
+                .unwrap();
             }
         }
         _others => {}
