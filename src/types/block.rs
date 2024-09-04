@@ -1,7 +1,5 @@
 use crate::types::prelude::*;
 
-pub type BlockHeight = u64;
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Timestamp(String);
 
@@ -32,7 +30,7 @@ impl From<Vec<u8>> for BlockCommitment {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Block {
-    block_height: BlockHeight,
+    block_height: u64,
 
     encrypted_transaction_list: EncryptedTransactionList,
     raw_transaction_list: RawTransactionList,
@@ -46,7 +44,7 @@ pub struct Block {
 
 impl Block {
     pub fn new(
-        block_height: BlockHeight,
+        block_height: u64,
         encrypted_transaction_list: EncryptedTransactionList,
         raw_transaction_list: RawTransactionList,
         proposer_address: Address,
@@ -65,7 +63,7 @@ impl Block {
         }
     }
 
-    pub fn block_height(&self) -> &BlockHeight {
-        &self.block_height
+    pub fn block_height(&self) -> u64 {
+        self.block_height
     }
 }

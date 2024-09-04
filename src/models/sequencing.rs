@@ -1,14 +1,14 @@
+use std::collections::BTreeMap;
+
 use crate::models::prelude::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SequencingInfoListModel(Vec<SequencingInfoPayload>);
+/// 09/05
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub struct SequencingInfoModel {
+    sequencing_infos: BTreeMap<String, SequencingInfoPayload>,
+}
 
-impl SequencingInfoListModel {}
-
-// #[derive(Clone, Debug, Serialize, Deserialize, Default)]
-// pub struct SequencingInfoModel {
-//     sequencing_infos: HashMap<SequencingInfoKey, SequencingInfo>,
-// }
+impl SequencingInfoModel {}
 
 // impl SequencingInfoModel {
 //     pub fn new(sequencing_infos: HashMap<SequencingInfoKey, SequencingInfo>) -> Self {

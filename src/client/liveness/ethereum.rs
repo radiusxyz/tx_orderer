@@ -8,6 +8,7 @@ use tokio::time::{sleep, Duration};
 use super::seeder::SeederClient;
 use crate::{error::Error, models::*, types::*};
 
+/// 09/05
 pub struct LivenessClient {
     inner: Arc<LivenessClientInner>,
 }
@@ -94,7 +95,11 @@ impl LivenessClient {
                     .await
                     .unwrap();
 
-                tracing::warn!("Reconnecting the event handler..");
+                tracing::warn!(
+                    "Reconnecting the liveness event listener for {:?}, {:?}..",
+                    liveness_client.platform(),
+                    liveness_client.service_provider()
+                );
                 sleep(Duration::from_secs(5)).await;
             }
         });
@@ -112,7 +117,7 @@ async fn callback(events: Events, context: LivenessClient) {
             for cluster_id in cluster_id_list.iter() {
                 let block_number = block.header.number.unwrap();
 
-                // Get the (sequencer, sequencer RPC URL) list.
+                // Get the sequencer address list given a cluster ID.
                 let sequencer_address_list = context
                     .publisher()
                     .get_sequencer_list(cluster_id, block_number)
@@ -122,13 +127,19 @@ async fn callback(events: Events, context: LivenessClient) {
                     .map(|address| address.to_string())
                     .collect();
 
-                // Get Sequencer RPC URLs from the seeder.
+                // Get [`ClusterInfo`] from the seeder.
                 let sequencer_url_list: ClusterInfo = context
                     .seeder()
-                    .get_sequencer_url_list(sequencer_address_list)
+                    .get_cluster_info(
+                        context.platform(),
+                        context.service_provider(),
+                        cluster_id.clone(),
+                        sequencer_address_list,
+                    )
                     .await
-                    .unwrap()
-                    .into();
+                    .unwrap();
+
+                // Todo: Initialize validation client based on the rollup information fetched from the seeder.
 
                 // Store the cluster information for the corresponding block number.
                 ClusterInfoModel::put(

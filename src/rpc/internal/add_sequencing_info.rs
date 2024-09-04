@@ -1,5 +1,6 @@
 use crate::rpc::prelude::*;
 
+/// 09/05
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "SequencingInfo")]
 pub struct AddSequencingInfo {
@@ -50,10 +51,15 @@ impl AddSequencingInfo {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        // TODO (1): Check if the client exists. If the client exist, then add the cluster ID. Otherwise, initialize the liveness client.
-
-        // TODO (2): Register on the seeder.
-
-        Ok(())
+        match parameter.payload {
+            SequencingInfoPayload::Ethereum(payload) => {
+                // liveness::ethereum::LivenessClient::new()?;
+                todo!();
+            }
+            SequencingInfoPayload::Local(payload) => {
+                // liveness::local::LivenessClient::new()?;
+                todo!();
+            }
+        }
     }
 }

@@ -2,6 +2,9 @@ use std::sync::Arc;
 
 use radius_sequencer_sdk::json_rpc::{Error, RpcClient};
 
+use crate::types::*;
+
+/// 09/05
 pub struct SeederClient {
     inner: Arc<RpcClient>,
 }
@@ -25,11 +28,14 @@ impl SeederClient {
         Ok(())
     }
 
-    pub async fn get_sequencer_url_list(
+    pub async fn get_cluster_info(
         &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+        cluster_id: String,
         sequencer_address_list: Vec<String>,
-    ) -> Result<Vec<(String, String)>, Error> {
+    ) -> Result<ClusterInfo, Error> {
         // Todo: Refactoring `seeder`	https://github.com/radiusxyz/seeder/issues/2
-        Ok(vec![])
+        todo!("ClusterInfo");
     }
 }
