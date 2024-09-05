@@ -1,5 +1,8 @@
 use std::fmt;
 
+use ethers::utils::hex;
+use sha3::{Digest, Sha3_256};
+
 use crate::types::prelude::*;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Default)]
@@ -83,7 +86,7 @@ pub struct OrderHashList(Vec<OrderHash>);
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitmentData {
     pub rollup_id: RollupId,
-    pub block_height: BlockHeight,
+    pub block_height: u64,
     pub transaction_order: TransactionOrder,
     pub previous_order_hash: OrderHash,
 }

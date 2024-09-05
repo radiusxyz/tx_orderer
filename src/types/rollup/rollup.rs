@@ -5,8 +5,8 @@ pub struct Rollup {
     rollup_id: RollupId,
     rollup_type: RollupType,
 
-    rollup_rpc_url: IpAddress,
-    rollup_websocket_url: IpAddress,
+    rollup_rpc_url: String,
+    rollup_websocket_url: String,
 
     bundler_contract_address: Option<Address>,
 }
@@ -15,8 +15,8 @@ impl Rollup {
     pub fn new(
         rollup_id: RollupId,
         rollup_type: RollupType,
-        rollup_rpc_url: IpAddress,
-        rollup_websocket_url: IpAddress,
+        rollup_rpc_url: String,
+        rollup_websocket_url: String,
         bundler_contract_address: Option<Address>,
     ) -> Self {
         Self {

@@ -1,10 +1,11 @@
+mod model;
+
 use std::collections::btree_set::{BTreeSet, Iter};
 
-use radius_sequencer_sdk::liveness_radius::types::U256;
+pub use model::*;
 
 use super::prelude::*;
 
-/// 09/05
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct ClusterIdList(BTreeSet<String>);
 
@@ -22,26 +23,16 @@ impl ClusterIdList {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClusterInfo {
-    sequencer_info: Vec<(String, Option<String>)>,
-    rollup_info: Vec<(String, Option<String>)>,
+    platform: Platform,
+    service_provider: ServiceProvider,
+    sequencer_info: Vec<String>,
+    rollup_info: Vec<(String,)>,
     block_margin: u64,
 }
 
 impl ClusterInfo {
-    pub fn new(
-        sequencer_info: Vec<(String, Option<String>)>,
-        rollup_info: Vec<(String, Option<String>)>,
-        block_margin: u64,
-    ) -> Self {
-        Self {
-            sequencer_info,
-            rollup_info,
-            block_margin,
-        }
-    }
-
     pub fn block_margin(&self) -> u64 {
         self.block_margin
     }

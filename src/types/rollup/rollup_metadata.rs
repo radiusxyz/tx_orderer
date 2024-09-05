@@ -1,15 +1,15 @@
-use crate::models::prelude::*;
+use super::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct RollupMetadata {
-    block_height: BlockHeight,
+    block_height: u64,
     transaction_order: TransactionOrder,
     order_hash: OrderHash,
 }
 
 impl RollupMetadata {
     pub fn new(
-        block_height: BlockHeight,
+        block_height: u64,
         transaction_order: TransactionOrder,
         order_hash: OrderHash,
     ) -> Self {
@@ -28,7 +28,7 @@ impl RollupMetadata {
         self.transaction_order.increase();
     }
 
-    pub fn block_height(&self) -> BlockHeight {
+    pub fn block_height(&self) -> u64 {
         self.block_height
     }
 

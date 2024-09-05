@@ -1,9 +1,11 @@
 // TODO(jaemin): Replace ethers with alloy
 use ethers::{
     types as eth_types,
-    utils::rlp::{self, Decodable, DecoderError},
+    utils::{
+        hex,
+        rlp::{self, Decodable, DecoderError},
+    },
 };
-use ssal::avs::types::{hex, Bytes};
 
 use crate::types::prelude::*;
 
@@ -142,7 +144,7 @@ pub fn to_raw_tx(transaction: eth_types::Transaction) -> String {
     format!("0x{}", hex::encode(rlp_bytes))
 }
 
-pub fn eth_bytes_to_hex(bytes: Bytes) -> String {
+pub fn eth_bytes_to_hex(bytes: eth_types::Bytes) -> String {
     format!("0x{}", hex::encode(bytes))
 }
 

@@ -1,4 +1,8 @@
+mod model;
+
 use std::collections::btree_map::{BTreeMap, Iter};
+
+pub use model::*;
 
 use crate::types::prelude::*;
 
@@ -18,22 +22,19 @@ pub enum ServiceProvider {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum SequencingInfoPayload {
-    Ethereum(LivenessEthereum),
+    Ethereum(LivenessRadius),
     Local(LivenessLocal),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LivenessEthereum {
+pub struct LivenessRadius {
     pub liveness_rpc_url: String,
     pub liveness_websocket_url: String,
     pub contract_address: String,
-    pub seeder_rpc_url: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LivenessLocal {
-    pub seeder_rpc_url: String,
-}
+pub struct LivenessLocal;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct SequencingInfoList(BTreeMap<(Platform, ServiceProvider), SequencingInfoPayload>);

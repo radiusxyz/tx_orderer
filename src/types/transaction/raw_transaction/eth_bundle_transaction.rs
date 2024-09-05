@@ -1,4 +1,4 @@
-use ssal::avs::types::hex;
+use ethers::utils::hex;
 
 use crate::types::prelude::*;
 
