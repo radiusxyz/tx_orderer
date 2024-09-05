@@ -1,5 +1,7 @@
 use std::collections::btree_set::{BTreeSet, Iter};
 
+use radius_sequencer_sdk::liveness_radius::types::U256;
+
 use super::prelude::*;
 
 /// 09/05
@@ -22,8 +24,25 @@ impl ClusterIdList {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct ClusterInfo {
-    // The list of (Address, RPC URL) tuple.
-    sequencer_rpc_url_list: Vec<(String, String)>,
-    // Todo: Rollup Metadata
-    rollup_metadata: Vec<String>,
+    sequencer_info: Vec<(String, Option<String>)>,
+    rollup_info: Vec<(String, Option<String>)>,
+    block_margin: u64,
+}
+
+impl ClusterInfo {
+    pub fn new(
+        sequencer_info: Vec<(String, Option<String>)>,
+        rollup_info: Vec<(String, Option<String>)>,
+        block_margin: u64,
+    ) -> Self {
+        Self {
+            sequencer_info,
+            rollup_info,
+            block_margin,
+        }
+    }
+
+    pub fn block_margin(&self) -> u64 {
+        self.block_margin
+    }
 }

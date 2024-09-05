@@ -3,20 +3,20 @@ name = "sequencer"
 version = "0.1.0"
 edition = "2021"
 
-# [[bin]]
-# name = "sequencer"
-# path = "src/bin/sequencer.rs"
-
 [[bin]]
 name = "sequencer"
-path = "src/bin/main.rs"
+path = "src/bin/sequencer.rs"
+
+# [[bin]]
+# name = "sequencer"
+# path = "src/bin/main.rs"
 
 [dependencies]
 chrono = "0.4.38"
 clap = { version = "4.4.7", features = ["derive"] }
 futures = "0.3.30"
 pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
-radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", features = ["full", "liveness-evm", "signature", "validation-eigenlayer"] }
+radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "5043c89ca2e515f079f6aef67f9324e8bc0dd012", features = ["full", "liveness-radius", "signature", "validation-eigenlayer"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 skde = { git = "https://github.com/radiusxyz/skde", rev="21d0b03ba64a2f78cf8135b774a0949f5a934545"}

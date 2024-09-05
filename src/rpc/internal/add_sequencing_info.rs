@@ -53,12 +53,22 @@ impl AddSequencingInfo {
 
         match parameter.payload {
             SequencingInfoPayload::Ethereum(payload) => {
-                // liveness::ethereum::LivenessClient::new()?;
-                todo!();
+                // Todo: Fetching the signing key from the keystore.
+                let signing_key = String::new();
+
+                liveness::ethereum::LivenessClient::new(
+                    parameter.platform,
+                    parameter.service_provider,
+                    payload,
+                    signing_key,
+                )?
+                .initialize_event_listener();
+
+                Ok(())
             }
             SequencingInfoPayload::Local(payload) => {
                 // liveness::local::LivenessClient::new()?;
-                todo!();
+                todo!("Implement 'LivenessClient' for local sequencing.");
             }
         }
     }

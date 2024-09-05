@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use radius_sequencer_sdk::liveness_evm::{
+use radius_sequencer_sdk::liveness_radius::{
     publisher::Publisher, subscriber::Subscriber, types::Events,
 };
 use tokio::time::{sleep, Duration};
@@ -37,19 +37,24 @@ impl LivenessClient {
     pub fn new(
         platform: Platform,
         service_provider: ServiceProvider,
+        liveness_info: LivenessEthereum,
         signing_key: impl AsRef<str>,
-        ethereum_rpc_url: impl AsRef<str>,
-        websocket_url: impl AsRef<str>,
-        contract_address: impl AsRef<str>,
-        seeder_rpc_url: impl AsRef<str>,
     ) -> Result<Self, Error> {
-        let publisher = Publisher::new(ethereum_rpc_url, signing_key, &contract_address)
-            .map_err(|error| Error::InitializeLivenessClient(error.into()))?;
-        let subscriber = Subscriber::new(websocket_url, contract_address)
-            .map_err(|error| Error::InitializeLivenessClient(error.into()))?;
+        let publisher = Publisher::new(
+            liveness_info.liveness_rpc_url,
+            signing_key,
+            &liveness_info.contract_address,
+        )
+        .map_err(|error| Error::CreateLivenessClient(error.into()))?;
 
-        let seeder = SeederClient::new(seeder_rpc_url)
-            .map_err(|error| Error::InitializeLivenessClient(error.into()))?;
+        let subscriber = Subscriber::new(
+            liveness_info.liveness_websocket_url,
+            liveness_info.contract_address,
+        )
+        .map_err(|error| Error::CreateLivenessClient(error.into()))?;
+
+        let seeder = SeederClient::new(liveness_info.seeder_rpc_url)
+            .map_err(|error| Error::CreateLivenessClient(error.into()))?;
 
         let inner = LivenessClientInner {
             platform,
@@ -109,16 +114,16 @@ impl LivenessClient {
 async fn callback(events: Events, context: LivenessClient) {
     match events {
         Events::Block(block) => {
+            let block_number = block.header.number.unwrap();
+
             // Get the cluster ID list for a given liveness client.
             let cluster_id_list =
                 ClusterIdListModel::get_or_default(context.platform(), context.service_provider())
                     .unwrap();
 
             for cluster_id in cluster_id_list.iter() {
-                let block_number = block.header.number.unwrap();
-
                 // Get the sequencer address list given a cluster ID.
-                let sequencer_address_list = context
+                let sequencer_address_list: Vec<String> = context
                     .publisher()
                     .get_sequencer_list(cluster_id, block_number)
                     .await
@@ -127,28 +132,33 @@ async fn callback(events: Events, context: LivenessClient) {
                     .map(|address| address.to_string())
                     .collect();
 
-                // Get [`ClusterInfo`] from the seeder.
-                let sequencer_url_list: ClusterInfo = context
-                    .seeder()
-                    .get_cluster_info(
-                        context.platform(),
-                        context.service_provider(),
-                        cluster_id.clone(),
-                        sequencer_address_list,
-                    )
+                // Get the rollup info list.
+                let rollup_info_list = context
+                    .publisher()
+                    .get_rollup_info_list(cluster_id, block_number)
                     .await
                     .unwrap();
 
-                // Todo: Initialize validation client based on the rollup information fetched from the seeder.
+                // Get the rollup address list.
+                let rollup_address_list: Vec<String> = rollup_info_list
+                    .iter()
+                    .map(|rollup_info| rollup_info.owner.to_string())
+                    .collect();
+
+                let cluster_info = context
+                    .seeder()
+                    .get_cluster_info(sequencer_address_list, rollup_address_list)
+                    .await
+                    .unwrap();
 
                 // Store the cluster information for the corresponding block number.
-                ClusterInfoModel::put(
-                    context.platform(),
-                    context.service_provider(),
-                    block_number,
-                    &sequencer_url_list,
-                )
-                .unwrap();
+                // ClusterInfoModel::put(
+                //     context.platform(),
+                //     context.service_provider(),
+                //     block_number,
+                //     &sequencer_url_list,
+                // )
+                // .unwrap();
             }
         }
         _others => {}

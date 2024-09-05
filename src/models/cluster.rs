@@ -59,15 +59,14 @@ pub struct ClusterInfoModel;
 
 impl ClusterInfoModel {
     const ID: &'static str = stringify!(ClusterInfoModel);
-    const MARGIN: u64 = 7;
 
     pub fn get(
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
-        ethereum_block_number: u64,
+        liveness_block_number: u64,
     ) -> Result<ClusterInfo, KvStoreError> {
-        let key = &(Self::ID, platform, service_provider, ethereum_block_number);
+        let key = &(Self::ID, platform, service_provider, liveness_block_number);
 
         kvstore()?.get(key)
     }
@@ -75,12 +74,12 @@ impl ClusterInfoModel {
     pub fn put(
         platform: Platform,
         service_provider: ServiceProvider,
-        ethereum_block_number: u64,
+        liveness_block_number: u64,
         cluster: &ClusterInfo,
     ) -> Result<(), KvStoreError> {
         let database = kvstore()?;
 
-        let put_key = &(Self::ID, platform, service_provider, ethereum_block_number);
+        let put_key = &(Self::ID, platform, service_provider, liveness_block_number);
         database.put(put_key, cluster)?;
 
         // Keep [`ClusterInfo`] for `Self::Margin` blocks.
@@ -88,7 +87,7 @@ impl ClusterInfoModel {
             Self::ID,
             platform,
             service_provider,
-            ethereum_block_number.wrapping_sub(Self::MARGIN),
+            liveness_block_number.wrapping_sub(cluster.block_margin()),
         );
         database.delete(delete_key)?;
 
