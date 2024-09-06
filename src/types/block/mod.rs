@@ -1,3 +1,7 @@
+mod model;
+
+pub use model::*;
+
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

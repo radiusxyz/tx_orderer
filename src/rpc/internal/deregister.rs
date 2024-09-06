@@ -11,15 +11,10 @@ impl Deregister {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        // TODO: context.config().cluster_id()
-        // context
-        //     .get_rollup_cluster(&parameter.rollup_id)
-        //     .unwrap()
-        //     .get_liveness_client()
-        //     .unwrap()
-        //     .deregister_sequencer(parameter.rollup_id)
-        //     .await?;
-
         Ok(())
+    }
+
+    pub fn deregisterer() {
+        tokio::spawn(async move {});
     }
 }

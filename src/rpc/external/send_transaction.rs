@@ -25,106 +25,109 @@ pub struct SendEncryptedTransaction {
     time_lock_puzzle: TimeLockPuzzle,
 }
 
-// TODO(jaemin): Check leader verification for order commitment
-impl SendEncryptedTransaction {
-    pub const METHOD_NAME: &'static str = "send_encrypted_transaction";
+// // TODO(jaemin): Check leader verification for order commitment
+// impl SendEncryptedTransaction {
+//     pub const METHOD_NAME: &'static str = "send_encrypted_transaction";
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        context: Arc<AppState>,
-    ) -> Result<OrderCommitment, RpcError> {
-        let parameter = parameter.parse::<SendEncryptedTransaction>()?;
+//     pub async fn handler(
+//         parameter: RpcParameter,
+//         context: Arc<AppState>,
+//     ) -> Result<OrderCommitment, RpcError> {
+//         let parameter = parameter.parse::<SendEncryptedTransaction>()?;
 
-        let rollup_block_height = context.get_block_height(&parameter.rollup_id)?;
+//         let rollup_block_height = context.get_block_height(&parameter.rollup_id)?;
 
-        let cluster_id = context.get_cluster_id(&parameter.rollup_id)?;
-        let cluster = context.get_cluster(&cluster_id)?;
-        let is_leader = cluster.is_leader(rollup_block_height).await;
+//         let cluster_id = context.get_cluster_id(&parameter.rollup_id)?;
+//         let cluster = context.get_cluster(&cluster_id)?;
+//         let is_leader = cluster.is_leader(rollup_block_height).await;
 
-        // forward to leader
-        if !is_leader {
-            let leader_rpc_client = cluster.get_leader_rpc_client(rollup_block_height).await;
-            return leader_rpc_client
-                .send_encrypted_transaction(parameter)
-                .await
-                .map_err(RpcError::from);
-        }
+//         // forward to leader
+//         if !is_leader {
+//             let leader_rpc_client = cluster.get_leader_rpc_client(rollup_block_height).await;
+//             return leader_rpc_client
+//                 .send_encrypted_transaction(parameter)
+//                 .await
+//                 .map_err(RpcError::from);
+//         }
 
-        // TODO: 1. verify encrypted_transaction
+//         // TODO: 1. verify encrypted_transaction
 
-        // 2. Issue order_commitment
+//         // 2. Issue order_commitment
 
-        let raw_transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
-        let mut rollup_metadata_model = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
-        let transaction_order = rollup_metadata_model.rollup_metadata().transaction_order();
-        let previous_order_hash = rollup_metadata_model.rollup_metadata().order_hash();
-        let issued_order_hash = previous_order_hash.issue_order_hash(&raw_transaction_hash);
+//         let raw_transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
 
-        let mut new_rollup_metadata_model = rollup_metadata_model.rollup_metadata().clone();
-        new_rollup_metadata_model.update_order_hash(issued_order_hash.clone());
-        new_rollup_metadata_model.increase_transaction_order();
+//         let mut rollup_metadata_model = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
 
-        rollup_metadata_model.update_rollup_metadata(new_rollup_metadata_model);
-        rollup_metadata_model.update()?;
+//         let transaction_order = rollup_metadata_model.rollup_metadata().transaction_order();
 
-        let order_commitment_data = OrderCommitmentData {
-            rollup_id: parameter.rollup_id.clone(),
-            block_height: rollup_block_height,
-            transaction_order,
-            previous_order_hash: issued_order_hash,
-        };
+//         let previous_order_hash = rollup_metadata_model.rollup_metadata().order_hash();
+//         let issued_order_hash = previous_order_hash.issue_order_hash(&raw_transaction_hash);
 
-        let order_commitment_signature = Signature::default(); // TODO
-        let order_commitment = OrderCommitment {
-            data: order_commitment_data,
-            signature: order_commitment_signature,
-        };
+//         let mut new_rollup_metadata_model = rollup_metadata_model.rollup_metadata().clone();
+//         new_rollup_metadata_model.update_order_hash(issued_order_hash.clone());
+//         new_rollup_metadata_model.increase_transaction_order();
 
-        // 3. Save encrypted_transaction
-        let encrypted_transaction_model = EncryptedTransactionModel::new(
-            parameter.encrypted_transaction.clone(),
-            Some(parameter.time_lock_puzzle.clone()),
-        );
-        encrypted_transaction_model.put(
-            &parameter.rollup_id,
-            &rollup_block_height,
-            &transaction_order,
-        )?;
+//         rollup_metadata_model.update_rollup_metadata(new_rollup_metadata_model);
+//         rollup_metadata_model.update()?;
 
-        // 4. Save raw_transaction
-        // Todo: change waiting decrypted raw transaction
-        let raw_transaction = decrypt_transaction(
-            parameter.encrypted_transaction.clone(),
-            parameter.time_lock_puzzle.clone(),
-            context.is_using_zkp(),
-            context.pvde_params().as_ref(),
-        )?;
-        let raw_transaction_model = RawTransactionModel::new(raw_transaction);
-        raw_transaction_model.put(
-            &parameter.rollup_id,
-            &rollup_block_height,
-            &transaction_order,
-        )?;
+//         let order_commitment_data = OrderCommitmentData {
+//             rollup_id: parameter.rollup_id.clone(),
+//             block_height: rollup_block_height,
+//             transaction_order,
+//             previous_order_hash: issued_order_hash,
+//         };
 
-        // 4. Sync transaction
+//         let order_commitment_signature = Signature::default(); // TODO
+//         let order_commitment = OrderCommitment {
+//             data: order_commitment_data,
+//             signature: order_commitment_signature,
+//         };
 
-        syncer::sync_transaction(
-            cluster.clone(),
-            parameter.rollup_id.clone(),
-            TransactionModel::Encrypted(encrypted_transaction_model),
-            order_commitment.clone(),
-        );
+//         // 3. Save encrypted_transaction
+//         let encrypted_transaction_model = EncryptedTransactionModel::new(
+//             parameter.encrypted_transaction.clone(),
+//             Some(parameter.time_lock_puzzle.clone()),
+//         );
+//         encrypted_transaction_model.put(
+//             &parameter.rollup_id,
+//             &rollup_block_height,
+//             &transaction_order,
+//         )?;
 
-        syncer::sync_transaction(
-            cluster,
-            parameter.rollup_id,
-            TransactionModel::Raw(raw_transaction_model),
-            order_commitment.clone(),
-        );
+//         // 4. Save raw_transaction
+//         // Todo: change waiting decrypted raw transaction
+//         let raw_transaction = decrypt_transaction(
+//             parameter.encrypted_transaction.clone(),
+//             parameter.time_lock_puzzle.clone(),
+//             context.config().is_using_zkp(),
+//             context.pvde_params().as_ref(),
+//         )?;
+//         let raw_transaction_model = RawTransactionModel::new(raw_transaction);
+//         raw_transaction_model.put(
+//             &parameter.rollup_id,
+//             &rollup_block_height,
+//             &transaction_order,
+//         )?;
 
-        Ok(order_commitment)
-    }
-}
+//         // 4. Sync transaction
+
+//         syncer::sync_transaction(
+//             cluster.clone(),
+//             parameter.rollup_id.clone(),
+//             TransactionModel::Encrypted(encrypted_transaction_model),
+//             order_commitment.clone(),
+//         );
+
+//         syncer::sync_transaction(
+//             cluster,
+//             parameter.rollup_id,
+//             TransactionModel::Raw(raw_transaction_model),
+//             order_commitment.clone(),
+//         );
+
+//         Ok(order_commitment)
+//     }
+// }
 
 pub fn decrypt_transaction(
     encrypted_transaction: EncryptedTransaction,

@@ -39,7 +39,7 @@ impl EncryptedTransactionModel {
     pub fn get(
         rollup_id: &String,
         block_height: u64,
-        transaction_order: &TransactionOrder,
+        transaction_order: u64,
     ) -> Result<Self, KvStoreError> {
         let key = (Self::ID, rollup_id, block_height, transaction_order);
         kvstore()?.get(&key)
@@ -49,7 +49,7 @@ impl EncryptedTransactionModel {
         &self,
         rollup_id: &String,
         block_height: u64,
-        transaction_order: &TransactionOrder,
+        transaction_order: u64,
     ) -> Result<(), KvStoreError> {
         let key = (Self::ID, rollup_id, block_height, transaction_order);
         kvstore()?.put(&key, self)
@@ -77,7 +77,7 @@ impl RawTransactionModel {
     pub fn get(
         rollup_id: &String,
         block_height: u64,
-        transaction_order: &TransactionOrder,
+        transaction_order: u64,
     ) -> Result<Self, KvStoreError> {
         let key = (Self::ID, rollup_id, block_height, transaction_order);
         kvstore()?.get(&key)
@@ -87,7 +87,7 @@ impl RawTransactionModel {
         &self,
         rollup_id: &String,
         block_height: u64,
-        transaction_order: &TransactionOrder,
+        transaction_order: u64,
     ) -> Result<(), KvStoreError> {
         let key = (Self::ID, rollup_id, block_height, transaction_order);
         kvstore()?.put(&key, self)

@@ -1,6 +1,5 @@
 use crate::rpc::prelude::*;
 
-/// 09/05
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "SequencingInfo")]
 pub struct AddSequencingInfo {

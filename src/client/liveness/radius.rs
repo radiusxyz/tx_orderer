@@ -111,7 +111,7 @@ async fn callback(events: Events, context: LivenessClient) {
                     .unwrap();
 
             for cluster_id in cluster_id_list.iter() {
-                // Get the sequencer address list given a cluster ID.
+                // Get the sequencer address list for the cluster ID.
                 let sequencer_address_list: Vec<String> = context
                     .publisher()
                     .get_sequencer_list(cluster_id, block_number)
@@ -121,6 +121,7 @@ async fn callback(events: Events, context: LivenessClient) {
                     .map(|address| address.to_string())
                     .collect();
 
+                // Get the rollup ID list from rollup information
                 let rollup_id_list: Vec<String> = context
                     .publisher()
                     .get_rollup_info_list(cluster_id, block_number)

@@ -1,67 +1,15 @@
-use std::fmt;
+mod model;
 
 use ethers::utils::hex;
+pub use model::*;
 use sha3::{Digest, Sha3_256};
 
 use crate::types::prelude::*;
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, Default)]
-pub struct TransactionOrder(u64);
-
-impl TransactionOrder {
-    pub fn new(value: u64) -> Self {
-        Self(value)
-    }
-
-    pub fn increase(&mut self) {
-        self.0 += 1;
-    }
-
-    pub fn value(&self) -> u64 {
-        self.0
-    }
-
-    pub fn is_zero(&self) -> bool {
-        self.0 == 0
-    }
-
-    pub fn into_inner(self) -> u64 {
-        self.0
-    }
-}
-
-impl From<u64> for TransactionOrder {
-    fn from(value: u64) -> Self {
-        Self(value)
-    }
-}
-
-impl From<TransactionOrder> for u64 {
-    fn from(transaction_order: TransactionOrder) -> Self {
-        transaction_order.0
-    }
-}
-
-impl PartialEq for TransactionOrder {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl fmt::Display for TransactionOrder {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct OrderHash(String);
 
 impl OrderHash {
-    pub fn new() -> Self {
-        OrderHash("0000000000000000000000000000000000000000000000000000000000000000".to_string())
-    }
-
     pub fn issue_order_hash(&self, raw_tx_hash: &RawTransactionHash) -> OrderHash {
         let mut hasher = Sha3_256::new();
 
@@ -76,7 +24,7 @@ impl OrderHash {
 
 impl Default for OrderHash {
     fn default() -> Self {
-        Self("".to_string())
+        Self("0000000000000000000000000000000000000000000000000000000000000000".to_owned())
     }
 }
 
@@ -87,7 +35,7 @@ pub struct OrderHashList(Vec<OrderHash>);
 pub struct OrderCommitmentData {
     pub rollup_id: String,
     pub block_height: u64,
-    pub transaction_order: TransactionOrder,
+    pub transaction_order: u64,
     pub previous_order_hash: OrderHash,
 }
 
