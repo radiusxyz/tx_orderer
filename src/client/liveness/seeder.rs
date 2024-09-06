@@ -2,15 +2,22 @@ use std::sync::Arc;
 
 use radius_sequencer_sdk::{
     json_rpc::{Error, RpcClient},
-    signature::{Address, ChainType, Signature},
+    signature::{ChainType, Signature},
 };
 use serde::{Deserialize, Serialize};
 
 use crate::types::*;
 
-/// 09/05
 pub struct SeederClient {
     inner: Arc<RpcClient>,
+}
+
+impl Clone for SeederClient {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
 }
 
 impl SeederClient {
@@ -67,20 +74,20 @@ impl SeederClient {
     //     Ok(())
     // }
 
-    // pub async fn get_cluster_info(
-    //     &self,
-    //     sequencer_address_list: Vec<String>,
-    //     rollup_address_list: Vec<String>,
-    // ) -> Result<GetClusterInfoReturn, Error> {
-    //     let rpc_parameter = GetClusterInfo {
-    //         sequencer_address_list,
-    //         rollup_address_list,
-    //     };
+    pub async fn get_cluster_info(
+        &self,
+        sequencer_address_list: Vec<String>,
+        rollup_address_list: Vec<String>,
+    ) -> Result<GetClusterInfoReturn, Error> {
+        let rpc_parameter = GetClusterInfo {
+            sequencer_address_list,
+            rollup_address_list,
+        };
 
-    //     self.inner
-    //         .request(GetClusterInfo::METHOD_NAME, rpc_parameter)
-    //         .await
-    // }
+        self.inner
+            .request(GetClusterInfo::METHOD_NAME, rpc_parameter)
+            .await
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -126,6 +133,6 @@ impl GetClusterInfo {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterInfoReturn {
-    sequencer_info: Vec<(String, Option<String>)>,
-    cluster_info: Vec<(String, Option<String>)>,
+    pub sequencer_info: Vec<(String, Option<String>)>,
+    pub cluster_info: Vec<(String, Option<String>)>,
 }

@@ -5,7 +5,7 @@ use radius_sequencer_sdk::liveness_radius::{
 };
 use tokio::time::{sleep, Duration};
 
-use crate::{error::Error, types::*};
+use crate::{client::liveness::seeder::SeederClient, error::Error, types::*};
 
 pub struct LivenessClient {
     inner: Arc<LivenessClientInner>,
@@ -16,6 +16,7 @@ struct LivenessClientInner {
     service_provider: ServiceProvider,
     publisher: Publisher,
     subscriber: Subscriber,
+    seeder: SeederClient,
 }
 
 unsafe impl Send for LivenessClient {}
@@ -36,6 +37,7 @@ impl LivenessClient {
         service_provider: ServiceProvider,
         liveness_info: LivenessRadius,
         signing_key: impl AsRef<str>,
+        seeder: SeederClient,
     ) -> Result<Self, Error> {
         let publisher = Publisher::new(
             liveness_info.liveness_rpc_url,
@@ -55,6 +57,7 @@ impl LivenessClient {
             service_provider,
             publisher,
             subscriber,
+            seeder,
         };
 
         Ok(Self {
@@ -76,6 +79,10 @@ impl LivenessClient {
 
     pub fn subscriber(&self) -> &Subscriber {
         &self.inner.subscriber
+    }
+
+    pub fn seeder(&self) -> &SeederClient {
+        &self.inner.seeder
     }
 
     pub fn initialize_event_listener(&self) {
@@ -111,6 +118,8 @@ async fn callback(events: Events, context: LivenessClient) {
                     .unwrap();
 
             for cluster_id in cluster_id_list.iter() {
+                let mut my_index: Option<usize> = None;
+
                 // Get the sequencer address list for the cluster ID.
                 let sequencer_address_list: Vec<String> = context
                     .publisher()
@@ -118,7 +127,14 @@ async fn callback(events: Events, context: LivenessClient) {
                     .await
                     .unwrap()
                     .into_iter()
-                    .map(|address| address.to_string())
+                    .enumerate()
+                    .map(|(index, address)| {
+                        if address == context.publisher().address() {
+                            my_index = Some(index);
+                        }
+
+                        address.to_string()
+                    })
                     .collect();
 
                 // Get the rollup ID list from rollup information
@@ -133,9 +149,16 @@ async fn callback(events: Events, context: LivenessClient) {
 
                 let block_margin = context.publisher().get_block_margin().await.unwrap();
 
+                let cluster_info = context
+                    .seeder()
+                    .get_cluster_info(sequencer_address_list.clone(), rollup_id_list.clone())
+                    .await
+                    .unwrap();
+
                 for rollup_id in rollup_id_list {
                     let cluster_info = ClusterInfo::new(
-                        sequencer_address_list.clone(),
+                        cluster_info.sequencer_info.clone(),
+                        my_index.unwrap(),
                         block_margin.try_into().unwrap(),
                     );
                     ClusterInfoModel::put(block_number, &rollup_id, &cluster_info).unwrap();
