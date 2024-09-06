@@ -2,7 +2,7 @@ use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Rollup {
-    rollup_id: RollupId,
+    rollup_id: String,
     rollup_type: RollupType,
 
     rollup_rpc_url: String,
@@ -13,7 +13,7 @@ pub struct Rollup {
 
 impl Rollup {
     pub fn new(
-        rollup_id: RollupId,
+        rollup_id: String,
         rollup_type: RollupType,
         rollup_rpc_url: String,
         rollup_websocket_url: String,
@@ -28,7 +28,7 @@ impl Rollup {
         }
     }
 
-    pub fn rollup_id(&self) -> &RollupId {
+    pub fn rollup_id(&self) -> &String {
         &self.rollup_id
     }
 

@@ -28,7 +28,7 @@ pub struct ClusterInfo {
     platform: Platform,
     service_provider: ServiceProvider,
     sequencer_info: Vec<String>,
-    rollup_info: Vec<(String,)>,
+    rollup_info: Vec<String>,
     block_margin: u64,
 }
 
