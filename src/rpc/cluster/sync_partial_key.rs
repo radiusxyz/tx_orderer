@@ -10,10 +10,10 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncPartialKey {
-    pub rollup_id: RollupId,
+    pub rollup_id: String,
 
     pub node_address: Address,
-    pub cluster_id: ClusterId,
+    pub cluster_id: String,
 
     pub partial_key: PartialKey,
     pub partial_key_proof: PartialKeyProof,

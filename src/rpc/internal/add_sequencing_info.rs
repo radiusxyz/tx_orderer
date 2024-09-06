@@ -22,7 +22,7 @@ impl TryFrom<SequencingInfo> for AddSequencingInfo {
     fn try_from(value: SequencingInfo) -> Result<Self, Self::Error> {
         match value.platform {
             Platform::Ethereum => {
-                let payload: LivenessEthereum =
+                let payload: LivenessRadius =
                     serde_json::from_value(value.payload).map_err(Error::Deserialize)?;
 
                 Ok(Self {
@@ -54,13 +54,13 @@ impl AddSequencingInfo {
         match parameter.payload {
             SequencingInfoPayload::Ethereum(payload) => {
                 // Todo: Fetching the signing key from the keystore.
-                let signing_key = String::new();
+                context.signing_key_path();
 
-                liveness::ethereum::LivenessClient::new(
+                liveness::radius::LivenessClient::new(
                     parameter.platform,
                     parameter.service_provider,
                     payload,
-                    signing_key,
+                    "singing_key".to_owned(),
                 )?
                 .initialize_event_listener();
 

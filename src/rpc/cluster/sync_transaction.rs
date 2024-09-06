@@ -1,11 +1,8 @@
-use crate::{
-    models::{RollupMetadataModel, TransactionModel},
-    rpc::prelude::*,
-};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncTransaction {
-    pub rollup_id: RollupId,
+    pub rollup_id: String,
     pub transaction: TransactionModel,
     pub order_commitment: OrderCommitment,
 }

@@ -16,17 +16,11 @@ use pvde::{
     },
 };
 
-use crate::{
-    models::{
-        EncryptedTransactionModel, RawTransactionModel, RollupMetadataModel, TransactionModel,
-    },
-    rpc::prelude::*,
-    types::*,
-};
+use crate::{rpc::prelude::*, types::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
-    rollup_id: RollupId,
+    rollup_id: String,
     encrypted_transaction: EncryptedTransaction,
     time_lock_puzzle: TimeLockPuzzle,
 }
@@ -61,11 +55,8 @@ impl SendEncryptedTransaction {
         // 2. Issue order_commitment
 
         let raw_transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
-
         let mut rollup_metadata_model = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
-
         let transaction_order = rollup_metadata_model.rollup_metadata().transaction_order();
-
         let previous_order_hash = rollup_metadata_model.rollup_metadata().order_hash();
         let issued_order_hash = previous_order_hash.issue_order_hash(&raw_transaction_hash);
 
@@ -105,7 +96,7 @@ impl SendEncryptedTransaction {
         let raw_transaction = decrypt_transaction(
             parameter.encrypted_transaction.clone(),
             parameter.time_lock_puzzle.clone(),
-            context.config().is_using_zkp(),
+            context.is_using_zkp(),
             context.pvde_params().as_ref(),
         )?;
         let raw_transaction_model = RawTransactionModel::new(raw_transaction);

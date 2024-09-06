@@ -25,15 +25,42 @@ impl ClusterIdList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClusterInfo {
-    platform: Platform,
-    service_provider: ServiceProvider,
-    sequencer_info: Vec<String>,
-    rollup_info: Vec<String>,
+    sequencer_address_list: Vec<String>,
     block_margin: u64,
 }
 
 impl ClusterInfo {
+    pub fn new(sequencer_address_list: Vec<String>, block_margin: u64) -> Self {
+        Self {
+            sequencer_address_list,
+            block_margin,
+        }
+    }
+
     pub fn block_margin(&self) -> u64 {
         self.block_margin
     }
+
+    pub fn sequencer_address_list(&self) -> &Vec<String> {
+        &self.sequencer_address_list
+    }
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ClusterMetadata {
+    leader_index: usize,
+    rollup_block_height: u64,
+    transaction_order: u64,
+    sequencer_address_list: Vec<String>,
+}
+
+// impl ClusterMetadata {
+//     pub fn new(leader_index: usize, rollup_block_height: u64) -> Self {
+//         Self {
+//             leader_index,
+//             rollup_block_height,
+//             transaction_order: 0,
+//             sequencer_address_list,
+//         }
+//     }
+// }

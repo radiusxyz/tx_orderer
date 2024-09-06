@@ -20,7 +20,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DecryptTransaction {
-    rollup_id: RollupId,
+    rollup_id: String,
     encrypted_transaction: EncryptedTransaction,
     time_lock_puzzle: TimeLockPuzzle,
 }

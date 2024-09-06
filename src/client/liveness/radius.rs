@@ -5,10 +5,8 @@ use radius_sequencer_sdk::liveness_radius::{
 };
 use tokio::time::{sleep, Duration};
 
-use super::seeder::SeederClient;
-use crate::{error::Error, models::*, types::*};
+use crate::{error::Error, types::*};
 
-/// 09/05
 pub struct LivenessClient {
     inner: Arc<LivenessClientInner>,
 }
@@ -18,7 +16,6 @@ struct LivenessClientInner {
     service_provider: ServiceProvider,
     publisher: Publisher,
     subscriber: Subscriber,
-    seeder: SeederClient,
 }
 
 unsafe impl Send for LivenessClient {}
@@ -37,7 +34,7 @@ impl LivenessClient {
     pub fn new(
         platform: Platform,
         service_provider: ServiceProvider,
-        liveness_info: LivenessEthereum,
+        liveness_info: LivenessRadius,
         signing_key: impl AsRef<str>,
     ) -> Result<Self, Error> {
         let publisher = Publisher::new(
@@ -53,15 +50,11 @@ impl LivenessClient {
         )
         .map_err(|error| Error::CreateLivenessClient(error.into()))?;
 
-        let seeder = SeederClient::new(liveness_info.seeder_rpc_url)
-            .map_err(|error| Error::CreateLivenessClient(error.into()))?;
-
         let inner = LivenessClientInner {
             platform,
             service_provider,
             publisher,
             subscriber,
-            seeder,
         };
 
         Ok(Self {
@@ -83,10 +76,6 @@ impl LivenessClient {
 
     pub fn subscriber(&self) -> &Subscriber {
         &self.inner.subscriber
-    }
-
-    pub fn seeder(&self) -> &SeederClient {
-        &self.inner.seeder
     }
 
     pub fn initialize_event_listener(&self) {
@@ -132,33 +121,24 @@ async fn callback(events: Events, context: LivenessClient) {
                     .map(|address| address.to_string())
                     .collect();
 
-                // Get the rollup info list.
-                let rollup_info_list = context
+                let rollup_id_list: Vec<String> = context
                     .publisher()
                     .get_rollup_info_list(cluster_id, block_number)
                     .await
-                    .unwrap();
-
-                // Get the rollup address list.
-                let rollup_address_list: Vec<String> = rollup_info_list
-                    .iter()
-                    .map(|rollup_info| rollup_info.owner.to_string())
+                    .unwrap()
+                    .into_iter()
+                    .map(|rollup_info| rollup_info.rollupId)
                     .collect();
 
-                let cluster_info = context
-                    .seeder()
-                    .get_cluster_info(sequencer_address_list, rollup_address_list)
-                    .await
-                    .unwrap();
+                let block_margin = context.publisher().get_block_margin().await.unwrap();
 
-                // Store the cluster information for the corresponding block number.
-                // ClusterInfoModel::put(
-                //     context.platform(),
-                //     context.service_provider(),
-                //     block_number,
-                //     &sequencer_url_list,
-                // )
-                // .unwrap();
+                for rollup_id in rollup_id_list {
+                    let cluster_info = ClusterInfo::new(
+                        sequencer_address_list.clone(),
+                        block_margin.try_into().unwrap(),
+                    );
+                    ClusterInfoModel::put(block_number, &rollup_id, &cluster_info).unwrap();
+                }
             }
         }
         _others => {}

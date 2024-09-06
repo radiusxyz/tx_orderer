@@ -1,6 +1,5 @@
 use crate::rpc::prelude::*;
 
-/// 09/05
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct JoinCluster {
     platform: Platform,
@@ -11,7 +10,7 @@ pub struct JoinCluster {
 impl JoinCluster {
     pub const METHOD_NAME: &'static str = "join_cluster";
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
+    pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
         let mut cluster_id_list =

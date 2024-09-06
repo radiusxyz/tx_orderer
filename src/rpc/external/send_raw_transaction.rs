@@ -1,14 +1,10 @@
-use crate::{
-    models::{
-        EncryptedTransactionModel, RawTransactionModel, RollupMetadataModel, TransactionModel,
-    },
-    rpc::prelude::*,
-    types::*,
-};
+use ethers::types::Signature;
+
+use crate::{rpc::prelude::*, types::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendRawTransaction {
-    rollup_id: RollupId,
+    rollup_id: String,
     raw_transaction: RawTransaction,
 }
 
