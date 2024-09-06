@@ -60,6 +60,7 @@ impl AddSequencingInfo {
                     parameter.service_provider,
                     payload,
                     "singing_key".to_owned(),
+                    context.seeder().clone(),
                 )?
                 .initialize_event_listener();
 

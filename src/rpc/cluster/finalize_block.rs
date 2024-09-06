@@ -1,3 +1,5 @@
+use radius_sequencer_sdk::json_rpc::RpcClient;
+
 use super::SyncBlock;
 use crate::rpc::prelude::*;
 
@@ -20,8 +22,26 @@ impl FinalizeBlock {
                     rollup_metadata.issue_rollup_metadata(parameter.rollup_block_height);
                 rollup_metadata.update()?;
 
+                let cluster_info =
+                    ClusterInfoModel::get(parameter.liveness_block_height, &parameter.rollup_id)?;
+
+                if cluster_info.sequencer_list().is_empty() {
+                    return Err(Error::EmptySequencerList.into());
+                }
+
+                let cluster_metadata = ClusterMetadata::new(
+                    cluster_info.sequencer_list().len() % parameter.rollup_block_height as usize,
+                    cluster_info.my_index(),
+                    cluster_info.sequencer_list().clone(),
+                );
+                ClusterMetadataModel::put(&parameter.rollup_id, &cluster_metadata)?;
+
                 // Sync.
-                Self::sync_block(&parameter, current_rollup_metadata.block_height());
+                Self::sync_block(
+                    &parameter,
+                    current_rollup_metadata.block_height(),
+                    cluster_metadata,
+                );
             }
             Err(error) => {
                 if error.is_none_type() {
@@ -29,8 +49,25 @@ impl FinalizeBlock {
                     rollup_metadata.set_block_height(parameter.rollup_block_height);
                     RollupMetadataModel::put(&parameter.rollup_id, &rollup_metadata)?;
 
+                    let cluster_info = ClusterInfoModel::get(
+                        parameter.liveness_block_height,
+                        &parameter.rollup_id,
+                    )?;
+
+                    if cluster_info.sequencer_list().is_empty() {
+                        return Err(Error::EmptySequencerList.into());
+                    }
+
+                    let cluster_metadata = ClusterMetadata::new(
+                        cluster_info.sequencer_list().len()
+                            % parameter.rollup_block_height as usize,
+                        cluster_info.my_index(),
+                        cluster_info.sequencer_list().clone(),
+                    );
+                    ClusterMetadataModel::put(&parameter.rollup_id, &cluster_metadata)?;
+
                     // Sync.
-                    Self::sync_block(&parameter, rollup_metadata.block_height());
+                    Self::sync_block(&parameter, rollup_metadata.block_height(), cluster_metadata);
                 } else {
                     return Err(error.into());
                 }
@@ -40,7 +77,7 @@ impl FinalizeBlock {
         Ok(())
     }
 
-    pub fn sync_block(parameter: &Self, transaction_order: u64) {
+    pub fn sync_block(parameter: &Self, transaction_order: u64, cluster_metadata: ClusterMetadata) {
         let parameter = parameter.clone();
 
         tokio::spawn(async move {
@@ -51,11 +88,18 @@ impl FinalizeBlock {
                 transaction_order: transaction_order,
             };
 
-            let cluster_info =
-                ClusterInfoModel::get(parameter.liveness_block_height, &parameter.rollup_id)
-                    .unwrap();
+            for sequencer_rpc_url in cluster_metadata.others() {
+                let rpc_parameter = rpc_parameter.clone();
 
-            // Todo: Fire and forget.
+                if let Some(sequencer_rpc_url) = sequencer_rpc_url {
+                    tokio::spawn(async move {
+                        let client = RpcClient::new(sequencer_rpc_url).unwrap();
+                        let _ = client
+                            .request::<SyncBlock, ()>(SyncBlock::METHOD_NAME, rpc_parameter.clone())
+                            .await;
+                    });
+                }
+            }
         });
     }
 }

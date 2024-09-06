@@ -89,3 +89,22 @@ impl ClusterInfoModel {
         Ok(())
     }
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ClusterMetadataModel;
+
+impl ClusterMetadataModel {
+    const ID: &'static str = stringify!(ClusterMetadataModel);
+
+    pub fn get(rollup_id: &String) -> Result<ClusterMetadata, KvStoreError> {
+        let key = &(Self::ID, rollup_id);
+
+        kvstore()?.get(key)
+    }
+
+    pub fn put(rollup_id: &String, cluster_metadata: &ClusterMetadata) -> Result<(), KvStoreError> {
+        let key = &(Self::ID, rollup_id);
+
+        kvstore()?.put(key, cluster_metadata)
+    }
+}

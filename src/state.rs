@@ -1,17 +1,13 @@
-use std::{path::PathBuf, sync::Arc};
-
-use radius_sequencer_sdk::context::SharedContext;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::{client::liveness::seeder::SeederClient, types::*};
 
-pub type AppState = Arc<State>;
-
-pub struct State {
+pub struct AppState {
     signing_key_path: PathBuf,
     seeder: SeederClient,
 }
 
-impl State {
+impl AppState {
     pub fn signing_key_path(&self) -> &PathBuf {
         &self.signing_key_path
     }

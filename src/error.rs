@@ -15,6 +15,7 @@ pub enum Error {
     ClusterDown,
     InvalidSequencerPort,
     InvalidBlockHeight,
+    InvalidLeaderIndex,
 
     LoadConfigOption,
     ParseTomlString,
