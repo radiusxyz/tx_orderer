@@ -54,3 +54,9 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<radius_sequencer_sdk::json_rpc::Error> for Error {
+    fn from(value: radius_sequencer_sdk::json_rpc::Error) -> Self {
+        Self::RpcError(value)
+    }
+}
