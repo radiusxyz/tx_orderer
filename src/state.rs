@@ -1,19 +1,24 @@
-use std::{collections::HashMap, path::PathBuf};
-
-use crate::{client::liveness::seeder::SeederClient, types::*};
+use crate::{client::liveness::seeder::SeederClient, types::Config};
 
 pub struct AppState {
-    signing_key_path: PathBuf,
-    seeder: SeederClient,
+    config: Config,
+    seeder_client: SeederClient,
 }
 
 impl AppState {
-    pub fn signing_key_path(&self) -> &PathBuf {
-        &self.signing_key_path
+    pub fn new(config: Config, seeder_client: SeederClient) -> Self {
+        Self {
+            config,
+            seeder_client,
+        }
     }
 
-    pub fn seeder(&self) -> &SeederClient {
-        &self.seeder
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
+    pub fn seeder_client(&self) -> &SeederClient {
+        &self.seeder_client
     }
 
     pub fn is_using_zkp(&self) -> bool {

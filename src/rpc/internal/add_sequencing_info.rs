@@ -53,14 +53,14 @@ impl AddSequencingInfo {
         match parameter.payload {
             SequencingInfoPayload::Ethereum(payload) => {
                 // Todo: Fetching the signing key from the keystore.
-                context.signing_key_path();
+                let sining_key = context.config().signing_key();
 
                 liveness::radius::LivenessClient::new(
                     parameter.platform,
                     parameter.service_provider,
                     payload,
                     "singing_key".to_owned(),
-                    context.seeder().clone(),
+                    context.seeder_client().clone(),
                 )?
                 .initialize_event_listener();
 
