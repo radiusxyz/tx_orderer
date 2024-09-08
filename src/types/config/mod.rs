@@ -1,12 +1,21 @@
+mod config_option;
+mod config_path;
+
 use std::{fs, path::PathBuf};
 
+pub use config_option::*;
+pub use config_path::*;
+use radius_sequencer_sdk::signature::Address;
 use serde::{Deserialize, Serialize};
 
-use super::{ConfigOption, ConfigPath, CONFIG_FILE_NAME, DATABASE_DIR_NAME, SIGNING_KEY};
-use crate::{
-    error::Error,
-    types::{Address, SigningKey},
-};
+use crate::error::Error;
+
+pub const DEFAULT_HOME_PATH: &str = ".radius";
+pub const DATABASE_DIR_NAME: &str = "database";
+pub const CONFIG_FILE_NAME: &str = "Config.toml";
+pub const SIGNING_KEY_PATH: &str = "signing_key";
+pub const DEFAULT_SIGNING_KEY: &str =
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -18,7 +27,7 @@ pub struct Config {
 
     seeder_rpc_url: String,
 
-    signing_key: SigningKey,
+    signing_key: String,
 
     is_using_zkp: bool,
 }
@@ -46,9 +55,9 @@ impl Config {
         // Merge configs from CLI input
         let merged_config_option = config_file.merge(config_option);
 
-        // Read signing key
-        let signing_key_path = config_path.join(SIGNING_KEY);
-        let signing_key = SigningKey::from(fs::read_to_string(signing_key_path).unwrap());
+        // Read signing key (TODO:)
+        let signing_key_path = config_path.join(SIGNING_KEY_PATH);
+        let signing_key = fs::read_to_string(signing_key_path).unwrap();
 
         Ok(Config {
             path: config_path,
@@ -69,14 +78,6 @@ impl Config {
         self.path.join(DATABASE_DIR_NAME)
     }
 
-    pub fn signing_key(&self) -> &SigningKey {
-        &self.signing_key
-    }
-
-    pub fn address(&self) -> Address {
-        self.signing_key().get_address()
-    }
-
     pub fn sequencer_rpc_url(&self) -> &String {
         &self.sequencer_rpc_url
     }
@@ -91,6 +92,10 @@ impl Config {
 
     pub fn seeder_rpc_url(&self) -> &String {
         &self.seeder_rpc_url
+    }
+
+    pub fn signing_key(&self) -> &String {
+        &self.signing_key
     }
 
     pub fn is_using_zkp(&self) -> bool {

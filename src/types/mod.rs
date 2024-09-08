@@ -1,5 +1,6 @@
 mod block;
 mod cluster;
+mod config;
 mod order_commitment;
 mod rollup;
 mod sequencer;
@@ -19,6 +20,7 @@ pub(crate) mod prelude {
 
 pub use block::*;
 pub use cluster::*;
+pub use config::*;
 pub use order_commitment::*;
 pub use rollup::*;
 pub use sequencer::*;
