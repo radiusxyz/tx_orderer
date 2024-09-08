@@ -1,3 +1,5 @@
+use radius_sequencer_sdk::signature::{ChainType, PrivateKeySigner};
+
 use crate::{rpc::prelude::*, types::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -31,6 +33,15 @@ impl SendRawTransaction {
                     transaction_order,
                     previous_order_hash: order_hash,
                 };
+
+                let signing_key = context.config().signing_key();
+
+                let sequencer_signer = ChainType::Ethereum
+                    .create_signer_from_str(signing_key)
+                    .unwrap();
+                let order_commitment_signature = sequencer_signer
+                    .sign_message(order_commitment_data.as_bytes().as_slice())
+                    .unwrap();
 
                 let order_commitment = OrderCommitment {
                     data: order_commitment_data,
