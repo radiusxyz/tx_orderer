@@ -11,7 +11,7 @@ pub struct SyncBlock {
 impl SyncBlock {
     pub const METHOD_NAME: &'static str = "sync_block";
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
+    pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
         match RollupMetadataModel::get_mut(&parameter.rollup_id) {

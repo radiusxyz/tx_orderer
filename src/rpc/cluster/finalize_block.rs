@@ -1,5 +1,3 @@
-use radius_sequencer_sdk::json_rpc::RpcClient;
-
 use super::SyncBlock;
 use crate::rpc::prelude::*;
 
@@ -13,7 +11,7 @@ pub struct FinalizeBlock {
 impl FinalizeBlock {
     pub const METHOD_NAME: &'static str = "finalize_block";
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
+    pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
         match RollupMetadataModel::get_mut(&parameter.rollup_id) {
@@ -34,7 +32,11 @@ impl FinalizeBlock {
                     cluster_info.my_index(),
                     cluster_info.sequencer_list().clone(),
                 );
-                ClusterMetadataModel::put(&parameter.rollup_id, &cluster_metadata)?;
+                ClusterMetadataModel::put(
+                    &parameter.rollup_id,
+                    parameter.rollup_block_height,
+                    &cluster_metadata,
+                )?;
 
                 // Sync.
                 Self::sync_block(
@@ -64,7 +66,11 @@ impl FinalizeBlock {
                         cluster_info.my_index(),
                         cluster_info.sequencer_list().clone(),
                     );
-                    ClusterMetadataModel::put(&parameter.rollup_id, &cluster_metadata)?;
+                    ClusterMetadataModel::put(
+                        &parameter.rollup_id,
+                        parameter.rollup_block_height,
+                        &cluster_metadata,
+                    )?;
 
                     // Sync.
                     Self::sync_block(&parameter, rollup_metadata.block_height(), cluster_metadata);

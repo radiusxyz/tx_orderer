@@ -11,7 +11,7 @@ impl GetBlock {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<AppState>,
+        _context: Arc<AppState>,
     ) -> Result<Block, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
