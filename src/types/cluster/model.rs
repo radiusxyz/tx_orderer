@@ -96,14 +96,21 @@ pub struct ClusterMetadataModel;
 impl ClusterMetadataModel {
     const ID: &'static str = stringify!(ClusterMetadataModel);
 
-    pub fn get(rollup_id: &String) -> Result<ClusterMetadata, KvStoreError> {
-        let key = &(Self::ID, rollup_id);
+    pub fn get(
+        rollup_id: &String,
+        rollup_block_height: u64,
+    ) -> Result<ClusterMetadata, KvStoreError> {
+        let key = &(Self::ID, rollup_id, rollup_block_height);
 
         kvstore()?.get(key)
     }
 
-    pub fn put(rollup_id: &String, cluster_metadata: &ClusterMetadata) -> Result<(), KvStoreError> {
-        let key = &(Self::ID, rollup_id);
+    pub fn put(
+        rollup_id: &String,
+        rollup_block_height: u64,
+        cluster_metadata: &ClusterMetadata,
+    ) -> Result<(), KvStoreError> {
+        let key = &(Self::ID, rollup_id, rollup_block_height);
 
         kvstore()?.put(key, cluster_metadata)
     }

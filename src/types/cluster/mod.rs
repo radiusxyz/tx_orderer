@@ -8,7 +8,6 @@ use std::{
 pub use model::*;
 
 use super::prelude::*;
-use crate::error::Error;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct ClusterIdList(BTreeSet<String>);
@@ -92,6 +91,7 @@ impl ClusterMetadata {
             .clone()
     }
 
+    /// Return the list of RPC URLs except the leader's.
     pub fn followers(&self) -> Vec<Option<String>> {
         self.sequencer_list
             .iter()
@@ -106,6 +106,7 @@ impl ClusterMetadata {
             .collect()
     }
 
+    /// Return the list of RPC URL except mine.
     pub fn others(&self) -> Vec<Option<String>> {
         self.sequencer_list
             .iter()
@@ -118,5 +119,10 @@ impl ClusterMetadata {
                 }
             })
             .collect()
+    }
+
+    /// Return the iterator for the sequencer list.
+    pub fn iter(&self) -> slice::Iter<'_, (String, Option<String>)> {
+        self.sequencer_list.iter()
     }
 }
