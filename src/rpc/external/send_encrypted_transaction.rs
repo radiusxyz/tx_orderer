@@ -34,10 +34,12 @@ impl SendEncryptedTransaction {
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let cluster_metadata = ClusterMetadataModel::get(&parameter.rollup_id)?;
+        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+
+        let cluster_metadata =
+            ClusterMetadataModel::get(&parameter.rollup_id, rollup_metadata.block_height())?;
         match cluster_metadata.is_leader() {
             true => {
-                let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
                 let transaction_order = rollup_metadata.issue_transaction_order();
                 let order_hash = rollup_metadata
                     .issue_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
@@ -94,6 +96,8 @@ impl SendEncryptedTransaction {
             }
         }
     }
+
+    pub fn sync_transaction() {}
 }
 
 pub fn decrypt_transaction(
