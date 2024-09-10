@@ -47,15 +47,14 @@ impl SendEncryptedTransaction {
                 rollup_metadata.update()?;
 
                 let order_commitment_data = OrderCommitmentData {
-                    rollup_id: parameter.rollup_id,
+                    rollup_id: parameter.rollup_id.clone(),
                     block_height: rollup_block_height,
                     transaction_order,
                     previous_order_hash: order_hash,
                 };
-
                 let order_commitment = OrderCommitment {
                     data: order_commitment_data,
-                    signature: order_commitment_signature, // Use radius_sdk::signature::Signature;
+                    signature: vec![].into(), // Todo: Signature
                 };
 
                 let encrypted_transaction_model = EncryptedTransactionModel::new(
@@ -72,7 +71,7 @@ impl SendEncryptedTransaction {
                     parameter.encrypted_transaction.clone(),
                     parameter.time_lock_puzzle.clone(),
                     context.config().is_using_zkp(),
-                    context.pvde_params().as_ref(),
+                    &Some(PvdeParams::default()),
                 )?;
                 let raw_transaction_model = RawTransactionModel::new(raw_transaction);
                 raw_transaction_model.put(
@@ -89,7 +88,7 @@ impl SendEncryptedTransaction {
                 let leader_rpc_url = cluster_metadata.leader().ok_or(Error::EmptyLeaderRpcUrl)?;
                 let client = RpcClient::new(leader_rpc_url)?;
                 let response: OrderCommitment = client
-                    .request(SendEncryptedTransaction::METHOD_NAME, parameter)
+                    .request(SendEncryptedTransaction::METHOD_NAME, parameter.clone())
                     .await?;
 
                 Ok(response)

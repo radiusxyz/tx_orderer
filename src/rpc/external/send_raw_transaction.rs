@@ -1,5 +1,3 @@
-use radius_sequencer_sdk::signature::{ChainType, PrivateKeySigner};
-
 use crate::{rpc::prelude::*, types::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -13,14 +11,16 @@ impl SendRawTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<AppState>,
+        _context: Arc<AppState>,
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let cluster_metadata = ClusterMetadataModel::get(&parameter.rollup_id)?;
+        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+
+        let cluster_metadata =
+            ClusterMetadataModel::get(&parameter.rollup_id, rollup_metadata.block_height())?;
         match cluster_metadata.is_leader() {
             true => {
-                let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
                 let transaction_order = rollup_metadata.issue_transaction_order();
                 let order_hash = rollup_metadata
                     .issue_order_hash(&parameter.raw_transaction.raw_transaction_hash());
@@ -28,24 +28,14 @@ impl SendRawTransaction {
                 rollup_metadata.update()?;
 
                 let order_commitment_data = OrderCommitmentData {
-                    rollup_id: parameter.rollup_id,
+                    rollup_id: parameter.rollup_id.clone(),
                     block_height: rollup_block_height,
                     transaction_order,
                     previous_order_hash: order_hash,
                 };
-
-                let signing_key = context.config().signing_key();
-
-                let sequencer_signer = ChainType::Ethereum
-                    .create_signer_from_str(signing_key)
-                    .unwrap();
-                let order_commitment_signature = sequencer_signer
-                    .sign_message(order_commitment_data.as_bytes().as_slice())
-                    .unwrap();
-
                 let order_commitment = OrderCommitment {
                     data: order_commitment_data,
-                    signature: order_commitment_signature, // Use radius_sdk::signature::Signature;
+                    signature: vec![].into(), // Todo: Signature
                 };
 
                 EncryptedTransactionModel::unencrypted_transaction();
@@ -72,7 +62,7 @@ impl SendRawTransaction {
                 let leader_rpc_url = cluster_metadata.leader().ok_or(Error::EmptyLeaderRpcUrl)?;
                 let client = RpcClient::new(leader_rpc_url)?;
                 let response: OrderCommitment = client
-                    .request(SendRawTransaction::METHOD_NAME, parameter)
+                    .request(SendRawTransaction::METHOD_NAME, parameter.clone())
                     .await?;
 
                 Ok(response)

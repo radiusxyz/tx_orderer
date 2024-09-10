@@ -8,12 +8,13 @@ name = "sequencer"
 path = "src/bin/sequencer.rs"
 
 [dependencies]
+bincode = "1.3"
 chrono = "0.4.38"
 clap = { version = "4.4.7", features = ["derive"] }
 ethers = "2.0"
 futures = "0.3.30"
 pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
-radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "5043c89ca2e515f079f6aef67f9324e8bc0dd012", features = ["full", "liveness-radius", "signature", "validation-eigenlayer"] }
+radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "0c1884d5fbc12468907e2a7a8009207277947aad", features = ["full", "liveness-radius", "signature", "validation-eigenlayer"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 sha3 = "0.10"

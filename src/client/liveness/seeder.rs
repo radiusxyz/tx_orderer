@@ -29,50 +29,57 @@ impl SeederClient {
         })
     }
 
-    // pub async fn register(
-    //     &self,
-    //     platform: Platform,
-    //     service_provider: ServiceProvider,
-    //     cluster_id: String,
-    //     chain_type: ChainType,
-    //     address: Vec<u8>,
-    //     rpc_url: String,
-    // ) -> Result<(), Error> {
-    //     let rpc_parameter = RegisterSequencer {
-    //         message: RegisterSequencerMessage {
-    //             platform,
-    //             service_provider,
-    //             cluster_id,
-    //             chain_type,
-    //             address,
-    //             rpc_url,
-    //         },
-    //         signature: vec![],
-    //     };
-    //     Ok(())
-    // }
+    pub async fn register(
+        &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+        cluster_id: &String,
+        chain_type: ChainType,
+        address: &[u8],
+        rpc_url: &String,
+    ) -> Result<(), Error> {
+        let message = RegisterSequencerMessage {
+            platform,
+            service_provider,
+            cluster_id: cluster_id.to_owned(),
+            chain_type,
+            address: address.to_vec(),
+            rpc_url: rpc_url.to_owned(),
+        };
+        let parameter = RegisterSequencer {
+            message,
+            signature: vec![].into(),
+        };
 
-    // pub async fn deregister(
-    //     &self,
-    //     platform: Platform,
-    //     service_provider: ServiceProvider,
-    //     cluster_id: String,
-    //     chain_type: ChainType,
-    //     address: Vec<u8>,
-    // ) -> Result<(), Error> {
-    //     let rpc_parameter = DeregisterSequencer {
-    //         message: DeregisterSequencerMessage {
-    //             platform,
-    //             service_provider,
-    //             cluster_id,
-    //             chain_type,
-    //             address,
-    //         }
-    //         signature: vec![],
-    //     };
+        self.inner
+            .request(RegisterSequencer::METHOD_NAME, parameter)
+            .await
+    }
 
-    //     Ok(())
-    // }
+    pub async fn deregister(
+        &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+        cluster_id: &String,
+        chain_type: ChainType,
+        address: &[u8],
+    ) -> Result<(), Error> {
+        let message = DeregisterSequencerMessage {
+            platform,
+            service_provider,
+            cluster_id: cluster_id.to_owned(),
+            chain_type,
+            address: address.to_owned(),
+        };
+        let parameter = DeregisterSequencer {
+            message,
+            signature: vec![].into(),
+        };
+
+        self.inner
+            .request(DeregisterSequencer::METHOD_NAME, parameter)
+            .await
+    }
 
     pub async fn get_cluster_info(
         &self,
@@ -92,39 +99,47 @@ impl SeederClient {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RegisterSequencer {
-    message: RegisterSequencerMessage,
-    signature: Signature,
+    pub message: RegisterSequencerMessage,
+    pub signature: Signature,
+}
+
+impl RegisterSequencer {
+    pub const METHOD_NAME: &'static str = "register_sequencer";
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RegisterSequencerMessage {
-    platform: Platform,
-    service_provider: ServiceProvider,
-    cluster_id: String,
-    chain_type: ChainType,
-    address: Vec<u8>,
-    rpc_url: String,
+    pub platform: Platform,
+    pub service_provider: ServiceProvider,
+    pub cluster_id: String,
+    pub chain_type: ChainType,
+    pub address: Vec<u8>,
+    pub rpc_url: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DeregisterSequencer {
-    message: DeregisterSequencerMessage,
-    signature: Signature,
+    pub message: DeregisterSequencerMessage,
+    pub signature: Signature,
+}
+
+impl DeregisterSequencer {
+    pub const METHOD_NAME: &'static str = "deregister_sequencer";
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct DeregisterSequencerMessage {
-    platform: Platform,
-    service_provider: ServiceProvider,
-    cluster_id: String,
-    chain_type: ChainType,
-    address: Vec<u8>,
+    pub platform: Platform,
+    pub service_provider: ServiceProvider,
+    pub cluster_id: String,
+    pub chain_type: ChainType,
+    pub address: Vec<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterInfo {
-    sequencer_address_list: Vec<String>,
-    rollup_address_list: Vec<String>,
+    pub sequencer_address_list: Vec<String>,
+    pub rollup_address_list: Vec<String>,
 }
 
 impl GetClusterInfo {

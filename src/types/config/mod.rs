@@ -5,7 +5,6 @@ use std::{fs, path::PathBuf};
 
 pub use config_option::*;
 pub use config_path::*;
-use radius_sequencer_sdk::signature::Address;
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;

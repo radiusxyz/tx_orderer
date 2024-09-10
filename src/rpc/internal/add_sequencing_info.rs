@@ -50,23 +50,30 @@ impl AddSequencingInfo {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        match parameter.payload {
+        match &parameter.payload {
             SequencingInfoPayload::Ethereum(payload) => {
-                // Todo: Fetching the signing key from the keystore.
-                let sining_key = context.config().signing_key();
+                let signing_key = context.config().signing_key();
+
+                let mut sequencing_info_list = SequencingInfoListModel::get_mut()?;
+                sequencing_info_list.insert(
+                    parameter.platform,
+                    parameter.service_provider,
+                    parameter.payload.clone(),
+                );
+                sequencing_info_list.update()?;
 
                 liveness::radius::LivenessClient::new(
                     parameter.platform,
                     parameter.service_provider,
-                    payload,
-                    "singing_key".to_owned(),
+                    payload.clone(),
+                    signing_key,
                     context.seeder_client().clone(),
                 )?
                 .initialize_event_listener();
 
                 Ok(())
             }
-            SequencingInfoPayload::Local(payload) => {
+            SequencingInfoPayload::Local(_payload) => {
                 // liveness::local::LivenessClient::new()?;
                 todo!("Implement 'LivenessClient' for local sequencing.");
             }
