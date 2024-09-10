@@ -128,7 +128,7 @@ impl DeregisterSequencer {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct DeregisterSequencerMessage {
+pub struct DeregisterSequencerMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
