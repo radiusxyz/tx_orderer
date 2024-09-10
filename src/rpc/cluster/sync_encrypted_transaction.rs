@@ -34,7 +34,6 @@ impl SyncEncryptedTransaction {
 
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
         let transaction_order = rollup_metadata.issue_transaction_order();
-        rollup_metadata.issue_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
         let rollup_block_height = rollup_metadata.block_height();
         rollup_metadata.update()?;
 
@@ -56,6 +55,13 @@ impl SyncEncryptedTransaction {
         )?;
         let raw_transaction_model = RawTransactionModel::new(raw_transaction);
         raw_transaction_model.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
+
+        OrderCommitmentModel::put(
+            &parameter.rollup_id,
+            rollup_block_height,
+            transaction_order,
+            &parameter.order_commitment.data,
+        )?;
 
         Ok(())
     }

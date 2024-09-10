@@ -9,8 +9,9 @@ impl OrderCommitmentModel {
     pub fn get(
         rollup_id: &String,
         rollup_block_height: u64,
+        transaction_order: u64,
     ) -> Result<OrderCommitmentData, KvStoreError> {
-        let key = &(Self::ID, rollup_id, rollup_block_height);
+        let key = &(Self::ID, rollup_id, rollup_block_height, transaction_order);
 
         kvstore()?.get(key)
     }
@@ -18,9 +19,10 @@ impl OrderCommitmentModel {
     pub fn put(
         rollup_id: &String,
         rollup_block_height: u64,
+        transaction_order: u64,
         order_commitment_data: &OrderCommitmentData,
     ) -> Result<(), KvStoreError> {
-        let key = &(Self::ID, rollup_id, rollup_block_height);
+        let key = &(Self::ID, rollup_id, rollup_block_height, transaction_order);
 
         kvstore()?.put(key, order_commitment_data)
     }
