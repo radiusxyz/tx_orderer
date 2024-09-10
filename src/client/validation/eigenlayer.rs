@@ -61,6 +61,6 @@ impl ValidationClient {
 }
 
 /// Todo: Need to change the contract code.
-async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
+async fn callback(_event: Avs::NewTaskCreated, _context: ValidationClient) {
     // Todo: Handle block commitment events.
 }
