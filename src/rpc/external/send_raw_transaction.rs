@@ -1,9 +1,12 @@
-use crate::{rpc::prelude::*, types::*};
+use crate::{
+    rpc::{cluster::SyncRawTransaction, prelude::*},
+    types::*,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendRawTransaction {
-    rollup_id: String,
-    raw_transaction: RawTransaction,
+    pub rollup_id: String,
+    pub raw_transaction: RawTransaction,
 }
 
 impl SendRawTransaction {
@@ -47,7 +50,8 @@ impl SendRawTransaction {
                     transaction_order,
                 )?;
 
-                let raw_transaction_model = RawTransactionModel::new(parameter.raw_transaction);
+                let raw_transaction_model =
+                    RawTransactionModel::new(parameter.raw_transaction.clone());
                 raw_transaction_model.put(
                     &parameter.rollup_id,
                     rollup_block_height,
@@ -55,6 +59,7 @@ impl SendRawTransaction {
                 )?;
 
                 // Sync Transaction
+                Self::sync_raw_transaction(parameter, order_commitment.clone(), cluster_metadata);
 
                 Ok(order_commitment)
             }
@@ -68,5 +73,34 @@ impl SendRawTransaction {
                 Ok(response)
             }
         }
+    }
+
+    pub fn sync_raw_transaction(
+        parameter: Self,
+        order_commitment: OrderCommitment,
+        cluster_metadata: ClusterMetadata,
+    ) {
+        tokio::spawn(async move {
+            let rpc_parameter = SyncRawTransaction {
+                rollup_id: parameter.rollup_id,
+                raw_transaction: parameter.raw_transaction,
+                order_commitment,
+            };
+
+            for follower in cluster_metadata.followers() {
+                let rpc_parameter = rpc_parameter.clone();
+
+                tokio::spawn(async move {
+                    let client = RpcClient::new(follower.unwrap()).unwrap();
+                    let _ = client
+                        .request::<SyncRawTransaction, ()>(
+                            SyncRawTransaction::METHOD_NAME,
+                            rpc_parameter,
+                        )
+                        .await
+                        .unwrap();
+                });
+            }
+        });
     }
 }

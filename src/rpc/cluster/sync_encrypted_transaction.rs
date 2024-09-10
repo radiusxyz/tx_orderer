@@ -16,122 +16,48 @@ use pvde::{
     },
 };
 
-use crate::{
-    rpc::{cluster::SyncEncryptedTransaction, prelude::*},
-    types::*,
-};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendEncryptedTransaction {
+pub struct SyncEncryptedTransaction {
     pub rollup_id: String,
     pub encrypted_transaction: EncryptedTransaction,
     pub time_lock_puzzle: TimeLockPuzzle,
+    pub order_commitment: OrderCommitment,
 }
 
-impl SendEncryptedTransaction {
-    pub const METHOD_NAME: &'static str = "send_encrypted_transaction";
+impl SyncEncryptedTransaction {
+    pub const METHOD_NAME: &'static str = "sync_encrypted_transaction";
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        context: Arc<AppState>,
-    ) -> Result<OrderCommitment, RpcError> {
+    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        let transaction_order = rollup_metadata.issue_transaction_order();
+        rollup_metadata.issue_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
+        let rollup_block_height = rollup_metadata.block_height();
+        rollup_metadata.update()?;
 
-        let cluster_metadata =
-            ClusterMetadataModel::get(&parameter.rollup_id, rollup_metadata.block_height())?;
-        match cluster_metadata.is_leader() {
-            true => {
-                let transaction_order = rollup_metadata.issue_transaction_order();
-                let order_hash = rollup_metadata
-                    .issue_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
-                let rollup_block_height = rollup_metadata.block_height();
-                rollup_metadata.update()?;
+        let encrypted_transaction_model = EncryptedTransactionModel::new(
+            parameter.encrypted_transaction.clone(),
+            Some(parameter.time_lock_puzzle.clone()),
+        );
+        encrypted_transaction_model.put(
+            &parameter.rollup_id,
+            rollup_block_height,
+            transaction_order,
+        )?;
 
-                let order_commitment_data = OrderCommitmentData {
-                    rollup_id: parameter.rollup_id.clone(),
-                    block_height: rollup_block_height,
-                    transaction_order,
-                    previous_order_hash: order_hash,
-                };
-                let order_commitment = OrderCommitment {
-                    data: order_commitment_data,
-                    signature: vec![].into(), // Todo: Signature
-                };
+        let raw_transaction = decrypt_transaction(
+            parameter.encrypted_transaction.clone(),
+            parameter.time_lock_puzzle.clone(),
+            context.config().is_using_zkp(),
+            &Some(PvdeParams::default()),
+        )?;
+        let raw_transaction_model = RawTransactionModel::new(raw_transaction);
+        raw_transaction_model.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
 
-                let encrypted_transaction_model = EncryptedTransactionModel::new(
-                    parameter.encrypted_transaction.clone(),
-                    Some(parameter.time_lock_puzzle.clone()),
-                );
-                encrypted_transaction_model.put(
-                    &parameter.rollup_id,
-                    rollup_block_height,
-                    transaction_order,
-                )?;
-
-                let raw_transaction = decrypt_transaction(
-                    parameter.encrypted_transaction.clone(),
-                    parameter.time_lock_puzzle.clone(),
-                    context.config().is_using_zkp(),
-                    &Some(PvdeParams::default()),
-                )?;
-                let raw_transaction_model = RawTransactionModel::new(raw_transaction);
-                raw_transaction_model.put(
-                    &parameter.rollup_id,
-                    rollup_block_height,
-                    transaction_order,
-                )?;
-
-                // Sync Transaction
-                Self::sync_encrypted_transaction(
-                    parameter.clone(),
-                    order_commitment.clone(),
-                    cluster_metadata,
-                );
-
-                Ok(order_commitment)
-            }
-            false => {
-                let leader_rpc_url = cluster_metadata.leader().ok_or(Error::EmptyLeaderRpcUrl)?;
-                let client = RpcClient::new(leader_rpc_url)?;
-                let response: OrderCommitment = client
-                    .request(SendEncryptedTransaction::METHOD_NAME, parameter.clone())
-                    .await?;
-
-                Ok(response)
-            }
-        }
-    }
-
-    pub fn sync_encrypted_transaction(
-        parameter: Self,
-        order_commitment: OrderCommitment,
-        cluster_metadata: ClusterMetadata,
-    ) {
-        tokio::spawn(async move {
-            let rpc_parameter = SyncEncryptedTransaction {
-                rollup_id: parameter.rollup_id,
-                encrypted_transaction: parameter.encrypted_transaction,
-                time_lock_puzzle: parameter.time_lock_puzzle,
-                order_commitment,
-            };
-
-            for follower in cluster_metadata.followers() {
-                let rpc_parameter = rpc_parameter.clone();
-
-                tokio::spawn(async move {
-                    let client = RpcClient::new(follower.unwrap()).unwrap();
-                    let _ = client
-                        .request::<SyncEncryptedTransaction, ()>(
-                            SyncEncryptedTransaction::METHOD_NAME,
-                            rpc_parameter,
-                        )
-                        .await
-                        .unwrap();
-                });
-            }
-        });
+        Ok(())
     }
 }
 
