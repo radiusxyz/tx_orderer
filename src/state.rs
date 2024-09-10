@@ -1,4 +1,4 @@
-use crate::{client::liveness::seeder::SeederClient, types::Config};
+use crate::{client::liveness::seeder::SeederClient, types::*};
 
 pub struct AppState {
     config: Config,
@@ -19,9 +19,5 @@ impl AppState {
 
     pub fn seeder_client(&self) -> &SeederClient {
         &self.seeder_client
-    }
-
-    pub fn is_using_zkp(&self) -> bool {
-        true
     }
 }
