@@ -113,7 +113,7 @@ async fn main() -> Result<(), Error> {
                 SequencingInfosModel::get_or_default().map_err(error::Error::Database)?;
             for ((platform, service_provider), sequencing_info_payload) in sequencing_infos.iter() {
                 info!(
-                    "platform: {:?}, service_provider: {:?}",
+                    "Initialize sequencing info - platform: {:?}, service_provider: {:?}",
                     platform, service_provider
                 );
 
@@ -167,12 +167,13 @@ async fn main() -> Result<(), Error> {
                 }
             }
 
-            let pvde_params = if let Some(ref path) = config_option.path {
-                // Initialize the time lock puzzle parameters.
-                Some(init_time_lock_puzzle_param(path, config.is_using_zkp())?)
-            } else {
-                None
-            };
+            // TODO: PVDE
+            // let pvde_params = if let Some(ref path) = config_option.path {
+            //     // Initialize the time lock puzzle parameters.
+            //     Some(init_time_lock_puzzle_param(path, config.is_using_zkp())?)
+            // } else {
+            //     None
+            // };
 
             // Initialize an application-wide state instance
             let app_state = AppState::new(config, seeder_client);
@@ -202,7 +203,10 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
             internal::AddSequencingInfo::METHOD_NAME,
             internal::AddSequencingInfo::handler,
         )?
-        // debug
+        .register_rpc_method(
+            internal::AddCluster::METHOD_NAME,
+            internal::AddCluster::handler,
+        )?
         .register_rpc_method(GetSequencingInfos::METHOD_NAME, GetSequencingInfos::handler)?
         .register_rpc_method(GetSequencingInfo::METHOD_NAME, GetSequencingInfo::handler)?
         .init(internal_rpc_url.clone())

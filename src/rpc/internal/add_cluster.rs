@@ -3,14 +3,14 @@ use radius_sequencer_sdk::signature::PrivateKeySigner;
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct JoinCluster {
+pub struct AddCluster {
     platform: Platform,
     service_provider: ServiceProvider,
     cluster_id: String,
 }
 
-impl JoinCluster {
-    pub const METHOD_NAME: &'static str = "join_cluster";
+impl AddCluster {
+    pub const METHOD_NAME: &'static str = "add_cluster";
 
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
@@ -29,12 +29,14 @@ impl JoinCluster {
                         &parameter.cluster_id,
                         ChainType::Ethereum,
                         address.as_ref(),
-                        context.config().sequencer_rpc_url(),
+                        context.config().cluster_rpc_url(),
                     )
                     .await?;
 
-                let mut cluster_id_list =
-                    ClusterIdListModel::get_mut(parameter.platform, parameter.service_provider)?;
+                let mut cluster_id_list = ClusterIdListModel::get_mut_or_default(
+                    parameter.platform,
+                    parameter.service_provider,
+                )?;
                 cluster_id_list.insert(&parameter.cluster_id);
                 cluster_id_list.update()?;
             }

@@ -5,6 +5,7 @@ use radius_sequencer_sdk::{
     signature::{ChainType, Signature},
 };
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 use crate::types::*;
 
@@ -50,6 +51,11 @@ impl SeederClient {
             message,
             signature: vec![].into(),
         };
+
+        info!(
+            "Register sequencer to seeder - address: {:?}, rpc_url: {:?}",
+            address, rpc_url
+        );
 
         self.inner
             .request(RegisterSequencer::METHOD_NAME, parameter)

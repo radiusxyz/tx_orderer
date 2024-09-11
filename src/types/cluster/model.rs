@@ -33,6 +33,15 @@ impl ClusterIdListModel {
         kvstore()?.get_mut(key)
     }
 
+    pub fn get_mut_or_default(
+        platform: Platform,
+        service_provider: ServiceProvider,
+    ) -> Result<Lock<'static, ClusterIdList>, KvStoreError> {
+        let key = &(Self::ID, platform, service_provider);
+
+        kvstore()?.get_mut_or_default(key)
+    }
+
     pub fn put(
         platform: Platform,
         service_provider: ServiceProvider,
