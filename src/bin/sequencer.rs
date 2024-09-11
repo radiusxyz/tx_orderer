@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
+use clap::{Parser, Subcommand};
 use pvde::{
     encryption::poseidon_encryption_zkp::{
         export_proving_key as export_poseidon_encryption_proving_key,
@@ -25,14 +26,43 @@ use pvde::{
 };
 use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
 use sequencer::{
-    cli::{Cli, Commands},
     client::liveness::seeder::SeederClient,
     error::{self, Error},
     rpc::{cluster, external, internal},
     state::AppState,
     types::*,
 };
+pub use serde::{Deserialize, Serialize};
 use tokio::task::JoinHandle;
+
+#[derive(Debug, Deserialize, Parser, Serialize)]
+#[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+impl Cli {
+    pub fn init() -> Self {
+        Cli::parse()
+    }
+}
+
+#[derive(Subcommand, Debug, Deserialize, Serialize)]
+pub enum Commands {
+    /// Initializes a node
+    Init {
+        #[clap(flatten)]
+        config_path: Box<ConfigPath>,
+    },
+
+    /// Starts the node
+    Start {
+        #[clap(flatten)]
+        config_option: Box<ConfigOption>,
+    },
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -140,23 +170,26 @@ async fn main() -> Result<(), Error> {
             // sequencing_infos.iter().for_each(
             //     |(sequencing_info_key, sequencing_info)| {
             //         info!(
-            //             "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
-            //             sequencing_info_key.platform(), sequencing_info_key.sequencing_function_type(), sequencing_info_key.service_type()
-            //         );
+            //             "platform: {:?}, sequencing_function_type: {:?}, service_type:
+            // {:?}",             sequencing_info_key.platform(),
+            // sequencing_info_key.sequencing_function_type(),
+            // sequencing_info_key.service_type()         );
 
             //         match sequencing_info_key.platform() {
             //             Platform::Local => {
             //                 // TODO:
             //                 info!("Init local platform (TODO)");
             //             }
-            //             Platform::Ethereum => match sequencing_info_key.sequencing_function_type() {
-            //                 sequencer::types::SequencingFunctionType::Liveness => {
+            //             Platform::Ethereum => match
+            // sequencing_info_key.sequencing_function_type() {
+            // sequencer::types::SequencingFunctionType::Liveness => {
             //                     match sequencing_info_key.service_type() {
             //                         ServiceType::Radius => {
             //                             info!(
-            //                                 "Init radius liveness - provider_websocket_url: {:?}",
-            //                                 sequencing_info.provider_websocket_url
-            //                             );
+            //                                 "Init radius liveness -
+            // provider_websocket_url: {:?}",
+            // sequencing_info.provider_websocket_url
+            // );
 
             //                             let sync_info = SyncInfo::new(
             //                                 sequencing_info.clone(),
@@ -169,10 +202,10 @@ async fn main() -> Result<(), Error> {
             //                         _ => {
             //                             // TODO:
             //                             info!(
-            //                                 "Init other liveness (TODO) - provider_websocket_url: {:?}",
-            //                                 sequencing_info.provider_websocket_url
-            //                             );
-            //                         }
+            //                                 "Init other liveness (TODO) -
+            // provider_websocket_url: {:?}",
+            // sequencing_info.provider_websocket_url
+            // );                         }
             //                     }
             //                 }
             //                 sequencer::types::SequencingFunctionType::Validation => {}
@@ -227,8 +260,8 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
     //         if rpc_url != cluster_rpc_url {
     //             // TODO: Check
     //             seeder_client
-    //                 .register_rpc_url(address.clone(), cluster_rpc_url.to_string())
-    //                 .await?;
+    //                 .register_rpc_url(address.clone(),
+    // cluster_rpc_url.to_string())                 .await?;
     //         }
     //     }
     //     Err(_) => {
@@ -250,8 +283,8 @@ async fn initialize_clusters(app_state: &AppState) -> Result<(), Error> {
     //     }
     // };
 
-    // for (sequencing_info_key, sequencing_info) in sequencing_info_model.sequencing_infos().iter() {
-    //     info!(
+    // for (sequencing_info_key, sequencing_info) in
+    // sequencing_info_model.sequencing_infos().iter() {     info!(
     //         "platform: {:?}, sequencing_function_type: {:?}, service_type: {:?}",
     //         sequencing_info_key.platform(),
     //         sequencing_info_key.sequencing_function_type(),
