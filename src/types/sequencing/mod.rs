@@ -1,10 +1,13 @@
 mod model;
 
-use std::collections::btree_map::{BTreeMap, Iter};
+use std::{
+    collections::btree_map::{BTreeMap, Iter},
+    str::FromStr,
+};
 
 pub use model::*;
 
-use crate::types::prelude::*;
+use crate::{error::Error, types::prelude::*};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -13,10 +16,41 @@ pub enum Platform {
     Local,
 }
 
+impl FromStr for Platform {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ethereum" | "Ethereum" => Ok(Self::Ethereum),
+            "local" | "Local" => Ok(Self::Local),
+            _ => Err(Error::NotSupportedPlatform),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ServiceProvider {
     Radius,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ValidationServiceProvider {
+    EigenLayer,
+    Symbiotic,
+}
+
+impl FromStr for ValidationServiceProvider {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "eigen_layer" | "EigenLayer" => Ok(Self::EigenLayer),
+            "symbiotic" | "Symbiotic" => Ok(Self::Symbiotic),
+            _ => Err(Error::NotSupportedValidationServiceProvider),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
