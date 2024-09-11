@@ -228,6 +228,10 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
             internal::debug::GetRollup::METHOD_NAME,
             internal::debug::GetRollup::handler,
         )?
+        .register_rpc_method(
+            internal::debug::GetClusterIdList::METHOD_NAME,
+            internal::debug::GetClusterIdList::handler,
+        )?
         .register_rpc_method(GetSequencingInfos::METHOD_NAME, GetSequencingInfos::handler)?
         .register_rpc_method(GetSequencingInfo::METHOD_NAME, GetSequencingInfo::handler)?
         .init(internal_rpc_url.clone())

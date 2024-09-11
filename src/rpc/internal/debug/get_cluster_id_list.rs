@@ -1,10 +1,9 @@
-use crate::{models::ClusterIdListModel, rpc::prelude::*};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterIdList {
     platform: Platform,
-    sequencing_function_type: SequencingFunctionType,
-    service_type: ServiceType,
+    service_provider: ServiceProvider,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -21,12 +20,8 @@ impl GetClusterIdList {
     ) -> Result<GetClusterIdListResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let cluster_id_list = ClusterIdListModel::get(
-            &parameter.platform,
-            &parameter.sequencing_function_type,
-            &parameter.service_type,
-        )?
-        .cluster_id_list();
+        let cluster_id_list =
+            ClusterIdListModel::get(parameter.platform, parameter.service_provider)?;
 
         Ok(GetClusterIdListResponse { cluster_id_list })
     }
