@@ -36,7 +36,7 @@ use sequencer::{
         seeder::SeederClient,
     },
     error::{self, Error},
-    rpc::internal::{self, GetSequencingInfo, GetSequencingInfos, JoinCluster},
+    rpc::internal::{self, GetSequencingInfo, GetSequencingInfos},
     state::AppState,
     types::*,
 };
