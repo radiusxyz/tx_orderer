@@ -24,29 +24,6 @@ impl KeyManagementSystemClient {
         })
     }
 
-    pub async fn add_key_generator(&self, address: &String, rpc_url: &String) -> Result<(), Error> {
-        let message = AddKeyGeneratorMessage {
-            address: address.to_owned(),
-            rpc_url: rpc_url.to_owned(),
-        };
-        let parameter = AddKeyGenerator {
-            message,
-            // signature: vec![].into(),
-        };
-
-        self.inner
-            .request(AddKeyGenerator::METHOD_NAME, parameter)
-            .await
-    }
-
-    pub async fn get_key_generator_list(&self) -> Result<GetKeyGeneratorListReturn, Error> {
-        let rpc_parameter = GetKeyGeneratorList {};
-
-        self.inner
-            .request(GetKeyGeneratorList::METHOD_NAME, rpc_parameter)
-            .await
-    }
-
     pub async fn get_encryption_key(&self, key_id: u64) -> Result<GetEncryptionKeyReturn, Error> {
         let rpc_parameter = GetEncryptionKey { key_id };
 
@@ -62,40 +39,6 @@ impl KeyManagementSystemClient {
             .request(GetDecryptionKey::METHOD_NAME, rpc_parameter)
             .await
     }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AddKeyGenerator {
-    pub message: AddKeyGeneratorMessage,
-    // pub signature: Signature,
-}
-
-impl AddKeyGenerator {
-    pub const METHOD_NAME: &'static str = "add_key_generator";
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AddKeyGeneratorMessage {
-    pub address: String,
-    pub rpc_url: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetKeyGeneratorList;
-
-impl GetKeyGeneratorList {
-    pub const METHOD_NAME: &'static str = "get_key_generator_list";
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetKeyGeneratorListReturn {
-    pub key_generator_list: Vec<KeyGenerator>,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct KeyGenerator {
-    address: String,
-    ip_address: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
