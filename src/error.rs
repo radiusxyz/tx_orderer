@@ -44,6 +44,10 @@ pub enum Error {
     InvalidTransactionOrder,
 
     OtherSequencerRpcClientsCountNotCorrect,
+
+    NotSupportedPlatform,
+    NotSupportedValidationServiceProvider,
+    NotSupportedRollupType,
 }
 
 unsafe impl Send for Error {}

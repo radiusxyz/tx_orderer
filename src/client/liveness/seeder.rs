@@ -87,18 +87,16 @@ impl SeederClient {
             .await
     }
 
-    pub async fn get_cluster_info(
+    pub async fn get_sequencer_rpc_url_list(
         &self,
         sequencer_address_list: Vec<String>,
-        rollup_address_list: Vec<String>,
-    ) -> Result<GetClusterInfoReturn, Error> {
-        let rpc_parameter = GetClusterInfo {
+    ) -> Result<GetSequencerRpcUrlListResponse, Error> {
+        let rpc_parameter = GetSequencerRpcUrlList {
             sequencer_address_list,
-            rollup_address_list,
         };
 
         self.inner
-            .request(GetClusterInfo::METHOD_NAME, rpc_parameter)
+            .request(GetSequencerRpcUrlList::METHOD_NAME, rpc_parameter)
             .await
     }
 }
@@ -143,17 +141,15 @@ pub struct DeregisterSequencerMessage {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetClusterInfo {
+pub struct GetSequencerRpcUrlList {
     pub sequencer_address_list: Vec<String>,
-    pub rollup_address_list: Vec<String>,
 }
 
-impl GetClusterInfo {
-    pub const METHOD_NAME: &'static str = "get_cluster_info";
+impl GetSequencerRpcUrlList {
+    pub const METHOD_NAME: &'static str = "get_sequencer_rpc_url_list";
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetClusterInfoReturn {
-    pub sequencer_info: Vec<(String, Option<String>)>,
-    pub cluster_info: Vec<(String, Option<String>)>,
+pub struct GetSequencerRpcUrlListResponse {
+    pub sequencer_rpc_url_list: Vec<(String, Option<String>)>,
 }

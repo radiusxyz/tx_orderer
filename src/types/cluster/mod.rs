@@ -28,19 +28,22 @@ impl ClusterIdList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClusterInfo {
-    sequencer_list: Vec<(String, Option<String>)>,
+    sequencer_rpc_url_list: Vec<(String, Option<String>)>,
+    rollup_id_list: Vec<String>,
     my_index: usize,
     block_margin: u64,
 }
 
 impl ClusterInfo {
     pub fn new(
-        sequencer_list: Vec<(String, Option<String>)>,
+        sequencer_rpc_url_list: Vec<(String, Option<String>)>,
+        rollup_id_list: Vec<String>,
         my_index: usize,
         block_margin: u64,
     ) -> Self {
         Self {
-            sequencer_list,
+            sequencer_rpc_url_list,
+            rollup_id_list,
             my_index,
             block_margin,
         }
@@ -51,7 +54,11 @@ impl ClusterInfo {
     }
 
     pub fn sequencer_list(&self) -> &Vec<(String, Option<String>)> {
-        &self.sequencer_list
+        &self.sequencer_rpc_url_list
+    }
+
+    pub fn rollup_id_list(&self) -> &Vec<String> {
+        &self.rollup_id_list
     }
 
     pub fn block_margin(&self) -> u64 {

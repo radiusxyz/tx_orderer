@@ -5,34 +5,32 @@ pub struct Rollup {
     rollup_id: String,
     rollup_type: RollupType,
 
-    rollup_rpc_url: String,
-    rollup_websocket_url: String,
-
-    bundler_contract_address: Option<Address>,
+    owner: String,
+    validation_info: ValidationInfo,
+    order_commitment_type: OrderCommitmentType,
+    executor_address_list: Vec<String>,
 }
 
 impl Rollup {
     pub fn new(
         rollup_id: String,
         rollup_type: RollupType,
-        rollup_rpc_url: String,
-        rollup_websocket_url: String,
-        bundler_contract_address: Option<Address>,
+        owner: String,
+        validation_info: ValidationInfo,
+        order_commitment_type: OrderCommitmentType,
+        executor_address_list: Vec<String>,
     ) -> Self {
         Self {
             rollup_id,
             rollup_type,
-            rollup_rpc_url,
-            rollup_websocket_url,
-            bundler_contract_address,
+            owner,
+            validation_info,
+            order_commitment_type,
+            executor_address_list,
         }
     }
 
     pub fn rollup_id(&self) -> &String {
         &self.rollup_id
-    }
-
-    pub fn rollup_type(&self) -> &RollupType {
-        &self.rollup_type
     }
 }

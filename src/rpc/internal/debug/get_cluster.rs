@@ -1,20 +1,16 @@
-use crate::{
-    models::{ClusterModel, LivenessClusterModel, ValidationClusterModel},
-    rpc::prelude::*,
-};
+use crate::{error, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetCluster {
     platform: Platform,
-    sequencing_function_type: SequencingFunctionType,
-    service_type: ServiceType,
+    service_provider: ServiceProvider,
 
-    cluster_id: ClusterId,
+    cluster_id: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterResponse {
-    cluster: ClusterModel,
+    cluster_info: ClusterInfo,
 }
 
 impl GetCluster {
@@ -22,27 +18,19 @@ impl GetCluster {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<AppState>,
+        context: Arc<AppState>,
     ) -> Result<GetClusterResponse, RpcError> {
         let parameter = parameter.parse::<GetCluster>()?;
 
-        let cluster_model = match parameter.sequencing_function_type {
-            SequencingFunctionType::Liveness => ClusterModel::Liveness(LivenessClusterModel::get(
-                &parameter.platform,
-                &parameter.service_type,
-                &parameter.cluster_id,
-            )?),
-            SequencingFunctionType::Validation => {
-                ClusterModel::Validation(ValidationClusterModel::get(
-                    &parameter.platform,
-                    &parameter.service_type,
-                    &parameter.cluster_id,
-                )?)
-            }
-        };
+        match context.get_liveness_client(parameter.platform, parameter.service_provider) {
+            Some(liveness_client) => {
+                let block_number = liveness_client.publisher().get_block_number().await?;
 
-        Ok(GetClusterResponse {
-            cluster: cluster_model,
-        })
+                let cluster_info = ClusterInfoModel::get(block_number, &parameter.cluster_id)?;
+
+                Ok(GetClusterResponse { cluster_info })
+            }
+            None => Err(Error::NotFoundCluster.into()),
+        }
     }
 }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
+use std::{collections::BTreeMap, fs, path::PathBuf};
 
 use clap::{Parser, Subcommand};
 use pvde::{
@@ -111,6 +111,7 @@ async fn main() -> Result<(), Error> {
             let signing_key = config.signing_key();
             let sequencing_infos =
                 SequencingInfosModel::get_or_default().map_err(error::Error::Database)?;
+            let mut liveness_clients = BTreeMap::new();
             for ((platform, service_provider), sequencing_info_payload) in sequencing_infos.iter() {
                 info!(
                     "Initialize sequencing info - platform: {:?}, service_provider: {:?}",
@@ -151,14 +152,16 @@ async fn main() -> Result<(), Error> {
                 // Initialize liveness client
                 match &sequencing_info_payload {
                     SequencingInfoPayload::Ethereum(liveness_info) => {
-                        liveness::radius::LivenessClient::new(
+                        let liveness_client = liveness::radius::LivenessClient::new(
                             platform.clone(),
                             service_provider.clone(),
                             liveness_info.clone(),
                             config.signing_key(),
                             seeder_client.clone(),
-                        )?
-                        .initialize_event_listener();
+                        )?;
+
+                        liveness_client.initialize_event_listener();
+                        liveness_clients.insert((*platform, *service_provider), liveness_client);
                     }
                     SequencingInfoPayload::Local(_payload) => {
                         // liveness::local::LivenessClient::new()?;
@@ -176,7 +179,7 @@ async fn main() -> Result<(), Error> {
             // };
 
             // Initialize an application-wide state instance
-            let app_state = AppState::new(config, seeder_client);
+            let app_state = AppState::new(config, seeder_client, liveness_clients);
 
             // Initialize the internal RPC server
             initialize_internal_rpc_server(&app_state).await?;
@@ -206,6 +209,14 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
         .register_rpc_method(
             internal::AddCluster::METHOD_NAME,
             internal::AddCluster::handler,
+        )?
+        .register_rpc_method(
+            internal::debug::GetCluster::METHOD_NAME,
+            internal::debug::GetCluster::handler,
+        )?
+        .register_rpc_method(
+            internal::debug::GetRollup::METHOD_NAME,
+            internal::debug::GetRollup::handler,
         )?
         .register_rpc_method(GetSequencingInfos::METHOD_NAME, GetSequencingInfos::handler)?
         .register_rpc_method(GetSequencingInfo::METHOD_NAME, GetSequencingInfo::handler)?

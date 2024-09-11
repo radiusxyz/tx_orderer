@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use radius_sequencer_sdk::liveness_radius::{
     publisher::Publisher, subscriber::Subscriber, types::Events,
@@ -107,21 +107,29 @@ impl LivenessClient {
     }
 }
 
-async fn callback(events: Events, context: LivenessClient) {
+async fn callback(events: Events, liveness_client: LivenessClient) {
     match events {
         Events::Block(block) => {
             let block_number = block.header.number.unwrap();
 
             // Get the cluster ID list for a given liveness client.
-            let cluster_id_list =
-                ClusterIdListModel::get_or_default(context.platform(), context.service_provider())
-                    .unwrap();
+            let cluster_id_list = ClusterIdListModel::get_or_default(
+                liveness_client.platform(),
+                liveness_client.service_provider(),
+            )
+            .unwrap();
+
+            let block_margin = liveness_client
+                .publisher()
+                .get_block_margin()
+                .await
+                .unwrap();
 
             for cluster_id in cluster_id_list.iter() {
                 let mut my_index: Option<usize> = None;
 
                 // Get the sequencer address list for the cluster ID.
-                let sequencer_address_list: Vec<String> = context
+                let sequencer_address_list: Vec<String> = liveness_client
                     .publisher()
                     .get_sequencer_list(cluster_id, block_number)
                     .await
@@ -129,7 +137,7 @@ async fn callback(events: Events, context: LivenessClient) {
                     .into_iter()
                     .enumerate()
                     .map(|(index, address)| {
-                        if address == context.publisher().address() {
+                        if address == liveness_client.publisher().address() {
                             my_index = Some(index);
                         }
 
@@ -137,32 +145,62 @@ async fn callback(events: Events, context: LivenessClient) {
                     })
                     .collect();
 
-                // Get the rollup ID list from rollup information
-                let rollup_id_list: Vec<String> = context
+                // Get the rollup info list
+                let rollup_info_list = liveness_client
                     .publisher()
                     .get_rollup_info_list(cluster_id, block_number)
                     .await
-                    .unwrap()
-                    .into_iter()
-                    .map(|rollup_info| rollup_info.rollupId)
-                    .collect();
-
-                let block_margin = context.publisher().get_block_margin().await.unwrap();
-
-                let cluster_info = context
-                    .seeder()
-                    .get_cluster_info(sequencer_address_list.clone(), rollup_id_list.clone())
-                    .await
                     .unwrap();
 
-                for rollup_id in rollup_id_list {
-                    let cluster_info = ClusterInfo::new(
-                        cluster_info.sequencer_info.clone(),
-                        my_index.unwrap(),
-                        block_margin.try_into().unwrap(),
+                let rollup_id_list = rollup_info_list
+                    .iter()
+                    .map(|rollup_info| rollup_info.rollupId.clone())
+                    .collect();
+
+                // Update the rollup info to database
+                for rollup_info in rollup_info_list {
+                    let order_commitment_type =
+                        OrderCommitmentType::from_str(&rollup_info.orderCommitmentType).unwrap();
+                    let rollup_type = RollupType::from_str(&rollup_info.chainType).unwrap();
+                    let validation_info = ValidationInfo::new(
+                        Platform::from_str(&rollup_info.validationInfo.platform).unwrap(),
+                        ValidationServiceProvider::from_str(
+                            &rollup_info.validationInfo.serviceProvider,
+                        )
+                        .unwrap(),
                     );
-                    ClusterInfoModel::put(block_number, &rollup_id, &cluster_info).unwrap();
+                    let executor_address_list = rollup_info
+                        .executorAddresses
+                        .into_iter()
+                        .map(|address| address.to_string())
+                        .collect::<Vec<String>>();
+
+                    let rollup = Rollup::new(
+                        rollup_info.rollupId.clone(),
+                        rollup_type,
+                        rollup_info.owner.to_string(),
+                        validation_info,
+                        order_commitment_type,
+                        executor_address_list,
+                    );
+
+                    RollupModel::put(rollup.rollup_id(), &rollup).unwrap();
                 }
+
+                let sequencer_rpc_url_list = liveness_client
+                    .seeder()
+                    .get_sequencer_rpc_url_list(sequencer_address_list.clone())
+                    .await
+                    .unwrap()
+                    .sequencer_rpc_url_list;
+
+                let cluster_info = ClusterInfo::new(
+                    sequencer_rpc_url_list,
+                    rollup_id_list,
+                    my_index.unwrap(),
+                    block_margin.try_into().unwrap(),
+                );
+                ClusterInfoModel::put(&cluster_id, block_number, &cluster_info).unwrap();
             }
         }
         _others => {}

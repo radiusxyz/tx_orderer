@@ -70,28 +70,28 @@ impl ClusterInfoModel {
 
     pub fn get(
         liveness_block_number: u64,
-        rollup_id: &String,
+        cluster_id: &String,
     ) -> Result<ClusterInfo, KvStoreError> {
-        let key = &(Self::ID, liveness_block_number, rollup_id);
+        let key = &(Self::ID, liveness_block_number, cluster_id);
 
         kvstore()?.get(key)
     }
 
     pub fn put(
+        cluster_id: &String,
         liveness_block_number: u64,
-        rollup_id: &String,
         cluster: &ClusterInfo,
     ) -> Result<(), KvStoreError> {
         let database = kvstore()?;
 
-        let put_key = &(Self::ID, liveness_block_number, rollup_id);
+        let put_key = &(Self::ID, liveness_block_number, cluster_id);
         database.put(put_key, cluster)?;
 
         // Keep [`ClusterInfo`] for `Self::Margin` blocks.
         let delete_key = &(
             Self::ID,
             liveness_block_number.wrapping_sub(cluster.block_margin()),
-            rollup_id,
+            cluster_id,
         );
         database.delete(delete_key)?;
 
