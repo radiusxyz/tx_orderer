@@ -41,7 +41,7 @@ impl FinalizeBlock {
                 // Sync.
                 Self::sync_block(
                     &parameter,
-                    current_rollup_metadata.block_height(),
+                    current_rollup_metadata.transaction_order(),
                     cluster_metadata,
                 );
             }
@@ -73,7 +73,11 @@ impl FinalizeBlock {
                     )?;
 
                     // Sync.
-                    Self::sync_block(&parameter, rollup_metadata.block_height(), cluster_metadata);
+                    Self::sync_block(
+                        &parameter,
+                        rollup_metadata.transaction_order(),
+                        cluster_metadata,
+                    );
                 } else {
                     return Err(error.into());
                 }
