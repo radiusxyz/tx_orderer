@@ -24,7 +24,11 @@ use pvde::{
         setup as setup_time_lock_puzzle_param,
     },
 };
-use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
+use radius_sequencer_sdk::{
+    json_rpc::RpcServer,
+    kvstore::KvStore as Database,
+    signature::{ChainType, PrivateKeySigner},
+};
 use sequencer::{
     client::liveness::{self, seeder::SeederClient},
     error::{self, Error},
@@ -104,6 +108,7 @@ async fn main() -> Result<(), Error> {
             );
 
             // Initialize sequencing info (TODO:)
+            let signing_key = config.signing_key();
             let sequencing_infos =
                 SequencingInfosModel::get_or_default().map_err(error::Error::Database)?;
             for ((platform, service_provider), sequencing_info_payload) in sequencing_infos.iter() {
@@ -112,8 +117,38 @@ async fn main() -> Result<(), Error> {
                     platform, service_provider
                 );
 
-                // TODO: register sequencer rpc url
+                let cluster_id_list =
+                    ClusterIdListModel::get_or_default(*platform, *service_provider).unwrap();
 
+                // Get sequencer address
+                let address = match platform {
+                    Platform::Ethereum => {
+                        let signer = ChainType::Ethereum
+                            .create_signer_from_str(&signing_key)
+                            .map_err(Error::Signature)?;
+                        signer.address().clone()
+                    }
+                    Platform::Local => {
+                        // liveness::local::LivenessClient::new()?;
+                        todo!("Implement 'LivenessClient' for local sequencing.");
+                    }
+                };
+
+                // register sequencer url (for each cluster_id) / TODO: remove
+                for cluster_id in cluster_id_list.iter() {
+                    seeder_client
+                        .register_sequencer(
+                            *platform,
+                            *service_provider,
+                            cluster_id,
+                            ChainType::Ethereum,
+                            address.as_ref(),
+                            config.cluster_rpc_url(),
+                        )
+                        .await?;
+                }
+
+                // Initialize liveness client
                 match &sequencing_info_payload {
                     SequencingInfoPayload::Ethereum(liveness_info) => {
                         liveness::radius::LivenessClient::new(

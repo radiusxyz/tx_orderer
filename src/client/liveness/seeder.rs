@@ -29,7 +29,7 @@ impl SeederClient {
         })
     }
 
-    pub async fn register(
+    pub async fn register_sequencer(
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
@@ -56,7 +56,7 @@ impl SeederClient {
             .await
     }
 
-    pub async fn deregister(
+    pub async fn deregister_sequencer(
         &self,
         platform: Platform,
         service_provider: ServiceProvider,

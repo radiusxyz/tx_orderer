@@ -23,7 +23,7 @@ impl Deregister {
                 let address = signer.address();
 
                 seeder_client
-                    .deregister(
+                    .deregister_sequencer(
                         parameter.platform,
                         parameter.service_provider,
                         &parameter.cluster_id,
@@ -33,7 +33,7 @@ impl Deregister {
                     .await?;
 
                 seeder_client
-                    .register(
+                    .register_sequencer(
                         parameter.platform,
                         parameter.service_provider,
                         &parameter.cluster_id,
