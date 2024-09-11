@@ -26,6 +26,8 @@ pub struct Config {
 
     seeder_rpc_url: String,
 
+    key_management_rpc_url: String,
+
     signing_key: String,
 
     is_using_zkp: bool,
@@ -64,6 +66,7 @@ impl Config {
             internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
             cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
             seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
+            key_management_rpc_url: merged_config_option.key_management_system_rpc_url.unwrap(),
             signing_key,
             is_using_zkp: merged_config_option.is_using_zkp.unwrap(),
         })
@@ -91,6 +94,10 @@ impl Config {
 
     pub fn seeder_rpc_url(&self) -> &String {
         &self.seeder_rpc_url
+    }
+
+    pub fn key_management_system_rpc_url(&self) -> &String {
+        &self.key_management_rpc_url
     }
 
     pub fn signing_key(&self) -> &String {

@@ -1,11 +1,21 @@
-use super::SyncBlock;
-use crate::rpc::prelude::*;
+use crate::rpc::{cluster::SyncBlock, prelude::*};
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FinalizeBlockMessage {
+    // platform: Platform,
+    // service_provider: ServiceProvider,
+    // cluster_id: String,
+    // chain_type: ChainType,
+    // address: Vec<u8>,
+    rollup_id: String,
+    liveness_block_height: u64,
+    rollup_block_height: u64,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlock {
-    pub rollup_id: String,
-    pub liveness_block_height: u64,
-    pub rollup_block_height: u64,
+    pub message: FinalizeBlockMessage,
+    pub signature: Signature,
 }
 
 impl FinalizeBlock {
@@ -14,27 +24,38 @@ impl FinalizeBlock {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        match RollupMetadataModel::get_mut(&parameter.rollup_id) {
+        // // get rollup info for address and chain type
+        // // verify siganture
+        // parameter.signature.verify_signature(
+        //     serialize_to_bincode(&parameter.message)?.as_slice(),
+        //     parameter.message.address.as_slice(),
+        //     parameter.message.chain_type,
+        // )?;
+
+        match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
                 let current_rollup_metadata =
-                    rollup_metadata.issue_rollup_metadata(parameter.rollup_block_height);
+                    rollup_metadata.issue_rollup_metadata(parameter.message.rollup_block_height);
                 rollup_metadata.update()?;
 
-                let cluster_info =
-                    ClusterInfoModel::get(parameter.liveness_block_height, &parameter.rollup_id)?;
+                let cluster_info = ClusterInfoModel::get(
+                    parameter.message.liveness_block_height,
+                    &parameter.message.rollup_id,
+                )?;
 
                 if cluster_info.sequencer_list().is_empty() {
                     return Err(Error::EmptySequencerList.into());
                 }
 
                 let cluster_metadata = ClusterMetadata::new(
-                    cluster_info.sequencer_list().len() % parameter.rollup_block_height as usize,
+                    cluster_info.sequencer_list().len()
+                        % parameter.message.rollup_block_height as usize,
                     cluster_info.my_index(),
                     cluster_info.sequencer_list().clone(),
                 );
                 ClusterMetadataModel::put(
-                    &parameter.rollup_id,
-                    parameter.rollup_block_height,
+                    &parameter.message.rollup_id,
+                    parameter.message.rollup_block_height,
                     &cluster_metadata,
                 )?;
 
@@ -48,12 +69,12 @@ impl FinalizeBlock {
             Err(error) => {
                 if error.is_none_type() {
                     let mut rollup_metadata = RollupMetadata::default();
-                    rollup_metadata.set_block_height(parameter.rollup_block_height);
-                    RollupMetadataModel::put(&parameter.rollup_id, &rollup_metadata)?;
+                    rollup_metadata.set_block_height(parameter.message.rollup_block_height);
+                    RollupMetadataModel::put(&parameter.message.rollup_id, &rollup_metadata)?;
 
                     let cluster_info = ClusterInfoModel::get(
-                        parameter.liveness_block_height,
-                        &parameter.rollup_id,
+                        parameter.message.liveness_block_height,
+                        &parameter.message.rollup_id,
                     )?;
 
                     if cluster_info.sequencer_list().is_empty() {
@@ -62,13 +83,13 @@ impl FinalizeBlock {
 
                     let cluster_metadata = ClusterMetadata::new(
                         cluster_info.sequencer_list().len()
-                            % parameter.rollup_block_height as usize,
+                            % parameter.message.rollup_block_height as usize,
                         cluster_info.my_index(),
                         cluster_info.sequencer_list().clone(),
                     );
                     ClusterMetadataModel::put(
-                        &parameter.rollup_id,
-                        parameter.rollup_block_height,
+                        &parameter.message.rollup_id,
+                        parameter.message.rollup_block_height,
                         &cluster_metadata,
                     )?;
 
@@ -92,10 +113,10 @@ impl FinalizeBlock {
 
         tokio::spawn(async move {
             let rpc_parameter = SyncBlock {
-                rollup_id: parameter.rollup_id.clone(),
-                liveness_block_height: parameter.liveness_block_height,
-                rollup_block_height: parameter.rollup_block_height,
-                transaction_order: transaction_order,
+                rollup_id: parameter.message.rollup_id.clone(),
+                liveness_block_height: parameter.message.liveness_block_height,
+                rollup_block_height: parameter.message.rollup_block_height,
+                transaction_order,
             };
 
             for sequencer_rpc_url in cluster_metadata.others() {

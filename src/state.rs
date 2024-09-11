@@ -1,12 +1,12 @@
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::BTreeMap, sync::Arc};
 
 use radius_sequencer_sdk::context::SharedContext;
 
 use crate::{
-    client::liveness::{radius::LivenessClient, seeder::SeederClient},
+    client::liveness::{
+        key_management_system::KeyManagementSystemClient, radius::LivenessClient,
+        seeder::SeederClient,
+    },
     types::*,
 };
 
@@ -16,6 +16,8 @@ pub struct AppState {
 struct AppStateInner {
     config: Config,
     seeder_client: SeederClient,
+    key_management_client: KeyManagementSystemClient,
+
     liveness_clients: SharedContext<BTreeMap<(Platform, ServiceProvider), LivenessClient>>,
 }
 
@@ -34,11 +36,13 @@ impl AppState {
     pub fn new(
         config: Config,
         seeder_client: SeederClient,
+        key_management_system_client: KeyManagementSystemClient,
         liveness_clients: BTreeMap<(Platform, ServiceProvider), LivenessClient>,
     ) -> Self {
         let inner = AppStateInner {
             config,
             seeder_client,
+            key_management_client: key_management_system_client,
             liveness_clients: SharedContext::from(liveness_clients),
         };
 
@@ -66,5 +70,9 @@ impl AppState {
             .as_ref()
             .get(&(platform, service_provider))
             .cloned()
+    }
+
+    pub fn key_management_system_client(&self) -> &KeyManagementSystemClient {
+        &self.inner.key_management_client
     }
 }
