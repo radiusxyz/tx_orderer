@@ -28,7 +28,7 @@ use radius_sequencer_sdk::{json_rpc::RpcServer, kvstore::KvStore as Database};
 use sequencer::{
     client::liveness::{self, seeder::SeederClient},
     error::{self, Error},
-    rpc::{cluster, external, internal},
+    rpc::internal::{self, GetSequencingInfo, GetSequencingInfos},
     state::AppState,
     types::*,
 };
@@ -167,6 +167,9 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
             internal::AddSequencingInfo::METHOD_NAME,
             internal::AddSequencingInfo::handler,
         )?
+        // debug
+        .register_rpc_method(GetSequencingInfos::METHOD_NAME, GetSequencingInfos::handler)?
+        .register_rpc_method(GetSequencingInfo::METHOD_NAME, GetSequencingInfo::handler)?
         .init(internal_rpc_url.clone())
         .await?;
 

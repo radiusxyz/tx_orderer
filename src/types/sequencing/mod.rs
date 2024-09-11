@@ -20,7 +20,7 @@ pub enum ServiceProvider {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(untagged)]
+// #[serde(untagged)] - Deseiralize error: DeserializeAnyNotSupported
 pub enum SequencingInfoPayload {
     Ethereum(LivenessRadius),
     Local(LivenessLocal),
@@ -47,6 +47,12 @@ impl SequencingInfos {
         sequencing_info: SequencingInfoPayload,
     ) {
         self.0.insert((platform, service_provider), sequencing_info);
+    }
+
+    pub fn sequencing_infos(
+        &self,
+    ) -> &BTreeMap<(Platform, ServiceProvider), SequencingInfoPayload> {
+        &self.0
     }
 
     pub fn remove(&mut self, platform: Platform, service_provider: ServiceProvider) {

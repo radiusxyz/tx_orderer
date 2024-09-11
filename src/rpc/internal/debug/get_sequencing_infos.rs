@@ -1,14 +1,13 @@
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
-use crate::{models::SequencingInfoModel, rpc::prelude::*};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetSequencingInfos {}
+pub struct GetSequencingInfos;
 
-// TODO:
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetLivenessInfosResponse {
-    sequencing_infos: HashMap<String, SequencingInfo>,
+pub struct GetSequencingInfosResponse {
+    sequencing_infos: Vec<((Platform, ServiceProvider), SequencingInfoPayload)>,
 }
 
 impl GetSequencingInfos {
@@ -17,23 +16,12 @@ impl GetSequencingInfos {
     pub async fn handler(
         _parameter: RpcParameter,
         _context: Arc<AppState>,
-    ) -> Result<GetLivenessInfosResponse, RpcError> {
-        let sequencing_info_model = SequencingInfoModel::get()?;
-
-        println!(
-            "sequencing_infos: {:?}",
-            sequencing_info_model.sequencing_infos()
-        );
-
-        let sequencing_infos = sequencing_info_model
-            .sequencing_infos()
-            .clone()
-            .into_iter()
-            .map(|(sequencing_info_key, sequencing_info)| {
-                (sequencing_info_key.to_string(), sequencing_info)
-            })
+    ) -> Result<GetSequencingInfosResponse, RpcError> {
+        let sequencing_infos = SequencingInfosModel::get()?
+            .iter()
+            .map(|(k, v)| (*k, v.clone()))
             .collect();
 
-        Ok(GetLivenessInfosResponse { sequencing_infos })
+        Ok(GetSequencingInfosResponse { sequencing_infos })
     }
 }

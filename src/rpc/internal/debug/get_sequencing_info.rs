@@ -1,14 +1,16 @@
-use crate::{models::SequencingInfoModel, rpc::prelude::*};
+use serde::{Deserialize, Serialize};
+
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfo {
-    pub sequencing_info_key: SequencingInfoKey,
+    platform: Platform,
+    service_provider: ServiceProvider,
 }
 
-// TODO:
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfoResponse {
-    sequencing_info: SequencingInfo,
+    sequencing_info_payload: SequencingInfoPayload,
 }
 
 impl GetSequencingInfo {
@@ -19,14 +21,16 @@ impl GetSequencingInfo {
         _context: Arc<AppState>,
     ) -> Result<GetSequencingInfoResponse, RpcError> {
         let parameter = parameter.parse::<GetSequencingInfo>()?;
-        let sequencing_info_model = SequencingInfoModel::get()?;
+        let sequencing_key = (parameter.platform, parameter.service_provider);
 
-        let sequencing_info = sequencing_info_model
+        let sequencing_info_payload = SequencingInfosModel::get()?
             .sequencing_infos()
-            .get(&parameter.sequencing_info_key)
-            .ok_or(Error::GetSequencingInfo)?
+            .get(&sequencing_key)
+            .ok_or(Error::NotFoundSequencingInfo)?
             .clone();
 
-        Ok(GetSequencingInfoResponse { sequencing_info })
+        Ok(GetSequencingInfoResponse {
+            sequencing_info_payload,
+        })
     }
 }
