@@ -6,6 +6,16 @@ pub struct ClusterIdListModel;
 impl ClusterIdListModel {
     const ID: &'static str = stringify!(ClusterIdListModel);
 
+    pub fn put(
+        platform: Platform,
+        service_provider: ServiceProvider,
+        cluster_id_list: &ClusterIdList,
+    ) -> Result<(), KvStoreError> {
+        let key = &(Self::ID, platform, service_provider);
+
+        kvstore()?.put(key, cluster_id_list)
+    }
+
     pub fn get(
         platform: Platform,
         service_provider: ServiceProvider,
@@ -42,16 +52,6 @@ impl ClusterIdListModel {
         kvstore()?.get_mut_or_default(key)
     }
 
-    pub fn put(
-        platform: Platform,
-        service_provider: ServiceProvider,
-        cluster_id_list: &ClusterIdList,
-    ) -> Result<(), KvStoreError> {
-        let key = &(Self::ID, platform, service_provider);
-
-        kvstore()?.put(key, cluster_id_list)
-    }
-
     pub fn delete(
         platform: Platform,
         service_provider: ServiceProvider,
@@ -67,15 +67,6 @@ pub struct ClusterInfoModel;
 
 impl ClusterInfoModel {
     const ID: &'static str = stringify!(ClusterInfoModel);
-
-    pub fn get(
-        liveness_block_number: u64,
-        cluster_id: &String,
-    ) -> Result<ClusterInfo, KvStoreError> {
-        let key = &(Self::ID, liveness_block_number, cluster_id);
-
-        kvstore()?.get(key)
-    }
 
     pub fn put(
         cluster_id: &String,
@@ -97,6 +88,15 @@ impl ClusterInfoModel {
 
         Ok(())
     }
+
+    pub fn get(
+        liveness_block_number: u64,
+        cluster_id: &String,
+    ) -> Result<ClusterInfo, KvStoreError> {
+        let key = &(Self::ID, liveness_block_number, cluster_id);
+
+        kvstore()?.get(key)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -104,15 +104,6 @@ pub struct ClusterMetadataModel;
 
 impl ClusterMetadataModel {
     const ID: &'static str = stringify!(ClusterMetadataModel);
-
-    pub fn get(
-        rollup_id: &String,
-        rollup_block_height: u64,
-    ) -> Result<ClusterMetadata, KvStoreError> {
-        let key = &(Self::ID, rollup_id, rollup_block_height);
-
-        kvstore()?.get(key)
-    }
 
     pub fn put(
         rollup_id: &String,
@@ -122,5 +113,14 @@ impl ClusterMetadataModel {
         let key = &(Self::ID, rollup_id, rollup_block_height);
 
         kvstore()?.put(key, cluster_metadata)
+    }
+
+    pub fn get(
+        rollup_id: &String,
+        rollup_block_height: u64,
+    ) -> Result<ClusterMetadata, KvStoreError> {
+        let key = &(Self::ID, rollup_id, rollup_block_height);
+
+        kvstore()?.get(key)
     }
 }

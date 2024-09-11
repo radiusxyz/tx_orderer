@@ -54,7 +54,7 @@ impl AddSequencingInfo {
             SequencingInfoPayload::Ethereum(payload) => {
                 let signing_key = context.config().signing_key();
 
-                let mut sequencing_infos = SequencingInfosModel::get_mut()?;
+                let mut sequencing_infos = SequencingInfosModel::get_mut_or_default()?;
                 sequencing_infos.insert(
                     parameter.platform,
                     parameter.service_provider,

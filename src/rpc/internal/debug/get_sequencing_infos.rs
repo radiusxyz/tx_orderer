@@ -17,7 +17,7 @@ impl GetSequencingInfos {
         _parameter: RpcParameter,
         _context: Arc<AppState>,
     ) -> Result<GetSequencingInfosResponse, RpcError> {
-        let sequencing_infos = SequencingInfosModel::get()?
+        let sequencing_infos = SequencingInfosModel::get_or_default()?
             .iter()
             .map(|(k, v)| (*k, v.clone()))
             .collect();

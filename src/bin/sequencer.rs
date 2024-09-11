@@ -99,8 +99,6 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
-            SequencingInfosModel::initialize().map_err(error::Error::Database)?;
-
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
             let seeder_client = SeederClient::new(seeder_rpc_url)?;

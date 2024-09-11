@@ -33,7 +33,7 @@ impl SyncRawTransaction {
             &parameter.rollup_id,
             rollup_block_height,
             transaction_order,
-            &parameter.order_commitment.data,
+            &parameter.order_commitment,
         )?;
 
         Ok(())

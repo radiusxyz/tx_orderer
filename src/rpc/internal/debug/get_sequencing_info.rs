@@ -23,7 +23,7 @@ impl GetSequencingInfo {
         let parameter = parameter.parse::<GetSequencingInfo>()?;
         let sequencing_key = (parameter.platform, parameter.service_provider);
 
-        let sequencing_info_payload = SequencingInfosModel::get()?
+        let sequencing_info_payload = SequencingInfosModel::get_or_default()?
             .sequencing_infos()
             .get(&sequencing_key)
             .ok_or(Error::NotFoundSequencingInfo)?

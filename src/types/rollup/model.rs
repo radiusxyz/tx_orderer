@@ -6,6 +6,12 @@ pub struct RollupMetadataModel;
 impl RollupMetadataModel {
     const ID: &'static str = stringify!(RollupMetadata);
 
+    pub fn put(rollup_id: &String, rollup_metadata: &RollupMetadata) -> Result<(), KvStoreError> {
+        let key = &(Self::ID, rollup_id);
+
+        kvstore()?.put(key, rollup_metadata)
+    }
+
     pub fn get_mut(rollup_id: &String) -> Result<Lock<RollupMetadata>, KvStoreError> {
         let key = &(Self::ID, rollup_id);
 
@@ -16,12 +22,6 @@ impl RollupMetadataModel {
         let key = &(Self::ID, rollup_id);
 
         kvstore()?.get_or_default(key)
-    }
-
-    pub fn put(rollup_id: &String, rollup_metadata: &RollupMetadata) -> Result<(), KvStoreError> {
-        let key = &(Self::ID, rollup_id);
-
-        kvstore()?.put(key, rollup_metadata)
     }
 }
 
@@ -37,15 +37,15 @@ impl RollupModel {
         kvstore()?.put(key, rollup)
     }
 
-    pub fn get_mut(rollup_id: &String) -> Result<Lock<Rollup>, KvStoreError> {
-        let key = &(Self::ID, rollup_id);
-
-        kvstore()?.get_mut(key)
-    }
-
     pub fn get(rollup_id: &String) -> Result<Rollup, KvStoreError> {
         let key = &(Self::ID, rollup_id);
 
         kvstore()?.get(key)
+    }
+
+    pub fn get_mut(rollup_id: &String) -> Result<Lock<Rollup>, KvStoreError> {
+        let key = &(Self::ID, rollup_id);
+
+        kvstore()?.get_mut(key)
     }
 }
