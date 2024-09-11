@@ -93,6 +93,8 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
+            SequencingInfosModel::initialize().map_err(error::Error::Database)?;
+
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
             let seeder_client = SeederClient::new(seeder_rpc_url)?;
@@ -102,11 +104,9 @@ async fn main() -> Result<(), Error> {
             );
 
             // Initialize sequencing info (TODO:)
-            let sequencing_info_list =
-                SequencingInfoListModel::get_or_default().map_err(error::Error::Database)?;
-            for ((platform, service_provider), sequencing_info_payload) in
-                sequencing_info_list.iter()
-            {
+            let sequencing_infos =
+                SequencingInfosModel::get_or_default().map_err(error::Error::Database)?;
+            for ((platform, service_provider), sequencing_info_payload) in sequencing_infos.iter() {
                 info!(
                     "platform: {:?}, service_provider: {:?}",
                     platform, service_provider
@@ -163,6 +163,10 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
 
     // Initialize the internal RPC server.
     let internal_rpc_server = RpcServer::new(context.clone())
+        .register_rpc_method(
+            internal::AddSequencingInfo::METHOD_NAME,
+            internal::AddSequencingInfo::handler,
+        )?
         .init(internal_rpc_url.clone())
         .await?;
 

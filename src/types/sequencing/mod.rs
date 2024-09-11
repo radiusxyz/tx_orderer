@@ -37,9 +37,9 @@ pub struct LivenessRadius {
 pub struct LivenessLocal;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct SequencingInfoList(BTreeMap<(Platform, ServiceProvider), SequencingInfoPayload>);
+pub struct SequencingInfos(BTreeMap<(Platform, ServiceProvider), SequencingInfoPayload>);
 
-impl SequencingInfoList {
+impl SequencingInfos {
     pub fn insert(
         &mut self,
         platform: Platform,

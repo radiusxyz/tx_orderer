@@ -54,13 +54,13 @@ impl AddSequencingInfo {
             SequencingInfoPayload::Ethereum(payload) => {
                 let signing_key = context.config().signing_key();
 
-                let mut sequencing_info_list = SequencingInfoListModel::get_mut()?;
-                sequencing_info_list.insert(
+                let mut sequencing_infos = SequencingInfosModel::get_mut()?;
+                sequencing_infos.insert(
                     parameter.platform,
                     parameter.service_provider,
                     parameter.payload.clone(),
                 );
-                sequencing_info_list.update()?;
+                sequencing_infos.update()?;
 
                 liveness::radius::LivenessClient::new(
                     parameter.platform,
