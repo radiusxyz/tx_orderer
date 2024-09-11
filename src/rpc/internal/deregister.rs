@@ -28,7 +28,7 @@ impl Deregister {
                         parameter.service_provider,
                         &parameter.cluster_id,
                         ChainType::Ethereum,
-                        address.as_ref(),
+                        address,
                     )
                     .await?;
 
@@ -38,7 +38,7 @@ impl Deregister {
                         parameter.service_provider,
                         &parameter.cluster_id,
                         ChainType::Ethereum,
-                        address.as_ref(),
+                        address,
                         context.config().sequencer_rpc_url(),
                     )
                     .await?;

@@ -1,4 +1,4 @@
-use crate::{error, rpc::prelude::*};
+use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetCluster {

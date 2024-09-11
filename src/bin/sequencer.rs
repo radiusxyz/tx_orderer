@@ -31,9 +31,7 @@ use radius_sequencer_sdk::{
 };
 use sequencer::{
     client::liveness::{
-        self,
-        key_management_system::{self, KeyManagementSystemClient},
-        seeder::SeederClient,
+        self, key_management_system::KeyManagementSystemClient, seeder::SeederClient,
     },
     error::{self, Error},
     rpc::internal::{self, GetSequencingInfo, GetSequencingInfos},
@@ -144,7 +142,7 @@ async fn main() -> Result<(), Error> {
                     }
                 };
 
-                // register sequencer url (for each cluster_id) / TODO: remove
+                // register sequencer url (for each cluster_id)
                 for cluster_id in cluster_id_list.iter() {
                     seeder_client
                         .register_sequencer(
@@ -152,7 +150,7 @@ async fn main() -> Result<(), Error> {
                             *service_provider,
                             cluster_id,
                             ChainType::Ethereum,
-                            address.as_ref(),
+                            &address,
                             config.cluster_rpc_url(),
                         )
                         .await?;
@@ -188,7 +186,6 @@ async fn main() -> Result<(), Error> {
             // };
 
             // Initialize an application-wide state instance
-            let app_state = AppState::new(config, seeder_client);
             let app_state = AppState::new(
                 config,
                 seeder_client,

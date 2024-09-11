@@ -1,3 +1,11 @@
 {
-  "cSpell.words": ["Eigen", "kvstore", "metadatas", "reqwest", "Ssal", "syncer"]
+  "cSpell.words": [
+    "Eigen",
+    "kvstore",
+    "metadatas",
+    "Pvde",
+    "reqwest",
+    "Ssal",
+    "syncer"
+  ]
 }

@@ -28,7 +28,7 @@ impl AddCluster {
                         parameter.service_provider,
                         &parameter.cluster_id,
                         ChainType::Ethereum,
-                        address.as_ref(),
+                        address,
                         context.config().cluster_rpc_url(),
                     )
                     .await?;
