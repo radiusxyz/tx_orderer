@@ -45,7 +45,7 @@ impl Deregister {
 
                 let mut cluster_id_list =
                     ClusterIdListModel::get_mut(parameter.platform, parameter.service_provider)?;
-                cluster_id_list.insert(&parameter.cluster_id);
+                cluster_id_list.remove(&parameter.cluster_id);
                 cluster_id_list.update()?;
             }
             Platform::Local => unimplemented!("Local client needs to be implemented."),
