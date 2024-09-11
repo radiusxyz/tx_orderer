@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::{client::liveness::seeder::SeederClient, types::*};
+use crate::{
+    client::liveness::{key_management_system::KeyManagementSystemClient, seeder::SeederClient},
+    types::*,
+};
 
 pub struct AppState {
     inner: Arc<AppStateInner>,
@@ -8,6 +11,7 @@ pub struct AppState {
 struct AppStateInner {
     config: Config,
     seeder_client: SeederClient,
+    key_management_client: KeyManagementSystemClient,
 }
 
 unsafe impl Send for AppState {}
@@ -22,10 +26,15 @@ impl Clone for AppState {
 }
 
 impl AppState {
-    pub fn new(config: Config, seeder_client: SeederClient) -> Self {
+    pub fn new(
+        config: Config,
+        seeder_client: SeederClient,
+        key_management_system_client: KeyManagementSystemClient,
+    ) -> Self {
         let inner = AppStateInner {
             config,
             seeder_client,
+            key_management_client: key_management_system_client,
         };
 
         Self {
@@ -39,5 +48,9 @@ impl AppState {
 
     pub fn seeder_client(&self) -> &SeederClient {
         &self.inner.seeder_client
+    }
+
+    pub fn key_management_system_client(&self) -> &KeyManagementSystemClient {
+        &self.inner.key_management_client
     }
 }

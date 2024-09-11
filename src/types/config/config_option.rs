@@ -10,6 +10,9 @@ const DEFAULT_INTERNAL_RPC_URL: &str = "http://127.0.0.1:4000";
 const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:5000";
 
 const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:6000";
+
+const DEFAULT_KEY_MANAGEMENT_SYSTEM_RPC_URL: &str = "http://127.0.0.1:3100";
+
 const DEFAULT_CLUSTER_TYPE: &str = "local";
 
 const DEFAULT_LIVENESS_PROVIDER_RPC_URL: &str = "http://127.0.0.1:8545";
@@ -37,6 +40,10 @@ pub struct ConfigOption {
     #[doc = "Set the seeder rpc url"]
     #[clap(long = "seeder-rpc-url")]
     pub seeder_rpc_url: Option<String>,
+
+    #[doc = "Set the key management system rpc url"]
+    #[clap(long = "key-management-system-rpc-url")]
+    pub key_management_system_rpc_url: Option<String>,
 
     #[doc = "Set the cluster types"]
     #[clap(long = "cluster-types")]
@@ -69,6 +76,7 @@ impl Default for ConfigOption {
             cluster_rpc_url: Some(DEFAULT_CLUSTER_RPC_URL.into()),
 
             seeder_rpc_url: Some(DEFAULT_SEEDER_RPC_URL.into()),
+            key_management_system_rpc_url: Some(DEFAULT_KEY_MANAGEMENT_SYSTEM_RPC_URL.into()),
             cluster_type: Some(DEFAULT_CLUSTER_TYPE.into()),
 
             liveness_provider_rpc_url: Some(DEFAULT_LIVENESS_PROVIDER_RPC_URL.into()),
@@ -99,6 +107,13 @@ impl ConfigOption {
 
         set_toml_comment(&mut toml_string, "Set seeder rpc url");
         set_toml_name_value(&mut toml_string, "seeder_rpc_url", &self.seeder_rpc_url);
+
+        set_toml_comment(&mut toml_string, "Set key management system rpc url");
+        set_toml_name_value(
+            &mut toml_string,
+            "key_management_system_rpc_url",
+            &self.key_management_system_rpc_url,
+        );
 
         set_toml_comment(&mut toml_string, "Set cluster type");
         set_toml_name_value(&mut toml_string, "cluster_type", &self.cluster_type);
@@ -149,6 +164,10 @@ impl ConfigOption {
 
         if other.seeder_rpc_url.is_some() {
             self.seeder_rpc_url = other.seeder_rpc_url.clone();
+        }
+
+        if other.key_management_system_rpc_url.is_some() {
+            self.key_management_system_rpc_url = other.key_management_system_rpc_url.clone();
         }
 
         if other.cluster_type.is_some() {

@@ -30,9 +30,13 @@ use radius_sequencer_sdk::{
     signature::{ChainType, PrivateKeySigner},
 };
 use sequencer::{
-    client::liveness::{self, seeder::SeederClient},
+    client::liveness::{
+        self,
+        key_management_system::{self, KeyManagementSystemClient},
+        seeder::SeederClient,
+    },
     error::{self, Error},
-    rpc::internal::{self, GetSequencingInfo, GetSequencingInfos},
+    rpc::internal::{self, GetSequencingInfo, GetSequencingInfos, JoinCluster},
     state::AppState,
     types::*,
 };
@@ -107,6 +111,11 @@ async fn main() -> Result<(), Error> {
                 seeder_rpc_url,
             );
 
+            // Initialize key management system client
+            let key_management_system_rpc_url = config.key_management_system_rpc_url();
+            let key_management_system_client =
+                KeyManagementSystemClient::new(key_management_system_rpc_url)?;
+
             // Initialize sequencing info (TODO:)
             let signing_key = config.signing_key();
             let sequencing_infos =
@@ -176,7 +185,7 @@ async fn main() -> Result<(), Error> {
             // };
 
             // Initialize an application-wide state instance
-            let app_state = AppState::new(config, seeder_client);
+            let app_state = AppState::new(config, seeder_client, key_management_system_client);
 
             // Initialize the internal RPC server
             initialize_internal_rpc_server(&app_state).await?;

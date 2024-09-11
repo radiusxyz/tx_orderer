@@ -22,10 +22,16 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendEncryptedTransaction {
+pub struct SendEncryptedTransactionMessage {
     pub rollup_id: String,
     pub encrypted_transaction: EncryptedTransaction,
     pub time_lock_puzzle: TimeLockPuzzle,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SendEncryptedTransaction {
+    pub message: SendEncryptedTransactionMessage,
+    pub signature: Signature,
 }
 
 impl SendEncryptedTransaction {
@@ -37,20 +43,34 @@ impl SendEncryptedTransaction {
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        // // get rollup info for address and chain type
+        // // verify siganture
+        // parameter.signature.verify_signature(
+        //     serialize_to_bincode(&parameter.message)?.as_slice(),
+        //     parameter.message.address.as_slice(),
+        //     parameter.message.chain_type,
+        // )?;
 
-        let cluster_metadata =
-            ClusterMetadataModel::get(&parameter.rollup_id, rollup_metadata.block_height())?;
+        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.message.rollup_id)?;
+
+        let cluster_metadata = ClusterMetadataModel::get(
+            &parameter.message.rollup_id,
+            rollup_metadata.block_height(),
+        )?;
         match cluster_metadata.is_leader() {
             true => {
                 let transaction_order = rollup_metadata.issue_transaction_order();
-                let order_hash = rollup_metadata
-                    .issue_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
+                let order_hash = rollup_metadata.issue_order_hash(
+                    &parameter
+                        .message
+                        .encrypted_transaction
+                        .raw_transaction_hash(),
+                );
                 let rollup_block_height = rollup_metadata.block_height();
                 rollup_metadata.update()?;
 
                 let order_commitment_data = OrderCommitmentData {
-                    rollup_id: parameter.rollup_id.clone(),
+                    rollup_id: parameter.message.rollup_id.clone(),
                     block_height: rollup_block_height,
                     transaction_order,
                     previous_order_hash: order_hash,
@@ -61,24 +81,24 @@ impl SendEncryptedTransaction {
                 };
 
                 let encrypted_transaction_model = EncryptedTransactionModel::new(
-                    parameter.encrypted_transaction.clone(),
-                    Some(parameter.time_lock_puzzle.clone()),
+                    parameter.message.encrypted_transaction.clone(),
+                    Some(parameter.message.time_lock_puzzle.clone()),
                 );
                 encrypted_transaction_model.put(
-                    &parameter.rollup_id,
+                    &parameter.message.rollup_id,
                     rollup_block_height,
                     transaction_order,
                 )?;
 
                 let raw_transaction = decrypt_transaction(
-                    parameter.encrypted_transaction.clone(),
-                    parameter.time_lock_puzzle.clone(),
+                    parameter.message.encrypted_transaction.clone(),
+                    parameter.message.time_lock_puzzle.clone(),
                     context.config().is_using_zkp(),
                     &Some(PvdeParams::default()),
                 )?;
                 let raw_transaction_model = RawTransactionModel::new(raw_transaction);
                 raw_transaction_model.put(
-                    &parameter.rollup_id,
+                    &parameter.message.rollup_id,
                     rollup_block_height,
                     transaction_order,
                 )?;
@@ -111,9 +131,9 @@ impl SendEncryptedTransaction {
     ) {
         tokio::spawn(async move {
             let rpc_parameter = SyncEncryptedTransaction {
-                rollup_id: parameter.rollup_id,
-                encrypted_transaction: parameter.encrypted_transaction,
-                time_lock_puzzle: parameter.time_lock_puzzle,
+                rollup_id: parameter.message.rollup_id,
+                encrypted_transaction: parameter.message.encrypted_transaction,
+                time_lock_puzzle: parameter.message.time_lock_puzzle,
                 order_commitment,
             };
 
