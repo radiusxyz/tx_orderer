@@ -18,14 +18,6 @@ impl SyncRawTransaction {
         let rollup_block_height = rollup_metadata.block_height();
         rollup_metadata.update()?;
 
-        EncryptedTransactionModel::unencrypted_transaction();
-        let encrypted_transaction_model = EncryptedTransactionModel::unencrypted_transaction();
-        encrypted_transaction_model.put(
-            &parameter.rollup_id,
-            rollup_block_height,
-            transaction_order,
-        )?;
-
         let raw_transaction_model = RawTransactionModel::new(parameter.raw_transaction);
         raw_transaction_model.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
 

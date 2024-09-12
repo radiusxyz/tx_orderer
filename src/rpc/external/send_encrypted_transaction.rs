@@ -161,10 +161,6 @@ pub fn decrypt_transaction(
     is_using_zkp: bool,
     pvde_params: &Option<PvdeParams>,
 ) -> Result<RawTransaction, Error> {
-    if encrypted_transaction.is_unencrypted() {
-        return Err(Error::TryDecryptRawTransaction);
-    }
-
     let time_lock_puzzle = time_lock_puzzle.clone();
     let encrypted_data = encrypted_transaction.encrypted_data().clone();
     let open_data = encrypted_transaction.open_data().clone();

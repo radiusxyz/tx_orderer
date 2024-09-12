@@ -27,7 +27,6 @@ impl EthEncryptedBundleTransaction {
     }
 }
 
-// TODO: stompesi
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EthBundleOpenData {
     pub raw_tx_hash: RawTransactionHash,
@@ -39,11 +38,11 @@ impl EthBundleOpenData {
     }
 }
 
-// TODO(jaemin): change to actual type
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EthBundleEncryptData {
     pub to: Option<eth_types::Address>,
     pub value: eth_types::U256,
+
     #[serde(rename = "data")]
     pub input: eth_types::Bytes,
 }

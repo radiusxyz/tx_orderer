@@ -58,7 +58,6 @@ pub enum Transaction {
 pub enum EncryptedTransaction {
     Eth(EthEncryptedTransaction),
     EthBundle(EthEncryptedBundleTransaction),
-    UnEncrypted,
 }
 
 impl EncryptedTransaction {
@@ -66,10 +65,6 @@ impl EncryptedTransaction {
         match self {
             EncryptedTransaction::Eth(eth) => eth.encrypted_data(),
             EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.encrypted_data(),
-            // Todo(jaemin)
-            EncryptedTransaction::UnEncrypted => {
-                unreachable!("UnEncrypted does not have encrypted data")
-            }
         }
     }
 
@@ -79,10 +74,6 @@ impl EncryptedTransaction {
             EncryptedTransaction::EthBundle(eth_bundle) => {
                 OpenData::from(eth_bundle.open_data().clone())
             }
-            // Todo(jaemin)
-            EncryptedTransaction::UnEncrypted => {
-                unreachable!("UnEncrypted does not have open data")
-            }
         }
     }
 
@@ -90,7 +81,6 @@ impl EncryptedTransaction {
         match self {
             EncryptedTransaction::Eth(eth) => eth.pvde_zkp(),
             EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.pvde_zkp(),
-            EncryptedTransaction::UnEncrypted => None,
         }
     }
 
@@ -98,7 +88,6 @@ impl EncryptedTransaction {
         match self {
             EncryptedTransaction::Eth(eth) => eth.update_pvde_zkp(pvde_zkp),
             EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.update_pvde_zkp(pvde_zkp),
-            EncryptedTransaction::UnEncrypted => {}
         }
     }
 
@@ -106,15 +95,7 @@ impl EncryptedTransaction {
         match self {
             EncryptedTransaction::Eth(eth) => eth.open_data().raw_tx_hash(),
             EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.open_data().raw_tx_hash(),
-            // Todo(jaemin)
-            EncryptedTransaction::UnEncrypted => {
-                unreachable!("UnEncrypted does not have context. Get raw transaction hash from raw transaction")
-            }
         }
-    }
-
-    pub fn is_unencrypted(&self) -> bool {
-        matches!(self, EncryptedTransaction::UnEncrypted)
     }
 }
 

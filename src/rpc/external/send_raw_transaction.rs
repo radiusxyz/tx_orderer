@@ -57,15 +57,6 @@ impl SendRawTransaction {
                     signature: vec![].into(), // Todo: Signature
                 };
 
-                EncryptedTransactionModel::unencrypted_transaction();
-                let encrypted_transaction_model =
-                    EncryptedTransactionModel::unencrypted_transaction();
-                encrypted_transaction_model.put(
-                    &parameter.message.rollup_id,
-                    rollup_block_height,
-                    transaction_order,
-                )?;
-
                 let raw_transaction_model =
                     RawTransactionModel::new(parameter.message.raw_transaction.clone());
                 raw_transaction_model.put(

@@ -17,13 +17,6 @@ impl EncryptedTransactionModel {
         }
     }
 
-    pub fn unencrypted_transaction() -> Self {
-        Self {
-            encrypted_transaction: EncryptedTransaction::UnEncrypted,
-            time_lock_puzzle: None,
-        }
-    }
-
     pub fn encrypted_transaction(&self) -> &EncryptedTransaction {
         &self.encrypted_transaction
     }
@@ -36,15 +29,6 @@ impl EncryptedTransactionModel {
 impl EncryptedTransactionModel {
     pub const ID: &'static str = stringify!(EncryptedTransactionModel);
 
-    pub fn get(
-        rollup_id: &String,
-        block_height: u64,
-        transaction_order: u64,
-    ) -> Result<Self, KvStoreError> {
-        let key = (Self::ID, rollup_id, block_height, transaction_order);
-        kvstore()?.get(&key)
-    }
-
     pub fn put(
         &self,
         rollup_id: &String,
@@ -53,6 +37,15 @@ impl EncryptedTransactionModel {
     ) -> Result<(), KvStoreError> {
         let key = (Self::ID, rollup_id, block_height, transaction_order);
         kvstore()?.put(&key, self)
+    }
+
+    pub fn get(
+        rollup_id: &String,
+        block_height: u64,
+        transaction_order: u64,
+    ) -> Result<Self, KvStoreError> {
+        let key = (Self::ID, rollup_id, block_height, transaction_order);
+        kvstore()?.get(&key)
     }
 }
 
@@ -74,15 +67,6 @@ impl RawTransactionModel {
 impl RawTransactionModel {
     pub const ID: &'static str = stringify!(RawTransactionModel);
 
-    pub fn get(
-        rollup_id: &String,
-        block_height: u64,
-        transaction_order: u64,
-    ) -> Result<Self, KvStoreError> {
-        let key = (Self::ID, rollup_id, block_height, transaction_order);
-        kvstore()?.get(&key)
-    }
-
     pub fn put(
         &self,
         rollup_id: &String,
@@ -91,5 +75,14 @@ impl RawTransactionModel {
     ) -> Result<(), KvStoreError> {
         let key = (Self::ID, rollup_id, block_height, transaction_order);
         kvstore()?.put(&key, self)
+    }
+
+    pub fn get(
+        rollup_id: &String,
+        block_height: u64,
+        transaction_order: u64,
+    ) -> Result<Self, KvStoreError> {
+        let key = (Self::ID, rollup_id, block_height, transaction_order);
+        kvstore()?.get(&key)
     }
 }
