@@ -12,16 +12,22 @@ impl RollupMetadataModel {
         kvstore()?.put(key, rollup_metadata)
     }
 
+    pub fn get_or_default(rollup_id: &String) -> Result<RollupMetadata, KvStoreError> {
+        let key = &(Self::ID, rollup_id);
+
+        kvstore()?.get_or_default(key)
+    }
+
     pub fn get_mut(rollup_id: &String) -> Result<Lock<RollupMetadata>, KvStoreError> {
         let key = &(Self::ID, rollup_id);
 
         kvstore()?.get_mut(key)
     }
 
-    pub fn get_or_default(rollup_id: &String) -> Result<RollupMetadata, KvStoreError> {
+    pub fn get_mut_or_default(rollup_id: &String) -> Result<Lock<RollupMetadata>, KvStoreError> {
         let key = &(Self::ID, rollup_id);
 
-        kvstore()?.get_or_default(key)
+        kvstore()?.get_mut_or_default(key)
     }
 }
 

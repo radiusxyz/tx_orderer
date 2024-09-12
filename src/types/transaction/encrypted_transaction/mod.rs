@@ -24,6 +24,7 @@ impl EncryptedTransactionList {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum EncryptedTransaction {
     Pvde(PvdeEncryptedTransaction),
     Skde(SkdeEncryptedTransaction),
@@ -66,6 +67,7 @@ pub struct SkdeEncryptedTransaction {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum TransactionData {
     Eth(EthTransactionData),
     EthBundle(EthBundleTransactionData),
@@ -83,6 +85,7 @@ impl TransactionData {
 /////////////////////////////////////////
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum RollupTransaction {
     Eth(eth_types::Transaction),
     EthBundle,
