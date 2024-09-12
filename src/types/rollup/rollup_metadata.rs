@@ -20,22 +20,16 @@ impl RollupMetadata {
         self.transaction_order
     }
 
+    pub fn increase_transaction_order(&mut self) {
+        self.transaction_order += 1;
+    }
+
     pub fn order_hash(&self) -> OrderHash {
         self.order_hash.clone()
     }
 
-    pub fn issue_transaction_order(&mut self) -> u64 {
-        self.transaction_order += 1;
-
-        self.transaction_order
-    }
-
-    /// Return the current [`OrderHash`].
-    pub fn issue_order_hash(&mut self, raw_transaction_hash: &RawTransactionHash) -> OrderHash {
-        let current_order_hash = self.order_hash.clone();
-        self.order_hash = self.order_hash.issue_order_hash(raw_transaction_hash);
-
-        current_order_hash
+    pub fn update_order_hash(&mut self, raw_transaction_hash: &RawTransactionHash) {
+        self.order_hash.update_order_hash(raw_transaction_hash);
     }
 
     /// Return the current [`RollupMetadata`].

@@ -1,4 +1,4 @@
-// TODO(jaemin): Replace ethers with alloy
+// TODO:
 use ethers::{
     types as eth_types,
     utils::{
@@ -7,42 +7,26 @@ use ethers::{
     },
 };
 
-use crate::types::prelude::*;
+use crate::{error::Error, types::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EthEncryptedTransaction {
-    open_data: EthOpenData,
+pub struct EthTransactionData {
     encrypted_data: EncryptedData,
-    pvde_zkp: Option<PvdeZkp>,
+    open_data: EthOpenData,
+
+    plain_data: Option<EthPlainData>,
 }
 
-impl EthEncryptedTransaction {
-    pub fn new(
-        open_data: EthOpenData,
-        encrypted_data: EncryptedData,
-        pvde_zkp: Option<PvdeZkp>,
-    ) -> Self {
-        Self {
-            open_data,
-            encrypted_data,
-            pvde_zkp,
+impl EthTransactionData {
+    pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {
+        if self.plain_data.is_none() {
+            return Err(Error::NotExistPlainData);
         }
-    }
 
-    pub fn open_data(&self) -> &EthOpenData {
-        &self.open_data
-    }
-
-    pub fn encrypted_data(&self) -> &EncryptedData {
-        &self.encrypted_data
-    }
-
-    pub fn pvde_zkp(&self) -> Option<&PvdeZkp> {
-        self.pvde_zkp.as_ref()
-    }
-
-    pub fn update_pvde_zkp(&mut self, pvde_zkp: Option<PvdeZkp>) {
-        self.pvde_zkp = pvde_zkp;
+        Ok(RollupTransaction::Eth(
+            self.open_data
+                .convert_to_rollup_transaction(self.plain_data.as_ref().unwrap()),
+        ))
     }
 }
 
@@ -97,7 +81,10 @@ impl From<eth_types::Transaction> for EthOpenData {
 }
 
 impl EthOpenData {
-    pub fn to_raw_transaction(&self, eth_encrypt_data: &EthEncryptData) -> eth_types::Transaction {
+    pub fn convert_to_rollup_transaction(
+        &self,
+        plain_data: &EthPlainData,
+    ) -> eth_types::Transaction {
         eth_types::Transaction {
             hash: eth_types::H256::from_slice(
                 hex::decode(self.raw_tx_hash.clone().into_inner())
@@ -111,9 +98,9 @@ impl EthOpenData {
             from: self.from,
             gas_price: self.gas_price,
             gas: self.gas_limit,
-            to: eth_encrypt_data.to,
-            value: eth_encrypt_data.value,
-            input: eth_encrypt_data.input.clone(),
+            to: plain_data.to,
+            value: plain_data.value,
+            input: plain_data.input.clone(),
             v: self.signature.v.into(),
             r: self.signature.r,
             s: self.signature.s,
@@ -132,7 +119,7 @@ impl EthOpenData {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct EthEncryptData {
+pub struct EthPlainData {
     pub to: Option<eth_types::Address>,
     pub value: eth_types::U256,
     #[serde(rename = "data")]

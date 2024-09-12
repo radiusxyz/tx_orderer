@@ -11,19 +11,18 @@ impl EncryptedTransactionModel {
         rollup_block_height: u64,
         transaction_order: u64,
 
-        encrypted_transaction: EncryptedTransaction,
-        time_lock_puzzle: Option<TimeLockPuzzle>,
+        encrypted_transaction: &EncryptedTransaction,
     ) -> Result<(), KvStoreError> {
         let key = &(Self::ID, rollup_id, rollup_block_height, transaction_order);
 
-        kvstore()?.put(key, &(encrypted_transaction, time_lock_puzzle))
+        kvstore()?.put(key, encrypted_transaction)
     }
 
     pub fn get(
         rollup_id: &String,
         block_height: u64,
         transaction_order: u64,
-    ) -> Result<(EncryptedTransaction, Option<TimeLockPuzzle>), KvStoreError> {
+    ) -> Result<EncryptedTransaction, KvStoreError> {
         let key = &(Self::ID, rollup_id, block_height, transaction_order);
 
         kvstore()?.get(key)

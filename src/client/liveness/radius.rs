@@ -178,6 +178,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                     let rollup = Rollup::new(
                         rollup_info.rollupId.clone(),
                         rollup_type,
+                        EncryptedTransactionType::Skde, // TODO
                         rollup_info.owner.to_string(),
                         validation_info,
                         order_commitment_type,

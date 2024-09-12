@@ -48,6 +48,9 @@ pub enum Error {
     NotSupportedPlatform,
     NotSupportedValidationServiceProvider,
     NotSupportedRollupType,
+
+    NotExistPlainData,
+    NotSupportEncryptedMempool,
 }
 
 unsafe impl Send for Error {}

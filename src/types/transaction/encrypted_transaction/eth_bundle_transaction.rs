@@ -1,29 +1,27 @@
 use ethers::types as eth_types;
 
-use crate::types::prelude::*;
+use crate::{error::Error, types::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EthEncryptedBundleTransaction {
+pub struct EthBundleTransactionData {
+    encrypted_data: EncryptedData,
     open_data: EthBundleOpenData,
-    encrypted_transaction: EncryptedData,
-    pvde_zkp: Option<PvdeZkp>,
+
+    plain_data: Option<EthBundlePlainData>,
 }
 
-impl EthEncryptedBundleTransaction {
-    pub fn open_data(&self) -> &EthBundleOpenData {
-        &self.open_data
-    }
+impl EthBundleTransactionData {
+    pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {
+        if self.plain_data.is_none() {
+            return Err(Error::NotExistPlainData);
+        }
 
-    pub fn encrypted_data(&self) -> &EncryptedData {
-        &self.encrypted_transaction
-    }
+        // TODO:
+        // let rollup_transaction = self
+        // .open_data
+        // .convert_to_rollup_transaction(self.plain_data.as_ref().unwrap());
 
-    pub fn pvde_zkp(&self) -> Option<&PvdeZkp> {
-        self.pvde_zkp.as_ref()
-    }
-
-    pub fn update_pvde_zkp(&mut self, pvde_zkp: Option<PvdeZkp>) {
-        self.pvde_zkp = pvde_zkp;
+        Ok(RollupTransaction::EthBundle)
     }
 }
 
@@ -39,7 +37,7 @@ impl EthBundleOpenData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct EthBundleEncryptData {
+pub struct EthBundlePlainData {
     pub to: Option<eth_types::Address>,
     pub value: eth_types::U256,
 

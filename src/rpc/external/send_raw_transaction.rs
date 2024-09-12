@@ -21,7 +21,7 @@ impl SendRawTransaction {
     pub async fn handler(
         parameter: RpcParameter,
         _context: Arc<AppState>,
-    ) -> Result<OrderCommitment, RpcError> {
+    ) -> Result<String, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
         // // get rollup info for address and chain type
@@ -32,53 +32,61 @@ impl SendRawTransaction {
         //     parameter.message.chain_type,
         // )?;
 
-        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.message.rollup_id)?;
+        // TODO:
+        // let mut rollup_metadata =
+        // RollupMetadataModel::get_mut(&parameter.message.rollup_id)?;
 
-        let cluster_metadata = ClusterMetadataModel::get(
-            &parameter.message.rollup_id,
-            rollup_metadata.block_height(),
-        )?;
-        match cluster_metadata.is_leader() {
-            true => {
-                let transaction_order = rollup_metadata.issue_transaction_order();
-                let order_hash = rollup_metadata
-                    .issue_order_hash(&parameter.message.raw_transaction.raw_transaction_hash());
-                let rollup_block_height = rollup_metadata.block_height();
-                rollup_metadata.update()?;
+        // let cluster_metadata = ClusterMetadataModel::get(
+        //     &parameter.message.rollup_id,
+        //     rollup_metadata.block_height(),
+        // )?;
+        // match cluster_metadata.is_leader() {
+        //     true => {
+        //         let transaction_order =
+        // rollup_metadata.issue_transaction_order();         let
+        // order_hash = rollup_metadata
+        // .update_order_hash(&parameter.message.raw_transaction.
+        // raw_transaction_hash());         let rollup_block_height =
+        // rollup_metadata.block_height();         rollup_metadata.
+        // update()?;
 
-                let order_commitment_data = OrderCommitmentData {
-                    rollup_id: parameter.message.rollup_id.clone(),
-                    block_height: rollup_block_height,
-                    transaction_order,
-                    previous_order_hash: order_hash,
-                };
-                let order_commitment = OrderCommitment {
-                    data: order_commitment_data,
-                    signature: vec![].into(), // Todo: Signature
-                };
+        //         let order_commitment_data = OrderCommitmentData {
+        //             rollup_id: parameter.message.rollup_id.clone(),
+        //             block_height: rollup_block_height,
+        //             transaction_order,
+        //             previous_order_hash: order_hash,
+        //         };
+        //         let order_commitment = OrderCommitment {
+        //             data: order_commitment_data,
+        //             signature: vec![].into(), // Todo: Signature
+        //         };
 
-                RawTransactionModel::put(
-                    &parameter.message.rollup_id,
-                    rollup_block_height,
-                    transaction_order,
-                    parameter.message.raw_transaction.clone(),
-                )?;
+        //         RawTransactionModel::put(
+        //             &parameter.message.rollup_id,
+        //             rollup_block_height,
+        //             transaction_order,
+        //             parameter.message.raw_transaction.clone(),
+        //         )?;
 
-                // Sync Transaction
-                Self::sync_raw_transaction(parameter, order_commitment.clone(), cluster_metadata);
+        //         // Sync Transaction
+        //         Self::sync_raw_transaction(parameter,
+        // order_commitment.clone(), cluster_metadata);
 
-                Ok(order_commitment)
-            }
-            false => {
-                let leader_rpc_url = cluster_metadata.leader().ok_or(Error::EmptyLeaderRpcUrl)?;
-                let client = RpcClient::new(leader_rpc_url)?;
-                let response: OrderCommitment = client
-                    .request(SendRawTransaction::METHOD_NAME, parameter.clone())
-                    .await?;
+        //         Ok(order_commitment)
+        //     }
+        //     false => {
+        //         let leader_rpc_url =
+        // cluster_metadata.leader().ok_or(Error::EmptyLeaderRpcUrl)?;
+        //         let client = RpcClient::new(leader_rpc_url)?;
+        //         let response: OrderCommitment = client
+        //             .request(SendRawTransaction::METHOD_NAME,
+        // parameter.clone())             .await?;
 
-                Ok(response)
-            }
-        }
+        //         Ok(response)
+        //     }
+        // }
+
+        Ok("".to_owned())
     }
 
     pub fn sync_raw_transaction(

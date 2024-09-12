@@ -1,6 +1,6 @@
 use ethers::types as eth_types;
 
-use crate::types::prelude::*;
+use crate::{error::Error, types::prelude::*};
 
 mod eth_bundle_transaction;
 mod eth_transaction;
@@ -9,115 +9,6 @@ mod model;
 pub use eth_bundle_transaction::*;
 pub use eth_transaction::*;
 pub use model::*;
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum OpenData {
-    Eth(EthOpenData),
-    EthBundle(EthBundleOpenData),
-}
-
-impl From<EthOpenData> for OpenData {
-    fn from(open_data: EthOpenData) -> Self {
-        OpenData::Eth(open_data)
-    }
-}
-
-impl From<EthBundleOpenData> for OpenData {
-    fn from(open_data: EthBundleOpenData) -> Self {
-        OpenData::EthBundle(open_data)
-    }
-}
-
-impl OpenData {
-    pub fn to_raw_transaction(&self, encrypted_data: &EncryptData) -> Transaction {
-        match (self, encrypted_data) {
-            (OpenData::Eth(open_data), EncryptData::Eth(encrypt_data)) => {
-                Transaction::Eth(open_data.to_raw_transaction(encrypt_data))
-            }
-            // tODO(jaemin): impl EthBundle
-            (OpenData::EthBundle(_open_data), EncryptData::EthBundle(_encrypt_data)) => {
-                Transaction::EthBundle
-            }
-            _ => panic!("Invalid combination of OpenData and EncryptData"),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum EncryptData {
-    Eth(EthEncryptData),
-    EthBundle(EthBundleEncryptData),
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum Transaction {
-    Eth(eth_types::Transaction),
-    EthBundle,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum EncryptedTransaction {
-    Eth(EthEncryptedTransaction),
-    EthBundle(EthEncryptedBundleTransaction),
-}
-
-impl EncryptedTransaction {
-    pub fn encrypted_data(&self) -> &EncryptedData {
-        match self {
-            EncryptedTransaction::Eth(eth) => eth.encrypted_data(),
-            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.encrypted_data(),
-        }
-    }
-
-    pub fn open_data(&self) -> OpenData {
-        match self {
-            EncryptedTransaction::Eth(eth) => OpenData::from(eth.open_data().clone()),
-            EncryptedTransaction::EthBundle(eth_bundle) => {
-                OpenData::from(eth_bundle.open_data().clone())
-            }
-        }
-    }
-
-    pub fn pvde_zkp(&self) -> Option<&PvdeZkp> {
-        match self {
-            EncryptedTransaction::Eth(eth) => eth.pvde_zkp(),
-            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.pvde_zkp(),
-        }
-    }
-
-    pub fn update_pvde_zkp(&mut self, pvde_zkp: Option<PvdeZkp>) {
-        match self {
-            EncryptedTransaction::Eth(eth) => eth.update_pvde_zkp(pvde_zkp),
-            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.update_pvde_zkp(pvde_zkp),
-        }
-    }
-
-    pub fn raw_transaction_hash(&self) -> &RawTransactionHash {
-        match self {
-            EncryptedTransaction::Eth(eth) => eth.open_data().raw_tx_hash(),
-            EncryptedTransaction::EthBundle(eth_bundle) => eth_bundle.open_data().raw_tx_hash(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EncryptedData(String);
-
-impl AsRef<[u8]> for EncryptedData {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_bytes()
-    }
-}
-
-impl EncryptedData {
-    pub fn new(value: impl AsRef<str>) -> Self {
-        Self(value.as_ref().to_owned())
-    }
-
-    pub fn into_inner(self) -> String {
-        self.0
-    }
-}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EncryptedTransactionList(Vec<EncryptedTransaction>);
@@ -129,5 +20,81 @@ impl EncryptedTransactionList {
 
     pub fn into_inner(self) -> Vec<EncryptedTransaction> {
         self.0
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum EncryptedTransaction {
+    Pvde(PvdeEncryptedTransaction),
+    Skde(SkdeEncryptedTransaction),
+}
+
+impl EncryptedTransaction {
+    pub fn raw_transaction_hash(&self) -> RawTransactionHash {
+        // TODO:
+        RawTransactionHash::new("hi")
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PvdeEncryptedTransaction {
+    transaction_data: TransactionData,
+
+    time_lock_puzzle: TimeLockPuzzle,
+    pvde_zkp: Option<PvdeZkp>,
+}
+
+impl PvdeEncryptedTransaction {
+    pub fn transaction_data(&self) -> &TransactionData {
+        &self.transaction_data
+    }
+
+    pub fn time_lock_puzzle(&self) -> &TimeLockPuzzle {
+        &self.time_lock_puzzle
+    }
+
+    pub fn pvde_zkp(&self) -> Option<&PvdeZkp> {
+        self.pvde_zkp.as_ref()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SkdeEncryptedTransaction {
+    transaction_data: TransactionData,
+
+    key_id: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum TransactionData {
+    Eth(EthTransactionData),
+    EthBundle(EthBundleTransactionData),
+}
+
+impl TransactionData {
+    pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {
+        match self {
+            Self::Eth(data) => data.convert_to_rollup_transaction(),
+            Self::EthBundle(data) => data.convert_to_rollup_transaction(),
+        }
+    }
+}
+
+/////////////////////////////////////////
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum RollupTransaction {
+    Eth(eth_types::Transaction),
+    EthBundle,
+}
+
+/////////////////////////////////////////
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct EncryptedData(String);
+
+impl AsRef<[u8]> for EncryptedData {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
     }
 }

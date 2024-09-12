@@ -10,7 +10,7 @@ use crate::types::prelude::*;
 pub struct OrderHash(String);
 
 impl OrderHash {
-    pub fn issue_order_hash(&self, raw_tx_hash: &RawTransactionHash) -> OrderHash {
+    pub fn update_order_hash(&self, raw_tx_hash: &RawTransactionHash) -> OrderHash {
         let mut hasher = Sha3_256::new();
 
         // TODO(jaemin): check hasher params

@@ -13,24 +13,26 @@ impl SyncRawTransaction {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
-        let transaction_order = rollup_metadata.issue_transaction_order();
-        let rollup_block_height = rollup_metadata.block_height();
-        rollup_metadata.update()?;
+        // TODO:
+        // let mut rollup_metadata =
+        // RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        // let transaction_order = rollup_metadata.issue_transaction_order();
+        // let rollup_block_height = rollup_metadata.block_height();
+        // rollup_metadata.update()?;
 
-        RawTransactionModel::put(
-            &parameter.rollup_id,
-            rollup_block_height,
-            transaction_order,
-            parameter.raw_transaction,
-        )?;
+        // RawTransactionModel::put(
+        //     &parameter.rollup_id,
+        //     rollup_block_height,
+        //     transaction_order,
+        //     parameter.raw_transaction,
+        // )?;
 
-        OrderCommitmentModel::put(
-            &parameter.rollup_id,
-            rollup_block_height,
-            transaction_order,
-            &parameter.order_commitment,
-        )?;
+        // OrderCommitmentModel::put(
+        //     &parameter.rollup_id,
+        //     rollup_block_height,
+        //     transaction_order,
+        //     &parameter.order_commitment,
+        // )?;
 
         Ok(())
     }
