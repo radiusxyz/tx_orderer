@@ -88,33 +88,33 @@ impl SendRawTransaction {
 
         Ok("".to_owned())
     }
+}
 
-    pub fn sync_raw_transaction(
-        parameter: Self,
-        order_commitment: OrderCommitment,
-        cluster_metadata: ClusterMetadata,
-    ) {
-        tokio::spawn(async move {
-            let rpc_parameter = SyncRawTransaction {
-                rollup_id: parameter.message.rollup_id,
-                raw_transaction: parameter.message.raw_transaction,
-                order_commitment,
-            };
+pub fn sync_raw_transaction(
+    parameter: SendRawTransaction,
+    order_commitment: OrderCommitment,
+    cluster_metadata: ClusterMetadata,
+) {
+    tokio::spawn(async move {
+        let rpc_parameter = SyncRawTransaction {
+            rollup_id: parameter.message.rollup_id,
+            raw_transaction: parameter.message.raw_transaction,
+            order_commitment,
+        };
 
-            for follower in cluster_metadata.followers() {
-                let rpc_parameter = rpc_parameter.clone();
+        for follower in cluster_metadata.followers() {
+            let rpc_parameter = rpc_parameter.clone();
 
-                tokio::spawn(async move {
-                    let client = RpcClient::new(follower.unwrap()).unwrap();
-                    let _ = client
-                        .request::<SyncRawTransaction, ()>(
-                            SyncRawTransaction::METHOD_NAME,
-                            rpc_parameter,
-                        )
-                        .await
-                        .unwrap();
-                });
-            }
-        });
-    }
+            tokio::spawn(async move {
+                let client = RpcClient::new(follower.unwrap()).unwrap();
+                let _ = client
+                    .request::<SyncRawTransaction, ()>(
+                        SyncRawTransaction::METHOD_NAME,
+                        rpc_parameter,
+                    )
+                    .await
+                    .unwrap();
+            });
+        }
+    });
 }

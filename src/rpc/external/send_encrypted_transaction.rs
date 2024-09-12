@@ -23,6 +23,7 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
+    // TODO: check platform & service_provider add?
     rollup_id: String,
     encrypted_transaction: EncryptedTransaction,
 }
@@ -35,14 +36,18 @@ impl SendEncryptedTransaction {
         context: Arc<AppState>,
     ) -> Result<String, RpcError> {
         let parameter = parameter.parse::<Self>()?;
-
         let rollup = RollupModel::get(&parameter.rollup_id)?;
 
         check_supported_encrypted_transaction(&rollup, &parameter.encrypted_transaction)?;
 
-        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
-        let cluster_metadata =
-            ClusterMetadataModel::get(&parameter.rollup_id, rollup_metadata.block_height())?;
+        // TODO:
+        let mut rollup_metadata = RollupMetadataModel::get_mut_or_default(&parameter.rollup_id)?;
+
+        // TODO:
+        let cluster_metadata = ClusterMetadataModel::get_or_default(
+            &parameter.rollup_id,
+            rollup_metadata.block_height(),
+        )?;
 
         if cluster_metadata.is_leader() {
             let transaction_order = rollup_metadata.transaction_order();
@@ -60,6 +65,13 @@ impl SendEncryptedTransaction {
 
                     // TODO:
                     // transaction_hash.to_string()
+
+                    EncryptedTransactionModel::put_with_transaction_hash(
+                        &parameter.rollup_id,
+                        &"1".to_string(),
+                        &parameter.encrypted_transaction,
+                    )?;
+
                     "1".to_string()
                 }
                 OrderCommitmentType::OrderCommitment => {
@@ -74,20 +86,28 @@ impl SendEncryptedTransaction {
                         signature: vec![].into(), // Todo: Signature
                     };
 
+                    EncryptedTransactionModel::put_with_order_commitment(
+                        &parameter.rollup_id,
+                        rollup_block_height,
+                        transaction_order,
+                        &parameter.encrypted_transaction,
+                    )?;
+
                     // TODO:
                     // order_commitment.to_string()
                     "1".to_string()
                 }
             };
 
-            EncryptedTransactionModel::put(
-                &parameter.rollup_id,
-                rollup_block_height,
-                transaction_order,
-                &parameter.encrypted_transaction,
-            )?;
+            // Sync Transaction
+            sync_encrypted_transaction(
+                parameter.rollup_id.clone(),
+                parameter.encrypted_transaction.clone(),
+                order_commitment.clone(),
+                cluster_metadata,
+            );
 
-            match parameter.encrypted_transaction.clone() {
+            match parameter.encrypted_transaction {
                 EncryptedTransaction::Pvde(pvde_encrypted_transaction) => {
                     // TODO
                     // let raw_transaction = decrypt_transaction(
@@ -106,14 +126,6 @@ impl SendEncryptedTransaction {
                 }
                 EncryptedTransaction::Skde(send_encrypted_transaction) => {}
             };
-
-            // Sync Transaction
-            sync_encrypted_transaction(
-                parameter.rollup_id.clone(),
-                parameter.encrypted_transaction.clone(),
-                order_commitment.clone(),
-                cluster_metadata,
-            );
 
             Ok(order_commitment)
         } else {
@@ -140,7 +152,7 @@ fn check_supported_encrypted_transaction(
             }
         }
         EncryptedTransactionType::Skde => {
-            if !matches!(encrypted_transaction, EncryptedTransaction::Pvde(_)) {
+            if !matches!(encrypted_transaction, EncryptedTransaction::Skde(_)) {
                 return Err(Error::NotSupportEncryptedMempool);
             }
         }

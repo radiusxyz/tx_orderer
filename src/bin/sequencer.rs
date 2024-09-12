@@ -34,7 +34,10 @@ use sequencer::{
         self, key_management_system::KeyManagementSystemClient, seeder::SeederClient,
     },
     error::{self, Error},
-    rpc::internal::{self, GetSequencingInfo, GetSequencingInfos},
+    rpc::{
+        external,
+        internal::{self, GetSequencingInfo, GetSequencingInfos},
+    },
     state::AppState,
     types::*,
 };
@@ -273,6 +276,18 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
 
     // Initialize the external RPC server.
     let external_rpc_server = RpcServer::new(context.clone())
+        .register_rpc_method(
+            external::SendEncryptedTransaction::METHOD_NAME,
+            external::SendEncryptedTransaction::handler,
+        )?
+        .register_rpc_method(
+            external::GetEncryptedTransactionWithTransactionHash::METHOD_NAME,
+            external::GetEncryptedTransactionWithTransactionHash::handler,
+        )?
+        .register_rpc_method(
+            external::GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
+            external::GetEncryptedTransactionWithOrderCommitment::handler,
+        )?
         .init(sequencer_rpc_url.clone())
         .await?;
 

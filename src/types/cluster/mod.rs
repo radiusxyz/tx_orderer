@@ -66,7 +66,7 @@ impl ClusterInfo {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 pub struct ClusterMetadata {
     leader_index: usize,
     my_index: usize,
