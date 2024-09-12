@@ -57,12 +57,11 @@ impl SendRawTransaction {
                     signature: vec![].into(), // Todo: Signature
                 };
 
-                let raw_transaction_model =
-                    RawTransactionModel::new(parameter.message.raw_transaction.clone());
-                raw_transaction_model.put(
+                RawTransactionModel::put(
                     &parameter.message.rollup_id,
                     rollup_block_height,
                     transaction_order,
+                    parameter.message.raw_transaction.clone(),
                 )?;
 
                 // Sync Transaction

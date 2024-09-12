@@ -4,9 +4,11 @@ use crate::types::prelude::*;
 
 mod eth_bundle_transaction;
 mod eth_transaction;
+mod model;
 
 pub use eth_bundle_transaction::*;
 pub use eth_transaction::*;
+pub use model::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum OpenData {
@@ -47,7 +49,6 @@ pub enum EncryptData {
     EthBundle(EthBundleEncryptData),
 }
 
-// TODO(jaemin): Add Ethbundle
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Transaction {
     Eth(eth_types::Transaction),

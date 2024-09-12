@@ -80,14 +80,12 @@ impl SendEncryptedTransaction {
                     signature: vec![].into(), // Todo: Signature
                 };
 
-                let encrypted_transaction_model = EncryptedTransactionModel::new(
-                    parameter.message.encrypted_transaction.clone(),
-                    Some(parameter.message.time_lock_puzzle.clone()),
-                );
-                encrypted_transaction_model.put(
+                EncryptedTransactionModel::put(
                     &parameter.message.rollup_id,
                     rollup_block_height,
                     transaction_order,
+                    parameter.message.encrypted_transaction.clone(),
+                    Some(parameter.message.time_lock_puzzle.clone()),
                 )?;
 
                 let raw_transaction = decrypt_transaction(
@@ -96,11 +94,12 @@ impl SendEncryptedTransaction {
                     context.config().is_using_zkp(),
                     &Some(PvdeParams::default()),
                 )?;
-                let raw_transaction_model = RawTransactionModel::new(raw_transaction);
-                raw_transaction_model.put(
+
+                RawTransactionModel::put(
                     &parameter.message.rollup_id,
                     rollup_block_height,
                     transaction_order,
+                    raw_transaction,
                 )?;
 
                 // Sync Transaction

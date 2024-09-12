@@ -2,9 +2,11 @@ use crate::types::prelude::{Deserialize, Serialize};
 
 mod eth_bundle_transaction;
 mod eth_transaction;
+mod model;
 
-pub use eth_bundle_transaction::EthRawBundleTransaction;
-pub use eth_transaction::EthRawTransaction;
+pub use eth_bundle_transaction::*;
+pub use eth_transaction::*;
+pub use model::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RawTransactionHash(String);

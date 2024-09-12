@@ -18,8 +18,12 @@ impl SyncRawTransaction {
         let rollup_block_height = rollup_metadata.block_height();
         rollup_metadata.update()?;
 
-        let raw_transaction_model = RawTransactionModel::new(parameter.raw_transaction);
-        raw_transaction_model.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
+        RawTransactionModel::put(
+            &parameter.rollup_id,
+            rollup_block_height,
+            transaction_order,
+            parameter.raw_transaction,
+        )?;
 
         OrderCommitmentModel::put(
             &parameter.rollup_id,

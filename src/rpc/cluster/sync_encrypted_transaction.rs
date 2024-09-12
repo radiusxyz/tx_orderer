@@ -37,14 +37,12 @@ impl SyncEncryptedTransaction {
         let rollup_block_height = rollup_metadata.block_height();
         rollup_metadata.update()?;
 
-        let encrypted_transaction_model = EncryptedTransactionModel::new(
-            parameter.encrypted_transaction.clone(),
-            Some(parameter.time_lock_puzzle.clone()),
-        );
-        encrypted_transaction_model.put(
+        EncryptedTransactionModel::put(
             &parameter.rollup_id,
             rollup_block_height,
             transaction_order,
+            parameter.encrypted_transaction.clone(),
+            Some(parameter.time_lock_puzzle.clone()),
         )?;
 
         let raw_transaction = decrypt_transaction(
@@ -53,8 +51,13 @@ impl SyncEncryptedTransaction {
             context.config().is_using_zkp(),
             &Some(PvdeParams::default()),
         )?;
-        let raw_transaction_model = RawTransactionModel::new(raw_transaction);
-        raw_transaction_model.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
+
+        RawTransactionModel::put(
+            &parameter.rollup_id,
+            rollup_block_height,
+            transaction_order,
+            raw_transaction,
+        )?;
 
         OrderCommitmentModel::put(
             &parameter.rollup_id,

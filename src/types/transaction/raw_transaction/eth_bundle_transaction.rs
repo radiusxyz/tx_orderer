@@ -2,7 +2,6 @@ use ethers::utils::hex;
 
 use crate::types::prelude::*;
 
-// TODO: stompesi
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EthRawBundleTransaction(String);
 
