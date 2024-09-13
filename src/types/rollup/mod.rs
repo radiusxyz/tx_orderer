@@ -37,26 +37,7 @@ impl FromStr for RollupType {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum OrderCommitmentType {
-    TxHash,
-    OrderCommitment,
-}
-
-impl FromStr for OrderCommitmentType {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "tx_hash" | "TxHash" => Ok(Self::TxHash),
-            "order_commitment" | "OrderCommitment" => Ok(Self::OrderCommitment),
-            _ => Err(Error::NotSupportedRollupType),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValidationInfo {
     platform: Platform,
     service_provider: ValidationServiceProvider,

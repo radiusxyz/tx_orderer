@@ -1,10 +1,97 @@
-mod model;
+use std::str::FromStr;
 
 use ethers::utils::hex;
-pub use model::*;
 use sha3::{Digest, Sha3_256};
 
-use crate::types::prelude::*;
+use crate::{error::Error, types::prelude::*};
+
+mod model;
+pub use model::*;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OrderCommitment {
+    Single(SingleOrderCommitment),
+    Bundle(BundleOrderCommitment),
+}
+
+// #############################################################################
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct BundleOrderCommitment {
+    order_commitment_list: Vec<SingleOrderCommitment>,
+    signature: Signature,
+}
+
+// #############################################################################
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "type", content = "data")]
+#[serde(rename_all = "snake_case")]
+pub enum SingleOrderCommitment {
+    TransactionHash(TransactionHashOrderCommitment),
+    Sign(SignOrderCommitment),
+}
+
+impl Default for SingleOrderCommitment {
+    fn default() -> Self {
+        Self::TransactionHash(TransactionHashOrderCommitment::default())
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OrderCommitmentType {
+    TransactionHash,
+    Sign,
+}
+
+impl FromStr for OrderCommitmentType {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "transaction_hash" | "TransactionHash" => Ok(Self::TransactionHash),
+            "sign" | "Sign" => Ok(Self::Sign),
+            _ => Err(Error::NotSupportedOrderCommitmentType),
+        }
+    }
+}
+
+// #############################################################################
+
+#[derive(Clone, Default, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub struct TransactionHashOrderCommitment(pub String);
+
+// #############################################################################
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SignOrderCommitment {
+    pub data: OrderCommitmentData,
+    pub signature: Signature,
+}
+
+impl Default for SignOrderCommitment {
+    fn default() -> Self {
+        Self {
+            data: OrderCommitmentData::default(),
+            signature: Signature::from(Vec::new()),
+        }
+    }
+}
+
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
+pub struct OrderCommitmentData {
+    pub rollup_id: String,
+    pub block_height: u64,
+    pub transaction_order: u64,
+    pub previous_order_hash: OrderHash,
+}
+
+// #############################################################################
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct OrderHashList(Vec<OrderHash>);
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct OrderHash(String);
@@ -26,30 +113,4 @@ impl Default for OrderHash {
     fn default() -> Self {
         Self("0000000000000000000000000000000000000000000000000000000000000000".to_owned())
     }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct OrderHashList(Vec<OrderHash>);
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct OrderCommitmentData {
-    pub rollup_id: String,
-    pub block_height: u64,
-    pub transaction_order: u64,
-    pub previous_order_hash: OrderHash,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct OrderCommitment {
-    pub data: OrderCommitmentData,
-    pub signature: Signature,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct OrderCommitmentList(Vec<OrderCommitment>);
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct BundleOrderCommitment {
-    order_commitment_list: OrderCommitmentList,
-    signature: Signature,
 }

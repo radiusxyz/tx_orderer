@@ -19,6 +19,10 @@ impl RawTransactionHash {
     pub fn into_inner(self) -> String {
         self.0
     }
+
+    pub fn inner(&self) -> &str {
+        &self.0
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

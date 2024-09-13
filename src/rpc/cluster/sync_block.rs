@@ -14,21 +14,29 @@ impl SyncBlock {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        match RollupMetadataModel::get_mut(&parameter.rollup_id) {
-            Ok(mut rollup_metadata) => {
-                rollup_metadata.issue_rollup_metadata(parameter.rollup_block_height);
-                rollup_metadata.update()?;
-            }
-            Err(error) => {
-                if error.is_none_type() {
-                    let mut rollup_metadata = RollupMetadata::default();
-                    rollup_metadata.set_block_height(parameter.rollup_block_height);
-                    RollupMetadataModel::put(&parameter.rollup_id, &rollup_metadata)?;
-                } else {
-                    return Err(error.into());
-                }
-            }
-        }
+        // TODO:
+        // match RollupMetadataModel::get_mut(&parameter.rollup_id) {
+        //     Ok(mut rollup_metadata) => {
+        //         rollup_metadata.new_rollup_metadata(parameter.rollup_block_height);
+        //         rollup_metadata.update()?;
+
+        //         rollup_metadata
+        //     }
+        //     Err(error) => {
+        //         if error.is_none_type() {
+        //             let mut rollup_metadata = RollupMetadata::default();
+
+        //             rollup_metadata.set_block_height(parameter.rollup_block_height);
+
+        //             RollupMetadataModel::put(&parameter.rollup_id,
+        // &rollup_metadata)?;
+
+        //             rollup_metadata
+        //         } else {
+        //             return Err(error.into());
+        //         }
+        //     }
+        // }
 
         Ok(())
     }

@@ -51,6 +51,9 @@ pub enum Error {
 
     NotExistPlainData,
     NotSupportEncryptedMempool,
+    BlockHeightMismatch,
+
+    NotSupportedOrderCommitmentType,
 }
 
 unsafe impl Send for Error {}

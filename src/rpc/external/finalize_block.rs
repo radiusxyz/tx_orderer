@@ -35,8 +35,10 @@ impl FinalizeBlock {
 
         match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
-                let current_rollup_metadata =
-                    rollup_metadata.issue_rollup_metadata(parameter.message.rollup_block_height);
+                let current_rollup_metadata = rollup_metadata.clone();
+
+                rollup_metadata.new_rollup_metadata(parameter.message.rollup_block_height);
+
                 rollup_metadata.update()?;
 
                 let cluster_info = ClusterInfoModel::get(

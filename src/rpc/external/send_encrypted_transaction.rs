@@ -1,20 +1,6 @@
 use std::{any::Any, str::FromStr};
 
-use pvde::{
-    encryption::{
-        poseidon_encryption,
-        poseidon_encryption_zkp::{
-            verify as verify_poseidon_encryption, PoseidonEncryptionPublicInput,
-        },
-    },
-    num_bigint::BigUint,
-    poseidon::hash,
-    time_lock_puzzle::{
-        key_validation_zkp::verify as verify_key_validation,
-        sigma_protocol::{verify as verify_sigma_protocol, SigmaProtocolParam},
-        solve_time_lock_puzzle,
-    },
-};
+use ethers::types::Sign;
 
 use crate::{
     rpc::{cluster::SyncEncryptedTransaction, prelude::*},
@@ -33,8 +19,8 @@ impl SendEncryptedTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        context: Arc<AppState>,
-    ) -> Result<String, RpcError> {
+        _context: Arc<AppState>,
+    ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
         let rollup = RollupModel::get(&parameter.rollup_id)?;
 
@@ -50,9 +36,9 @@ impl SendEncryptedTransaction {
         )?;
 
         if cluster_metadata.is_leader() {
+            let rollup_block_height = rollup_metadata.block_height();
             let transaction_order = rollup_metadata.transaction_order();
             let order_hash = rollup_metadata.order_hash();
-            let rollup_block_height = rollup_metadata.block_height();
 
             rollup_metadata.increase_transaction_order();
             rollup_metadata
@@ -60,28 +46,27 @@ impl SendEncryptedTransaction {
             rollup_metadata.update()?;
 
             let order_commitment = match rollup.order_commitment_type() {
-                OrderCommitmentType::TxHash => {
+                OrderCommitmentType::TransactionHash => {
                     let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
-
-                    // TODO:
-                    // transaction_hash.to_string()
 
                     EncryptedTransactionModel::put_with_transaction_hash(
                         &parameter.rollup_id,
-                        &"1".to_string(),
+                        &transaction_hash.inner().to_string(),
                         &parameter.encrypted_transaction,
                     )?;
 
-                    "1".to_string()
+                    OrderCommitment::Single(SingleOrderCommitment::TransactionHash(
+                        TransactionHashOrderCommitment(transaction_hash.into_inner()),
+                    ))
                 }
-                OrderCommitmentType::OrderCommitment => {
+                OrderCommitmentType::Sign => {
                     let order_commitment_data = OrderCommitmentData {
                         rollup_id: parameter.rollup_id.clone(),
                         block_height: rollup_block_height,
                         transaction_order,
                         previous_order_hash: order_hash,
                     };
-                    let order_commitment = OrderCommitment {
+                    let order_commitment = SignOrderCommitment {
                         data: order_commitment_data,
                         signature: vec![].into(), // Todo: Signature
                     };
@@ -93,9 +78,7 @@ impl SendEncryptedTransaction {
                         &parameter.encrypted_transaction,
                     )?;
 
-                    // TODO:
-                    // order_commitment.to_string()
-                    "1".to_string()
+                    OrderCommitment::Single(SingleOrderCommitment::Sign(order_commitment))
                 }
             };
 
@@ -104,6 +87,8 @@ impl SendEncryptedTransaction {
                 parameter.rollup_id.clone(),
                 parameter.encrypted_transaction.clone(),
                 order_commitment.clone(),
+                rollup_block_height,
+                transaction_order,
                 cluster_metadata,
             );
 
@@ -165,13 +150,22 @@ fn check_supported_encrypted_transaction(
 pub fn sync_encrypted_transaction(
     rollup_id: String,
     encrypted_transaction: EncryptedTransaction,
-    order_commitment: String,
+
+    order_commitment: OrderCommitment,
+
+    rollup_block_height: u64,
+    transaction_order: u64,
+
     cluster_metadata: ClusterMetadata,
 ) {
     tokio::spawn(async move {
         let rpc_parameter = SyncEncryptedTransaction {
             rollup_id,
             encrypted_transaction,
+
+            transaction_order,
+            rollup_block_height,
+
             order_commitment,
         };
 

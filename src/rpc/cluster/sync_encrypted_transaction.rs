@@ -22,7 +22,11 @@ use crate::rpc::prelude::*;
 pub struct SyncEncryptedTransaction {
     pub rollup_id: String,
     pub encrypted_transaction: EncryptedTransaction,
-    pub order_commitment: String,
+
+    pub rollup_block_height: u64,
+    pub transaction_order: u64,
+
+    pub order_commitment: OrderCommitment,
 }
 
 impl SyncEncryptedTransaction {
@@ -31,41 +35,55 @@ impl SyncEncryptedTransaction {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        // TODO:
-        // let mut rollup_metadata =
-        // RollupMetadataModel::get_mut(&parameter.rollup_id)?;
-        // let transaction_order = rollup_metadata.issue_transaction_order();
-        // let rollup_block_height = rollup_metadata.block_height();
-        // rollup_metadata.update()?;
+        let rollup = RollupModel::get(&parameter.rollup_id)?;
 
-        // EncryptedTransactionModel::put(
-        //     &parameter.rollup_id,
-        //     rollup_block_height,
-        //     transaction_order,
-        //     parameter.encrypted_transaction.clone(),
-        //     Some(parameter.time_lock_puzzle.clone()),
-        // )?;
+        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
 
-        // let raw_transaction = decrypt_transaction(
-        //     parameter.encrypted_transaction.clone(),
-        //     parameter.time_lock_puzzle.clone(),
-        //     context.config().is_using_zkp(),
-        //     &Some(PvdeParams::default()),
-        // )?;
+        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
 
-        // RawTransactionModel::put(
-        //     &parameter.rollup_id,
-        //     rollup_block_height,
-        //     transaction_order,
-        //     raw_transaction,
-        // )?;
+        // Check block height
+        if parameter.rollup_block_height != rollup_metadata.block_height() {
+            return Err(Error::BlockHeightMismatch.into());
+        }
 
-        // OrderCommitmentModel::put(
-        //     &parameter.rollup_id,
-        //     rollup_block_height,
-        //     transaction_order,
-        //     &parameter.order_commitment,
-        // )?;
+        if parameter.transaction_order > rollup_metadata.transaction_order() {
+            rollup_metadata.increase_transaction_order();
+        }
+
+        rollup_metadata.update()?;
+
+        EncryptedTransactionModel::put_with_order_commitment(
+            &parameter.rollup_id,
+            parameter.rollup_block_height,
+            parameter.transaction_order,
+            &parameter.encrypted_transaction,
+        )?;
+
+        match parameter.encrypted_transaction {
+            EncryptedTransaction::Pvde(pvde_encrypted_transaction) => {
+                // TODO
+                // let raw_transaction = decrypt_transaction(
+                //     parameter.encrypted_transaction.clone(),
+                //     parameter.time_lock_puzzle.clone(),
+                //     context.config().is_using_zkp(),
+                //     &Some(PvdeParams::default()),
+                // )?;
+                // RawTransactionModel::put(
+                //     &parameter.rollup_id,
+                //     rollup_block_height,
+                //     transaction_order,
+                //     raw_transaction,
+                // )?;
+            }
+            EncryptedTransaction::Skde(send_encrypted_transaction) => {}
+        };
+
+        OrderCommitmentModel::put(
+            &parameter.rollup_id,
+            parameter.rollup_block_height,
+            parameter.transaction_order,
+            &parameter.order_commitment,
+        )?;
 
         Ok(())
     }

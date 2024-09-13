@@ -63,6 +63,7 @@ impl EncryptedTransactionList {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "type", content = "data")]
 #[serde(rename_all = "snake_case")]
 pub enum EncryptedTransaction {
     Pvde(PvdeEncryptedTransaction),
@@ -106,6 +107,7 @@ pub struct SkdeEncryptedTransaction {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "type", content = "data")]
 #[serde(rename_all = "snake_case")]
 pub enum TransactionData {
     Eth(EthTransactionData),
