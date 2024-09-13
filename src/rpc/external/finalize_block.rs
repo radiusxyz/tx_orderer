@@ -1,3 +1,5 @@
+use pvde::encryption::poseidon_encryption::encrypt;
+
 use crate::rpc::{cluster::SyncBlock, prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -26,19 +28,94 @@ impl FinalizeBlock {
 
         let rollup = RollupModel::get(&parameter.message.rollup_id)?;
 
-        // verify siganture
-        parameter.signature.verify_message(
-            rollup.rollup_type().into(),
-            &parameter.message,
-            parameter.message.address.clone(),
-        )?;
+        // // verify siganture
+        // parameter.signature.verify_message(
+        //     rollup.rollup_type().into(),
+        //     &parameter.message,
+        //     parameter.message.address.clone(),
+        // )?;
+
+        // let cluster_info = ClusterInfoModel::get(
+        //     parameter.message.liveness_block_height,
+        //     &parameter.message.rollup_id,
+        // )?;
 
         match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
-                let current_rollup_metadata = rollup_metadata.clone();
+                let transaction_counts = rollup_metadata.transaction_order();
 
-                rollup_metadata.new_rollup_metadata(parameter.message.rollup_block_height);
+                if matches!(
+                    rollup.encrypted_transaction_type(),
+                    EncryptedTransactionType::Skde
+                ) {
+                    if matches!(*rollup.order_commitment_type(), OrderCommitmentType::TxHash) {
+                        for transaction_order in 0..transaction_counts {
+                            let encrypted_transaction =
+                                EncryptedTransactionModel::get_with_order_commitment(
+                                    &parameter.message.rollup_id,
+                                    parameter.message.rollup_block_height,
+                                    transaction_order,
+                                )?;
 
+                            match encrypted_transaction {
+                                EncryptedTransaction::Skde(transaction) => {
+                                    match RawTransactionModel::get(
+                                        &parameter.message.rollup_id,
+                                        parameter.message.rollup_block_height,
+                                        transaction_order,
+                                    ) {
+                                        Ok(_raw_transaction) => continue,
+                                        Err(error) => {
+                                            if error.is_none_type() {
+                                                let decryption_key = _context
+                                                    .key_management_system_client()
+                                                    .get_decryption_key(transaction.key_id())
+                                                    .await?
+                                                    .key;
+                                                // decrypt -> raw_transaction
+                                                // let raw_transaction =
+                                                // RawTransaction::new(
+                                                //     open_data,
+                                                //     plaindata //
+                                                // encrypted_transaction.
+                                                // decrypt(&decryption_key,
+                                                // rollup.encrypted_transaction_type()),
+                                                // );
+
+                                                // // update db to raw
+                                                // transaction
+                                                // RawTransactionModel::put(
+                                                //     &parameter.message.
+                                                // rollup_id,
+                                                //     parameter.message.
+                                                // rollup_block_height,
+                                                //     transaction_order,
+                                                //     &raw_transaction,
+                                                // )?;
+
+                                                // let block =
+                                                // BlockModel::get_mut(
+                                                //     &parameter.message.
+                                                // rollup_id,
+                                                //     parameter.message.
+                                                // rollup_block_height,
+                                                // )?;
+
+                                                // block.
+                                            } else {
+                                                return Err(error.into());
+                                            }
+                                        }
+                                    }
+                                }
+                                EncryptedTransaction::Pvde(_transaction) => continue,
+                            }
+                        }
+                    }
+                }
+
+                let current_rollup_metadata =
+                    rollup_metadata.issue_rollup_metadata(parameter.message.rollup_block_height);
                 rollup_metadata.update()?;
 
                 let cluster_info = ClusterInfoModel::get(

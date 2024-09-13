@@ -106,6 +106,16 @@ pub struct SkdeEncryptedTransaction {
     key_id: u64,
 }
 
+impl SkdeEncryptedTransaction {
+    pub fn transaction_data(&self) -> &TransactionData {
+        &self.transaction_data
+    }
+
+    pub fn key_id(&self) -> u64 {
+        self.key_id
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "data")]
 #[serde(rename_all = "snake_case")]
