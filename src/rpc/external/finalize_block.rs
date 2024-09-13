@@ -1,6 +1,7 @@
-use pvde::encryption::poseidon_encryption::encrypt;
-
-use crate::rpc::{cluster::SyncBlock, prelude::*};
+use crate::{
+    rpc::{cluster::SyncBlock, prelude::*},
+    task::block_builder,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlockMessage {
@@ -10,7 +11,7 @@ pub struct FinalizeBlockMessage {
     // chain_type: ChainType,
     address: Vec<u8>,
     rollup_id: String,
-    liveness_block_height: u64,
+    platform_block_height: u64,
     rollup_block_height: u64,
 }
 
@@ -23,9 +24,8 @@ pub struct FinalizeBlock {
 impl FinalizeBlock {
     pub const METHOD_NAME: &'static str = "finalize_block";
 
-    pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
+    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
-
         let rollup = RollupModel::get(&parameter.message.rollup_id)?;
 
         // // verify siganture
@@ -35,171 +35,71 @@ impl FinalizeBlock {
         //     parameter.message.address.clone(),
         // )?;
 
-        // let cluster_info = ClusterInfoModel::get(
-        //     parameter.message.liveness_block_height,
-        //     &parameter.message.rollup_id,
-        // )?;
+        let cluster =
+            ClusterModel::get(rollup.cluster_id(), parameter.message.platform_block_height)?;
 
+        let next_rollup_block_height = parameter.message.rollup_block_height + 1;
+        let is_leader = cluster.is_leader(next_rollup_block_height);
+
+        let mut transaction_counts = 0;
         match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
-                let transaction_counts = rollup_metadata.transaction_order();
+                transaction_counts = rollup_metadata.transaction_order();
 
-                if matches!(
-                    rollup.encrypted_transaction_type(),
-                    EncryptedTransactionType::Skde
-                ) {
-                    if matches!(*rollup.order_commitment_type(), OrderCommitmentType::TxHash) {
-                        for transaction_order in 0..transaction_counts {
-                            let encrypted_transaction =
-                                EncryptedTransactionModel::get_with_order_commitment(
-                                    &parameter.message.rollup_id,
-                                    parameter.message.rollup_block_height,
-                                    transaction_order,
-                                )?;
+                rollup_metadata.set_rollup_block_height(next_rollup_block_height);
+                rollup_metadata.set_order_hash(OrderHash::default());
+                rollup_metadata.set_transaction_order(0);
+                rollup_metadata.set_is_leader(is_leader);
+                rollup_metadata.set_platform_block_height(parameter.message.platform_block_height);
 
-                            match encrypted_transaction {
-                                EncryptedTransaction::Skde(transaction) => {
-                                    match RawTransactionModel::get(
-                                        &parameter.message.rollup_id,
-                                        parameter.message.rollup_block_height,
-                                        transaction_order,
-                                    ) {
-                                        Ok(_raw_transaction) => continue,
-                                        Err(error) => {
-                                            if error.is_none_type() {
-                                                let decryption_key = _context
-                                                    .key_management_system_client()
-                                                    .get_decryption_key(transaction.key_id())
-                                                    .await?
-                                                    .key;
-                                                // decrypt -> raw_transaction
-                                                // let raw_transaction =
-                                                // RawTransaction::new(
-                                                //     open_data,
-                                                //     plaindata //
-                                                // encrypted_transaction.
-                                                // decrypt(&decryption_key,
-                                                // rollup.encrypted_transaction_type()),
-                                                // );
-
-                                                // // update db to raw
-                                                // transaction
-                                                // RawTransactionModel::put(
-                                                //     &parameter.message.
-                                                // rollup_id,
-                                                //     parameter.message.
-                                                // rollup_block_height,
-                                                //     transaction_order,
-                                                //     &raw_transaction,
-                                                // )?;
-
-                                                // let block =
-                                                // BlockModel::get_mut(
-                                                //     &parameter.message.
-                                                // rollup_id,
-                                                //     parameter.message.
-                                                // rollup_block_height,
-                                                // )?;
-
-                                                // block.
-                                            } else {
-                                                return Err(error.into());
-                                            }
-                                        }
-                                    }
-                                }
-                                EncryptedTransaction::Pvde(_transaction) => continue,
-                            }
-                        }
-                    }
-                }
-
-                let current_rollup_metadata =
-                    rollup_metadata.issue_rollup_metadata(parameter.message.rollup_block_height);
                 rollup_metadata.update()?;
-
-                let cluster_info = ClusterInfoModel::get(
-                    parameter.message.liveness_block_height,
-                    &parameter.message.rollup_id,
-                )?;
-
-                if cluster_info.sequencer_list().is_empty() {
-                    return Err(Error::EmptySequencerList.into());
-                }
-
-                let cluster_metadata = ClusterMetadata::new(
-                    cluster_info.sequencer_list().len()
-                        % parameter.message.rollup_block_height as usize,
-                    cluster_info.my_index(),
-                    cluster_info.sequencer_list().clone(),
-                );
-                ClusterMetadataModel::put(
-                    &parameter.message.rollup_id,
-                    parameter.message.rollup_block_height,
-                    &cluster_metadata,
-                )?;
-
-                // Sync.
-                Self::sync_block(
-                    &parameter,
-                    current_rollup_metadata.transaction_order(),
-                    cluster_metadata,
-                );
             }
             Err(error) => {
                 if error.is_none_type() {
                     let mut rollup_metadata = RollupMetadata::default();
-                    rollup_metadata.set_block_height(parameter.message.rollup_block_height);
+
+                    rollup_metadata.set_cluster_id(rollup.cluster_id());
+
+                    rollup_metadata.set_rollup_block_height(next_rollup_block_height);
+                    rollup_metadata.set_order_hash(OrderHash::default());
+                    rollup_metadata.set_transaction_order(0);
+                    rollup_metadata.set_is_leader(is_leader);
+                    rollup_metadata
+                        .set_platform_block_height(parameter.message.platform_block_height);
+
                     RollupMetadataModel::put(&parameter.message.rollup_id, &rollup_metadata)?;
-
-                    let cluster_info = ClusterInfoModel::get(
-                        parameter.message.liveness_block_height,
-                        &parameter.message.rollup_id,
-                    )?;
-
-                    if cluster_info.sequencer_list().is_empty() {
-                        return Err(Error::EmptySequencerList.into());
-                    }
-
-                    let cluster_metadata = ClusterMetadata::new(
-                        cluster_info.sequencer_list().len()
-                            % parameter.message.rollup_block_height as usize,
-                        cluster_info.my_index(),
-                        cluster_info.sequencer_list().clone(),
-                    );
-                    ClusterMetadataModel::put(
-                        &parameter.message.rollup_id,
-                        parameter.message.rollup_block_height,
-                        &cluster_metadata,
-                    )?;
-
-                    // Sync.
-                    Self::sync_block(
-                        &parameter,
-                        rollup_metadata.transaction_order(),
-                        cluster_metadata,
-                    );
                 } else {
                     return Err(error.into());
                 }
             }
-        }
+        };
+
+        // Sync.
+        Self::sync_block(&parameter, transaction_counts, cluster);
+
+        block_builder(
+            parameter.message.rollup_id.clone(),
+            parameter.message.rollup_block_height,
+            transaction_counts,
+            rollup.encrypted_transaction_type(),
+            context.key_management_system_client().clone(),
+        );
 
         Ok(())
     }
 
-    pub fn sync_block(parameter: &Self, transaction_order: u64, cluster_metadata: ClusterMetadata) {
+    pub fn sync_block(parameter: &Self, transaction_order: u64, cluster: Cluster) {
         let parameter = parameter.clone();
 
         tokio::spawn(async move {
             let rpc_parameter = SyncBlock {
                 rollup_id: parameter.message.rollup_id.clone(),
-                liveness_block_height: parameter.message.liveness_block_height,
+                liveness_block_height: parameter.message.platform_block_height,
                 rollup_block_height: parameter.message.rollup_block_height,
                 transaction_order,
             };
 
-            for sequencer_rpc_url in cluster_metadata.others() {
+            for sequencer_rpc_url in cluster.get_others_rpc_url_list() {
                 let rpc_parameter = rpc_parameter.clone();
 
                 if let Some(sequencer_rpc_url) = sequencer_rpc_url {

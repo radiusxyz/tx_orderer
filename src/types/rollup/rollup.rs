@@ -10,6 +10,8 @@ pub struct Rollup {
     validation_info: ValidationInfo,
     order_commitment_type: OrderCommitmentType,
     executor_address_list: Vec<String>,
+
+    cluster_id: String,
 }
 
 impl Rollup {
@@ -22,6 +24,8 @@ impl Rollup {
         validation_info: ValidationInfo,
         order_commitment_type: OrderCommitmentType,
         executor_address_list: Vec<String>,
+
+        cluster_id: String,
     ) -> Self {
         Self {
             rollup_id,
@@ -31,6 +35,7 @@ impl Rollup {
             validation_info,
             order_commitment_type,
             executor_address_list,
+            cluster_id,
         }
     }
 
@@ -42,12 +47,16 @@ impl Rollup {
         self.rollup_type
     }
 
-    pub fn encrypted_transaction_type(&self) -> &EncryptedTransactionType {
-        &self.encrypted_transaction_type
+    pub fn encrypted_transaction_type(&self) -> EncryptedTransactionType {
+        self.encrypted_transaction_type
     }
 
-    pub fn order_commitment_type(&self) -> &OrderCommitmentType {
-        &self.order_commitment_type
+    pub fn order_commitment_type(&self) -> OrderCommitmentType {
+        self.order_commitment_type
+    }
+
+    pub fn cluster_id(&self) -> &String {
+        &self.cluster_id
     }
 }
 

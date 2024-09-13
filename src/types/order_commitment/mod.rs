@@ -39,7 +39,7 @@ impl Default for SingleOrderCommitment {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum OrderCommitmentType {
     TransactionHash,

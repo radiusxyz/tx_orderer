@@ -17,7 +17,7 @@ impl EncryptedTransactionModel {
         kvstore()?.put(key, encrypted_transaction)
     }
 
-    pub fn put_with_order_commitment(
+    pub fn put(
         rollup_id: &String,
         rollup_block_height: u64,
         transaction_order: u64,
@@ -38,7 +38,7 @@ impl EncryptedTransactionModel {
         kvstore()?.get(key)
     }
 
-    pub fn get_with_order_commitment(
+    pub fn get(
         rollup_id: &String,
         block_height: u64,
         transaction_order: u64,

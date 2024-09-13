@@ -27,14 +27,14 @@ impl ClusterIdList {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ClusterInfo {
+pub struct Cluster {
     sequencer_rpc_url_list: Vec<(String, Option<String>)>,
     rollup_id_list: Vec<String>,
     my_index: usize,
     block_margin: u64,
 }
 
-impl ClusterInfo {
+impl Cluster {
     pub fn new(
         sequencer_rpc_url_list: Vec<(String, Option<String>)>,
         rollup_id_list: Vec<String>,
@@ -64,47 +64,19 @@ impl ClusterInfo {
     pub fn block_margin(&self) -> u64 {
         self.block_margin
     }
-}
 
-#[derive(Clone, Default, Debug, Deserialize, Serialize)]
-pub struct ClusterMetadata {
-    leader_index: usize,
-    my_index: usize,
-    sequencer_list: Vec<(String, Option<String>)>,
-}
+    pub fn is_leader(&self, rollup_block_height: u64) -> bool {
+        let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
 
-impl ClusterMetadata {
-    pub fn new(
-        leader_index: usize,
-        my_index: usize,
-        sequencer_list: Vec<(String, Option<String>)>,
-    ) -> Self {
-        Self {
-            leader_index,
-            my_index,
-            sequencer_list,
-        }
+        leader_index == self.my_index
     }
 
-    pub fn is_leader(&self) -> bool {
-        self.leader_index == self.my_index
-    }
-
-    pub fn leader(&self) -> Option<String> {
-        self.sequencer_list
-            .get(self.leader_index)
-            .unwrap()
-            .1
-            .clone()
-    }
-
-    /// Return the list of RPC URLs except the leader's.
-    pub fn followers(&self) -> Vec<Option<String>> {
-        self.sequencer_list
+    pub fn get_others_rpc_url_list(&self) -> Vec<Option<String>> {
+        self.sequencer_rpc_url_list
             .iter()
             .enumerate()
             .filter_map(|(index, (_address, rpc_url))| {
-                if index == self.leader_index {
+                if index != self.my_index {
                     Some(rpc_url.clone())
                 } else {
                     None
@@ -113,13 +85,14 @@ impl ClusterMetadata {
             .collect()
     }
 
-    /// Return the list of RPC URL except mine.
-    pub fn others(&self) -> Vec<Option<String>> {
-        self.sequencer_list
+    pub fn get_follower_rpc_url_list(&self, rollup_block_height: u64) -> Vec<Option<String>> {
+        let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
+
+        self.sequencer_rpc_url_list
             .iter()
             .enumerate()
             .filter_map(|(index, (_address, rpc_url))| {
-                if index == self.my_index {
+                if index == leader_index {
                     Some(rpc_url.clone())
                 } else {
                     None
@@ -128,8 +101,11 @@ impl ClusterMetadata {
             .collect()
     }
 
-    /// Return the iterator for the sequencer list.
-    pub fn iter(&self) -> slice::Iter<'_, (String, Option<String>)> {
-        self.sequencer_list.iter()
+    pub fn get_leader_rpc_url(&self, rollup_block_height: u64) -> Option<String> {
+        let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
+
+        self.sequencer_rpc_url_list
+            .get(leader_index)
+            .and_then(|(_address, rpc_url)| rpc_url.clone())
     }
 }

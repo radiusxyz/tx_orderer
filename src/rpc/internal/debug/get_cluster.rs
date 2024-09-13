@@ -10,7 +10,7 @@ pub struct GetCluster {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterResponse {
-    cluster_info: ClusterInfo,
+    cluster_info: Cluster,
 }
 
 impl GetCluster {
@@ -26,7 +26,7 @@ impl GetCluster {
             Some(liveness_client) => {
                 let block_number = liveness_client.publisher().get_block_number().await?;
 
-                let cluster_info = ClusterInfoModel::get(block_number, &parameter.cluster_id)?;
+                let cluster_info = ClusterModel::get(&parameter.cluster_id, block_number)?;
 
                 Ok(GetClusterResponse { cluster_info })
             }

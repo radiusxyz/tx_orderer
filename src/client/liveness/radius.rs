@@ -108,9 +108,10 @@ impl LivenessClient {
 }
 
 async fn callback(events: Events, liveness_client: LivenessClient) {
+    // TODO:
     match events {
         Events::Block(block) => {
-            let block_number = block.header.number.unwrap();
+            let platform_block_height = block.header.number.unwrap();
 
             // Get the cluster ID list for a given liveness client.
             let cluster_id_list = ClusterIdListModel::get_or_default(
@@ -131,7 +132,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                 // Get the sequencer address list for the cluster ID.
                 let sequencer_address_list: Vec<String> = liveness_client
                     .publisher()
-                    .get_sequencer_list(cluster_id, block_number)
+                    .get_sequencer_list(cluster_id, platform_block_height)
                     .await
                     .unwrap()
                     .into_iter()
@@ -148,7 +149,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                 // Get the rollup info list
                 let rollup_info_list = liveness_client
                     .publisher()
-                    .get_rollup_info_list(cluster_id, block_number)
+                    .get_rollup_info_list(cluster_id, platform_block_height)
                     .await
                     .unwrap();
 
@@ -159,33 +160,50 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
 
                 // Update the rollup info to database
                 for rollup_info in rollup_info_list {
-                    let order_commitment_type =
-                        OrderCommitmentType::from_str(&rollup_info.orderCommitmentType).unwrap();
-                    let rollup_type = RollupType::from_str(&rollup_info.chainType).unwrap();
-                    let validation_info = ValidationInfo::new(
-                        Platform::from_str(&rollup_info.validationInfo.platform).unwrap(),
-                        ValidationServiceProvider::from_str(
-                            &rollup_info.validationInfo.serviceProvider,
-                        )
-                        .unwrap(),
-                    );
-                    let executor_address_list = rollup_info
-                        .executorAddresses
-                        .into_iter()
-                        .map(|address| address.to_string())
-                        .collect::<Vec<String>>();
+                    match RollupModel::get(&rollup_info.rollupId) {
+                        Ok(_) => {}
+                        Err(error) => {
+                            if error.is_none_type() {
+                                let order_commitment_type =
+                                    OrderCommitmentType::from_str(&rollup_info.orderCommitmentType)
+                                        .unwrap();
+                                let rollup_type =
+                                    RollupType::from_str(&rollup_info.chainType).unwrap();
+                                let validation_info = ValidationInfo::new(
+                                    Platform::from_str(&rollup_info.validationInfo.platform)
+                                        .unwrap(),
+                                    ValidationServiceProvider::from_str(
+                                        &rollup_info.validationInfo.serviceProvider,
+                                    )
+                                    .unwrap(),
+                                );
+                                let executor_address_list = rollup_info
+                                    .executorAddresses
+                                    .into_iter()
+                                    .map(|address| address.to_string())
+                                    .collect::<Vec<String>>();
 
-                    let rollup = Rollup::new(
-                        rollup_info.rollupId.clone(),
-                        rollup_type,
-                        EncryptedTransactionType::Skde, // TODO
-                        rollup_info.owner.to_string(),
-                        validation_info,
-                        order_commitment_type,
-                        executor_address_list,
-                    );
+                                let rollup = Rollup::new(
+                                    rollup_info.rollupId.clone(),
+                                    rollup_type,
+                                    EncryptedTransactionType::Skde, // TODO
+                                    rollup_info.owner.to_string(),
+                                    validation_info,
+                                    order_commitment_type,
+                                    executor_address_list,
+                                    cluster_id.to_owned(),
+                                );
 
-                    RollupModel::put(rollup.rollup_id(), &rollup).unwrap();
+                                RollupModel::put(rollup.rollup_id(), &rollup).unwrap();
+
+                                // let rollup_metadata =
+                                // RollupMetadata::default();
+                                // RollupMetadataModel::put(rollup.rollup_id(),
+                                // &rollup_metadata)
+                                //     .unwrap();
+                            }
+                        }
+                    }
                 }
 
                 let sequencer_rpc_url_list = liveness_client
@@ -195,13 +213,14 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                     .unwrap()
                     .sequencer_rpc_url_list;
 
-                let cluster_info = ClusterInfo::new(
+                let cluster = Cluster::new(
                     sequencer_rpc_url_list,
                     rollup_id_list,
                     my_index.unwrap(),
                     block_margin.try_into().unwrap(),
                 );
-                ClusterInfoModel::put(&cluster_id, block_number, &cluster_info).unwrap();
+
+                ClusterModel::put(&cluster_id, platform_block_height, &cluster).unwrap();
             }
         }
         _others => {}

@@ -26,17 +26,15 @@ impl SendEncryptedTransaction {
 
         check_supported_encrypted_transaction(&rollup, &parameter.encrypted_transaction)?;
 
-        // TODO:
-        let mut rollup_metadata = RollupMetadataModel::get_mut_or_default(&parameter.rollup_id)?;
+        // TODO: error handling
+        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        let cluster_id = rollup_metadata.cluster_id();
+        let platform_block_height = rollup_metadata.platform_block_height();
+        let rollup_block_height = rollup_metadata.rollup_block_height();
 
-        // TODO:
-        let cluster_metadata = ClusterMetadataModel::get_or_default(
-            &parameter.rollup_id,
-            rollup_metadata.block_height(),
-        )?;
+        let cluster = ClusterModel::get(cluster_id, platform_block_height).unwrap();
 
-        if cluster_metadata.is_leader() {
-            let rollup_block_height = rollup_metadata.block_height();
+        if rollup_metadata.is_leader() {
             let transaction_order = rollup_metadata.transaction_order();
             let order_hash = rollup_metadata.order_hash();
 
@@ -71,7 +69,7 @@ impl SendEncryptedTransaction {
                         signature: vec![].into(), // Todo: Signature
                     };
 
-                    EncryptedTransactionModel::put_with_order_commitment(
+                    EncryptedTransactionModel::put(
                         &parameter.rollup_id,
                         rollup_block_height,
                         transaction_order,
@@ -82,6 +80,8 @@ impl SendEncryptedTransaction {
                 }
             };
 
+            let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
+
             // Sync Transaction
             sync_encrypted_transaction(
                 parameter.rollup_id.clone(),
@@ -89,7 +89,7 @@ impl SendEncryptedTransaction {
                 order_commitment.clone(),
                 rollup_block_height,
                 transaction_order,
-                cluster_metadata,
+                follower_rpc_url_list,
             );
 
             match parameter.encrypted_transaction {
@@ -114,7 +114,9 @@ impl SendEncryptedTransaction {
 
             Ok(order_commitment)
         } else {
-            let leader_rpc_url = cluster_metadata.leader().ok_or(Error::EmptyLeaderRpcUrl)?;
+            let leader_rpc_url = cluster
+                .get_leader_rpc_url(rollup_block_height)
+                .ok_or(Error::EmptyLeaderRpcUrl)?;
             let client = RpcClient::new(leader_rpc_url)?;
 
             let response = client
@@ -156,7 +158,7 @@ pub fn sync_encrypted_transaction(
     rollup_block_height: u64,
     transaction_order: u64,
 
-    cluster_metadata: ClusterMetadata,
+    follower_rpc_url_list: Vec<Option<String>>,
 ) {
     tokio::spawn(async move {
         let rpc_parameter = SyncEncryptedTransaction {
@@ -169,11 +171,12 @@ pub fn sync_encrypted_transaction(
             order_commitment,
         };
 
-        for follower in cluster_metadata.followers() {
+        for follower_rpc_url in follower_rpc_url_list {
             let rpc_parameter = rpc_parameter.clone();
 
             tokio::spawn(async move {
-                let client = RpcClient::new(follower.unwrap()).unwrap();
+                // TODO
+                let client = RpcClient::new(follower_rpc_url.unwrap()).unwrap();
                 let _ = client
                     .request::<SyncEncryptedTransaction, ()>(
                         SyncEncryptedTransaction::METHOD_NAME,

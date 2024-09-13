@@ -20,13 +20,4 @@ impl BlockModel {
 
         kvstore()?.get(key)
     }
-
-    pub fn get_mut(
-        rollup_id: &String,
-        rollup_block_height: u64,
-    ) -> Result<Lock<Block>, KvStoreError> {
-        let key = &(Self::ID, rollup_id, rollup_block_height);
-
-        kvstore()?.get_mut(key)
-    }
 }

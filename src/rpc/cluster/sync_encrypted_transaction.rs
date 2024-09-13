@@ -42,7 +42,7 @@ impl SyncEncryptedTransaction {
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
 
         // Check block height
-        if parameter.rollup_block_height != rollup_metadata.block_height() {
+        if parameter.rollup_block_height != rollup_metadata.rollup_block_height() {
             return Err(Error::BlockHeightMismatch.into());
         }
 
@@ -52,7 +52,7 @@ impl SyncEncryptedTransaction {
 
         rollup_metadata.update()?;
 
-        EncryptedTransactionModel::put_with_order_commitment(
+        EncryptedTransactionModel::put(
             &parameter.rollup_id,
             parameter.rollup_block_height,
             parameter.transaction_order,

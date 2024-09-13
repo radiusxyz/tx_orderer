@@ -16,7 +16,7 @@ impl GetEncryptedTransactionWithOrderCommitment {
     ) -> Result<EncryptedTransaction, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let encrypted_transaction = EncryptedTransactionModel::get_with_order_commitment(
+        let encrypted_transaction = EncryptedTransactionModel::get(
             &parameter.rollup_id,
             parameter.rollup_block_height,
             parameter.transaction_order,
