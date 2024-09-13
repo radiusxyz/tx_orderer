@@ -16,6 +16,15 @@ pub enum Platform {
     Local,
 }
 
+impl From<Platform> for radius_sequencer_sdk::signature::Platform {
+    fn from(platform: Platform) -> Self {
+        match platform {
+            Platform::Ethereum => Self::Ethereum,
+            Platform::Local => Self::Ethereum,
+        }
+    }
+}
+
 impl FromStr for Platform {
     type Err = Error;
 

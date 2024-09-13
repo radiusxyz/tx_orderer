@@ -38,6 +38,10 @@ impl Rollup {
         &self.rollup_id
     }
 
+    pub fn rollup_type(&self) -> RollupType {
+        self.rollup_type
+    }
+
     pub fn encrypted_transaction_type(&self) -> &EncryptedTransactionType {
         &self.encrypted_transaction_type
     }

@@ -4,7 +4,7 @@ pub enum Error {
     ParseConfig(toml::de::Error),
     Database(radius_sequencer_sdk::kvstore::KvStoreError),
     RpcError(radius_sequencer_sdk::json_rpc::Error),
-    Signature(radius_sequencer_sdk::signature::Error),
+    Signature(radius_sequencer_sdk::signature::SignatureError),
     Deserialize(serde_json::Error),
     CreateLivenessClient(Box<dyn std::error::Error>),
     InitializeLivenessClient(Box<dyn std::error::Error>),

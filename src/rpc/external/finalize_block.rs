@@ -6,7 +6,7 @@ pub struct FinalizeBlockMessage {
     // service_provider: ServiceProvider,
     // cluster_id: String,
     // chain_type: ChainType,
-    // address: Vec<u8>,
+    address: Vec<u8>,
     rollup_id: String,
     liveness_block_height: u64,
     rollup_block_height: u64,
@@ -24,13 +24,14 @@ impl FinalizeBlock {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        // // get rollup info for address and chain type
-        // // verify siganture
-        // parameter.signature.verify_signature(
-        //     serialize_to_bincode(&parameter.message)?.as_slice(),
-        //     parameter.message.address.as_slice(),
-        //     parameter.message.chain_type,
-        // )?;
+        let rollup = RollupModel::get(&parameter.message.rollup_id)?;
+
+        // verify siganture
+        parameter.signature.verify_message(
+            rollup.rollup_type().into(),
+            &parameter.message,
+            parameter.message.address.clone(),
+        )?;
 
         match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {

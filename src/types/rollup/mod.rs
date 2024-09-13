@@ -12,10 +12,18 @@ pub use rollup_metadata::*;
 
 pub type RollupIdList = Vec<String>;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RollupType {
     PolygonCdk,
+}
+
+impl From<RollupType> for radius_sequencer_sdk::signature::Platform {
+    fn from(rollup_type: RollupType) -> Self {
+        match rollup_type {
+            RollupType::PolygonCdk => Self::Ethereum,
+        }
+    }
 }
 
 impl FromStr for RollupType {
@@ -29,7 +37,7 @@ impl FromStr for RollupType {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OrderCommitmentType {
     TxHash,
@@ -48,7 +56,7 @@ impl FromStr for OrderCommitmentType {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct ValidationInfo {
     platform: Platform,
     service_provider: ValidationServiceProvider,

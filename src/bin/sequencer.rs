@@ -25,9 +25,7 @@ use pvde::{
     },
 };
 use radius_sequencer_sdk::{
-    json_rpc::RpcServer,
-    kvstore::KvStore as Database,
-    signature::{ChainType, PrivateKeySigner},
+    json_rpc::RpcServer, kvstore::KvStore as Database, signature::PrivateKeySigner,
 };
 use sequencer::{
     client::liveness::{
@@ -132,9 +130,9 @@ async fn main() -> Result<(), Error> {
                 // Get sequencer address
                 let address = match platform {
                     Platform::Ethereum => {
-                        let signer = ChainType::Ethereum
-                            .create_signer_from_str(&signing_key)
-                            .map_err(Error::Signature)?;
+                        let signer =
+                            PrivateKeySigner::from_str(Platform::Ethereum.into(), &signing_key)
+                                .map_err(Error::Signature)?;
                         signer.address().clone()
                     }
                     Platform::Local => {
@@ -150,7 +148,6 @@ async fn main() -> Result<(), Error> {
                             *platform,
                             *service_provider,
                             cluster_id,
-                            ChainType::Ethereum,
                             &address,
                             config.cluster_rpc_url(),
                         )

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use radius_sequencer_sdk::{
     json_rpc::{Error, RpcClient},
-    signature::{Address, ChainType, Signature},
+    signature::{Address, Signature},
 };
 use serde::{Deserialize, Serialize};
 use tracing::info;
@@ -35,7 +35,6 @@ impl SeederClient {
         platform: Platform,
         service_provider: ServiceProvider,
         cluster_id: &String,
-        chain_type: ChainType,
         address: &Address,
         rpc_url: &String,
     ) -> Result<(), Error> {
@@ -43,7 +42,6 @@ impl SeederClient {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
-            chain_type,
             address: format!("{:?}", address), //TODO:
             rpc_url: rpc_url.to_owned(),
         };
@@ -67,14 +65,12 @@ impl SeederClient {
         platform: Platform,
         service_provider: ServiceProvider,
         cluster_id: &String,
-        chain_type: ChainType,
         address: &Address,
     ) -> Result<(), Error> {
         let message = DeregisterSequencerMessage {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
-            chain_type,
             address: format!("{:?}", address), //TODO:
         };
         let parameter = DeregisterSequencer {
@@ -116,7 +112,6 @@ pub struct RegisterSequencerMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
-    pub chain_type: ChainType,
     pub address: String,
     pub rpc_url: String,
 }
@@ -136,7 +131,6 @@ pub struct DeregisterSequencerMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
-    pub chain_type: ChainType,
     pub address: String,
 }
 
