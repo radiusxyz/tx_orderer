@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use radius_sequencer_sdk::signature::ChainType;
+
 use crate::{error::Error, types::prelude::*};
 
 mod model;
@@ -18,10 +20,10 @@ pub enum RollupType {
     PolygonCdk,
 }
 
-impl From<RollupType> for radius_sequencer_sdk::signature::Platform {
-    fn from(rollup_type: RollupType) -> Self {
-        match rollup_type {
-            RollupType::PolygonCdk => Self::Ethereum,
+impl Into<ChainType> for RollupType {
+    fn into(self) -> ChainType {
+        match self {
+            Self::PolygonCdk => ChainType::Ethereum,
         }
     }
 }
