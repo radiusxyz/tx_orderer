@@ -1,13 +1,15 @@
-mod model;
-
 use std::{
     collections::btree_map::{BTreeMap, Iter},
     str::FromStr,
 };
 
-pub use model::*;
+use radius_sequencer_sdk::signature::ChainType;
 
 use crate::{error::Error, types::prelude::*};
+
+mod model;
+
+pub use model::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -16,11 +18,11 @@ pub enum Platform {
     Local,
 }
 
-impl From<Platform> for radius_sequencer_sdk::signature::Platform {
-    fn from(platform: Platform) -> Self {
-        match platform {
-            Platform::Ethereum => Self::Ethereum,
-            Platform::Local => Self::Ethereum,
+impl Into<ChainType> for Platform {
+    fn into(self) -> ChainType {
+        match self {
+            Self::Ethereum => ChainType::Ethereum,
+            Self::Local => ChainType::Ethereum,
         }
     }
 }
