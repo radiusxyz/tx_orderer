@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use clap::{Parser, Subcommand};
 use pvde::{
@@ -25,7 +25,9 @@ use pvde::{
     },
 };
 use radius_sequencer_sdk::{
-    json_rpc::RpcServer, kvstore::KvStore as Database, signature::PrivateKeySigner,
+    json_rpc::RpcServer,
+    kvstore::{CachedKvStore, KvStore as Database},
+    signature::PrivateKeySigner,
 };
 use sequencer::{
     client::liveness::{
@@ -117,7 +119,8 @@ async fn main() -> Result<(), Error> {
             let signing_key = config.signing_key();
             let sequencing_infos =
                 SequencingInfosModel::get_or_default().map_err(error::Error::Database)?;
-            let mut liveness_clients = BTreeMap::new();
+            let liveness_clients = CachedKvStore::default();
+
             for ((platform, service_provider), sequencing_info_payload) in sequencing_infos.iter() {
                 info!(
                     "Initialize sequencing info - platform: {:?}, service_provider: {:?}",
@@ -166,7 +169,9 @@ async fn main() -> Result<(), Error> {
                         )?;
 
                         liveness_client.initialize_event_listener();
-                        liveness_clients.insert((*platform, *service_provider), liveness_client);
+                        liveness_clients
+                            .blocking_put(&(*platform, *service_provider), liveness_client)
+                            .map_err(Error::CachedKvStore)?;
                     }
                     SequencingInfoPayload::Local(_payload) => {
                         // liveness::local::LivenessClient::new()?;

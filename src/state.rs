@@ -1,6 +1,6 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
-use radius_sequencer_sdk::context::SharedContext;
+use radius_sequencer_sdk::kvstore::{CachedKvStore, CachedKvStoreError};
 
 use crate::{
     client::liveness::{
@@ -18,12 +18,13 @@ struct AppStateInner {
     seeder_client: SeederClient,
     key_management_client: KeyManagementSystemClient,
 
-    liveness_clients: SharedContext<BTreeMap<(Platform, ServiceProvider), LivenessClient>>,
+    liveness_clients: CachedKvStore,
 
     zkp_params: ZkpParams,
 }
 
 unsafe impl Send for AppState {}
+
 unsafe impl Sync for AppState {}
 
 impl Clone for AppState {
@@ -39,14 +40,14 @@ impl AppState {
         config: Config,
         seeder_client: SeederClient,
         key_management_system_client: KeyManagementSystemClient,
-        liveness_clients: BTreeMap<(Platform, ServiceProvider), LivenessClient>,
+        liveness_clients: CachedKvStore,
         zkp_params: ZkpParams,
     ) -> Self {
         let inner = AppStateInner {
             config,
             seeder_client,
             key_management_client: key_management_system_client,
-            liveness_clients: SharedContext::from(liveness_clients),
+            liveness_clients,
             zkp_params,
         };
 
@@ -63,17 +64,25 @@ impl AppState {
         &self.inner.seeder_client
     }
 
-    pub fn get_liveness_client(
+    pub async fn get_liveness_client(
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
-    ) -> Option<LivenessClient> {
-        self.inner
-            .liveness_clients
-            .load()
-            .as_ref()
-            .get(&(platform, service_provider))
-            .cloned()
+    ) -> Result<LivenessClient, CachedKvStoreError> {
+        let key = &(platform, service_provider);
+
+        self.inner.liveness_clients.get(key).await
+    }
+
+    pub async fn add_liveness_client(
+        &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+        liveness_client: LivenessClient,
+    ) -> Result<(), CachedKvStoreError> {
+        let key = &(platform, service_provider);
+
+        self.inner.liveness_clients.put(key, liveness_client).await
     }
 
     pub fn key_management_system_client(&self) -> &KeyManagementSystemClient {
