@@ -293,6 +293,11 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
             external::GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
             external::GetEncryptedTransactionWithOrderCommitment::handler,
         )?
+        .register_rpc_method(
+            external::FinalizeBlock::METHOD_NAME,
+            external::FinalizeBlock::handler,
+        )?
+        .register_rpc_method(external::GetBlock::METHOD_NAME, external::GetBlock::handler)?
         .init(sequencer_rpc_url.clone())
         .await?;
 

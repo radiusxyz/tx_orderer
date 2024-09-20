@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use radius_sequencer_sdk::signature::Address;
+use tracing::info;
 
 use crate::{
     rpc::{
@@ -33,6 +36,16 @@ impl FinalizeBlock {
         let parameter = parameter.parse::<Self>()?;
         let rollup = RollupModel::get(&parameter.message.rollup_id)?;
 
+        info!(
+            "FinalizeBlock - rollup_id {:?} / rollup_block_height {:?} / address {:?}",
+            parameter.message.rollup_id,
+            parameter.message.rollup_block_height,
+            parameter.message.address
+        );
+
+        println!("{:?}", parameter);
+        println!("{:?}", rollup);
+
         // // verify siganture
         // parameter.signature.verify_message(
         //     rollup.rollup_type().into(),
@@ -40,12 +53,15 @@ impl FinalizeBlock {
         //     parameter.message.address.clone(),
         // )?;
 
+        println!("stompesi -kkkk");
         let cluster =
             ClusterModel::get(rollup.cluster_id(), parameter.message.platform_block_height)?;
 
+        println!("stompesi -zzzz");
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
         let is_leader = cluster.is_leader(next_rollup_block_height);
 
+        println!("stompesi -0");
         let mut transaction_counts = 0;
         match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
@@ -79,10 +95,13 @@ impl FinalizeBlock {
             }
         };
 
+        println!("stompesi -1");
         // Sync.
         Self::sync_block(&parameter, transaction_counts, cluster);
 
+        println!("stompesi -3");
         block_builder(
+            context.clone(),
             parameter.message.rollup_id.clone(),
             parameter.message.rollup_block_height,
             transaction_counts,
@@ -91,6 +110,7 @@ impl FinalizeBlock {
             context.zkp_params(),
         );
 
+        println!("stompesi -4");
         Ok(())
     }
 

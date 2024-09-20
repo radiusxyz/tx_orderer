@@ -1,10 +1,14 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
+use radius_sequencer_sdk::signature::{Address, Signature};
 use skde::delay_encryption::{decrypt, CipherPair};
 
-use crate::{client::liveness::key_management_system::KeyManagementSystemClient, types::*};
+use crate::{
+    client::liveness::key_management_system::KeyManagementSystemClient, state::AppState, types::*,
+};
 
 pub fn block_builder(
+    context: Arc<AppState>,
     rollup_id: String,
     rollup_block_height: u64,
     transaction_counts: u64,
@@ -18,7 +22,6 @@ pub fn block_builder(
         let mut decryption_keys = HashMap::new();
         let mut raw_trasnaction_list = Vec::new();
         let mut encrypted_transaction_list = Vec::new();
-        let mut block = BlockModel::get(&rollup_id, rollup_block_height).unwrap();
 
         for transaction_order in 0..transaction_counts {
             let Ok(encrypted_transaction) =
@@ -135,6 +138,17 @@ pub fn block_builder(
                 }
             }
         }
+
+        // TODO
+        let mut block = Block::new(
+            rollup_block_height,
+            EncryptedTransactionList::new(encrypted_transaction_list.clone()),
+            RawTransactionList::new(raw_trasnaction_list.clone()),
+            Address::from(vec![]),
+            Signature::from(vec![]),
+            Timestamp::new("0"),
+            BlockCommitment::from(vec![]),
+        );
 
         block.encrypted_transaction_list =
             EncryptedTransactionList::new(encrypted_transaction_list);

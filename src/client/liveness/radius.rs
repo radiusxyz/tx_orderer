@@ -168,7 +168,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                                     OrderCommitmentType::from_str(&rollup_info.orderCommitmentType)
                                         .unwrap();
                                 let rollup_type =
-                                    RollupType::from_str(&rollup_info.chainType).unwrap();
+                                    RollupType::from_str(&rollup_info.rollupType).unwrap();
                                 let validation_info = ValidationInfo::new(
                                     Platform::from_str(&rollup_info.validationInfo.platform)
                                         .unwrap(),
