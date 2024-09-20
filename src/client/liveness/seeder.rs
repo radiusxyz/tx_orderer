@@ -42,7 +42,7 @@ impl SeederClient {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
-            address: format!("{:?}", address), //TODO:
+            address: address.clone(),
             rpc_url: rpc_url.to_owned(),
         };
         let parameter = RegisterSequencer {
@@ -71,7 +71,7 @@ impl SeederClient {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
-            address: format!("{:?}", address), //TODO:
+            address: address.clone(),
         };
         let parameter = DeregisterSequencer {
             message,
@@ -112,7 +112,7 @@ pub struct RegisterSequencerMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
-    pub address: String,
+    pub address: Address,
     pub rpc_url: String,
 }
 
@@ -131,7 +131,7 @@ pub struct DeregisterSequencerMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
-    pub address: String,
+    pub address: Address,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
