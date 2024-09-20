@@ -75,6 +75,17 @@ impl EncryptedTransaction {
         // TODO:
         RawTransactionHash::new("hi")
     }
+
+    pub fn update_transaction_data(&mut self, transaction_data: TransactionData) {
+        match self {
+            Self::Pvde(pvde) => {
+                pvde.transaction_data = transaction_data;
+            }
+            Self::Skde(skde) => {
+                skde.transaction_data = transaction_data;
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -142,6 +153,25 @@ pub enum RollupTransaction {
     EthBundle,
 }
 
+impl RollupTransaction {
+    pub fn to_raw_transaction(&self) -> Result<RawTransaction, Error> {
+        match self {
+            Self::Eth(transaction) => {
+                let raw_transaction_string =
+                    serde_json::to_string(transaction).map_err(Error::Deserialize)?;
+
+                Ok(RawTransaction::Eth(EthRawTransaction::from(
+                    raw_transaction_string,
+                )))
+            }
+            // Todo: implement EthBundle
+            Self::EthBundle => Ok(RawTransaction::EthBundle(EthRawBundleTransaction::from(
+                String::new(),
+            ))),
+        }
+    }
+}
+
 /////////////////////////////////////////
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -150,5 +180,11 @@ pub struct EncryptedData(String);
 impl AsRef<[u8]> for EncryptedData {
     fn as_ref(&self) -> &[u8] {
         self.0.as_bytes()
+    }
+}
+
+impl EncryptedData {
+    pub fn into_inner(self) -> String {
+        self.0
     }
 }

@@ -1,15 +1,20 @@
+use radius_sequencer_sdk::signature::Address;
+
 use crate::{
-    rpc::{cluster::SyncBlock, prelude::*},
+    rpc::{
+        cluster::{SyncBlock, SyncBlockMessage},
+        prelude::*,
+    },
     task::block_builder,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlockMessage {
-    // platform: Platform,
+    platform: Platform,
     // service_provider: ServiceProvider,
     // cluster_id: String,
     // chain_type: ChainType,
-    address: Vec<u8>,
+    address: Address,
     rollup_id: String,
     platform_block_height: u64,
     rollup_block_height: u64,
@@ -83,6 +88,7 @@ impl FinalizeBlock {
             transaction_counts,
             rollup.encrypted_transaction_type(),
             context.key_management_system_client().clone(),
+            context.zkp_params(),
         );
 
         Ok(())
@@ -91,12 +97,19 @@ impl FinalizeBlock {
     pub fn sync_block(parameter: &Self, transaction_order: u64, cluster: Cluster) {
         let parameter = parameter.clone();
 
+        let sync_block_message = SyncBlockMessage {
+            platform: parameter.message.platform.clone(),
+            address: parameter.message.address.clone(),
+            rollup_id: parameter.message.rollup_id.clone(),
+            liveness_block_height: parameter.message.platform_block_height,
+            rollup_block_height: parameter.message.rollup_block_height,
+            transaction_order,
+        };
+
         tokio::spawn(async move {
             let rpc_parameter = SyncBlock {
-                rollup_id: parameter.message.rollup_id.clone(),
-                liveness_block_height: parameter.message.platform_block_height,
-                rollup_block_height: parameter.message.rollup_block_height,
-                transaction_order,
+                message: sync_block_message.clone(),
+                signature: parameter.signature.clone(),
             };
 
             for sequencer_rpc_url in cluster.get_others_rpc_url_list() {

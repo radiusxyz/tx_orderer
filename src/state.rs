@@ -19,6 +19,8 @@ struct AppStateInner {
     key_management_client: KeyManagementSystemClient,
 
     liveness_clients: SharedContext<BTreeMap<(Platform, ServiceProvider), LivenessClient>>,
+
+    zkp_params: ZkpParams,
 }
 
 unsafe impl Send for AppState {}
@@ -38,12 +40,14 @@ impl AppState {
         seeder_client: SeederClient,
         key_management_system_client: KeyManagementSystemClient,
         liveness_clients: BTreeMap<(Platform, ServiceProvider), LivenessClient>,
+        zkp_params: ZkpParams,
     ) -> Self {
         let inner = AppStateInner {
             config,
             seeder_client,
             key_management_client: key_management_system_client,
             liveness_clients: SharedContext::from(liveness_clients),
+            zkp_params,
         };
 
         Self {
@@ -74,5 +78,9 @@ impl AppState {
 
     pub fn key_management_system_client(&self) -> &KeyManagementSystemClient {
         &self.inner.key_management_client
+    }
+
+    pub fn zkp_params(&self) -> &ZkpParams {
+        &self.inner.zkp_params
     }
 }

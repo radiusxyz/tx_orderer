@@ -63,11 +63,14 @@ impl RollupMetadata {
         self.platform_block_height = platform_block_height;
     }
 
-    pub fn increase_transaction_order(&mut self) {
+    pub fn increase_transaction_order(&mut self) -> u64 {
         self.transaction_order += 1;
+
+        self.transaction_order
     }
 
-    pub fn update_order_hash(&mut self, raw_transaction_hash: &RawTransactionHash) {
+    pub fn update_order_hash(&mut self, raw_transaction_hash: &RawTransactionHash) -> &OrderHash {
         self.order_hash.update_order_hash(raw_transaction_hash);
+        &self.order_hash
     }
 }

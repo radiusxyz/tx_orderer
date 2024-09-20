@@ -34,16 +34,16 @@ impl From<Vec<u8>> for BlockCommitment {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Block {
-    block_height: u64,
+    pub block_height: u64,
 
-    encrypted_transaction_list: EncryptedTransactionList,
-    raw_transaction_list: RawTransactionList,
+    pub encrypted_transaction_list: EncryptedTransactionList,
+    pub raw_transaction_list: RawTransactionList,
 
-    proposer_address: Address,
-    signature: Signature,
-    timestamp: Timestamp,
+    pub proposer_address: Address,
+    pub signature: Signature,
+    pub timestamp: Timestamp,
 
-    block_commitment: BlockCommitment,
+    pub block_commitment: BlockCommitment,
 }
 
 impl Block {

@@ -57,7 +57,7 @@ pub struct GetEncryptionKeyReturn {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PublicKey {
-    pub pk: BigUint,
+    pub pk: skde::BigUint,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -76,10 +76,11 @@ pub struct GetDecryptionKeyReturn {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecretKey {
-    pub sk: BigUint,
+    pub sk: skde::BigUint,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BigUint {
-    data: Vec<u64>,
+impl From<SecretKey> for skde::delay_encryption::SecretKey {
+    fn from(secret_key: SecretKey) -> Self {
+        skde::delay_encryption::SecretKey { sk: secret_key.sk }
+    }
 }
