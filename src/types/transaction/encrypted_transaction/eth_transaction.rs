@@ -1,11 +1,12 @@
 // TODO:
 use ethers::{
-    types as eth_types,
+    types::{self as eth_types, Bytes, U256},
     utils::{
         hex,
         rlp::{self, Decodable, DecoderError},
     },
 };
+use serde_json::Value;
 
 use crate::{error::Error, types::prelude::*};
 
@@ -18,6 +19,22 @@ pub struct EthTransactionData {
 }
 
 impl EthTransactionData {
+    pub fn encrypted_data(&self) -> &EncryptedData {
+        &self.encrypted_data
+    }
+
+    pub fn open_data(&self) -> &EthOpenData {
+        &self.open_data
+    }
+
+    pub fn plain_data(&self) -> Option<&EthPlainData> {
+        self.plain_data.as_ref()
+    }
+
+    pub fn update_plain_data(&mut self, plain_data: EthPlainData) {
+        self.plain_data = Some(plain_data);
+    }
+
     pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {
         if self.plain_data.is_none() {
             return Err(Error::NotExistPlainData);
@@ -154,4 +171,28 @@ pub fn to_encrypt_data_string(eth_transaction: &eth_types::Transaction) -> Strin
         "data": eth_transaction.input,
     });
     serde_json::to_string(&payload).unwrap()
+}
+
+pub fn string_to_eth_plain_data(string: &str) -> Result<EthPlainData, Box<dyn std::error::Error>> {
+    let json: Value = serde_json::from_str(string)?;
+
+    let to = if let Some(to_str) = json.get("to").and_then(|v| v.as_str()) {
+        Some(to_str.parse::<eth_types::Address>()?)
+    } else {
+        None
+    };
+
+    let value = if let Some(value_str) = json.get("value").and_then(|v| v.as_str()) {
+        U256::from_dec_str(value_str)?
+    } else {
+        U256::zero()
+    };
+
+    let input = if let Some(data_str) = json.get("data").and_then(|v| v.as_str()) {
+        Bytes::from(hex::decode(data_str.trim_start_matches("0x"))?)
+    } else {
+        Bytes::default()
+    };
+
+    Ok(EthPlainData { to, value, input })
 }

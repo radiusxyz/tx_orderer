@@ -1,11 +1,24 @@
+use radius_sequencer_sdk::signature::Address;
+
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SyncBlock {
+pub struct SyncBlockMessage {
+    pub platform: Platform,
+    // service_provider: ServiceProvider,
+    // cluster_id: String,
+    // chain_type: ChainType,
+    pub address: Address,
     pub rollup_id: String,
     pub liveness_block_height: u64,
     pub rollup_block_height: u64,
     pub transaction_order: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SyncBlock {
+    pub message: SyncBlockMessage,
+    pub signature: Signature,
 }
 
 impl SyncBlock {

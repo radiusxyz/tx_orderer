@@ -176,12 +176,19 @@ async fn main() -> Result<(), Error> {
             }
 
             // TODO: PVDE
-            // let pvde_params = if let Some(ref path) = config_option.path {
-            //     // Initialize the time lock puzzle parameters.
-            //     Some(init_time_lock_puzzle_param(path, config.is_using_zkp())?)
-            // } else {
-            //     None
-            // };
+            let pvde_params = if let Some(ref path) = config_option.path {
+                // Initialize the time lock puzzle parameters.
+                Some(init_time_lock_puzzle_param(path, config.is_using_zkp())?)
+            } else {
+                None
+            };
+
+            let zkp_params = if let Some(ref path) = config_option.path {
+                // Todo: change config matching is_using_zkp -> is using pvde
+                ZkpParams::Pvde(init_time_lock_puzzle_param(path, config.is_using_zkp())?)
+            } else {
+                ZkpParams::setup_skde()
+            };
 
             // Initialize an application-wide state instance
             let app_state = AppState::new(
@@ -189,6 +196,7 @@ async fn main() -> Result<(), Error> {
                 seeder_client,
                 key_management_system_client,
                 liveness_clients,
+                zkp_params,
             );
 
             // Initialize the internal RPC server
