@@ -170,8 +170,9 @@ async fn main() -> Result<(), Error> {
 
                         liveness_client.initialize_event_listener();
                         liveness_clients
-                            .blocking_put(&(*platform, *service_provider), liveness_client)
-                            .map_err(Error::CachedKvStore)?;
+                            .put(&(*platform, *service_provider), liveness_client)
+                            .map_err(Error::CachedKvStore)
+                            .await?;
                     }
                     SequencingInfoPayload::Local(_payload) => {
                         // liveness::local::LivenessClient::new()?;
