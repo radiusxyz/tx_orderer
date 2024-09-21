@@ -22,15 +22,18 @@ impl GetCluster {
     ) -> Result<GetClusterResponse, RpcError> {
         let parameter = parameter.parse::<GetCluster>()?;
 
-        match context.get_liveness_client(parameter.platform, parameter.service_provider) {
-            Some(liveness_client) => {
+        match context
+            .get_liveness_client(parameter.platform, parameter.service_provider)
+            .await
+        {
+            Ok(liveness_client) => {
                 let block_number = liveness_client.publisher().get_block_number().await?;
 
                 let cluster_info = ClusterModel::get(&parameter.cluster_id, block_number)?;
 
                 Ok(GetClusterResponse { cluster_info })
             }
-            None => Err(Error::NotFoundCluster.into()),
+            Err(_) => Err(Error::NotFoundCluster.into()),
         }
     }
 }

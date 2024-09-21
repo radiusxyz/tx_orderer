@@ -14,7 +14,7 @@ clap = { version = "4.4.7", features = ["derive"] }
 ethers = "2.0"
 futures = "0.3.30"
 pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
-radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "f7622c80af9ed0d58c0fd87ed1ce9782e0873cea", features = ["full", "liveness-radius", "signature", "validation-eigenlayer"] }
+radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "20e59625aed4da09abc15a00a476060ef4e31a31", features = ["full", "liveness-radius", "signature", "validation-eigenlayer"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 sha3 = "0.10"
