@@ -1,5 +1,8 @@
 use std::{
-    collections::btree_map::{BTreeMap, Iter},
+    collections::{
+        // btree_map::{BTreeMap, Iter},
+        btree_set::{BTreeSet, Iter},
+    },
     str::FromStr,
 };
 
@@ -66,6 +69,7 @@ impl FromStr for ValidationServiceProvider {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 // #[serde(untagged)] - Deseiralize error: DeserializeAnyNotSupported
+#[serde(untagged)]
 pub enum SequencingInfoPayload {
     Ethereum(LivenessRadius),
     Local(LivenessLocal),
@@ -81,30 +85,48 @@ pub struct LivenessRadius {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LivenessLocal;
 
+// #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+// pub struct SequencingInfos(BTreeMap<(Platform, ServiceProvider),
+// SequencingInfoPayload>);
+
+// impl SequencingInfos {
+//     pub fn insert(
+//         &mut self,
+//         platform: Platform,
+//         service_provider: ServiceProvider,
+//         sequencing_info: SequencingInfoPayload,
+//     ) {
+//         self.0.insert((platform, service_provider), sequencing_info);
+//     }
+
+//     pub fn sequencing_infos(
+//         &self,
+//     ) -> &BTreeMap<(Platform, ServiceProvider), SequencingInfoPayload> {
+//         &self.0
+//     }
+
+//     pub fn remove(&mut self, platform: Platform, service_provider:
+// ServiceProvider) {         self.0.remove(&(platform, service_provider));
+//     }
+
+//     pub fn iter(&self) -> Iter<'_, (Platform, ServiceProvider),
+// SequencingInfoPayload> {         self.0.iter()
+//     }
+// }
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct SequencingInfos(BTreeMap<(Platform, ServiceProvider), SequencingInfoPayload>);
+pub struct SequencingInfoList(BTreeSet<(Platform, ServiceProvider)>);
 
-impl SequencingInfos {
-    pub fn insert(
-        &mut self,
-        platform: Platform,
-        service_provider: ServiceProvider,
-        sequencing_info: SequencingInfoPayload,
-    ) {
-        self.0.insert((platform, service_provider), sequencing_info);
-    }
-
-    pub fn sequencing_infos(
-        &self,
-    ) -> &BTreeMap<(Platform, ServiceProvider), SequencingInfoPayload> {
-        &self.0
+impl SequencingInfoList {
+    pub fn insert(&mut self, platform: Platform, service_provider: ServiceProvider) {
+        self.0.insert((platform, service_provider));
     }
 
     pub fn remove(&mut self, platform: Platform, service_provider: ServiceProvider) {
         self.0.remove(&(platform, service_provider));
     }
 
-    pub fn iter(&self) -> Iter<'_, (Platform, ServiceProvider), SequencingInfoPayload> {
+    pub fn iter(&self) -> Iter<'_, (Platform, ServiceProvider)> {
         self.0.iter()
     }
 }

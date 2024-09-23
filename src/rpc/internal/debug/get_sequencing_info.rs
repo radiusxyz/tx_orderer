@@ -16,18 +16,32 @@ pub struct GetSequencingInfoResponse {
 impl GetSequencingInfo {
     pub const METHOD_NAME: &'static str = "get_sequencing_info";
 
+    // pub async fn handler(
+    //     parameter: RpcParameter,
+    //     _context: Arc<AppState>,
+    // ) -> Result<GetSequencingInfoResponse, RpcError> {
+    //     let parameter = parameter.parse::<GetSequencingInfo>()?;
+    //     let sequencing_key = (parameter.platform, parameter.service_provider);
+
+    //     let sequencing_info_payload = SequencingInfosModel::get_or_default()?
+    //         .sequencing_infos()
+    //         .get(&sequencing_key)
+    //         .ok_or(Error::NotFoundSequencingInfo)?
+    //         .clone();
+
+    //     Ok(GetSequencingInfoResponse {
+    //         sequencing_info_payload,
+    //     })
+    // }
+
     pub async fn handler(
         parameter: RpcParameter,
         _context: Arc<AppState>,
     ) -> Result<GetSequencingInfoResponse, RpcError> {
         let parameter = parameter.parse::<GetSequencingInfo>()?;
-        let sequencing_key = (parameter.platform, parameter.service_provider);
 
-        let sequencing_info_payload = SequencingInfosModel::get_or_default()?
-            .sequencing_infos()
-            .get(&sequencing_key)
-            .ok_or(Error::NotFoundSequencingInfo)?
-            .clone();
+        let sequencing_info_payload =
+            SequencingInfoPayloadModel::get(parameter.platform, parameter.service_provider)?;
 
         Ok(GetSequencingInfoResponse {
             sequencing_info_payload,

@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use radius_sequencer_sdk::kvstore::{CachedKvStore, CachedKvStoreError};
+use radius_sequencer_sdk::{
+    kvstore::{CachedKvStore, CachedKvStoreError},
+    signature::PrivateKeySigner,
+};
 
 use crate::{
     client::liveness::{
@@ -19,6 +22,7 @@ struct AppStateInner {
     key_management_client: KeyManagementSystemClient,
 
     liveness_clients: CachedKvStore,
+    signers: CachedKvStore,
 
     zkp_params: ZkpParams,
 }
@@ -41,6 +45,7 @@ impl AppState {
         seeder_client: SeederClient,
         key_management_system_client: KeyManagementSystemClient,
         liveness_clients: CachedKvStore,
+        signers: CachedKvStore,
         zkp_params: ZkpParams,
     ) -> Self {
         let inner = AppStateInner {
@@ -48,6 +53,7 @@ impl AppState {
             seeder_client,
             key_management_client: key_management_system_client,
             liveness_clients,
+            signers,
             zkp_params,
         };
 
@@ -83,6 +89,25 @@ impl AppState {
         let key = &(platform, service_provider);
 
         self.inner.liveness_clients.put(key, liveness_client).await
+    }
+
+    pub async fn get_signer(
+        &self,
+        platform: Platform,
+    ) -> Result<PrivateKeySigner, CachedKvStoreError> {
+        let key = &(platform);
+
+        self.inner.signers.get(key).await
+    }
+
+    pub async fn add_signer(
+        &self,
+        platform: Platform,
+        signer: PrivateKeySigner,
+    ) -> Result<(), CachedKvStoreError> {
+        let key = &(platform);
+
+        self.inner.signers.put(key, signer).await
     }
 
     pub fn key_management_system_client(&self) -> &KeyManagementSystemClient {

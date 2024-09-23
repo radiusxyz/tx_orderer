@@ -1,3 +1,5 @@
+use radius_sequencer_sdk::signature::PrivateKeySigner;
+
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -49,29 +51,79 @@ pub struct AddSequencingInfo {
 impl AddSequencingInfo {
     pub const METHOD_NAME: &'static str = "add_sequencing_info";
 
+    // pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) ->
+    // Result<(), RpcError> {     let parameter = parameter.parse::<Self>()?;
+    //     match &parameter.payload {
+    //         SequencingInfoPayload::Ethereum(payload) => {
+    //             let signing_key = context.config().signing_key();
+
+    //             let mut sequencing_infos =
+    // SequencingInfosModel::get_mut_or_default()?;
+
+    //             sequencing_infos.insert(
+    //                 parameter.platform,
+    //                 parameter.service_provider,
+    //                 parameter.payload.clone(),
+    //             );
+    //             sequencing_infos.update()?;
+
+    //             liveness::radius::LivenessClient::new(
+    //                 parameter.platform,
+    //                 parameter.service_provider,
+    //                 payload.clone(),
+    //                 signing_key,
+    //                 context.seeder_client().clone(),
+    //             )?
+    //             .initialize_event_listener();
+
+    //             Ok(())
+    //         }
+    //         SequencingInfoPayload::Local(_payload) => {
+    //             // liveness::local::LivenessClient::new()?;
+    //             todo!("Implement 'LivenessClient' for local sequencing.");
+    //         }
+    //     }
+    // }
+
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
+
+        // Save `LivenessClient` metadata.
+        let mut sequencing_info_list = SequencingInfoListModel::get_mut_or_default()?;
+        sequencing_info_list.insert(parameter.platform, parameter.service_provider);
+
+        SequencingInfoPayloadModel::put(
+            parameter.platform,
+            parameter.service_provider,
+            &parameter.payload,
+        )?;
+
+        // Save `PrivateKeySigner` metadata.
+        let mut signer_list = SignerListModel::get_mut_or_default()?;
+        signer_list.insert(parameter.platform);
+
         match &parameter.payload {
             SequencingInfoPayload::Ethereum(payload) => {
                 let signing_key = context.config().signing_key();
 
-                let mut sequencing_infos = SequencingInfosModel::get_mut_or_default()?;
+                let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
 
-                sequencing_infos.insert(
-                    parameter.platform,
-                    parameter.service_provider,
-                    parameter.payload.clone(),
-                );
-                sequencing_infos.update()?;
-
-                liveness::radius::LivenessClient::new(
+                let liveness_client = liveness::radius::LivenessClient::new(
                     parameter.platform,
                     parameter.service_provider,
                     payload.clone(),
                     signing_key,
                     context.seeder_client().clone(),
-                )?
-                .initialize_event_listener();
+                )?;
+                liveness_client.initialize_event_listener();
+
+                context
+                    .add_liveness_client(
+                        parameter.platform,
+                        parameter.service_provider,
+                        liveness_client,
+                    )
+                    .await?;
 
                 Ok(())
             }

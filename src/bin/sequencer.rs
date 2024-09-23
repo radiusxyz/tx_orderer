@@ -117,11 +117,14 @@ async fn main() -> Result<(), Error> {
 
             // Initialize sequencing info (TODO:)
             let signing_key = config.signing_key();
-            let sequencing_infos =
-                SequencingInfosModel::get_or_default().map_err(error::Error::Database)?;
+            let sequencing_info_list =
+                SequencingInfoListModel::get_or_default().map_err(Error::Database)?;
+            // let sequencing_infos =
+            //     SequencingInfosModel::get_or_default().map_err(error::Error::Database)?;
             let liveness_clients = CachedKvStore::default();
+            let signers = CachedKvStore::default();
 
-            for ((platform, service_provider), sequencing_info_payload) in sequencing_infos.iter() {
+            for (platform, service_provider) in sequencing_info_list.iter() {
                 info!(
                     "Initialize sequencing info - platform: {:?}, service_provider: {:?}",
                     platform, service_provider
@@ -133,10 +136,15 @@ async fn main() -> Result<(), Error> {
                 // Get sequencer address
                 let address = match platform {
                     Platform::Ethereum => {
-                        let signer =
-                            PrivateKeySigner::from_str(Platform::Ethereum.into(), &signing_key)
-                                .map_err(Error::Signature)?;
-                        signer.address().clone()
+                        let signer = PrivateKeySigner::from_str((*platform).into(), &signing_key)
+                            .map_err(Error::Signature)?;
+                        let address = signer.address().clone();
+                        signers
+                            .put(platform, signer)
+                            .await
+                            .map_err(Error::CachedKvStore)?;
+
+                        address
                     }
                     Platform::Local => {
                         // liveness::local::LivenessClient::new()?;
@@ -158,6 +166,10 @@ async fn main() -> Result<(), Error> {
                 }
 
                 // Initialize liveness client
+                let sequencing_info_payload =
+                    SequencingInfoPayloadModel::get(*platform, *service_provider)
+                        .map_err(Error::Database)?;
+
                 match &sequencing_info_payload {
                     SequencingInfoPayload::Ethereum(liveness_info) => {
                         let liveness_client = liveness::radius::LivenessClient::new(
@@ -167,8 +179,8 @@ async fn main() -> Result<(), Error> {
                             config.signing_key(),
                             seeder_client.clone(),
                         )?;
-
                         liveness_client.initialize_event_listener();
+
                         liveness_clients
                             .put(&(*platform, *service_provider), liveness_client)
                             .await
@@ -202,6 +214,7 @@ async fn main() -> Result<(), Error> {
                 seeder_client,
                 key_management_system_client,
                 liveness_clients,
+                signers,
                 zkp_params,
             );
 
