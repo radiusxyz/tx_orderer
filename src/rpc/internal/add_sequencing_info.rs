@@ -91,6 +91,7 @@ impl AddSequencingInfo {
         // Save `LivenessClient` metadata.
         let mut sequencing_info_list = SequencingInfoListModel::get_mut_or_default()?;
         sequencing_info_list.insert(parameter.platform, parameter.service_provider);
+        sequencing_info_list.update()?;
 
         SequencingInfoPayloadModel::put(
             parameter.platform,
@@ -98,15 +99,12 @@ impl AddSequencingInfo {
             &parameter.payload,
         )?;
 
-        // Save `PrivateKeySigner` metadata.
-        let mut signer_list = SignerListModel::get_mut_or_default()?;
-        signer_list.insert(parameter.platform);
-
         match &parameter.payload {
             SequencingInfoPayload::Ethereum(payload) => {
                 let signing_key = context.config().signing_key();
 
                 let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
+                context.add_signer(parameter.platform, signer).await?;
 
                 let liveness_client = liveness::radius::LivenessClient::new(
                     parameter.platform,
