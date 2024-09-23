@@ -11,7 +11,7 @@ const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:5000";
 
 const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:6000";
 
-const DEFAULT_KEY_MANAGEMENT_SYSTEM_RPC_URL: &str = "http://127.0.0.1:3100";
+const DEFAULT_KEY_MANAGEMENT_SYSTEM_RPC_URL: &str = "http://127.0.0.1:7100";
 
 const DEFAULT_CLUSTER_TYPE: &str = "local";
 

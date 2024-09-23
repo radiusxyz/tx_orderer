@@ -35,7 +35,7 @@ use sequencer::{
     },
     error::{self, Error},
     rpc::{
-        external,
+        cluster, external,
         internal::{self, GetSequencingInfo, GetSequencingInfos},
     },
     state::AppState,
@@ -280,6 +280,14 @@ async fn initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> 
     let cluster_rpc_url = context.config().cluster_rpc_url().to_string();
 
     let sequencer_rpc_server = RpcServer::new(context.clone())
+        .register_rpc_method(
+            cluster::SyncEncryptedTransaction::METHOD_NAME,
+            cluster::SyncEncryptedTransaction::handler,
+        )?
+        .register_rpc_method(
+            cluster::SyncRawTransaction::METHOD_NAME,
+            cluster::SyncRawTransaction::handler,
+        )?
         .init(cluster_rpc_url.clone())
         .await?;
 
@@ -311,6 +319,10 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
         .register_rpc_method(
             external::GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
             external::GetEncryptedTransactionWithOrderCommitment::handler,
+        )?
+        .register_rpc_method(
+            external::SendRawTransaction::METHOD_NAME,
+            external::SendRawTransaction::handler,
         )?
         .register_rpc_method(
             external::FinalizeBlock::METHOD_NAME,

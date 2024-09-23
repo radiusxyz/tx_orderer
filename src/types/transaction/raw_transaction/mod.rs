@@ -26,6 +26,8 @@ impl RawTransactionHash {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "type", content = "data")]
+#[serde(rename_all = "snake_case")]
 pub enum RawTransaction {
     Eth(EthRawTransaction),
     EthBundle(EthRawBundleTransaction),

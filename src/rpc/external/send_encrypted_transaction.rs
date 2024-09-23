@@ -67,6 +67,11 @@ impl SendEncryptedTransaction {
 
             let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
 
+            println!(
+                "transaction_hash: {:?}",
+                transaction_hash.inner().to_string()
+            );
+
             EncryptedTransactionModel::put_with_transaction_hash(
                 &parameter.rollup_id,
                 &transaction_hash.inner().to_string(),
@@ -191,9 +196,12 @@ pub fn sync_encrypted_transaction(
         for follower_rpc_url in follower_rpc_url_list {
             let rpc_parameter = rpc_parameter.clone();
 
+            let follower_rpc_url = follower_rpc_url.unwrap();
+            println!("follower: {:?}", follower_rpc_url);
+
             tokio::spawn(async move {
                 // TODO
-                let client = RpcClient::new(follower_rpc_url.unwrap()).unwrap();
+                let client = RpcClient::new(follower_rpc_url).unwrap();
                 let _ = client
                     .request::<SyncEncryptedTransaction, ()>(
                         SyncEncryptedTransaction::METHOD_NAME,
