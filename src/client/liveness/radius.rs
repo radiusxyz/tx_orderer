@@ -192,6 +192,8 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                                     order_commitment_type,
                                     executor_address_list,
                                     cluster_id.to_owned(),
+                                    liveness_client.platform(),
+                                    liveness_client.service_provider(),
                                 );
 
                                 RollupModel::put(rollup.rollup_id(), &rollup).unwrap();
@@ -220,7 +222,14 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                     block_margin.try_into().unwrap(),
                 );
 
-                ClusterModel::put(&cluster_id, platform_block_height, &cluster).unwrap();
+                ClusterModel::put(
+                    liveness_client.platform(),
+                    liveness_client.service_provider(),
+                    &cluster_id,
+                    platform_block_height,
+                    &cluster,
+                )
+                .unwrap();
             }
         }
         _others => {}

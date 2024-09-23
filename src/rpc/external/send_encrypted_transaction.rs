@@ -1,6 +1,4 @@
-use std::{any::Any, str::FromStr};
-
-use ethers::types::Sign;
+use tracing::info;
 
 use crate::{
     rpc::{cluster::SyncEncryptedTransaction, prelude::*},
@@ -24,15 +22,30 @@ impl SendEncryptedTransaction {
         let parameter = parameter.parse::<Self>()?;
         let rollup = RollupModel::get(&parameter.rollup_id)?;
 
+        info!(
+            "SendEncryptedTransaction: rollup_id: {}",
+            parameter.rollup_id
+        );
+
+        // 1. Check supported encrypted transaction
         check_supported_encrypted_transaction(&rollup, &parameter.encrypted_transaction)?;
 
+        // 2. Check is leader
         // TODO: error handling
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        let platform = rollup.platform();
+        let service_provider = rollup.service_provider();
         let cluster_id = rollup_metadata.cluster_id();
         let platform_block_height = rollup_metadata.platform_block_height();
         let rollup_block_height = rollup_metadata.rollup_block_height();
 
-        let cluster = ClusterModel::get(cluster_id, platform_block_height).unwrap();
+        let cluster = ClusterModel::get(
+            platform,
+            service_provider,
+            cluster_id,
+            platform_block_height,
+        )
+        .unwrap();
 
         if rollup_metadata.is_leader() {
             let transaction_order = rollup_metadata.transaction_order();
@@ -43,46 +56,40 @@ impl SendEncryptedTransaction {
                 .update_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
             rollup_metadata.update()?;
 
-            let order_commitment = match rollup.order_commitment_type() {
-                OrderCommitmentType::TransactionHash => {
-                    let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
+            let order_commitment = issue_order_commitment(
+                parameter.rollup_id.clone(),
+                rollup.order_commitment_type(),
+                parameter.encrypted_transaction.raw_transaction_hash(),
+                rollup_block_height,
+                transaction_order,
+                order_hash,
+            );
 
-                    EncryptedTransactionModel::put_with_transaction_hash(
-                        &parameter.rollup_id,
-                        &transaction_hash.inner().to_string(),
-                        &parameter.encrypted_transaction,
-                    )?;
+            let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
 
-                    OrderCommitment::Single(SingleOrderCommitment::TransactionHash(
-                        TransactionHashOrderCommitment(transaction_hash.into_inner()),
-                    ))
-                }
-                OrderCommitmentType::Sign => {
-                    let order_commitment_data = OrderCommitmentData {
-                        rollup_id: parameter.rollup_id.clone(),
-                        block_height: rollup_block_height,
-                        transaction_order,
-                        previous_order_hash: order_hash,
-                    };
-                    let order_commitment = SignOrderCommitment {
-                        data: order_commitment_data,
-                        signature: vec![].into(), // Todo: Signature
-                    };
+            EncryptedTransactionModel::put_with_transaction_hash(
+                &parameter.rollup_id,
+                &transaction_hash.inner().to_string(),
+                &parameter.encrypted_transaction,
+            )?;
 
-                    EncryptedTransactionModel::put(
-                        &parameter.rollup_id,
-                        rollup_block_height,
-                        transaction_order,
-                        &parameter.encrypted_transaction,
-                    )?;
+            EncryptedTransactionModel::put(
+                &parameter.rollup_id,
+                rollup_block_height,
+                transaction_order,
+                &parameter.encrypted_transaction,
+            )?;
 
-                    OrderCommitment::Single(SingleOrderCommitment::Sign(order_commitment))
-                }
-            };
-
-            let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
+            OrderCommitmentModel::put(
+                &parameter.rollup_id,
+                rollup_block_height,
+                transaction_order,
+                &order_commitment,
+            )?;
 
             // Sync Transaction
+            let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
+
             sync_encrypted_transaction(
                 parameter.rollup_id.clone(),
                 parameter.encrypted_transaction.clone(),
@@ -93,7 +100,7 @@ impl SendEncryptedTransaction {
             );
 
             match parameter.encrypted_transaction {
-                EncryptedTransaction::Pvde(pvde_encrypted_transaction) => {
+                EncryptedTransaction::Pvde(_pvde_encrypted_transaction) => {
                     // TODO
                     // let raw_transaction = decrypt_transaction(
                     //     parameter.encrypted_transaction.clone(),
@@ -102,14 +109,24 @@ impl SendEncryptedTransaction {
                     // is_using_zkp(),
                     //     &Some(PvdeParams::default()),
                     // )?;
+
                     // RawTransactionModel::put(
                     //     &parameter.rollup_id,
                     //     rollup_block_height,
                     //     transaction_order,
                     //     raw_transaction,
                     // )?;
+
+                    // sync_raw_transaction(
+                    //     parameter.rollup_id.clone(),
+                    //     parameter.encrypted_transaction.clone(),
+                    //     order_commitment.clone(),
+                    //     rollup_block_height,
+                    //     transaction_order,
+                    //     follower_rpc_url_list,
+                    // );
                 }
-                EncryptedTransaction::Skde(send_encrypted_transaction) => {}
+                EncryptedTransaction::Skde(_send_encrypted_transaction) => {}
             };
 
             Ok(order_commitment)
@@ -294,7 +311,7 @@ pub fn sync_encrypted_transaction(
 //             if !is_valid {
 //                 return Err(Error::PvdeZkpInvalid);
 //             }
-//             // log::info!("Done verify_poseidon_encryption: {:?}", is_valid);
+//             info!("Done verify_poseidon_encryption: {:?}", is_valid);
 //         }
 //         false => {}
 //     }
@@ -302,13 +319,46 @@ pub fn sync_encrypted_transaction(
 //     // TODO(jaemin): generalize
 //     let eth_encrypt_data: EthPlainData =
 // serde_json::from_str(&decrypted_data).unwrap();
-//     let ressembled_raw_transaction = match open_data {
+
+//     let rollup_transaction = match open_data {
 //         OpenData::Eth(open_data) =>
 // open_data.convert_to_rollup_transaction(&eth_encrypt_data),         _ =>
 // unreachable!(),     };
+
 //     let eth_raw_transaction =
-// EthRawTransaction::from(to_raw_tx(ressembled_raw_transaction));
+// EthRawTransaction::from(to_raw_tx(rollup_transaction));
 //     let raw_transaction = RawTransaction::from(eth_raw_transaction);
 
 //     Ok(raw_transaction)
 // }
+
+pub fn issue_order_commitment(
+    rollup_id: String,
+    order_commitment_type: OrderCommitmentType,
+    transaction_hash: RawTransactionHash,
+    rollup_block_height: u64,
+    transaction_order: u64,
+    order_hash: OrderHash,
+) -> OrderCommitment {
+    match order_commitment_type {
+        OrderCommitmentType::TransactionHash => {
+            OrderCommitment::Single(SingleOrderCommitment::TransactionHash(
+                TransactionHashOrderCommitment(transaction_hash.into_inner()),
+            ))
+        }
+        OrderCommitmentType::Sign => {
+            let order_commitment_data = OrderCommitmentData {
+                rollup_id,
+                block_height: rollup_block_height,
+                transaction_order,
+                previous_order_hash: order_hash,
+            };
+            let order_commitment = SignOrderCommitment {
+                data: order_commitment_data,
+                signature: vec![].into(), // Todo: Signature
+            };
+
+            OrderCommitment::Single(SingleOrderCommitment::Sign(order_commitment))
+        }
+    }
+}

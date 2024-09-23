@@ -27,9 +27,14 @@ impl GetCluster {
             .await
         {
             Ok(liveness_client) => {
-                let block_number = liveness_client.publisher().get_block_number().await?;
+                let platform_block_height = liveness_client.publisher().get_block_number().await?;
 
-                let cluster_info = ClusterModel::get(&parameter.cluster_id, block_number)?;
+                let cluster_info = ClusterModel::get(
+                    parameter.platform,
+                    parameter.service_provider,
+                    &parameter.cluster_id,
+                    platform_block_height,
+                )?;
 
                 Ok(GetClusterResponse { cluster_info })
             }

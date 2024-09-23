@@ -3,11 +3,13 @@ mod get_cluster_id_list;
 // mod get_context;
 // mod get_rollup;
 // mod get_rollup_id_list;
+mod get_cluster_block_height;
 mod get_rollup;
 mod get_sequencing_info;
 mod get_sequencing_infos;
 
 pub use get_cluster::*;
+pub use get_cluster_block_height::*;
 pub use get_cluster_id_list::*;
 pub use get_rollup::*;
 pub use get_sequencing_info::*;

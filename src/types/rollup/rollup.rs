@@ -12,6 +12,9 @@ pub struct Rollup {
     executor_address_list: Vec<String>,
 
     cluster_id: String,
+
+    platform: Platform,
+    service_provider: ServiceProvider,
 }
 
 impl Rollup {
@@ -26,6 +29,9 @@ impl Rollup {
         executor_address_list: Vec<String>,
 
         cluster_id: String,
+
+        platform: Platform,
+        service_provider: ServiceProvider,
     ) -> Self {
         Self {
             rollup_id,
@@ -36,6 +42,8 @@ impl Rollup {
             order_commitment_type,
             executor_address_list,
             cluster_id,
+            platform,
+            service_provider,
         }
     }
 
@@ -57,6 +65,14 @@ impl Rollup {
 
     pub fn cluster_id(&self) -> &String {
         &self.cluster_id
+    }
+
+    pub fn platform(&self) -> Platform {
+        self.platform
+    }
+
+    pub fn service_provider(&self) -> ServiceProvider {
+        self.service_provider
     }
 }
 

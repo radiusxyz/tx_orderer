@@ -108,7 +108,7 @@ pub fn block_builder(
                                             &rollup_id,
                                             rollup_block_height,
                                             transaction_order,
-                                            raw_eth_transaction.clone(),
+                                            &raw_eth_transaction,
                                         )
                                         .unwrap();
 

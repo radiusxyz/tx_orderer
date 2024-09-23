@@ -4,7 +4,11 @@ use crate::rpc::prelude::*;
 pub struct SyncRawTransaction {
     pub rollup_id: String,
     pub raw_transaction: RawTransaction,
-    pub order_commitment: OrderCommitment,
+
+    pub rollup_block_height: u64,
+    pub transaction_order: u64,
+
+    pub order_commitment: Option<OrderCommitment>,
 }
 
 impl SyncRawTransaction {
@@ -13,26 +17,42 @@ impl SyncRawTransaction {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        // TODO:
-        // let mut rollup_metadata =
-        // RollupMetadataModel::get_mut(&parameter.rollup_id)?;
-        // let transaction_order = rollup_metadata.issue_transaction_order();
-        // let rollup_block_height = rollup_metadata.block_height();
-        // rollup_metadata.update()?;
+        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
 
-        // RawTransactionModel::put(
-        //     &parameter.rollup_id,
-        //     rollup_block_height,
-        //     transaction_order,
-        //     parameter.raw_transaction,
-        // )?;
+        // Check block height
+        if parameter.rollup_block_height != rollup_metadata.rollup_block_height() {
+            return Err(Error::BlockHeightMismatch.into());
+        }
 
-        // OrderCommitmentModel::put(
-        //     &parameter.rollup_id,
-        //     rollup_block_height,
-        //     transaction_order,
-        //     &parameter.order_commitment,
-        // )?;
+        // TODO: sync??
+        if parameter.transaction_order == rollup_metadata.transaction_order() {
+            rollup_metadata.increase_transaction_order();
+            rollup_metadata.update_order_hash(&parameter.raw_transaction.raw_transaction_hash());
+            rollup_metadata.update()?;
+        }
+
+        let transaction_hash = parameter.raw_transaction.raw_transaction_hash();
+        RawTransactionModel::put_with_transaction_hash(
+            &parameter.rollup_id,
+            &transaction_hash.inner().to_string(),
+            &parameter.raw_transaction,
+        )?;
+
+        RawTransactionModel::put(
+            &parameter.rollup_id,
+            parameter.rollup_block_height,
+            parameter.transaction_order,
+            &parameter.raw_transaction,
+        )?;
+
+        if parameter.order_commitment.is_some() {
+            OrderCommitmentModel::put(
+                &parameter.rollup_id,
+                parameter.rollup_block_height,
+                parameter.transaction_order,
+                &parameter.order_commitment.unwrap(),
+            )?;
+        }
 
         Ok(())
     }

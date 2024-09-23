@@ -1,9 +1,6 @@
 mod model;
 
-use std::{
-    collections::btree_set::{self, BTreeSet},
-    slice,
-};
+use std::collections::btree_set::{self, BTreeSet};
 
 pub use model::*;
 

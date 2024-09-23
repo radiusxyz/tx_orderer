@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use radius_sequencer_sdk::signature::Address;
 use tracing::info;
 
@@ -17,7 +15,7 @@ pub struct FinalizeBlockMessage {
     // service_provider: ServiceProvider,
     // cluster_id: String,
     // chain_type: ChainType,
-    address: Address,
+    executor_address: Address,
     rollup_id: String,
     platform_block_height: u64,
     rollup_block_height: u64,
@@ -40,12 +38,13 @@ impl FinalizeBlock {
             "FinalizeBlock - rollup_id {:?} / rollup_block_height {:?} / address {:?}",
             parameter.message.rollup_id,
             parameter.message.rollup_block_height,
-            parameter.message.address
+            parameter.message.executor_address
         );
 
         println!("{:?}", parameter);
         println!("{:?}", rollup);
 
+        // TODO: Validate executor
         // // verify siganture
         // parameter.signature.verify_message(
         //     rollup.rollup_type().into(),
@@ -53,15 +52,16 @@ impl FinalizeBlock {
         //     parameter.message.address.clone(),
         // )?;
 
-        println!("stompesi -kkkk");
-        let cluster =
-            ClusterModel::get(rollup.cluster_id(), parameter.message.platform_block_height)?;
+        let cluster = ClusterModel::get(
+            rollup.platform(),
+            rollup.service_provider(),
+            rollup.cluster_id(),
+            parameter.message.platform_block_height,
+        )?;
 
-        println!("stompesi -zzzz");
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
         let is_leader = cluster.is_leader(next_rollup_block_height);
 
-        println!("stompesi -0");
         let mut transaction_counts = 0;
         match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
@@ -119,7 +119,7 @@ impl FinalizeBlock {
 
         let sync_block_message = SyncBlockMessage {
             platform: parameter.message.platform.clone(),
-            address: parameter.message.address.clone(),
+            address: parameter.message.executor_address.clone(),
             rollup_id: parameter.message.rollup_id.clone(),
             liveness_block_height: parameter.message.platform_block_height,
             rollup_block_height: parameter.message.rollup_block_height,

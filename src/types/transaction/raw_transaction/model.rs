@@ -6,16 +6,27 @@ pub struct RawTransactionModel;
 impl RawTransactionModel {
     pub const ID: &'static str = stringify!(RawTransactionModel);
 
+    pub fn put_with_transaction_hash(
+        rollup_id: &String,
+        transaction_hash: &String,
+
+        raw_transaction: &RawTransaction,
+    ) -> Result<(), KvStoreError> {
+        let key = &(Self::ID, rollup_id, transaction_hash);
+
+        kvstore()?.put(key, raw_transaction)
+    }
+
     pub fn put(
         rollup_id: &String,
         block_height: u64,
         transaction_order: u64,
 
-        raw_transaction: RawTransaction,
+        raw_transaction: &RawTransaction,
     ) -> Result<(), KvStoreError> {
         let key = &(Self::ID, rollup_id, block_height, transaction_order);
 
-        kvstore()?.put(&key, &raw_transaction)
+        kvstore()?.put(&key, raw_transaction)
     }
 
     pub fn get(
