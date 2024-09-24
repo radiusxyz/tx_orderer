@@ -23,6 +23,14 @@ impl EthBundleTransactionData {
 
         Ok(RollupTransaction::EthBundle)
     }
+
+    pub fn encrypted_data(&self) -> &EncryptedData {
+        &self.encrypted_data
+    }
+
+    pub fn open_data(&self) -> &EthBundleOpenData {
+        &self.open_data
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

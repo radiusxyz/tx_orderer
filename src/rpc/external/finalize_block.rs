@@ -105,10 +105,8 @@ impl FinalizeBlock {
             transaction_counts,
             rollup.encrypted_transaction_type(),
             context.key_management_system_client().clone(),
-            context.zkp_params(),
         );
 
-        println!("stompesi -4");
         Ok(())
     }
 

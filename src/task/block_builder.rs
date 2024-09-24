@@ -20,10 +20,7 @@ pub fn block_builder(
     encrypted_transaction_type: EncryptedTransactionType,
 
     key_management_system_client: KeyManagementSystemClient,
-    zkp_params: &ZkpParams,
 ) {
-    let skde_zkp_params = zkp_params.skde_params().cloned();
-
     info!(
         "rollup_id: {:?}, rollup_block_height: {:?}, transaction_counts: {:?}",
         rollup_id, rollup_block_height, transaction_counts
@@ -78,29 +75,29 @@ pub fn block_builder(
 
                                 match encrypted_transaction {
                                     EncryptedTransaction::Skde(skde_encrypted_transaction) => {
-                                        // let raw_transaction =
-                                        // decrypt_skde_transaction(
-                                        //     &skde_encrypted_transaction,
-                                        //     key_management_system_client.
-                                        // clone(),
-                                        //     &mut decryption_keys,
-                                        //     skde_zkp_params.clone().unwrap(),
-                                        // )
-                                        // .await;
+                                        // TODO: update plain_data
+                                        let (raw_transaction, plain_data) =
+                                            decrypt_skde_transaction(
+                                                &skde_encrypted_transaction,
+                                                key_management_system_client.clone(),
+                                                &mut decryption_keys,
+                                                context.skde_params(),
+                                            )
+                                            .await
+                                            .unwrap();
 
-                                        // RawTransactionModel::put(
-                                        //     &rollup_id,
-                                        //     rollup_block_height,
-                                        //     transaction_order,
-                                        //     &raw_transaction,
-                                        // )
-                                        // .unwrap();
+                                        RawTransactionModel::put(
+                                            &rollup_id,
+                                            rollup_block_height,
+                                            transaction_order,
+                                            &raw_transaction,
+                                        )
+                                        .unwrap();
 
-                                        // raw_trasnaction_list.
-                                        // push(raw_transaction);
+                                        raw_trasnaction_list.push(raw_transaction);
                                     }
                                     EncryptedTransaction::Pvde(_pvde_encrypted_transaction) => {}
-                                }
+                                };
                             }
                         }
                     }
@@ -149,20 +146,22 @@ pub fn block_builder(
 }
 
 async fn decrypt_skde_transaction(
-    skde_encrypted_transaction: &mut SkdeEncryptedTransaction,
+    skde_encrypted_transaction: &SkdeEncryptedTransaction,
     key_management_system_client: KeyManagementSystemClient,
     decryption_keys: &mut HashMap<u64, SecretKey>,
-    skde_params: SkdeParams,
-) -> Result<RawTransaction, Error> {
+    skde_params: &SkdeParams,
+) -> Result<(RawTransaction, PlainData), Error> {
     let decryption_key_id = skde_encrypted_transaction.key_id();
 
     let decryption_key = if !decryption_keys.contains_key(&decryption_key_id) {
+        println!("key_id(): {:?}", skde_encrypted_transaction.key_id());
+
         let decryption_key = SecretKey {
             sk: key_management_system_client
                 .get_decryption_key(skde_encrypted_transaction.key_id())
                 .await
                 .unwrap()
-                .key
+                .decryption_key
                 .sk,
         };
 
@@ -172,32 +171,43 @@ async fn decrypt_skde_transaction(
         decryption_keys.get(&decryption_key_id).unwrap().clone()
     };
 
-    match skde_encrypted_transaction.transaction_data().clone() {
+    match skde_encrypted_transaction.transaction_data() {
         TransactionData::Eth(transaction_data) => {
             let encrypted_data = transaction_data.encrypted_data().clone().into_inner();
+
+            println!("encrypted_data: {:?}", encrypted_data);
 
             let mut encrypted_data_iter = encrypted_data.split("/");
 
             let c1 = encrypted_data_iter.next().unwrap().to_string();
             let c2 = encrypted_data_iter.next().unwrap().to_string();
 
+            println!("c1: {:?}", c1);
+            println!("c2: {:?}", c2);
+
             let cipher_text = CipherPair { c1, c2 };
 
             // let  = skde_zkp_params.clone().unwrap();
-            let plain_text = decrypt(&skde_params, &cipher_text, &decryption_key).unwrap();
+            let decrypted_data = decrypt(skde_params, &cipher_text, &decryption_key).unwrap();
 
-            // TODO: ....
-            let eth_plain_data = string_to_eth_plain_data(&plain_text).unwrap();
+            let eth_plain_data: EthPlainData = serde_json::from_str(&decrypted_data).unwrap();
 
-            skde_encrypted_transaction
-                .mut_transaction_data()
-                .update_plain_data(eth_plain_data);
+            let rollup_transaction = transaction_data
+                .open_data()
+                .convert_to_rollup_transaction(&eth_plain_data);
 
-            let rollup_transaction = transaction_data.convert_to_rollup_transaction().unwrap();
+            let eth_raw_transaction = EthRawTransaction::from(to_raw_tx(rollup_transaction));
+            let raw_transaction = RawTransaction::from(eth_raw_transaction);
 
-            let raw_transaction = rollup_transaction.to_raw_transaction().unwrap();
+            // print!("plain_text: {:?}", plain_text);
 
-            Ok(raw_transaction)
+            // let eth_plain_data = string_to_eth_plain_data(&plain_text).unwrap();
+
+            // let rollup_transaction =
+            // transaction_data.convert_to_rollup_transaction().unwrap();
+            // let raw_transaction = rollup_transaction.to_raw_transaction().unwrap();
+
+            Ok((raw_transaction, PlainData::from(eth_plain_data)))
         }
         TransactionData::EthBundle(_data) => {
             unimplemented!()

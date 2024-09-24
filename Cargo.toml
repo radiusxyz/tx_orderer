@@ -17,7 +17,7 @@ radius-sequencer-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 sha3 = "0.10"
-skde = { git = "https://github.com/radiusxyz/skde", rev="21d0b03ba64a2f78cf8135b774a0949f5a934545"}
+skde = { git = "https://github.com/radiusxyz/skde", rev="d7233e3fe5a418507cecf465c71f2dc757241369"}
 tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.13"
 tracing = "0.1.37"

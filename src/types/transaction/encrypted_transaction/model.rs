@@ -47,4 +47,14 @@ impl EncryptedTransactionModel {
 
         kvstore()?.get(key)
     }
+
+    pub fn get_mut(
+        rollup_id: &String,
+        block_height: u64,
+        transaction_order: u64,
+    ) -> Result<Lock<'static, EncryptedTransaction>, KvStoreError> {
+        let key = &(Self::ID, rollup_id, block_height, transaction_order);
+
+        kvstore()?.get_mut(key)
+    }
 }

@@ -19,6 +19,14 @@ pub struct EthTransactionData {
 }
 
 impl EthTransactionData {
+    pub fn new(encrypted_data: EncryptedData, open_data: EthOpenData) -> Self {
+        Self {
+            encrypted_data,
+            open_data,
+            plain_data: None,
+        }
+    }
+
     pub fn encrypted_data(&self) -> &EncryptedData {
         &self.encrypted_data
     }

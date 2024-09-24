@@ -4,6 +4,7 @@ use radius_sequencer_sdk::{
     kvstore::{CachedKvStore, CachedKvStoreError},
     signature::PrivateKeySigner,
 };
+use skde::SkdeParams;
 
 use crate::{
     client::liveness::{
@@ -24,7 +25,8 @@ struct AppStateInner {
     liveness_clients: CachedKvStore,
     signers: CachedKvStore,
 
-    zkp_params: ZkpParams,
+    pvde_params: PvdeParams,
+    skde_params: SkdeParams,
 }
 
 unsafe impl Send for AppState {}
@@ -46,7 +48,8 @@ impl AppState {
         key_management_system_client: KeyManagementSystemClient,
         liveness_clients: CachedKvStore,
         signers: CachedKvStore,
-        zkp_params: ZkpParams,
+        pvde_params: PvdeParams,
+        skde_params: SkdeParams,
     ) -> Self {
         let inner = AppStateInner {
             config,
@@ -54,7 +57,8 @@ impl AppState {
             key_management_client: key_management_system_client,
             liveness_clients,
             signers,
-            zkp_params,
+            pvde_params,
+            skde_params,
         };
 
         Self {
@@ -114,7 +118,11 @@ impl AppState {
         &self.inner.key_management_client
     }
 
-    pub fn zkp_params(&self) -> &ZkpParams {
-        &self.inner.zkp_params
+    pub fn pvde_params(&self) -> &PvdeParams {
+        &self.inner.pvde_params
+    }
+
+    pub fn skde_params(&self) -> &SkdeParams {
+        &self.inner.skde_params
     }
 }
