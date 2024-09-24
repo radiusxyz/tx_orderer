@@ -21,8 +21,6 @@ impl SendRawTransaction {
         let parameter = parameter.parse::<Self>()?;
         let rollup = RollupModel::get(&parameter.rollup_id)?;
 
-        info!("SendRawTransaction: rollup_id: {}", parameter.rollup_id);
-
         // 2. Check is leader
         // TODO: error handling
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
@@ -89,6 +87,13 @@ impl SendRawTransaction {
                 rollup_block_height,
                 transaction_order,
                 follower_rpc_url_list,
+            );
+
+            info!(
+                "SendRawTransaction: order_commitment: {:?} / rollup_block_height: {:?} / transaction_order: {:?}",
+                order_commitment,
+                rollup_block_height,
+                transaction_order
             );
 
             Ok(order_commitment)

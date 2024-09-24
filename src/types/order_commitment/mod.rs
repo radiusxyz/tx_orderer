@@ -10,6 +10,7 @@ pub use model::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
+#[serde(untagged)]
 pub enum OrderCommitment {
     Single(SingleOrderCommitment),
     Bundle(BundleOrderCommitment),
@@ -26,8 +27,8 @@ pub struct BundleOrderCommitment {
 // #############################################################################
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(tag = "type", content = "data")]
 #[serde(rename_all = "snake_case")]
+#[serde(untagged)]
 pub enum SingleOrderCommitment {
     TransactionHash(TransactionHashOrderCommitment),
     Sign(SignOrderCommitment),

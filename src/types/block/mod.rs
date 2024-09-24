@@ -36,7 +36,7 @@ impl From<Vec<u8>> for BlockCommitment {
 pub struct Block {
     pub block_height: u64,
 
-    pub encrypted_transaction_list: EncryptedTransactionList,
+    pub encrypted_transaction_list: Vec<Option<EncryptedTransaction>>,
     pub raw_transaction_list: RawTransactionList,
 
     pub proposer_address: Address,
@@ -49,7 +49,7 @@ pub struct Block {
 impl Block {
     pub fn new(
         block_height: u64,
-        encrypted_transaction_list: EncryptedTransactionList,
+        encrypted_transaction_list: Vec<Option<EncryptedTransaction>>,
         raw_transaction_list: RawTransactionList,
         proposer_address: Address,
         signature: Signature,

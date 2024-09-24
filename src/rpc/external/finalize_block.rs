@@ -95,11 +95,9 @@ impl FinalizeBlock {
             }
         };
 
-        println!("stompesi -1");
         // Sync.
         Self::sync_block(&parameter, transaction_counts, cluster);
 
-        println!("stompesi -3");
         block_builder(
             context.clone(),
             parameter.message.rollup_id.clone(),

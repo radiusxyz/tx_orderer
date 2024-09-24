@@ -321,6 +321,14 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
             external::GetEncryptedTransactionWithOrderCommitment::handler,
         )?
         .register_rpc_method(
+            external::GetRawTransactionWithTransactionHash::METHOD_NAME,
+            external::GetRawTransactionWithTransactionHash::handler,
+        )?
+        .register_rpc_method(
+            external::GetRawTransactionWithOrderCommitment::METHOD_NAME,
+            external::GetRawTransactionWithOrderCommitment::handler,
+        )?
+        .register_rpc_method(
             external::SendRawTransaction::METHOD_NAME,
             external::SendRawTransaction::handler,
         )?

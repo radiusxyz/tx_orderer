@@ -1,5 +1,3 @@
-use ethers::utils::hex;
-
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

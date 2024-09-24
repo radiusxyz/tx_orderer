@@ -29,6 +29,15 @@ impl RawTransactionModel {
         kvstore()?.put(&key, raw_transaction)
     }
 
+    pub fn get_with_transaction_hash(
+        rollup_id: &String,
+        transaction_hash: &String,
+    ) -> Result<RawTransaction, KvStoreError> {
+        let key = &(Self::ID, rollup_id, transaction_hash);
+
+        kvstore()?.get(key)
+    }
+
     pub fn get(
         rollup_id: &String,
         block_height: u64,

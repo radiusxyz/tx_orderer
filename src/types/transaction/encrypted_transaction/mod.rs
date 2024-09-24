@@ -122,6 +122,10 @@ impl SkdeEncryptedTransaction {
         &self.transaction_data
     }
 
+    pub fn mut_transaction_data(&mut self) -> &mut TransactionData {
+        &mut self.transaction_data
+    }
+
     pub fn key_id(&self) -> u64 {
         self.key_id
     }
@@ -140,6 +144,17 @@ impl TransactionData {
         match self {
             Self::Eth(data) => data.convert_to_rollup_transaction(),
             Self::EthBundle(data) => data.convert_to_rollup_transaction(),
+        }
+    }
+
+    pub fn update_plain_data(&mut self, plain_data: EthPlainData) {
+        match self {
+            Self::Eth(data) => {
+                data.plain_data = Some(plain_data);
+            }
+            Self::EthBundle(data) => {
+                unimplemented!()
+            }
         }
     }
 }

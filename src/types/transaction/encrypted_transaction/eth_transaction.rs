@@ -15,7 +15,7 @@ pub struct EthTransactionData {
     encrypted_data: EncryptedData,
     open_data: EthOpenData,
 
-    plain_data: Option<EthPlainData>,
+    pub plain_data: Option<EthPlainData>,
 }
 
 impl EthTransactionData {
@@ -31,10 +31,6 @@ impl EthTransactionData {
         self.plain_data.as_ref()
     }
 
-    pub fn update_plain_data(&mut self, plain_data: EthPlainData) {
-        self.plain_data = Some(plain_data);
-    }
-
     pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {
         if self.plain_data.is_none() {
             return Err(Error::NotExistPlainData);
@@ -44,6 +40,10 @@ impl EthTransactionData {
             self.open_data
                 .convert_to_rollup_transaction(self.plain_data.as_ref().unwrap()),
         ))
+    }
+
+    pub fn update_plain_data(&mut self, plain_data: EthPlainData) {
+        self.plain_data = Some(plain_data);
     }
 }
 
