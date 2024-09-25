@@ -62,10 +62,10 @@ impl FinalizeBlock {
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
         let is_leader = cluster.is_leader(next_rollup_block_height);
 
-        let mut transaction_counts = 0;
+        let mut transaction_count = 0;
         match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
-                transaction_counts = rollup_metadata.transaction_order();
+                transaction_count = rollup_metadata.transaction_order();
 
                 rollup_metadata.set_rollup_block_height(next_rollup_block_height);
                 rollup_metadata.set_order_hash(OrderHash::default());
@@ -96,15 +96,14 @@ impl FinalizeBlock {
         };
 
         // Sync.
-        Self::sync_block(&parameter, transaction_counts, cluster);
+        Self::sync_block(&parameter, transaction_count, cluster);
 
         block_builder(
             context.clone(),
             parameter.message.rollup_id.clone(),
-            parameter.message.rollup_block_height,
-            transaction_counts,
             rollup.encrypted_transaction_type(),
-            context.key_management_system_client().clone(),
+            parameter.message.rollup_block_height,
+            transaction_count,
         );
 
         Ok(())

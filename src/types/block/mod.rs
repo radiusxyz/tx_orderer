@@ -37,7 +37,7 @@ pub struct Block {
     pub block_height: u64,
 
     pub encrypted_transaction_list: Vec<Option<EncryptedTransaction>>,
-    pub raw_transaction_list: RawTransactionList,
+    pub raw_transaction_list: Vec<RawTransaction>,
 
     pub proposer_address: Address,
     pub signature: Signature,
@@ -50,7 +50,7 @@ impl Block {
     pub fn new(
         block_height: u64,
         encrypted_transaction_list: Vec<Option<EncryptedTransaction>>,
-        raw_transaction_list: RawTransactionList,
+        raw_transaction_list: Vec<RawTransaction>,
         proposer_address: Address,
         signature: Signature,
         timestamp: Timestamp,

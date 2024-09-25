@@ -1,6 +1,8 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, pin::Pin, sync::Arc};
 
+use futures::future::{select_ok, Fuse};
 use radius_sequencer_sdk::signature::{Address, Signature};
+use serde::{de::DeserializeOwned, ser::Serialize};
 use skde::{
     delay_encryption::{decrypt, CipherPair, SecretKey},
     SkdeParams,
@@ -12,137 +14,153 @@ use crate::{
     state::AppState, types::*,
 };
 
+/// Block-builder task implements block-building mechanism for different
+/// transaction types in the following order:
+///
+/// 1. Iterate over transactions for a given rollup ID and the block height.
+/// 2. Fetch missing transactions.
+/// 3. - PVDE => Decrypt missing raw transactions from other sequencers.
+///    - SKDE => Decrypt the transaction with a decryption key.
+/// 4. Build the block with the list of raw transactions.
+/// 5. (Leader) Submit the block commitment.
 pub fn block_builder(
     context: Arc<AppState>,
     rollup_id: String,
+    rollup_encrypted_transaction_type: EncryptedTransactionType,
     rollup_block_height: u64,
-    transaction_counts: u64,
-    encrypted_transaction_type: EncryptedTransactionType,
-
-    key_management_system_client: KeyManagementSystemClient,
+    transaction_count: u64,
 ) {
     info!(
-        "rollup_id: {:?}, rollup_block_height: {:?}, transaction_counts: {:?}",
-        rollup_id, rollup_block_height, transaction_counts
+        "rollup_id: {:?}, rollup_block_height: {:?}, transaction_count: {:?}",
+        rollup_id, rollup_block_height, transaction_count
     );
 
+    match rollup_encrypted_transaction_type {
+        EncryptedTransactionType::Pvde => {
+            block_builder_pvde(context, rollup_id, rollup_block_height, transaction_count);
+        }
+        EncryptedTransactionType::Skde => {
+            block_builder_skde(context, rollup_id, rollup_block_height, transaction_count);
+        }
+        EncryptedTransactionType::NotSupport => unimplemented!(),
+    }
+}
+
+pub fn block_builder_skde(
+    context: Arc<AppState>,
+    rollup_id: String,
+    rollup_block_height: u64,
+    transaction_count: u64,
+) {
+    let key_management_system_client = context.key_management_system_client().clone();
+
     tokio::spawn(async move {
-        let mut raw_trasnaction_list = Vec::new();
-        let mut encrypted_transaction_list = Vec::new();
+        let mut raw_transaction_list =
+            Vec::<RawTransaction>::with_capacity(transaction_count as usize);
+        let mut encrypted_transaction_list =
+            Vec::<Option<EncryptedTransaction>>::with_capacity(transaction_count as usize);
 
-        match encrypted_transaction_type {
-            EncryptedTransactionType::Skde => {
-                let mut decryption_keys: HashMap<u64, SecretKey> = HashMap::new();
+        let mut decryption_keys: HashMap<u64, SecretKey> = HashMap::new();
 
-                for transaction_order in 0..transaction_counts {
-                    match RawTransactionModel::get(
-                        &rollup_id,
-                        rollup_block_height,
-                        transaction_order,
-                    ) {
-                        Ok(raw_transaction) => {
-                            raw_trasnaction_list.push(raw_transaction);
+        // 1. Iterate over transactions for a given rollup ID and the block height.
+        for transaction_order in 0..transaction_count {
+            let encrypted_transaction = match EncryptedTransactionModel::get(
+                &rollup_id,
+                rollup_block_height,
+                transaction_order,
+            ) {
+                Ok(encrypted_transaction) => Some(encrypted_transaction),
+                Err(error) => {
+                    if error.is_none_type() {
+                        None
+                    } else {
+                        panic!("error: {:?}", error);
+                    }
+                }
+            };
 
-                            let encrypted_transaction = match EncryptedTransactionModel::get(
-                                &rollup_id,
-                                rollup_block_height,
-                                transaction_order,
-                            ) {
-                                Ok(encrypted_transaction) => Some(encrypted_transaction),
-                                Err(error) => {
-                                    if error.is_none_type() {
-                                        None
-                                    } else {
-                                        panic!("error: {:?}", error);
-                                    }
+            encrypted_transaction_list.push(encrypted_transaction.clone());
+
+            match RawTransactionModel::get(&rollup_id, rollup_block_height, transaction_order) {
+                // If raw transaction exists, add it to the raw transaction list.
+                Ok(raw_transaction) => {
+                    raw_transaction_list.push(raw_transaction);
+                }
+                Err(error) => {
+                    if error.is_none_type() {
+                        match encrypted_transaction {
+                            Some(encrypted_transaction) => match encrypted_transaction {
+                                EncryptedTransaction::Skde(skde_encrypted_transaction) => {
+                                    let (raw_transaction, _plain_data) = decrypt_skde_transaction(
+                                        &skde_encrypted_transaction,
+                                        key_management_system_client.clone(),
+                                        &mut decryption_keys,
+                                        context.skde_params(),
+                                    )
+                                    .await
+                                    .unwrap();
+
+                                    RawTransactionModel::put(
+                                        &rollup_id,
+                                        rollup_block_height,
+                                        transaction_order,
+                                        &raw_transaction,
+                                    )
+                                    .unwrap();
+
+                                    raw_transaction_list.push(raw_transaction);
                                 }
-                            };
-
-                            encrypted_transaction_list.push(encrypted_transaction);
-                            continue;
-                        }
-                        Err(error) => {
-                            if error.is_none_type() {
-                                let encrypted_transaction = EncryptedTransactionModel::get(
-                                    &rollup_id,
-                                    rollup_block_height,
-                                    transaction_order,
-                                )
-                                .unwrap();
-
-                                encrypted_transaction_list
-                                    .push(Some(encrypted_transaction.clone()));
-
-                                match encrypted_transaction {
-                                    EncryptedTransaction::Skde(skde_encrypted_transaction) => {
-                                        // TODO: update plain_data
-                                        let (raw_transaction, plain_data) =
-                                            decrypt_skde_transaction(
-                                                &skde_encrypted_transaction,
-                                                key_management_system_client.clone(),
-                                                &mut decryption_keys,
-                                                context.skde_params(),
-                                            )
-                                            .await
-                                            .unwrap();
-
-                                        RawTransactionModel::put(
-                                            &rollup_id,
-                                            rollup_block_height,
-                                            transaction_order,
-                                            &raw_transaction,
-                                        )
-                                        .unwrap();
-
-                                        raw_trasnaction_list.push(raw_transaction);
-                                    }
-                                    EncryptedTransaction::Pvde(_pvde_encrypted_transaction) => {}
-                                };
+                                _ => {
+                                    panic!("error: {:?}", error);
+                                }
+                            },
+                            None => {
+                                unimplemented!("Sync encrypted transaction.")
                             }
                         }
                     }
                 }
             }
-            EncryptedTransactionType::Pvde => {
-                unimplemented!()
-                // TODO
-                // let raw_transaction =
-                // decrypt_transaction(
-                //     parameter.encrypted_transaction.
-                // clone(),
-                //     parameter.time_lock_puzzle.
-                // clone(),
-                //     context.config().is_using_zkp(),
-                //     &Some(PvdeParams::default()),
-                // )?;
-                // RawTransactionModel::put(
-                //     &parameter.rollup_id,
-                //     rollup_block_height,
-                //     transaction_order,
-                //     raw_transaction,
-                // )?;
-            }
-            _ => {}
         }
 
         // TODO
-        let mut block = Block::new(
+        let block = Block::new(
             rollup_block_height,
             encrypted_transaction_list.clone(),
-            RawTransactionList::new(raw_trasnaction_list.clone()),
+            raw_transaction_list.clone(),
             Address::from(vec![]),
             Signature::from(vec![]),
             Timestamp::new("0"),
             BlockCommitment::from(vec![]),
         );
 
-        block.raw_transaction_list = RawTransactionList::new(raw_trasnaction_list);
-        block.block_height = rollup_block_height;
-
-        // TODO:
-
         BlockModel::put(&rollup_id, rollup_block_height, &block).unwrap();
     });
+}
+
+pub fn block_builder_pvde(
+    context: Arc<AppState>,
+    rollup_id: String,
+    rollup_block_height: u64,
+    transaction_count: u64,
+) {
+    // TODO
+    // let raw_transaction =
+    // decrypt_transaction(
+    //     parameter.encrypted_transaction.
+    // clone(),
+    //     parameter.time_lock_puzzle.
+    // clone(),
+    //     context.config().is_using_zkp(),
+    //     &Some(PvdeParams::default()),
+    // )?;
+    // RawTransactionModel::put(
+    //     &parameter.rollup_id,
+    //     rollup_block_height,
+    //     transaction_order,
+    //     raw_transaction,
+    // )?
+    unimplemented!("Block builder for PVDE is unimplemented.")
 }
 
 async fn decrypt_skde_transaction(
@@ -214,3 +232,25 @@ async fn decrypt_skde_transaction(
         }
     }
 }
+
+// TODO: Add fetch function to fetch missing transactions.
+// async fn fetch<P, R>(
+//     rpc_client_list: &Vec<RpcClient>,
+//     method: &'static str,
+//     parameter: P,
+// ) -> Result<R, Error>
+// where
+//     P: Clone + Serialize + Send,
+//     R: DeserializeOwned,
+// {
+//     let fused_futures: Vec<Pin<Box<Fuse<_>>>> = rpc_client_list
+//         .iter()
+//         .map(|client| Box::pin(client.request::<P, R>(method,
+// parameter.clone()).fuse()))         .collect();
+
+//     let (rpc_response, _): (R, Vec<_>) = select_ok(fused_futures)
+//         .await
+//         .map_err(|_| Error::FetchResponse)?;
+
+//     Ok(rpc_response)
+// }

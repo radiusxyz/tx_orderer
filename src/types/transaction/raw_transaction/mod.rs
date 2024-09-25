@@ -53,16 +53,3 @@ impl RawTransaction {
         }
     }
 }
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RawTransactionList(Vec<RawTransaction>);
-
-impl RawTransactionList {
-    pub fn new(value: Vec<RawTransaction>) -> Self {
-        Self(value)
-    }
-
-    pub fn into_inner(self) -> Vec<RawTransaction> {
-        self.0
-    }
-}
