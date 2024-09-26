@@ -41,7 +41,6 @@ pub struct Block {
 
     pub proposer_address: Address,
     pub signature: Signature,
-    pub timestamp: Timestamp,
 
     pub block_commitment: BlockCommitment,
 }
@@ -53,7 +52,6 @@ impl Block {
         raw_transaction_list: Vec<RawTransaction>,
         proposer_address: Address,
         signature: Signature,
-        timestamp: Timestamp,
         block_commitment: BlockCommitment,
     ) -> Self {
         Self {
@@ -62,7 +60,6 @@ impl Block {
             raw_transaction_list,
             proposer_address,
             signature,
-            timestamp,
             block_commitment,
         }
     }

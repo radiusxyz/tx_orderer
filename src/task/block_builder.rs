@@ -158,7 +158,6 @@ pub fn block_builder_skde(
             raw_transaction_list.clone(),
             address,
             signature,
-            Timestamp::new("0"),
             block_commitment,
         );
 
@@ -223,22 +222,23 @@ async fn decrypt_skde_transaction(
 
     match skde_encrypted_transaction.transaction_data() {
         TransactionData::Eth(transaction_data) => {
-            let encrypted_data = transaction_data.encrypted_data().clone().into_inner();
+            let encrypted_data = transaction_data.encrypted_data().clone();
 
-            println!("encrypted_data: {:?}", encrypted_data);
+            // println!("encrypted_data: {:?}", encrypted_data);
 
-            let mut encrypted_data_iter = encrypted_data.split("/");
+            // let mut encrypted_data_iter = encrypted_data.split("/");
 
-            let c1 = encrypted_data_iter.next().unwrap().to_string();
-            let c2 = encrypted_data_iter.next().unwrap().to_string();
+            // let c1 = encrypted_data_iter.next().unwrap().to_string();
+            // let c2 = encrypted_data_iter.next().unwrap().to_string();
 
-            println!("c1: {:?}", c1);
-            println!("c2: {:?}", c2);
+            // println!("c1: {:?}", c1);
+            // println!("c2: {:?}", c2);
 
-            let cipher_text = CipherPair { c1, c2 };
+            // let cipher_text = CipherPair { c1, c2 };
 
             // let  = skde_zkp_params.clone().unwrap();
-            let decrypted_data = decrypt(skde_params, &cipher_text, &decryption_key).unwrap();
+            let decrypted_data =
+                decrypt(skde_params, encrypted_data.as_ref(), &decryption_key).unwrap();
 
             let eth_plain_data: EthPlainData = serde_json::from_str(&decrypted_data).unwrap();
 

@@ -275,6 +275,12 @@ impl RollupTransaction {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EncryptedData(String);
 
+impl AsRef<str> for EncryptedData {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
 impl AsRef<[u8]> for EncryptedData {
     fn as_ref(&self) -> &[u8] {
         self.0.as_bytes()

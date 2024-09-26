@@ -39,11 +39,13 @@ impl FinalizeBlock {
         println!("{:?}", rollup);
 
         // Verify the message.
-        parameter.signature.verify_message(
-            rollup.platform().into(),
-            &parameter.message,
-            parameter.message.executor_address.clone(),
-        )?;
+        // parameter.signature.verify_message(
+        //     rollup.platform().into(),
+        //     &parameter.message,
+        //     parameter.message.executor_address.clone(),
+        // )?;
+
+        // TODO:  check executor_address is in rollup executor addresses.
 
         let cluster = ClusterModel::get(
             rollup.platform(),

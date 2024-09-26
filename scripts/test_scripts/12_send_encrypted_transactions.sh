@@ -93,6 +93,5 @@ response=$(curl --silent --location $SEQUENCER_EXTERNAL_RPC_URL \
 block_height=$(echo "$response" | jq '.result.block.block_height')
 transaction_count=$(echo "$response" | jq '.result.block.encrypted_transaction_list | length')
 proposer_address=$(echo "$response" | jq -r '.result.block.proposer_address')
-timestamp=$(echo "$response" | jq '.result.block.timestamp')
 
-echo "get_block done - block_height: $block_height / transaction_count: $transaction_count / proposer_address: $proposer_address / timestamp: $timestamp"
+echo "get_block done - block_height: $block_height / transaction_count: $transaction_count / proposer_address: $proposer_address"
