@@ -7,7 +7,7 @@ pub struct GetSequencingInfos;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfosResponse {
-    sequencing_infos: Vec<((Platform, ServiceProvider), SequencingInfoPayload)>,
+    pub sequencing_infos: Vec<((Platform, ServiceProvider), SequencingInfoPayload)>,
 }
 
 impl GetSequencingInfos {

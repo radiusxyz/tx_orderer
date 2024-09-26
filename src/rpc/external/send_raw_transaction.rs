@@ -7,8 +7,8 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendRawTransaction {
-    rollup_id: String,
-    raw_transaction: RawTransaction,
+    pub rollup_id: String,
+    pub raw_transaction: RawTransaction,
 }
 
 impl SendRawTransaction {

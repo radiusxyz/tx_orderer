@@ -2,8 +2,8 @@ use crate::{rpc::prelude::*, types::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRawTransactionWithTransactionHash {
-    rollup_id: String,
-    transaction_hash: String,
+    pub rollup_id: String,
+    pub transaction_hash: String,
 }
 
 impl GetRawTransactionWithTransactionHash {

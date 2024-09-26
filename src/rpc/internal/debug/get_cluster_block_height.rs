@@ -2,9 +2,9 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterBlockHeight {
-    platform: Platform,
-    service_provider: ServiceProvider,
-    cluster_id: String,
+    pub platform: Platform,
+    pub service_provider: ServiceProvider,
+    pub cluster_id: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

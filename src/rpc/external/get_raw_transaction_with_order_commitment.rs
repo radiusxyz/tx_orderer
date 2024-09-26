@@ -2,9 +2,9 @@ use crate::{rpc::prelude::*, types::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRawTransactionWithOrderCommitment {
-    rollup_id: String,
-    rollup_block_height: u64,
-    transaction_order: u64,
+    pub rollup_id: String,
+    pub rollup_block_height: u64,
+    pub transaction_order: u64,
 }
 
 impl GetRawTransactionWithOrderCommitment {

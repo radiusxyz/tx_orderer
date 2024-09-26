@@ -7,9 +7,8 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
-    // TODO: check platform & service_provider add?
-    rollup_id: String,
-    encrypted_transaction: EncryptedTransaction,
+    pub rollup_id: String,
+    pub encrypted_transaction: EncryptedTransaction,
 }
 
 impl SendEncryptedTransaction {

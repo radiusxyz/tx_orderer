@@ -2,11 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRollup {
-    platform: Platform,
-    service_provider: ServiceProvider,
-
-    cluster_id: String,
-    rollup_id: String,
+    pub rollup_id: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

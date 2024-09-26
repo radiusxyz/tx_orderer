@@ -12,9 +12,6 @@ use crate::{
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlockMessage {
     platform: Platform,
-    // service_provider: ServiceProvider,
-    // cluster_id: String,
-    // chain_type: ChainType,
     executor_address: Address,
     rollup_id: String,
     platform_block_height: u64,
@@ -96,7 +93,7 @@ impl FinalizeBlock {
         };
 
         // Sync.
-        Self::sync_block(&parameter, transaction_count, cluster);
+        Self::sync_block(&parameter, transaction_count, cluster.clone());
 
         block_builder(
             context.clone(),
@@ -104,6 +101,7 @@ impl FinalizeBlock {
             rollup.encrypted_transaction_type(),
             parameter.message.rollup_block_height,
             transaction_count,
+            cluster,
         );
 
         Ok(())

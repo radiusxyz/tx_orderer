@@ -2,15 +2,14 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetCluster {
-    platform: Platform,
-    service_provider: ServiceProvider,
-
-    cluster_id: String,
+    pub platform: Platform,
+    pub service_provider: ServiceProvider,
+    pub cluster_id: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterResponse {
-    cluster_info: Cluster,
+    pub cluster_info: Cluster,
 }
 
 impl GetCluster {

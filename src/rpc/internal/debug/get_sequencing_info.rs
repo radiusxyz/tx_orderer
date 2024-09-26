@@ -4,8 +4,8 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfo {
-    platform: Platform,
-    service_provider: ServiceProvider,
+    pub platform: Platform,
+    pub service_provider: ServiceProvider,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
