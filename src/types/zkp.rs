@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use pvde::{
     halo2_proofs::{
         halo2curves::bn256::{Bn256, G1Affine},
