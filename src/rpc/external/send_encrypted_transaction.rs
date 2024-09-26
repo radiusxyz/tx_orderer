@@ -1,7 +1,10 @@
 use tracing::info;
 
 use crate::{
-    rpc::{cluster::SyncEncryptedTransaction, prelude::*},
+    rpc::{
+        cluster::{SyncEncryptedTransaction, SyncEncryptedTransactionMessage},
+        prelude::*,
+    },
     types::*,
 };
 
@@ -30,7 +33,6 @@ impl SendEncryptedTransaction {
         check_supported_encrypted_transaction(&rollup, &parameter.encrypted_transaction)?;
 
         // 2. Check is leader
-        // TODO: error handling
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
         let platform = rollup.platform();
         let service_provider = rollup.service_provider();
@@ -43,8 +45,7 @@ impl SendEncryptedTransaction {
             service_provider,
             cluster_id,
             platform_block_height,
-        )
-        .unwrap();
+        )?;
 
         if rollup_metadata.is_leader() {
             let transaction_order = rollup_metadata.transaction_order();
@@ -92,16 +93,16 @@ impl SendEncryptedTransaction {
             )?;
 
             // Sync Transaction
-            let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
-
-            sync_encrypted_transaction(
-                parameter.rollup_id.clone(),
-                parameter.encrypted_transaction.clone(),
-                order_commitment.clone(),
-                rollup_block_height,
-                transaction_order,
-                follower_rpc_url_list,
-            );
+            // let follower_rpc_url_list =
+            // cluster.get_follower_rpc_url_list(rollup_block_height);
+            // sync_encrypted_transaction(
+            //     parameter.rollup_id.clone(),
+            //     parameter.encrypted_transaction.clone(),
+            //     order_commitment.clone(),
+            //     rollup_block_height,
+            //     transaction_order,
+            //     follower_rpc_url_list,
+            // );
 
             match parameter.encrypted_transaction {
                 EncryptedTransaction::Pvde(_pvde_encrypted_transaction) => {
@@ -171,44 +172,49 @@ fn check_supported_encrypted_transaction(
 }
 
 pub fn sync_encrypted_transaction(
+    cluster: Cluster,
+    context: Arc<AppState>,
+    platform: Platform,
     rollup_id: String,
-    encrypted_transaction: EncryptedTransaction,
-
-    order_commitment: OrderCommitment,
-
     rollup_block_height: u64,
     transaction_order: u64,
-
-    follower_rpc_url_list: Vec<Option<String>>,
+    encrypted_transaction: EncryptedTransaction,
+    order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {
-        let rpc_parameter = SyncEncryptedTransaction {
-            rollup_id,
-            encrypted_transaction,
+        let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
+        if follower_rpc_url_list.len() > 0 {
+            let message = SyncEncryptedTransactionMessage {
+                rollup_id,
+                rollup_block_height,
+                transaction_order,
+                encrypted_transaction,
+                order_commitment,
+            };
+            let signature = context
+                .get_signer(platform)
+                .await
+                .unwrap()
+                .sign_message(&message)
+                .unwrap();
 
-            transaction_order,
-            rollup_block_height,
+            let rpc_parameter = SyncEncryptedTransaction { message, signature };
 
-            order_commitment,
-        };
+            for follower_rpc_url in follower_rpc_url_list {
+                let rpc_parameter = rpc_parameter.clone();
+                let follower_rpc_url = follower_rpc_url.unwrap();
 
-        for follower_rpc_url in follower_rpc_url_list {
-            let rpc_parameter = rpc_parameter.clone();
-
-            let follower_rpc_url = follower_rpc_url.unwrap();
-            println!("follower: {:?}", follower_rpc_url);
-
-            tokio::spawn(async move {
-                // TODO
-                let client = RpcClient::new(follower_rpc_url).unwrap();
-                let _ = client
-                    .request::<SyncEncryptedTransaction, ()>(
-                        SyncEncryptedTransaction::METHOD_NAME,
-                        rpc_parameter,
-                    )
-                    .await
-                    .unwrap();
-            });
+                tokio::spawn(async move {
+                    let client = RpcClient::new(follower_rpc_url).unwrap();
+                    let _ = client
+                        .request::<SyncEncryptedTransaction, ()>(
+                            SyncEncryptedTransaction::METHOD_NAME,
+                            rpc_parameter,
+                        )
+                        .await
+                        .unwrap();
+                });
+            }
         }
     });
 }

@@ -2,12 +2,16 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncEncryptedTransaction {
-    pub rollup_id: String,
-    pub encrypted_transaction: EncryptedTransaction,
+    pub message: SyncEncryptedTransactionMessage,
+    pub signature: Signature,
+}
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SyncEncryptedTransactionMessage {
+    pub rollup_id: String,
     pub rollup_block_height: u64,
     pub transaction_order: u64,
-
+    pub encrypted_transaction: EncryptedTransaction,
     pub order_commitment: OrderCommitment,
 }
 
@@ -17,40 +21,48 @@ impl SyncEncryptedTransaction {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        let rollup = RollupModel::get(&parameter.message.rollup_id)?;
+        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.message.rollup_id)?;
+        let cluster = ClusterModel::get(
+            rollup.platform(),
+            rollup.service_provider(),
+            rollup.cluster_id(),
+            rollup_metadata.platform_block_height(),
+        )?;
 
-        // Check block height
-        if parameter.rollup_block_height != rollup_metadata.rollup_block_height() {
-            return Err(Error::BlockHeightMismatch.into());
-        }
+        // Verify the leader signature
+        parameter.signature.verify_message(
+            rollup.platform().into(),
+            &parameter.message,
+            cluster.get_leader_address(parameter.message.rollup_block_height)?,
+        )?;
 
-        // TODO: sync??
-        if parameter.transaction_order == rollup_metadata.transaction_order() {
-            rollup_metadata.increase_transaction_order();
-            rollup_metadata
-                .update_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
-            rollup_metadata.update()?;
-        }
+        rollup_metadata.increase_transaction_order();
+        rollup_metadata.update()?;
 
-        let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
+        let transaction_hash = parameter
+            .message
+            .encrypted_transaction
+            .raw_transaction_hash();
+
         EncryptedTransactionModel::put_with_transaction_hash(
-            &parameter.rollup_id,
+            &parameter.message.rollup_id,
             &transaction_hash.inner().to_string(),
-            &parameter.encrypted_transaction,
+            &parameter.message.encrypted_transaction,
         )?;
 
         EncryptedTransactionModel::put(
-            &parameter.rollup_id,
-            parameter.rollup_block_height,
-            parameter.transaction_order,
-            &parameter.encrypted_transaction,
+            &parameter.message.rollup_id,
+            parameter.message.rollup_block_height,
+            parameter.message.transaction_order,
+            &parameter.message.encrypted_transaction,
         )?;
 
         OrderCommitmentModel::put(
-            &parameter.rollup_id,
-            parameter.rollup_block_height,
-            parameter.transaction_order,
-            &parameter.order_commitment,
+            &parameter.message.rollup_id,
+            parameter.message.rollup_block_height,
+            parameter.message.transaction_order,
+            &parameter.message.order_commitment,
         )?;
 
         Ok(())
