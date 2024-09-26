@@ -2,20 +2,16 @@ use radius_sequencer_sdk::signature::Address;
 use tracing::info;
 
 use crate::{
-    rpc::{
-        cluster::{SyncBlock, SyncBlockMessage},
-        prelude::*,
-    },
+    rpc::{cluster::SyncBlock, prelude::*},
     task::block_builder,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlockMessage {
-    platform: Platform,
-    executor_address: Address,
-    rollup_id: String,
-    platform_block_height: u64,
-    rollup_block_height: u64,
+    pub executor_address: Address,
+    pub rollup_id: String,
+    pub platform_block_height: u64,
+    pub rollup_block_height: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -29,6 +25,7 @@ impl FinalizeBlock {
 
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
+
         let rollup = RollupModel::get(&parameter.message.rollup_id)?;
 
         info!(
@@ -41,13 +38,12 @@ impl FinalizeBlock {
         println!("{:?}", parameter);
         println!("{:?}", rollup);
 
-        // TODO: Validate executor
-        // // verify siganture
-        // parameter.signature.verify_message(
-        //     rollup.rollup_type().into(),
-        //     &parameter.message,
-        //     parameter.message.address.clone(),
-        // )?;
+        // Verify the message.
+        parameter.signature.verify_message(
+            rollup.platform().into(),
+            &parameter.message,
+            parameter.message.executor_address.clone(),
+        )?;
 
         let cluster = ClusterModel::get(
             rollup.platform(),
@@ -107,22 +103,14 @@ impl FinalizeBlock {
         Ok(())
     }
 
-    pub fn sync_block(parameter: &Self, transaction_order: u64, cluster: Cluster) {
+    pub fn sync_block(parameter: &Self, transaction_count: u64, cluster: Cluster) {
         let parameter = parameter.clone();
-
-        let sync_block_message = SyncBlockMessage {
-            platform: parameter.message.platform.clone(),
-            address: parameter.message.executor_address.clone(),
-            rollup_id: parameter.message.rollup_id.clone(),
-            liveness_block_height: parameter.message.platform_block_height,
-            rollup_block_height: parameter.message.rollup_block_height,
-            transaction_order,
-        };
 
         tokio::spawn(async move {
             let rpc_parameter = SyncBlock {
-                message: sync_block_message.clone(),
-                signature: parameter.signature.clone(),
+                message: parameter.message,
+                signature: parameter.signature,
+                transaction_count,
             };
 
             for sequencer_rpc_url in cluster.get_others_rpc_url_list() {
