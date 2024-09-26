@@ -1,8 +1,13 @@
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
-use futures::future::{select_ok, Fuse};
-use radius_sequencer_sdk::signature::{Address, Signature};
-use serde::{de::DeserializeOwned, ser::Serialize};
+use futures::{
+    future::{select_ok, Fuse},
+    FutureExt,
+};
+use radius_sequencer_sdk::{
+    json_rpc::RpcClient,
+    signature::{Address, Signature},
+};
 use skde::{
     delay_encryption::{decrypt, CipherPair, SecretKey},
     SkdeParams,
@@ -11,7 +16,7 @@ use tracing::info;
 
 use crate::{
     client::liveness::key_management_system::KeyManagementSystemClient, error::Error,
-    state::AppState, types::*,
+    rpc::external::GetEncryptedTransactionWithOrderCommitment, state::AppState, types::*,
 };
 
 /// Block-builder task implements block-building mechanism for different
@@ -29,6 +34,7 @@ pub fn block_builder(
     rollup_encrypted_transaction_type: EncryptedTransactionType,
     rollup_block_height: u64,
     transaction_count: u64,
+    cluster: Cluster,
 ) {
     info!(
         "rollup_id: {:?}, rollup_block_height: {:?}, transaction_count: {:?}",
@@ -40,7 +46,13 @@ pub fn block_builder(
             block_builder_pvde(context, rollup_id, rollup_block_height, transaction_count);
         }
         EncryptedTransactionType::Skde => {
-            block_builder_skde(context, rollup_id, rollup_block_height, transaction_count);
+            block_builder_skde(
+                context,
+                rollup_id,
+                rollup_block_height,
+                transaction_count,
+                cluster,
+            );
         }
         EncryptedTransactionType::NotSupport => unimplemented!(),
     }
@@ -51,6 +63,7 @@ pub fn block_builder_skde(
     rollup_id: String,
     rollup_block_height: u64,
     transaction_count: u64,
+    cluster: Cluster,
 ) {
     let key_management_system_client = context.key_management_system_client().clone();
 
@@ -72,9 +85,20 @@ pub fn block_builder_skde(
                 Ok(encrypted_transaction) => Some(encrypted_transaction),
                 Err(error) => {
                     if error.is_none_type() {
-                        None
+                        // 2. Fetch the missing transaction from other sequencers.
+                        match fetch_missing_transaction(
+                            rollup_id.clone(),
+                            rollup_block_height,
+                            transaction_order,
+                            cluster.clone(),
+                        )
+                        .await
+                        {
+                            Ok(encrypted_transaction) => Some(encrypted_transaction),
+                            Err(error) => panic!("block_builder: {:?}", error),
+                        }
                     } else {
-                        panic!("error: {:?}", error);
+                        panic!("block_builder: {:?}", error);
                     }
                 }
             };
@@ -123,18 +147,26 @@ pub fn block_builder_skde(
             }
         }
 
-        // TODO
+        let signer = context.get_signer(Platform::Ethereum).await.unwrap();
+        let address = signer.address().clone();
+        let signature = signer.sign_message("").unwrap(); // TODO: set the message.
+        let block_commitment = BlockCommitment::from(vec![]);
+
         let block = Block::new(
             rollup_block_height,
             encrypted_transaction_list.clone(),
             raw_transaction_list.clone(),
-            Address::from(vec![]),
-            Signature::from(vec![]),
+            address,
+            signature,
             Timestamp::new("0"),
-            BlockCommitment::from(vec![]),
+            block_commitment,
         );
 
         BlockModel::put(&rollup_id, rollup_block_height, &block).unwrap();
+
+        if cluster.is_leader(rollup_block_height) {
+            // TODO: (Leader) Register the block commitment.
+        }
     });
 }
 
@@ -234,23 +266,36 @@ async fn decrypt_skde_transaction(
 }
 
 // TODO: Add fetch function to fetch missing transactions.
-// async fn fetch<P, R>(
-//     rpc_client_list: &Vec<RpcClient>,
-//     method: &'static str,
-//     parameter: P,
-// ) -> Result<R, Error>
-// where
-//     P: Clone + Serialize + Send,
-//     R: DeserializeOwned,
-// {
-//     let fused_futures: Vec<Pin<Box<Fuse<_>>>> = rpc_client_list
-//         .iter()
-//         .map(|client| Box::pin(client.request::<P, R>(method,
-// parameter.clone()).fuse()))         .collect();
+async fn fetch_missing_transaction(
+    rollup_id: String,
+    rollup_block_height: u64,
+    transaction_order: u64,
+    cluster: Cluster,
+) -> Result<EncryptedTransaction, Error> {
+    let rpc_client_list: Vec<RpcClient> = cluster
+        .get_others_rpc_url_list()
+        .into_iter()
+        .filter_map(|rpc_url| match rpc_url {
+            Some(rpc_url) => RpcClient::new(rpc_url).ok(),
+            None => None,
+        })
+        .collect();
 
-//     let (rpc_response, _): (R, Vec<_>) = select_ok(fused_futures)
-//         .await
-//         .map_err(|_| Error::FetchResponse)?;
+    let method = GetEncryptedTransactionWithOrderCommitment::METHOD_NAME;
+    let parameter = GetEncryptedTransactionWithOrderCommitment {
+        rollup_id,
+        rollup_block_height,
+        transaction_order,
+    };
 
-//     Ok(rpc_response)
-// }
+    let fused_futures: Vec<Pin<Box<Fuse<_>>>> = rpc_client_list
+        .iter()
+        .map(|client| Box::pin(client.request(method, parameter.clone()).fuse()))
+        .collect();
+
+    let (rpc_response, _): (EncryptedTransaction, Vec<_>) = select_ok(fused_futures)
+        .await
+        .map_err(|_| Error::FetchResponse)?;
+
+    Ok(rpc_response)
+}
