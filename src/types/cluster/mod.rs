@@ -5,6 +5,7 @@ use std::collections::btree_set::{self, BTreeSet};
 pub use model::*;
 
 use super::prelude::*;
+use crate::error::Error;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct ClusterIdList(BTreeSet<String>);
@@ -104,5 +105,14 @@ impl Cluster {
         self.sequencer_rpc_url_list
             .get(leader_index)
             .and_then(|(_address, rpc_url)| rpc_url.clone())
+    }
+
+    pub fn get_leader_address(&self, rollup_block_height: u64) -> Result<String, Error> {
+        let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
+
+        self.sequencer_rpc_url_list
+            .get(leader_index)
+            .and_then(|(_address, rpc_url)| rpc_url.clone())
+            .ok_or(Error::EmptyLeaderRpcUrl)
     }
 }
