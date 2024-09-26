@@ -11,17 +11,31 @@ pub use model::*;
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RawTransactionHash(String);
 
+impl Default for RawTransactionHash {
+    fn default() -> Self {
+        Self(const_hex::encode([0; 32]))
+    }
+}
+
+impl AsRef<[u8]> for RawTransactionHash {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+impl AsRef<str> for RawTransactionHash {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
 impl RawTransactionHash {
-    pub fn new(value: impl AsRef<str>) -> Self {
-        Self(value.as_ref().to_owned())
+    pub fn new(value: impl AsRef<[u8]>) -> Self {
+        Self(const_hex::encode(value))
     }
 
-    pub fn into_inner(self) -> String {
+    pub fn as_string(self) -> String {
         self.0
-    }
-
-    pub fn inner(&self) -> &str {
-        &self.0
     }
 }
 

@@ -34,7 +34,7 @@ impl SyncRawTransaction {
         let transaction_hash = parameter.raw_transaction.raw_transaction_hash();
         RawTransactionModel::put_with_transaction_hash(
             &parameter.rollup_id,
-            &transaction_hash.inner().to_string(),
+            &transaction_hash,
             &parameter.raw_transaction,
         )?;
 

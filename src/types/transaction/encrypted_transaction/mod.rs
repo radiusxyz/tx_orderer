@@ -10,45 +10,6 @@ pub use eth_bundle_transaction::*;
 pub use eth_transaction::*;
 pub use model::*;
 
-#[test]
-fn works() {
-    #[derive(Clone, Debug, Deserialize, Serialize)]
-    #[serde(tag = "type", content = "encrypted_transaction")]
-    #[serde(rename_all = "snake_case")]
-    pub enum Transaction {
-        Pvde(Pvde),
-        Skde(Skde),
-    }
-
-    #[derive(Clone, Debug, Deserialize, Serialize)]
-    pub struct Pvde {
-        data: String,
-    }
-
-    #[derive(Clone, Debug, Deserialize, Serialize)]
-    pub struct Skde {
-        key_id: String,
-        data: String,
-    }
-
-    let pvde = serde_json::json!({
-        "type": "pvde",
-        "encrypted_transaction": {
-            "data": "PVDE data"
-        }
-    });
-    println!("{:?}", serde_json::from_value::<Transaction>(pvde).unwrap());
-
-    let skde = serde_json::json!({
-        "type": "skde",
-        "encrypted_transaction": {
-            "key_id": "key ID",
-            "data": "SKDE data"
-        }
-    });
-    println!("{:?}", serde_json::from_value::<Transaction>(skde).unwrap());
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EncryptedTransactionList(Vec<EncryptedTransaction>);
 
@@ -72,7 +33,6 @@ pub enum EncryptedTransaction {
 
 impl EncryptedTransaction {
     pub fn raw_transaction_hash(&self) -> RawTransactionHash {
-        // TODO:
         RawTransactionHash::new("hi")
     }
 
@@ -104,9 +64,6 @@ impl EncryptedTransaction {
                 .encrypted_data(),
         }
     }
-
-    //     encrypted_data
-    // open_data
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -150,7 +107,6 @@ impl PvdeEncryptedTransaction {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SkdeEncryptedTransaction {
     transaction_data: TransactionData,
-
     key_id: u64,
 }
 

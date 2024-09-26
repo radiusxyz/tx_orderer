@@ -67,14 +67,11 @@ impl SendEncryptedTransaction {
 
             let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
 
-            println!(
-                "transaction_hash: {:?}",
-                transaction_hash.inner().to_string()
-            );
+            println!("transaction_hash: {:?}", transaction_hash);
 
             EncryptedTransactionModel::put_with_transaction_hash(
                 &parameter.rollup_id,
-                &transaction_hash.inner().to_string(),
+                &transaction_hash,
                 &parameter.encrypted_transaction,
             )?;
 
@@ -356,7 +353,7 @@ pub fn issue_order_commitment(
     match order_commitment_type {
         OrderCommitmentType::TransactionHash => {
             OrderCommitment::Single(SingleOrderCommitment::TransactionHash(
-                TransactionHashOrderCommitment(transaction_hash.into_inner()),
+                TransactionHashOrderCommitment(transaction_hash.as_string()),
             ))
         }
         OrderCommitmentType::Sign => {

@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use ethers::utils::hex;
 use sha3::{Digest, Sha3_256};
 
 use crate::{error::Error, types::prelude::*};
@@ -97,21 +96,19 @@ pub struct OrderHashList(Vec<OrderHash>);
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct OrderHash(String);
 
-impl OrderHash {
-    pub fn update_order_hash(&self, raw_tx_hash: &RawTransactionHash) -> OrderHash {
-        let mut hasher = Sha3_256::new();
-
-        // TODO(jaemin): check hasher params
-        hasher.update(self.0.as_bytes());
-        hasher.update(raw_tx_hash.clone().into_inner().as_bytes());
-
-        let order_hash_bytes = hasher.finalize();
-        OrderHash(hex::encode(order_hash_bytes))
+impl Default for OrderHash {
+    fn default() -> Self {
+        Self(const_hex::encode([0; 32]))
     }
 }
 
-impl Default for OrderHash {
-    fn default() -> Self {
-        Self("0000000000000000000000000000000000000000000000000000000000000000".to_owned())
+impl OrderHash {
+    pub fn update_order_hash(&self, raw_tx_hash: &RawTransactionHash) -> OrderHash {
+        let mut hasher = Sha3_256::new();
+        hasher.update(self.0.as_bytes());
+        hasher.update(raw_tx_hash);
+        let order_hash_bytes = hasher.finalize();
+
+        OrderHash(const_hex::encode(order_hash_bytes))
     }
 }

@@ -59,7 +59,7 @@ impl SendRawTransaction {
 
             RawTransactionModel::put_with_transaction_hash(
                 &parameter.rollup_id,
-                &transaction_hash.inner().to_string(),
+                &transaction_hash,
                 &parameter.raw_transaction,
             )?;
 

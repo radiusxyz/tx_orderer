@@ -47,7 +47,7 @@ impl SyncEncryptedTransaction {
 
         EncryptedTransactionModel::put_with_transaction_hash(
             &parameter.message.rollup_id,
-            &transaction_hash.inner().to_string(),
+            &transaction_hash,
             &parameter.message.encrypted_transaction,
         )?;
 

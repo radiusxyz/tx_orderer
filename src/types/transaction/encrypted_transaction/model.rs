@@ -8,8 +8,7 @@ impl EncryptedTransactionModel {
 
     pub fn put_with_transaction_hash(
         rollup_id: &String,
-        transaction_hash: &String,
-
+        transaction_hash: &RawTransactionHash,
         encrypted_transaction: &EncryptedTransaction,
     ) -> Result<(), KvStoreError> {
         let key = &(Self::ID, rollup_id, transaction_hash);
@@ -21,7 +20,6 @@ impl EncryptedTransactionModel {
         rollup_id: &String,
         rollup_block_height: u64,
         transaction_order: u64,
-
         encrypted_transaction: &EncryptedTransaction,
     ) -> Result<(), KvStoreError> {
         let key = &(Self::ID, rollup_id, rollup_block_height, transaction_order);

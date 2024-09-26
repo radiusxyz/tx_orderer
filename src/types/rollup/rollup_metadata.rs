@@ -69,8 +69,10 @@ impl RollupMetadata {
         self.transaction_order
     }
 
-    pub fn update_order_hash(&mut self, raw_transaction_hash: &RawTransactionHash) -> &OrderHash {
-        self.order_hash.update_order_hash(raw_transaction_hash);
-        &self.order_hash
+    pub fn update_order_hash(&mut self, raw_transaction_hash: &RawTransactionHash) -> OrderHash {
+        let previous_order_hash = self.order_hash.clone();
+        self.order_hash = self.order_hash.update_order_hash(raw_transaction_hash);
+
+        previous_order_hash
     }
 }

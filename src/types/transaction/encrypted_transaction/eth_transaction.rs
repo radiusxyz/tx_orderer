@@ -1,10 +1,7 @@
-// TODO:
+// TODO: Remove ethers
 use ethers::{
     types::{self as eth_types, Bytes, U256},
-    utils::{
-        hex,
-        rlp::{self, Decodable, DecoderError},
-    },
+    utils::rlp::{self, Decodable, DecoderError},
 };
 use serde_json::Value;
 
@@ -79,10 +76,7 @@ pub struct EthOpenData {
 impl From<eth_types::Transaction> for EthOpenData {
     fn from(transaction: eth_types::Transaction) -> Self {
         Self {
-            raw_tx_hash: RawTransactionHash::new(format!(
-                "0x{}",
-                hex::encode(transaction.hash.as_bytes())
-            )),
+            raw_tx_hash: RawTransactionHash::default(),
             from: transaction.from,
             nonce: transaction.nonce,
             gas_price: transaction.gas_price,
@@ -112,9 +106,7 @@ impl EthOpenData {
     ) -> eth_types::Transaction {
         eth_types::Transaction {
             hash: eth_types::H256::from_slice(
-                hex::decode(self.raw_tx_hash.clone().into_inner())
-                    .unwrap()
-                    .as_slice(),
+                const_hex::decode(&self.raw_tx_hash).unwrap().as_slice(),
             ),
             nonce: self.nonce,
             block_hash: self.block_hash,
@@ -153,11 +145,12 @@ pub struct EthPlainData {
 
 pub fn to_raw_tx(transaction: eth_types::Transaction) -> String {
     let rlp_bytes = transaction.rlp();
-    format!("0x{}", hex::encode(rlp_bytes))
+
+    const_hex::encode_prefixed(rlp_bytes)
 }
 
 pub fn eth_bytes_to_hex(bytes: eth_types::Bytes) -> String {
-    format!("0x{}", hex::encode(bytes))
+    const_hex::encode_prefixed(bytes)
 }
 
 pub fn decode_transaction(rlp: &rlp::Rlp) -> Result<eth_types::Transaction, DecoderError> {
@@ -166,7 +159,8 @@ pub fn decode_transaction(rlp: &rlp::Rlp) -> Result<eth_types::Transaction, Deco
 
 pub fn decode_rlp_transaction(rlp_hex: &str) -> Result<eth_types::Transaction, DecoderError> {
     let hex_str = rlp_hex.trim_start_matches("0x");
-    let rlp_bytes = hex::decode(hex_str).map_err(|_| DecoderError::Custom("hex decode error"))?;
+    let rlp_bytes =
+        const_hex::decode(hex_str).map_err(|_| DecoderError::Custom("hex decode error"))?;
     let rlp = rlp::Rlp::new(&rlp_bytes);
 
     eth_types::Transaction::decode(&rlp)
@@ -197,7 +191,7 @@ pub fn string_to_eth_plain_data(string: &str) -> Result<EthPlainData, Box<dyn st
     };
 
     let input = if let Some(data_str) = json.get("data").and_then(|v| v.as_str()) {
-        Bytes::from(hex::decode(data_str.trim_start_matches("0x"))?)
+        Bytes::from(const_hex::decode(data_str.trim_start_matches("0x"))?)
     } else {
         Bytes::default()
     };

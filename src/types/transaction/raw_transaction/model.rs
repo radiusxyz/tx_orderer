@@ -8,7 +8,7 @@ impl RawTransactionModel {
 
     pub fn put_with_transaction_hash(
         rollup_id: &String,
-        transaction_hash: &String,
+        transaction_hash: &RawTransactionHash,
 
         raw_transaction: &RawTransaction,
     ) -> Result<(), KvStoreError> {
