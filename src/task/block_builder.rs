@@ -85,18 +85,7 @@ pub fn block_builder_skde(
                 Ok(encrypted_transaction) => Some(encrypted_transaction),
                 Err(error) => {
                     if error.is_none_type() {
-                        // 2. Fetch the missing transaction from other sequencers.
-                        match fetch_missing_transaction(
-                            rollup_id.clone(),
-                            rollup_block_height,
-                            transaction_order,
-                            cluster.clone(),
-                        )
-                        .await
-                        {
-                            Ok(encrypted_transaction) => Some(encrypted_transaction),
-                            Err(error) => panic!("block_builder: {:?}", error),
-                        }
+                        None
                     } else {
                         panic!("block_builder: {:?}", error);
                     }
@@ -112,34 +101,39 @@ pub fn block_builder_skde(
                 }
                 Err(error) => {
                     if error.is_none_type() {
+                        // 2. Fetch the missing transaction from other sequencers.
+                        let encrypted_transaction = fetch_missing_transaction(
+                            rollup_id.clone(),
+                            rollup_block_height,
+                            transaction_order,
+                            cluster.clone(),
+                        )
+                        .await
+                        .unwrap();
+
                         match encrypted_transaction {
-                            Some(encrypted_transaction) => match encrypted_transaction {
-                                EncryptedTransaction::Skde(skde_encrypted_transaction) => {
-                                    let (raw_transaction, _plain_data) = decrypt_skde_transaction(
-                                        &skde_encrypted_transaction,
-                                        key_management_system_client.clone(),
-                                        &mut decryption_keys,
-                                        context.skde_params(),
-                                    )
-                                    .await
-                                    .unwrap();
+                            EncryptedTransaction::Skde(skde_encrypted_transaction) => {
+                                let (raw_transaction, _plain_data) = decrypt_skde_transaction(
+                                    &skde_encrypted_transaction,
+                                    key_management_system_client.clone(),
+                                    &mut decryption_keys,
+                                    context.skde_params(),
+                                )
+                                .await
+                                .unwrap();
 
-                                    RawTransactionModel::put(
-                                        &rollup_id,
-                                        rollup_block_height,
-                                        transaction_order,
-                                        &raw_transaction,
-                                    )
-                                    .unwrap();
+                                RawTransactionModel::put(
+                                    &rollup_id,
+                                    rollup_block_height,
+                                    transaction_order,
+                                    &raw_transaction,
+                                )
+                                .unwrap();
 
-                                    raw_transaction_list.push(raw_transaction);
-                                }
-                                _ => {
-                                    panic!("error: {:?}", error);
-                                }
-                            },
-                            None => {
-                                unimplemented!("Sync encrypted transaction.")
+                                raw_transaction_list.push(raw_transaction);
+                            }
+                            _ => {
+                                panic!("error: {:?}", error);
                             }
                         }
                     }
