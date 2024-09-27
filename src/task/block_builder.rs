@@ -77,7 +77,7 @@ pub fn block_builder_skde(
 
         // 1. Iterate over transactions for a given rollup ID and the block height.
         for transaction_order in 0..transaction_count {
-            let encrypted_transaction = match EncryptedTransactionModel::get(
+            let mut encrypted_transaction = match EncryptedTransactionModel::get(
                 &rollup_id,
                 rollup_block_height,
                 transaction_order,
@@ -101,17 +101,21 @@ pub fn block_builder_skde(
                 }
                 Err(error) => {
                     if error.is_none_type() {
-                        // 2. Fetch the missing transaction from other sequencers.
-                        let encrypted_transaction = fetch_missing_transaction(
-                            rollup_id.clone(),
-                            rollup_block_height,
-                            transaction_order,
-                            cluster.clone(),
-                        )
-                        .await
-                        .unwrap();
+                        if encrypted_transaction.is_none() {
+                            // 2. Fetch the missing transaction from other sequencers.
+                            encrypted_transaction = Some(
+                                fetch_missing_transaction(
+                                    rollup_id.clone(),
+                                    rollup_block_height,
+                                    transaction_order,
+                                    cluster.clone(),
+                                )
+                                .await
+                                .unwrap(),
+                            );
+                        }
 
-                        match encrypted_transaction {
+                        match encrypted_transaction.unwrap() {
                             EncryptedTransaction::Skde(skde_encrypted_transaction) => {
                                 let (raw_transaction, _plain_data) = decrypt_skde_transaction(
                                     &skde_encrypted_transaction,
@@ -223,19 +227,6 @@ async fn decrypt_skde_transaction(
         TransactionData::Eth(transaction_data) => {
             let encrypted_data = transaction_data.encrypted_data().clone();
 
-            // println!("encrypted_data: {:?}", encrypted_data);
-
-            // let mut encrypted_data_iter = encrypted_data.split("/");
-
-            // let c1 = encrypted_data_iter.next().unwrap().to_string();
-            // let c2 = encrypted_data_iter.next().unwrap().to_string();
-
-            // println!("c1: {:?}", c1);
-            // println!("c2: {:?}", c2);
-
-            // let cipher_text = CipherPair { c1, c2 };
-
-            // let  = skde_zkp_params.clone().unwrap();
             let decrypted_data =
                 decrypt(skde_params, encrypted_data.as_ref(), &decryption_key).unwrap();
 
@@ -247,14 +238,6 @@ async fn decrypt_skde_transaction(
 
             let eth_raw_transaction = EthRawTransaction::from(to_raw_tx(rollup_transaction));
             let raw_transaction = RawTransaction::from(eth_raw_transaction);
-
-            // print!("plain_text: {:?}", plain_text);
-
-            // let eth_plain_data = string_to_eth_plain_data(&plain_text).unwrap();
-
-            // let rollup_transaction =
-            // transaction_data.convert_to_rollup_transaction().unwrap();
-            // let raw_transaction = rollup_transaction.to_raw_transaction().unwrap();
 
             Ok((raw_transaction, PlainData::from(eth_plain_data)))
         }

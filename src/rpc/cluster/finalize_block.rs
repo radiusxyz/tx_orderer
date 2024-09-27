@@ -60,6 +60,12 @@ impl FinalizeBlock {
         let mut transaction_count = 0;
         match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
+                // TODO: check the block generated or generating.
+
+                // if rollup_metadata.rollup_block_height() !=
+                // parameter.message.rollup_block_height {     return
+                // Err(Error::InvalidBlockHeight.into()); }
+
                 transaction_count = rollup_metadata.transaction_order();
 
                 rollup_metadata.set_rollup_block_height(next_rollup_block_height);

@@ -6,16 +6,37 @@ pub struct GetBlock {
     pub rollup_block_height: u64,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetBlockResponse {
+    pub block_height: u64,
+
+    pub encrypted_transaction_list: Vec<Option<EncryptedTransaction>>,
+    pub raw_transaction_list: Vec<RawTransaction>,
+
+    pub proposer_address: String,
+    pub signature: String,
+
+    pub block_commitment: String,
+}
+
 impl GetBlock {
     pub const METHOD_NAME: &'static str = "get_block";
 
     pub async fn handler(
         parameter: RpcParameter,
         _context: Arc<AppState>,
-    ) -> Result<Block, RpcError> {
+    ) -> Result<GetBlockResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        BlockModel::get(&parameter.rollup_id, parameter.rollup_block_height)
-            .map_err(|error| error.into())
+        let block = BlockModel::get(&parameter.rollup_id, parameter.rollup_block_height)?;
+
+        Ok(GetBlockResponse {
+            block_height: block.block_height,
+            encrypted_transaction_list: block.encrypted_transaction_list,
+            raw_transaction_list: block.raw_transaction_list,
+            proposer_address: block.proposer_address.as_hex_string(),
+            signature: block.signature.as_hex_string(),
+            block_commitment: const_hex::encode_prefixed(block.block_commitment),
+        })
     }
 }

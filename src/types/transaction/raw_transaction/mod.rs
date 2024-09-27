@@ -17,6 +17,12 @@ impl Default for RawTransactionHash {
     }
 }
 
+impl From<String> for RawTransactionHash {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
 impl AsRef<[u8]> for RawTransactionHash {
     fn as_ref(&self) -> &[u8] {
         self.0.as_bytes()

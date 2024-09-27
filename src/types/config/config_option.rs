@@ -45,22 +45,6 @@ pub struct ConfigOption {
     #[clap(long = "key-management-system-rpc-url")]
     pub key_management_system_rpc_url: Option<String>,
 
-    #[doc = "Set the cluster types"]
-    #[clap(long = "cluster-types")]
-    pub cluster_type: Option<String>,
-
-    #[doc = "Set the liveness provider rpc url"]
-    #[clap(long = "liveness-provider-rpc-url")]
-    pub liveness_provider_rpc_url: Option<String>,
-
-    #[doc = "Set the liveness provider websocket url"]
-    #[clap(long = "liveness-provider-websocket-url")]
-    pub liveness_provider_websocket_url: Option<String>,
-
-    #[doc = "Set the liveness contract address"]
-    #[clap(long = "liveness-contract-address")]
-    pub liveness_contract_address: Option<String>,
-
     #[doc = "Set using zkp"]
     #[clap(long = "is-using-zkp")]
     pub is_using_zkp: Option<bool>,
@@ -77,11 +61,6 @@ impl Default for ConfigOption {
 
             seeder_rpc_url: Some(DEFAULT_SEEDER_RPC_URL.into()),
             key_management_system_rpc_url: Some(DEFAULT_KEY_MANAGEMENT_SYSTEM_RPC_URL.into()),
-            cluster_type: Some(DEFAULT_CLUSTER_TYPE.into()),
-
-            liveness_provider_rpc_url: Some(DEFAULT_LIVENESS_PROVIDER_RPC_URL.into()),
-            liveness_provider_websocket_url: Some(DEFAULT_LIVENESS_PROVIDER_WEBSOCKET_URL.into()),
-            liveness_contract_address: Some(DEFAULT_LIVENESS_CONTRACT_ADDRESS.into()),
 
             is_using_zkp: Some(false),
         }
@@ -115,30 +94,6 @@ impl ConfigOption {
             &self.key_management_system_rpc_url,
         );
 
-        set_toml_comment(&mut toml_string, "Set cluster type");
-        set_toml_name_value(&mut toml_string, "cluster_type", &self.cluster_type);
-
-        set_toml_comment(&mut toml_string, "Set liveness provider rpc url");
-        set_toml_name_value(
-            &mut toml_string,
-            "liveness_provider_rpc_url",
-            &self.liveness_provider_rpc_url,
-        );
-
-        set_toml_comment(&mut toml_string, "Set liveness provider websocket url");
-        set_toml_name_value(
-            &mut toml_string,
-            "liveness_provider_websocket_url",
-            &self.liveness_provider_websocket_url,
-        );
-
-        set_toml_comment(&mut toml_string, "Set liveness contract address");
-        set_toml_name_value(
-            &mut toml_string,
-            "liveness_contract_address",
-            &self.liveness_contract_address,
-        );
-
         set_toml_comment(&mut toml_string, "Set using zkp");
         set_toml_name_value(&mut toml_string, "is_using_zkp", &self.is_using_zkp);
 
@@ -168,22 +123,6 @@ impl ConfigOption {
 
         if other.key_management_system_rpc_url.is_some() {
             self.key_management_system_rpc_url = other.key_management_system_rpc_url.clone();
-        }
-
-        if other.cluster_type.is_some() {
-            self.cluster_type = other.cluster_type.clone();
-        }
-
-        if other.liveness_provider_rpc_url.is_some() {
-            self.liveness_provider_rpc_url = other.liveness_provider_rpc_url.clone();
-        }
-
-        if other.liveness_provider_websocket_url.is_some() {
-            self.liveness_provider_websocket_url = other.liveness_provider_websocket_url.clone();
-        }
-
-        if other.liveness_contract_address.is_some() {
-            self.liveness_contract_address = other.liveness_contract_address.clone();
         }
 
         if other.is_using_zkp.is_some() {

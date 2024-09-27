@@ -1,7 +1,9 @@
+use const_hex::{hex, ToHex, ToHexExt};
+
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EthRawTransaction(String);
+pub struct EthRawTransaction(pub String);
 
 impl From<String> for EthRawTransaction {
     fn from(value: String) -> Self {
@@ -11,19 +13,13 @@ impl From<String> for EthRawTransaction {
 
 impl EthRawTransaction {
     pub fn raw_transaction_hash(&self) -> RawTransactionHash {
-        let raw_transaction_string = serde_json::to_string(&self.0).unwrap();
-        let parsed_raw_transaction_string: String =
-            serde_json::from_str(&raw_transaction_string).unwrap();
+        println!("self.0: {:?}", self.0);
 
         // TODO: decode_rlp_transaction
-        // let decoded_transaction =
-        // decode_rlp_transaction(&parsed_raw_transaction_string).unwrap();
+        let decoded_transaction = decode_rlp_transaction(&self.0).unwrap();
 
-        // RawTransactionHash::new(format!(
-        //     "0x{}",
-        //     hex::encode(decoded_transaction.hash.as_bytes())
-        // ))
+        let transaction_hash = const_hex::encode_prefixed(decoded_transaction.hash);
 
-        RawTransactionHash::new(format!("0x1",))
+        RawTransactionHash::from(transaction_hash)
     }
 }

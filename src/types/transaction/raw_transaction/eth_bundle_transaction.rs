@@ -3,7 +3,7 @@ use ethers::utils::hex;
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EthRawBundleTransaction(String);
+pub struct EthRawBundleTransaction(pub String);
 
 impl From<String> for EthRawBundleTransaction {
     fn from(value: String) -> Self {

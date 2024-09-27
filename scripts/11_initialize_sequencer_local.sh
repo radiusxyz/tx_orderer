@@ -3,7 +3,7 @@ SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source $SCRIPT_PATH/env.sh
 
 echo "add_sequencing_info"
-curl --location ${INTERNAL_RPC_URLS[0]} \
+curl --location $SEQUENCER_INTERNAL_RPC_URL \
 --header 'Content-Type: application/json' \
 --data '{
   "jsonrpc": "2.0",
@@ -24,7 +24,7 @@ echo "add_sequencing_info done"
 sleep 0.5
 
 echo "add_cluster"
-curl --location ${INTERNAL_RPC_URLS[0]} \
+curl --location $SEQUENCER_INTERNAL_RPC_URL \
 --header 'Content-Type: application/json' \
 --data '{
   "jsonrpc": "2.0",

@@ -18,7 +18,7 @@ impl Timestamp {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct BlockCommitment(String);
+pub struct BlockCommitment(pub String);
 
 impl Default for BlockCommitment {
     fn default() -> Self {

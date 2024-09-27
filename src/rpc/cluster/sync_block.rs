@@ -1,5 +1,5 @@
 use crate::{
-    rpc::{external::FinalizeBlockMessage, prelude::*},
+    rpc::{cluster::FinalizeBlockMessage, prelude::*},
     task::block_builder,
 };
 

@@ -20,11 +20,13 @@ for (( node_index=0; node_index<NODE_COUNT; node_index++ )) do
 
     config_file_path=$data_path/config.toml
     
-    sed -i.temp "s/sequencer_rpc_url = \"http:\/\/127.0.0.1:3000\"/sequencer_rpc_url = \"http:\/\/127.0.0.1:300$node_index\"/g" $config_file_path
-    sed -i.temp "s/internal_rpc_url = \"http:\/\/127.0.0.1:4000\"/internal_rpc_url = \"http:\/\/127.0.0.1:400$node_index\"/g" $config_file_path
-    sed -i.temp "s/cluster_rpc_url = \"http:\/\/127.0.0.1:5000\"/cluster_rpc_url = \"http:\/\/127.0.0.1:500$node_index\"/g" $config_file_path
+    sed -i.temp "s/sequencer_rpc_url = \"http:\/\/127.0.0.1:3000\"/sequencer_rpc_url = \"http:\/\/$HOST:300$node_index\"/g" $config_file_path
+    sed -i.temp "s/internal_rpc_url = \"http:\/\/127.0.0.1:4000\"/internal_rpc_url = \"http:\/\/$HOST:400$node_index\"/g" $config_file_path
+    sed -i.temp "s/cluster_rpc_url = \"http:\/\/127.0.0.1:5000\"/cluster_rpc_url = \"http:\/\/$HOST:500$node_index\"/g" $config_file_path
 
-    sed -i.temp "s/seeder_rpc_url = \"http:\/\/127.0.0.1:6000\"/seeder_rpc_url = \"http:\/\/127.0.0.1:6001\"/g" $config_file_path
+    sed -i.temp "s/seeder_rpc_url = \"http:\/\/127.0.0.1:6000\"/seeder_rpc_url = \"http:\/\/$SEEDER_HOST:6001\"/g" $config_file_path
+
+    sed -i.temp "s/key_management_system_rpc_url = \"http:\/\/127.0.0.1:7100\"/key_management_system_rpc_url = \"http:\/\/$KEY_MANAGEMENT_SYSTEM_HOST:7100\"/g" $config_file_path
     
 
     # TODO: remove
