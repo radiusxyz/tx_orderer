@@ -98,7 +98,7 @@ pub struct OrderHash(String);
 
 impl Default for OrderHash {
     fn default() -> Self {
-        Self(const_hex::encode([0; 32]))
+        Self(const_hex::encode_prefixed([0; 32]))
     }
 }
 
@@ -109,6 +109,6 @@ impl OrderHash {
         hasher.update(raw_tx_hash);
         let order_hash_bytes = hasher.finalize();
 
-        OrderHash(const_hex::encode(order_hash_bytes))
+        OrderHash(const_hex::encode_prefixed(order_hash_bytes))
     }
 }
