@@ -20,6 +20,12 @@ impl Timestamp {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BlockCommitment(String);
 
+impl Default for BlockCommitment {
+    fn default() -> Self {
+        Self(const_hex::encode([0; 32]))
+    }
+}
+
 impl AsRef<[u8]> for BlockCommitment {
     fn as_ref(&self) -> &[u8] {
         self.0.as_bytes()

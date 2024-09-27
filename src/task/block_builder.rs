@@ -144,9 +144,12 @@ pub fn block_builder_skde(
         let signer = context.get_signer(Platform::Ethereum).await.unwrap();
         let address = signer.address().clone();
         let signature = signer.sign_message("").unwrap(); // TODO: set the message.
-        let block_commitment =
+        let block_commitment = if transaction_count > 0 {
             BlockCommitmentModel::get(&rollup_id, rollup_block_height, transaction_count - 1)
-                .unwrap();
+                .unwrap()
+        } else {
+            BlockCommitment::default()
+        };
 
         let block = Block::new(
             rollup_block_height,
