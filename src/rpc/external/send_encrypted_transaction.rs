@@ -19,7 +19,7 @@ impl SendEncryptedTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<AppState>,
+        context: Arc<AppState>,
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
         let rollup = RollupModel::get(&parameter.rollup_id)?;
@@ -49,21 +49,23 @@ impl SendEncryptedTransaction {
 
         if rollup_metadata.is_leader() {
             let transaction_order = rollup_metadata.transaction_order();
-            let order_hash = rollup_metadata.order_hash();
-
             rollup_metadata.increase_transaction_order();
-            rollup_metadata
+            let previous_order_hash = rollup_metadata
                 .update_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
+            let current_order_hash = rollup_metadata.order_hash();
             rollup_metadata.update()?;
 
             let order_commitment = issue_order_commitment(
+                context.clone(),
+                rollup.platform(),
                 parameter.rollup_id.clone(),
                 rollup.order_commitment_type(),
                 parameter.encrypted_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
-                order_hash,
-            );
+                previous_order_hash,
+            )
+            .await?;
 
             let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
 
@@ -87,6 +89,14 @@ impl SendEncryptedTransaction {
                 rollup_block_height,
                 transaction_order,
                 &order_commitment,
+            )?;
+
+            // Temporary block commitment
+            BlockCommitmentModel::put(
+                &parameter.rollup_id,
+                rollup_block_height,
+                transaction_order,
+                &current_order_hash,
             )?;
 
             // Sync Transaction
@@ -342,21 +352,24 @@ pub fn sync_encrypted_transaction(
 //     Ok(raw_transaction)
 // }
 
-pub fn issue_order_commitment(
+pub async fn issue_order_commitment(
+    context: Arc<AppState>,
+    platform: Platform,
     rollup_id: String,
     order_commitment_type: OrderCommitmentType,
     transaction_hash: RawTransactionHash,
     rollup_block_height: u64,
     transaction_order: u64,
     order_hash: OrderHash,
-) -> OrderCommitment {
+) -> Result<OrderCommitment, RpcError> {
     match order_commitment_type {
-        OrderCommitmentType::TransactionHash => {
-            OrderCommitment::Single(SingleOrderCommitment::TransactionHash(
-                TransactionHashOrderCommitment(transaction_hash.as_string()),
-            ))
-        }
+        OrderCommitmentType::TransactionHash => Ok(OrderCommitment::Single(
+            SingleOrderCommitment::TransactionHash(TransactionHashOrderCommitment(
+                transaction_hash.as_string(),
+            )),
+        )),
         OrderCommitmentType::Sign => {
+            let signer = context.get_signer(platform).await?;
             let order_commitment_data = OrderCommitmentData {
                 rollup_id,
                 block_height: rollup_block_height,
@@ -364,11 +377,13 @@ pub fn issue_order_commitment(
                 previous_order_hash: order_hash,
             };
             let order_commitment = SignOrderCommitment {
-                data: order_commitment_data,
-                signature: vec![].into(), // Todo: Signature
+                data: order_commitment_data.clone(),
+                signature: signer.sign_message(&order_commitment_data)?, // Todo: Signature
             };
 
-            OrderCommitment::Single(SingleOrderCommitment::Sign(order_commitment))
+            Ok(OrderCommitment::Single(SingleOrderCommitment::Sign(
+                order_commitment,
+            )))
         }
     }
 }

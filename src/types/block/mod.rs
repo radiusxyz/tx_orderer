@@ -18,17 +18,17 @@ impl Timestamp {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct BlockCommitment(Vec<u8>);
+pub struct BlockCommitment(String);
 
 impl AsRef<[u8]> for BlockCommitment {
     fn as_ref(&self) -> &[u8] {
-        &self.0
+        self.0.as_bytes()
     }
 }
 
-impl From<Vec<u8>> for BlockCommitment {
-    fn from(value: Vec<u8>) -> Self {
-        Self(value)
+impl AsRef<str> for BlockCommitment {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
     }
 }
 

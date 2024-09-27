@@ -16,7 +16,7 @@ impl SendRawTransaction {
 
     pub async fn handler(
         parameter: RpcParameter,
-        _context: Arc<AppState>,
+        context: Arc<AppState>,
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
         let rollup = RollupModel::get(&parameter.rollup_id)?;
@@ -47,13 +47,16 @@ impl SendRawTransaction {
             rollup_metadata.update()?;
 
             let order_commitment = issue_order_commitment(
+                context.clone(),
+                rollup.platform(),
                 parameter.rollup_id.clone(),
                 rollup.order_commitment_type(),
                 parameter.raw_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
                 order_hash,
-            );
+            )
+            .await?;
 
             let transaction_hash = parameter.raw_transaction.raw_transaction_hash();
 
