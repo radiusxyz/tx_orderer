@@ -40,10 +40,10 @@ impl SendRawTransaction {
 
         if rollup_metadata.is_leader() {
             let transaction_order = rollup_metadata.transaction_order();
-            let order_hash = rollup_metadata.order_hash();
-
             rollup_metadata.increase_transaction_order();
-            rollup_metadata.update_order_hash(&parameter.raw_transaction.raw_transaction_hash());
+            let previous_order_hash = rollup_metadata
+                .update_order_hash(&parameter.raw_transaction.raw_transaction_hash());
+            let current_order_hash = rollup_metadata.order_hash();
             rollup_metadata.update()?;
 
             let order_commitment = issue_order_commitment(
@@ -54,7 +54,7 @@ impl SendRawTransaction {
                 parameter.raw_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
-                order_hash,
+                previous_order_hash,
             )
             .await?;
 
@@ -78,6 +78,14 @@ impl SendRawTransaction {
                 rollup_block_height,
                 transaction_order,
                 &order_commitment,
+            )?;
+
+            // Temporary block commitment
+            BlockCommitmentModel::put(
+                &parameter.rollup_id,
+                rollup_block_height,
+                transaction_order,
+                &current_order_hash,
             )?;
 
             // Sync Transaction
