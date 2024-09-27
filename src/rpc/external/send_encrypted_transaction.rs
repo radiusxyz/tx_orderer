@@ -378,7 +378,7 @@ pub async fn issue_order_commitment(
             };
             let order_commitment = SignOrderCommitment {
                 data: order_commitment_data.clone(),
-                signature: signer.sign_message(&order_commitment_data)?, // Todo: Signature
+                signature: signer.sign_message(&order_commitment_data)?.as_hex_string(),
             };
 
             Ok(OrderCommitment::Single(SingleOrderCommitment::Sign(
