@@ -68,16 +68,7 @@ pub struct TransactionHashOrderCommitment(pub String);
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignOrderCommitment {
     pub data: OrderCommitmentData,
-    pub signature: Signature,
-}
-
-impl Default for SignOrderCommitment {
-    fn default() -> Self {
-        Self {
-            data: OrderCommitmentData::default(),
-            signature: Signature::from(Vec::new()),
-        }
-    }
+    pub signature: String,
 }
 
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
