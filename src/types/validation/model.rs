@@ -1,10 +1,10 @@
 use super::prelude::*;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct SequencingInfoListModel;
+pub struct ValidationInfoListModel;
 
-impl SequencingInfoListModel {
-    const ID: &'static str = stringify!(SequencingInfoListModel);
+impl ValidationInfoListModel {
+    const ID: &'static str = stringify!(ValidationInfoListModel);
 
     pub fn get() -> Result<SequencingInfoList, KvStoreError> {
         let key = &(Self::ID);
@@ -26,15 +26,15 @@ impl SequencingInfoListModel {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SequencingInfoPayloadModel;
+pub struct ValidationInfoPayloadModel;
 
-impl SequencingInfoPayloadModel {
-    const ID: &'static str = stringify!(SequencingInfoPayloadModel);
+impl ValidationInfoPayloadModel {
+    const ID: &'static str = stringify!(ValidationInfoPayloadModel);
 
     pub fn put(
         platform: Platform,
         service_provider: ServiceProvider,
-        value: &SequencingInfoPayload,
+        value: &ValidationInfoPayload,
     ) -> Result<(), KvStoreError> {
         let key = &(Self::ID, platform, service_provider);
 
@@ -44,7 +44,7 @@ impl SequencingInfoPayloadModel {
     pub fn get(
         platform: Platform,
         service_provider: ServiceProvider,
-    ) -> Result<SequencingInfoPayload, KvStoreError> {
+    ) -> Result<ValidationInfoPayload, KvStoreError> {
         let key = &(Self::ID, platform, service_provider);
 
         kvstore()?.get(key)

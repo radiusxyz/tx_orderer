@@ -3,7 +3,6 @@ use radius_sequencer_sdk::signature::PrivateKeySigner;
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-// #[serde(try_from = "SequencingInfo")]
 pub struct AddSequencingInfo {
     pub platform: Platform,
     pub service_provider: ServiceProvider,

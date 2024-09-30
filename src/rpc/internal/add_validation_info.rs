@@ -1,0 +1,38 @@
+use crate::rpc::prelude::*;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AddValidationInfo {
+    pub platform: Platform,
+    pub service_provider: ServiceProvider,
+    pub payload: ValidationInfoPayload,
+}
+
+impl AddValidationInfo {
+    pub const METHOD_NAME: &'static str = "add_validation_info";
+
+    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
+        let parameter = parameter.parse::<Self>()?;
+
+        // Save `ValidationClient` metadata.
+        let mut sequencing_info_list = ValidationInfoListModel::get_mut_or_default()?;
+        sequencing_info_list.insert(parameter.platform, parameter.service_provider);
+        sequencing_info_list.update()?;
+
+        ValidationInfoPayloadModel::put(
+            parameter.platform,
+            parameter.service_provider,
+            &parameter.payload,
+        )?;
+
+        match &parameter.payload {
+            ValidationInfoPayload::EigenLayer(payload) => {
+                // let validation_info_client = EigenLayerClient::new(payload.clone())?;
+
+                todo!("Implement the client and fill this block.");
+            }
+            ValidationInfoPayload::Symbiotic(_) => {
+                todo!("Implement 'LivenessClient' for local sequencing.");
+            }
+        }
+    }
+}

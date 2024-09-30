@@ -6,6 +6,7 @@ mod rollup;
 mod sequencing;
 mod time_lock_puzzle;
 mod transaction;
+mod validation;
 mod zkp;
 
 pub use block::*;
@@ -16,6 +17,7 @@ pub use rollup::*;
 pub use sequencing::*;
 pub use time_lock_puzzle::*;
 pub use transaction::*;
+pub use validation::*;
 pub use zkp::*;
 
 pub(crate) mod prelude {
