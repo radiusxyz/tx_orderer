@@ -26,13 +26,21 @@ impl AddValidationInfo {
 
         match &parameter.payload {
             ValidationInfoPayload::EigenLayer(payload) => {
-                // let validation_info_client = EigenLayerClient::new(payload.clone())?;
+                let signing_key = context.config().signing_key();
 
-                todo!("Implement the client and fill this block.");
+                let validation_client = validation::eigenlayer::ValidationClient::new(
+                    parameter.platform,
+                    parameter.service_provider,
+                    payload.clone(),
+                    signing_key,
+                )?;
+                validation_client.initialize_event_listener();
             }
             ValidationInfoPayload::Symbiotic(_) => {
                 todo!("Implement 'LivenessClient' for local sequencing.");
             }
         }
+
+        Ok(())
     }
 }
