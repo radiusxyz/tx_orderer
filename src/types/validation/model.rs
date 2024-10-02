@@ -6,19 +6,19 @@ pub struct ValidationInfoListModel;
 impl ValidationInfoListModel {
     const ID: &'static str = stringify!(ValidationInfoListModel);
 
-    pub fn get() -> Result<SequencingInfoList, KvStoreError> {
+    pub fn get() -> Result<ValidationInfoList, KvStoreError> {
         let key = &(Self::ID);
 
         kvstore()?.get(key)
     }
 
-    pub fn get_or_default() -> Result<SequencingInfoList, KvStoreError> {
+    pub fn get_or_default() -> Result<ValidationInfoList, KvStoreError> {
         let key = &(Self::ID);
 
         kvstore()?.get_or_default(key)
     }
 
-    pub fn get_mut_or_default() -> Result<Lock<'static, SequencingInfoList>, KvStoreError> {
+    pub fn get_mut_or_default() -> Result<Lock<'static, ValidationInfoList>, KvStoreError> {
         let key = &(Self::ID);
 
         kvstore()?.get_mut_or_default(key)

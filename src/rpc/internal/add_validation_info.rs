@@ -14,9 +14,9 @@ impl AddValidationInfo {
         let parameter = parameter.parse::<Self>()?;
 
         // Save `ValidationClient` metadata.
-        let mut sequencing_info_list = ValidationInfoListModel::get_mut_or_default()?;
-        sequencing_info_list.insert(parameter.platform, parameter.service_provider);
-        sequencing_info_list.update()?;
+        let mut validation_info_list = ValidationInfoListModel::get_mut_or_default()?;
+        validation_info_list.insert(parameter.platform, parameter.service_provider);
+        validation_info_list.update()?;
 
         ValidationInfoPayloadModel::put(
             parameter.platform,
