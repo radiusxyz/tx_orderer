@@ -7,6 +7,7 @@ pub use model::*;
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
 pub enum ValidationInfoPayload {
     EigenLayer(ValidationEigenLayer),
     Symbiotic(ValidationSymbiotic),
