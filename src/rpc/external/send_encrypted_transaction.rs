@@ -100,16 +100,16 @@ impl SendEncryptedTransaction {
             )?;
 
             // Sync Transaction
-            // let follower_rpc_url_list =
-            // cluster.get_follower_rpc_url_list(rollup_block_height);
-            // sync_encrypted_transaction(
-            //     parameter.rollup_id.clone(),
-            //     parameter.encrypted_transaction.clone(),
-            //     order_commitment.clone(),
-            //     rollup_block_height,
-            //     transaction_order,
-            //     follower_rpc_url_list,
-            // );
+            sync_encrypted_transaction(
+                cluster,
+                context.clone(),
+                rollup.platform(),
+                parameter.rollup_id.clone(),
+                rollup_block_height,
+                transaction_order,
+                parameter.encrypted_transaction.clone(),
+                order_commitment.clone(),
+            );
 
             match parameter.encrypted_transaction {
                 EncryptedTransaction::Pvde(_pvde_encrypted_transaction) => {
