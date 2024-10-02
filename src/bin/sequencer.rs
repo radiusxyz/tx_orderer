@@ -30,8 +30,9 @@ use radius_sequencer_sdk::{
     signature::PrivateKeySigner,
 };
 use sequencer::{
-    client::liveness::{
-        self, key_management_system::KeyManagementSystemClient, seeder::SeederClient,
+    client::{
+        liveness::{self, key_management_system::KeyManagementSystemClient, seeder::SeederClient},
+        validation,
     },
     error::{self, Error},
     rpc::{
@@ -122,12 +123,10 @@ async fn main() -> Result<(), Error> {
             let key_management_system_client =
                 KeyManagementSystemClient::new(key_management_system_rpc_url)?;
 
-            // Initialize sequencing info (TODO:)
+            // Initialize sequencing info
             let signing_key = config.signing_key();
             let sequencing_info_list =
                 SequencingInfoListModel::get_or_default().map_err(Error::Database)?;
-            // let sequencing_infos =
-            //     SequencingInfosModel::get_or_default().map_err(error::Error::Database)?;
             let liveness_clients = CachedKvStore::default();
             let signers = CachedKvStore::default();
 
@@ -177,12 +176,12 @@ async fn main() -> Result<(), Error> {
                     SequencingInfoPayloadModel::get(*platform, *service_provider)
                         .map_err(Error::Database)?;
 
-                match &sequencing_info_payload {
+                match sequencing_info_payload {
                     SequencingInfoPayload::Ethereum(liveness_info) => {
                         let liveness_client = liveness::radius::LivenessClient::new(
                             platform.clone(),
                             service_provider.clone(),
-                            liveness_info.clone(),
+                            liveness_info,
                             config.signing_key(),
                             seeder_client.clone(),
                         )?;
@@ -196,6 +195,26 @@ async fn main() -> Result<(), Error> {
                     SequencingInfoPayload::Local(_payload) => {
                         // liveness::local::LivenessClient::new()?;
                         todo!("Implement 'LivenessClient' for local sequencing.");
+                    }
+                }
+
+                // Initialize validation client
+                let validation_info_payload =
+                    ValidationInfoPayloadModel::get(*platform, *service_provider)
+                        .map_err(Error::Database)?;
+
+                match validation_info_payload {
+                    ValidationInfoPayload::EigenLayer(validation_info) => {
+                        let validation_client = validation::eigenlayer::ValidationClient::new(
+                            *platform,
+                            *service_provider,
+                            validation_info,
+                            signing_key,
+                        )?;
+                        validation_client.initialize_event_listener();
+                    }
+                    ValidationInfoPayload::Symbiotic(_) => {
+                        todo!("Implement `ValidationClient` for Symbiotic.");
                     }
                 }
             }

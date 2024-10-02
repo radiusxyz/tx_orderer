@@ -49,13 +49,13 @@ impl AddSequencingInfo {
                         liveness_client,
                     )
                     .await?;
-
-                Ok(())
             }
             SequencingInfoPayload::Local(_payload) => {
                 // liveness::local::LivenessClient::new()?;
                 todo!("Implement 'LivenessClient' for local sequencing.");
             }
         }
+
+        Ok(())
     }
 }
