@@ -288,6 +288,10 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
             internal::AddSequencingInfo::handler,
         )?
         .register_rpc_method(
+            internal::AddValidationInfo::METHOD_NAME,
+            internal::AddValidationInfo::handler,
+        )?
+        .register_rpc_method(
             internal::AddCluster::METHOD_NAME,
             internal::AddCluster::handler,
         )?
