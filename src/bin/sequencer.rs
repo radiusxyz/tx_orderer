@@ -73,6 +73,12 @@ pub enum Commands {
         #[clap(flatten)]
         config_option: Box<ConfigOption>,
     },
+
+    /// Register Sequencer: registerSequencer
+    RegisterValidator {
+        #[clap(flatten)]
+        config_option: Box<ConfigRegisterValidator>,
+    },
 }
 
 #[tokio::main]
@@ -233,6 +239,9 @@ async fn main() -> Result<(), Error> {
             let server_handle = initialize_external_rpc_server(&app_state).await?;
 
             server_handle.await.unwrap();
+        }
+        Commands::RegisterValidator { config_option } => {
+            config_option.init().await;
         }
     }
 

@@ -1,10 +1,12 @@
 mod config_option;
 mod config_path;
+mod config_register_validator;
 
 use std::{fs, path::PathBuf};
 
 pub use config_option::*;
 pub use config_path::*;
+pub use config_register_validator::*;
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
