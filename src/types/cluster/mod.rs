@@ -112,7 +112,7 @@ impl Cluster {
 
         self.sequencer_rpc_url_list
             .get(leader_index)
-            .and_then(|(_address, rpc_url)| rpc_url.clone())
+            .and_then(|(address, _rpc_url)| Some(address.clone()))
             .ok_or(Error::EmptyLeaderRpcUrl)
     }
 }
