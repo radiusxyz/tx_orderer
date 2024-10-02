@@ -21,13 +21,17 @@ impl GetCluster {
     ) -> Result<GetClusterResponse, RpcError> {
         let parameter = parameter.parse::<GetCluster>()?;
 
-        match context
-            .get_liveness_client(parameter.platform, parameter.service_provider)
-            .await
-        {
-            Ok(liveness_client) => {
+        let liveness_client_info =
+            SequencingInfoPayloadModel::get(parameter.platform, parameter.service_provider)?;
+        match liveness_client_info {
+            SequencingInfoPayload::Ethereum(_) => {
+                let liveness_client = context
+                    .get_liveness_client::<liveness::radius::LivenessClient>(
+                        parameter.platform,
+                        parameter.service_provider,
+                    )
+                    .await?;
                 let platform_block_height = liveness_client.publisher().get_block_number().await?;
-
                 let cluster_info = ClusterModel::get(
                     parameter.platform,
                     parameter.service_provider,
@@ -37,7 +41,9 @@ impl GetCluster {
 
                 Ok(GetClusterResponse { cluster_info })
             }
-            Err(_) => Err(Error::NotFoundCluster.into()),
+            SequencingInfoPayload::Local(_) => {
+                unimplemented!("Local liveness is unimplemented.");
+            }
         }
     }
 }
