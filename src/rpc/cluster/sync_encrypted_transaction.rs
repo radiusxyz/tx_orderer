@@ -1,3 +1,5 @@
+use radius_sequencer_sdk::signature::{Address, ChainType};
+
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -31,10 +33,14 @@ impl SyncEncryptedTransaction {
         )?;
 
         // Verify the leader signature
+        let chain_type: ChainType = rollup.platform().into();
+        let leader_address = cluster.get_leader_address(parameter.message.rollup_block_height)?;
+        println!("{:?}", leader_address);
+        println!("{:?}", Address::from_str(chain_type, &leader_address)?);
         parameter.signature.verify_message(
-            rollup.platform().into(),
+            chain_type,
             &parameter.message,
-            cluster.get_leader_address(parameter.message.rollup_block_height)?,
+            Address::from_str(chain_type, &leader_address)?,
         )?;
 
         rollup_metadata.increase_transaction_order();
