@@ -201,7 +201,8 @@ async fn main() -> Result<(), Error> {
             }
 
             // Initialize validation clients
-            let validation_info_list = ValidationInfoListModel::get().map_err(Error::Database)?;
+            let validation_info_list =
+                ValidationInfoListModel::get_or_default().map_err(Error::Database)?;
             for (platform, service_provider) in validation_info_list.iter() {
                 let validation_info_payload =
                     ValidationInfoPayloadModel::get(*platform, *service_provider)
