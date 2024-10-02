@@ -162,6 +162,7 @@ pub fn block_builder_skde(
             address,
             signature,
             block_commitment.clone(),
+            cluster.is_leader(rollup_block_height),
         );
 
         BlockModel::put(&rollup_id, rollup_block_height, &block).unwrap();

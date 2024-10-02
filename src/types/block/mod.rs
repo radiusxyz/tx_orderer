@@ -49,6 +49,7 @@ pub struct Block {
     pub signature: Signature,
 
     pub block_commitment: BlockCommitment,
+    pub is_leader: bool,
 }
 
 impl Block {
@@ -59,6 +60,7 @@ impl Block {
         proposer_address: Address,
         signature: Signature,
         block_commitment: BlockCommitment,
+        is_leader: bool,
     ) -> Self {
         Self {
             block_height,
@@ -67,6 +69,7 @@ impl Block {
             proposer_address,
             signature,
             block_commitment,
+            is_leader,
         }
     }
 
