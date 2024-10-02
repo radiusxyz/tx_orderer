@@ -1,3 +1,5 @@
+use radius_sequencer_sdk::signature::Address;
+
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -35,7 +37,7 @@ impl SyncEncryptedTransaction {
         parameter.signature.verify_message(
             rollup.platform().into(),
             &parameter.message,
-            leader_address,
+            Address::from_str(rollup.platform().into(), &leader_address)?,
         )?;
 
         rollup_metadata.increase_transaction_order();
