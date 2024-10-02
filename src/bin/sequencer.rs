@@ -123,13 +123,14 @@ async fn main() -> Result<(), Error> {
             let key_management_system_client =
                 KeyManagementSystemClient::new(key_management_system_rpc_url)?;
 
-            // Initialize sequencing info
             let signing_key = config.signing_key();
+            let signers = CachedKvStore::default();
+            let liveness_clients = CachedKvStore::default();
+            let validation_clients = CachedKvStore::default();
+
+            // Initialize liveness clients
             let sequencing_info_list =
                 SequencingInfoListModel::get_or_default().map_err(Error::Database)?;
-            let liveness_clients = CachedKvStore::default();
-            let signers = CachedKvStore::default();
-
             for (platform, service_provider) in sequencing_info_list.iter() {
                 info!(
                     "Initialize sequencing info - platform: {:?}, service_provider: {:?}",
@@ -197,8 +198,12 @@ async fn main() -> Result<(), Error> {
                         todo!("Implement 'LivenessClient' for local sequencing.");
                     }
                 }
+            }
 
-                // Initialize validation client
+            // Initialize validation clients
+            let validation_info_list =
+                ValidationInfoListModel::get_mut_or_default().map_err(Error::Database)?;
+            for (platform, service_provider) in validation_info_list.iter() {
                 let validation_info_payload =
                     ValidationInfoPayloadModel::get(*platform, *service_provider)
                         .map_err(Error::Database)?;
@@ -212,6 +217,11 @@ async fn main() -> Result<(), Error> {
                             signing_key,
                         )?;
                         validation_client.initialize_event_listener();
+
+                        validation_clients
+                            .put(&(*platform, *service_provider), validation_client)
+                            .await
+                            .map_err(Error::CachedKvStore)?;
                     }
                     ValidationInfoPayload::Symbiotic(_) => {
                         todo!("Implement `ValidationClient` for Symbiotic.");
@@ -242,8 +252,9 @@ async fn main() -> Result<(), Error> {
                 config,
                 seeder_client,
                 key_management_system_client,
-                liveness_clients,
                 signers,
+                liveness_clients,
+                validation_clients,
                 pvde_params,
                 skde_params,
             );

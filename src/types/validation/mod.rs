@@ -14,8 +14,11 @@ pub enum ValidationInfoPayload {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValidationEigenLayer {
+    pub validation_rpc_url: String,
+    pub validation_websocket_url: String,
     pub delegation_manager_contract_address: String,
     pub stake_registry_contract_address: String,
+    pub avs_directory_contract_address: String,
     pub avs_contract_address: String,
 }
 

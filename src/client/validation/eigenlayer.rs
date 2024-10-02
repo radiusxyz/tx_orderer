@@ -39,11 +39,11 @@ impl ValidationClient {
     ) -> Result<Self, Error> {
         let publisher = Publisher::new(
             validation_info.validation_rpc_url,
+            signing_key,
+            validation_info.delegation_manager_contract_address,
             validation_info.avs_directory_contract_address,
             validation_info.stake_registry_contract_address,
             validation_info.avs_contract_address.clone(),
-            signing_key.as_ref(),
-            validation_info.delegation_manager_contract_address,
         )
         .map_err(|error| Error::InitializeValidationClient(error.into()))?;
 
@@ -99,7 +99,16 @@ impl ValidationClient {
     }
 }
 
-// TODO: DH
-async fn callback(_event: Avs::NewTaskCreated, _context: ValidationClient) {
-    todo!("Change the contract event parameter");
+async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
+    let rollup = RollupModel::get(&event.rollupId).ok();
+    if let Some(rollup) = rollup {
+        let block_commitment = BlockModel::get(rollup.rollup_id(), event.blockNumber)
+            .unwrap()
+            .block_commitment;
+        context
+            .publisher()
+            .respond_to_task(event.task, event.taskIndex, block_commitment)
+            .await
+            .unwrap();
+    }
 }

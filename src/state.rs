@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 use radius_sequencer_sdk::{
     kvstore::{CachedKvStore, CachedKvStoreError},
@@ -7,10 +7,7 @@ use radius_sequencer_sdk::{
 use skde::SkdeParams;
 
 use crate::{
-    client::liveness::{
-        key_management_system::KeyManagementSystemClient, radius::LivenessClient,
-        seeder::SeederClient,
-    },
+    client::liveness::{key_management_system::KeyManagementSystemClient, seeder::SeederClient},
     types::*,
 };
 
@@ -23,6 +20,7 @@ struct AppStateInner {
     key_management_client: KeyManagementSystemClient,
 
     liveness_clients: CachedKvStore,
+    validation_clients: CachedKvStore,
     signers: CachedKvStore,
 
     pvde_params: PvdeParams,
@@ -46,8 +44,9 @@ impl AppState {
         config: Config,
         seeder_client: SeederClient,
         key_management_system_client: KeyManagementSystemClient,
-        liveness_clients: CachedKvStore,
         signers: CachedKvStore,
+        liveness_clients: CachedKvStore,
+        validation_clients: CachedKvStore,
         pvde_params: PvdeParams,
         skde_params: SkdeParams,
     ) -> Self {
@@ -55,8 +54,9 @@ impl AppState {
             config,
             seeder_client,
             key_management_client: key_management_system_client,
-            liveness_clients,
             signers,
+            liveness_clients,
+            validation_clients,
             pvde_params,
             skde_params,
         };
@@ -74,25 +74,14 @@ impl AppState {
         &self.inner.seeder_client
     }
 
-    pub async fn get_liveness_client(
+    pub async fn add_signer(
         &self,
         platform: Platform,
-        service_provider: ServiceProvider,
-    ) -> Result<LivenessClient, CachedKvStoreError> {
-        let key = &(platform, service_provider);
-
-        self.inner.liveness_clients.get(key).await
-    }
-
-    pub async fn add_liveness_client(
-        &self,
-        platform: Platform,
-        service_provider: ServiceProvider,
-        liveness_client: LivenessClient,
+        signer: PrivateKeySigner,
     ) -> Result<(), CachedKvStoreError> {
-        let key = &(platform, service_provider);
+        let key = &(platform);
 
-        self.inner.liveness_clients.put(key, liveness_client).await
+        self.inner.signers.put(key, signer).await
     }
 
     pub async fn get_signer(
@@ -104,14 +93,61 @@ impl AppState {
         self.inner.signers.get(key).await
     }
 
-    pub async fn add_signer(
+    pub async fn add_liveness_client<T>(
         &self,
         platform: Platform,
-        signer: PrivateKeySigner,
-    ) -> Result<(), CachedKvStoreError> {
-        let key = &(platform);
+        service_provider: ServiceProvider,
+        liveness_client: T,
+    ) -> Result<(), CachedKvStoreError>
+    where
+        T: Clone + Any + Send + 'static,
+    {
+        let key = &(platform, service_provider);
 
-        self.inner.signers.put(key, signer).await
+        self.inner.liveness_clients.put(key, liveness_client).await
+    }
+
+    pub async fn get_liveness_client<T>(
+        &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+    ) -> Result<T, CachedKvStoreError>
+    where
+        T: Clone + Any + Send + 'static,
+    {
+        let key = &(platform, service_provider);
+
+        self.inner.liveness_clients.get(key).await
+    }
+
+    pub async fn add_validation_client<T>(
+        &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+        validation_client: T,
+    ) -> Result<(), CachedKvStoreError>
+    where
+        T: Clone + Any + Send + 'static,
+    {
+        let key = &(platform, service_provider);
+
+        self.inner
+            .validation_clients
+            .put(key, validation_client)
+            .await
+    }
+
+    pub async fn get_validation_client<T>(
+        &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+    ) -> Result<T, CachedKvStoreError>
+    where
+        T: Clone + Any + Send + 'static,
+    {
+        let key = &(platform, service_provider);
+
+        self.inner.validation_clients.get(key).await
     }
 
     pub fn key_management_system_client(&self) -> &KeyManagementSystemClient {

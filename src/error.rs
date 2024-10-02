@@ -8,6 +8,7 @@ pub enum Error {
     Deserialize(serde_json::Error),
     CreateLivenessClient(Box<dyn std::error::Error>),
     InitializeLivenessClient(Box<dyn std::error::Error>),
+    InitializeValidationClient(Box<dyn std::error::Error>),
     CachedKvStore(radius_sequencer_sdk::kvstore::CachedKvStoreError),
     Uninitialized,
     EmptySequencerList,

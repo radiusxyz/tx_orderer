@@ -35,6 +35,14 @@ impl AddValidationInfo {
                     signing_key,
                 )?;
                 validation_client.initialize_event_listener();
+
+                context
+                    .add_validation_client(
+                        parameter.platform,
+                        parameter.service_provider,
+                        validation_client,
+                    )
+                    .await?;
             }
             ValidationInfoPayload::Symbiotic(_) => {
                 todo!("Implement 'LivenessClient' for local sequencing.");

@@ -4,19 +4,19 @@ use futures::{
     future::{select_ok, Fuse},
     FutureExt,
 };
-use radius_sequencer_sdk::{
-    json_rpc::RpcClient,
-    signature::{Address, Signature},
-};
+use radius_sequencer_sdk::json_rpc::RpcClient;
 use skde::{
-    delay_encryption::{decrypt, CipherPair, SecretKey},
+    delay_encryption::{decrypt, SecretKey},
     SkdeParams,
 };
 use tracing::info;
 
 use crate::{
-    client::liveness::key_management_system::KeyManagementSystemClient, error::Error,
-    rpc::external::GetEncryptedTransactionWithOrderCommitment, state::AppState, types::*,
+    client::{liveness::key_management_system::KeyManagementSystemClient, validation},
+    error::Error,
+    rpc::external::GetEncryptedTransactionWithOrderCommitment,
+    state::AppState,
+    types::*,
 };
 
 /// Block-builder task implements block-building mechanism for different
@@ -161,13 +161,38 @@ pub fn block_builder_skde(
             raw_transaction_list.clone(),
             address,
             signature,
-            block_commitment,
+            block_commitment.clone(),
         );
 
         BlockModel::put(&rollup_id, rollup_block_height, &block).unwrap();
 
         if cluster.is_leader(rollup_block_height) {
-            // TODO: (Leader) Register the block commitment.
+            let rollup = RollupModel::get(&rollup_id).unwrap();
+
+            let validation_info =
+                ValidationInfoPayloadModel::get(rollup.platform(), rollup.service_provider())
+                    .unwrap();
+
+            match validation_info {
+                ValidationInfoPayload::EigenLayer(_) => {
+                    let validation_client: validation::eigenlayer::ValidationClient = context
+                        .get_validation_client(rollup.platform(), rollup.service_provider())
+                        .await
+                        .unwrap();
+
+                    validation_client
+                        .publisher()
+                        .register_block_commitment(
+                            block_commitment,
+                            rollup_block_height,
+                            rollup.rollup_id(),
+                            rollup.cluster_id(),
+                        )
+                        .await
+                        .unwrap();
+                }
+                ValidationInfoPayload::Symbiotic(_) => unimplemented!("Unsupported"),
+            }
         }
     });
 }
