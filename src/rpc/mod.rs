@@ -10,5 +10,10 @@ pub(crate) mod prelude {
     };
     pub use serde::{Deserialize, Serialize};
 
-    pub use crate::{client::liveness, error::Error, state::AppState, types::*};
+    pub use crate::{
+        client::{liveness, validation},
+        error::Error,
+        state::AppState,
+        types::*,
+    };
 }
