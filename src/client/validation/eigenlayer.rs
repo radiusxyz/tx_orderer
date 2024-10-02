@@ -5,13 +5,15 @@ use radius_sequencer_sdk::validation_eigenlayer::{
 };
 use tokio::time::{sleep, Duration};
 
-use crate::error::Error;
+use crate::{error::Error, types::*};
 
 pub struct ValidationClient {
     inner: Arc<ValidationClientInner>,
 }
 
 struct ValidationClientInner {
+    platform: Platform,
+    service_provider: ServiceProvider,
     publisher: Publisher,
     subscriber: Subscriber,
 }
@@ -29,9 +31,46 @@ impl Clone for ValidationClient {
 }
 
 impl ValidationClient {
-    pub fn new() -> Result<Self, Error> {
-        todo!("Contract refactoring");
-        // let publisher = Publisher::new();
+    pub fn new(
+        platform: Platform,
+        service_provider: ServiceProvider,
+        validation_info: ValidationEigenLayer,
+        signing_key: impl AsRef<str>,
+    ) -> Result<Self, Error> {
+        let publisher = Publisher::new(
+            validation_info.validation_rpc_url,
+            validation_info.avs_directory_contract_address,
+            validation_info.stake_registry_contract_address,
+            validation_info.avs_contract_address.clone(),
+            signing_key.as_ref(),
+            validation_info.delegation_manager_contract_address,
+        )
+        .map_err(|error| Error::InitializeValidationClient(error.into()))?;
+
+        let subscriber = Subscriber::new(
+            validation_info.validation_websocket_url,
+            validation_info.avs_contract_address,
+        )
+        .map_err(|error| Error::InitializeValidationClient(error.into()))?;
+
+        let inner = ValidationClientInner {
+            platform,
+            service_provider,
+            publisher,
+            subscriber,
+        };
+
+        Ok(Self {
+            inner: Arc::new(inner),
+        })
+    }
+
+    pub fn platform(&self) -> Platform {
+        self.inner.platform
+    }
+
+    pub fn service_provider(&self) -> ServiceProvider {
+        self.inner.service_provider
     }
 
     pub fn publisher(&self) -> &Publisher {
@@ -60,7 +99,7 @@ impl ValidationClient {
     }
 }
 
-/// Todo: Need to change the contract code.
+// TODO: DH
 async fn callback(_event: Avs::NewTaskCreated, _context: ValidationClient) {
-    // Todo: Handle block commitment events.
+    todo!("Change the contract event parameter");
 }
