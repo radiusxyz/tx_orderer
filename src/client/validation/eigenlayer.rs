@@ -102,7 +102,7 @@ impl ValidationClient {
 async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
     let rollup = RollupModel::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = BlockModel::get(rollup.rollup_id(), event.blockNumber).unwrap();
+        let block = BlockModel::get(rollup.rollup_id(), event.task.blockNumber).unwrap();
         if !block.is_leader {
             context
                 .publisher()
