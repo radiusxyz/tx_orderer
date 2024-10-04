@@ -1,5 +1,3 @@
-use radius_sequencer_sdk::signature::Address;
-
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -39,6 +37,11 @@ impl SyncEncryptedTransaction {
             &parameter.message,
             Address::from_str(rollup.platform().into(), &leader_address)?,
         )?;
+
+        // Check the rollup block height
+        if parameter.message.rollup_block_height != rollup_metadata.rollup_block_height() {
+            return Err(Error::BlockHeightMismatch.into());
+        }
 
         rollup_metadata.increase_transaction_order();
         rollup_metadata.update()?;

@@ -1,7 +1,11 @@
 use tracing::info;
 
 use crate::{
-    rpc::{cluster::SyncRawTransaction, external::issue_order_commitment, prelude::*},
+    rpc::{
+        cluster::{SyncRawTransaction, SyncRawTransactionMessage},
+        external::issue_order_commitment,
+        prelude::*,
+    },
     types::*,
 };
 
@@ -22,7 +26,6 @@ impl SendRawTransaction {
         let rollup = RollupModel::get(&parameter.rollup_id)?;
 
         // 2. Check is leader
-        // TODO: error handling
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
         let platform = rollup.platform();
         let service_provider = rollup.service_provider();
@@ -89,15 +92,15 @@ impl SendRawTransaction {
             )?;
 
             // Sync Transaction
-            let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
-
             sync_raw_transaction(
+                cluster,
+                context.clone(),
+                rollup.platform(),
                 parameter.rollup_id.clone(),
-                parameter.raw_transaction.clone(),
-                order_commitment.clone(),
                 rollup_block_height,
                 transaction_order,
-                follower_rpc_url_list,
+                parameter.raw_transaction.clone(),
+                order_commitment.clone(),
             );
 
             info!(
@@ -124,43 +127,49 @@ impl SendRawTransaction {
 }
 
 pub fn sync_raw_transaction(
+    cluster: Cluster,
+    context: Arc<AppState>,
+    platform: Platform,
     rollup_id: String,
-    raw_transaction: RawTransaction,
-
-    order_commitment: OrderCommitment,
-
     rollup_block_height: u64,
     transaction_order: u64,
-
-    follower_rpc_url_list: Vec<Option<String>>,
+    raw_transaction: RawTransaction,
+    order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {
-        let order_commitment = Some(order_commitment);
+        let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
+        if follower_rpc_url_list.len() > 0 {
+            let message = SyncRawTransactionMessage {
+                rollup_id,
+                rollup_block_height,
+                transaction_order,
+                raw_transaction,
+                order_commitment: Some(order_commitment), // Temporary
+            };
+            let signature = context
+                .get_signer(platform)
+                .await
+                .unwrap()
+                .sign_message(&message)
+                .unwrap();
 
-        let rpc_parameter = SyncRawTransaction {
-            rollup_id,
-            raw_transaction,
+            let rpc_parameter = SyncRawTransaction { message, signature };
 
-            transaction_order,
-            rollup_block_height,
+            for follower_rpc_url in follower_rpc_url_list {
+                let rpc_parameter = rpc_parameter.clone();
+                let follower_rpc_url = follower_rpc_url.unwrap();
 
-            order_commitment,
-        };
-
-        for follower_rpc_url in follower_rpc_url_list {
-            let rpc_parameter = rpc_parameter.clone();
-
-            tokio::spawn(async move {
-                // TODO
-                let client = RpcClient::new(follower_rpc_url.unwrap()).unwrap();
-                let _ = client
-                    .request::<SyncRawTransaction, ()>(
-                        SyncRawTransaction::METHOD_NAME,
-                        rpc_parameter,
-                    )
-                    .await
-                    .unwrap();
-            });
+                tokio::spawn(async move {
+                    let client = RpcClient::new(follower_rpc_url).unwrap();
+                    let _ = client
+                        .request::<SyncRawTransaction, ()>(
+                            SyncRawTransaction::METHOD_NAME,
+                            rpc_parameter,
+                        )
+                        .await
+                        .unwrap();
+                });
+            }
         }
     });
 }

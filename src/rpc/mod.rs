@@ -6,7 +6,7 @@ pub(crate) mod prelude {
 
     pub use radius_sequencer_sdk::{
         json_rpc::{types::*, RpcClient, RpcError},
-        signature::Signature,
+        signature::{Address, Signature},
     };
     pub use serde::{Deserialize, Serialize};
 
