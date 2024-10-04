@@ -137,42 +137,14 @@ async fn main() -> Result<(), Error> {
                     platform, service_provider
                 );
 
-                let cluster_id_list =
-                    ClusterIdListModel::get_or_default(*platform, *service_provider).unwrap();
+                // Initialize the signer
+                let signer = PrivateKeySigner::from_str((*platform).into(), &signing_key)
+                    .map_err(Error::Signature)?;
+                signers
+                    .put(platform, signer)
+                    .await
+                    .map_err(Error::CachedKvStore)?;
 
-                // Get sequencer address
-                let address = match platform {
-                    Platform::Ethereum => {
-                        let signer = PrivateKeySigner::from_str((*platform).into(), &signing_key)
-                            .map_err(Error::Signature)?;
-                        let address = signer.address().clone();
-                        signers
-                            .put(platform, signer)
-                            .await
-                            .map_err(Error::CachedKvStore)?;
-
-                        address
-                    }
-                    Platform::Local => {
-                        // liveness::local::LivenessClient::new()?;
-                        todo!("Implement 'LivenessClient' for local sequencing.");
-                    }
-                };
-
-                // register sequencer url (for each cluster_id)
-                for cluster_id in cluster_id_list.iter() {
-                    seeder_client
-                        .register_sequencer(
-                            *platform,
-                            *service_provider,
-                            cluster_id,
-                            &address,
-                            config.cluster_rpc_url(),
-                        )
-                        .await?;
-                }
-
-                // Initialize liveness client
                 let sequencing_info_payload =
                     SequencingInfoPayloadModel::get(*platform, *service_provider)
                         .map_err(Error::Database)?;
