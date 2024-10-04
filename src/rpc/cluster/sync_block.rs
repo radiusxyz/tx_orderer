@@ -19,11 +19,11 @@ impl SyncBlock {
         let rollup = RollupModel::get(&parameter.message.rollup_id)?;
 
         // Verify the message.
-        parameter.signature.verify_message(
-            rollup.platform().into(),
-            &parameter.message,
-            parameter.message.executor_address.clone(),
-        )?;
+        // parameter.signature.verify_message(
+        //     rollup.platform().into(),
+        //     &parameter.message,
+        //     parameter.message.executor_address.clone(),
+        // )?;
 
         let cluster = ClusterModel::get(
             rollup.platform(),
