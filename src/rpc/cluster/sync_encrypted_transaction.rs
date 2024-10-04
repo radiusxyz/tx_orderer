@@ -21,6 +21,8 @@ impl SyncEncryptedTransaction {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        tracing::info!("sync encrypted transaction - {:?}", parameter);
+
         let rollup = RollupModel::get(&parameter.message.rollup_id)?;
         let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.message.rollup_id)?;
         let cluster = ClusterModel::get(

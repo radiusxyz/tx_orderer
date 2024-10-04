@@ -28,15 +28,7 @@ impl FinalizeBlock {
 
         let rollup = RollupModel::get(&parameter.message.rollup_id)?;
 
-        info!(
-            "FinalizeBlock - rollup_id {:?} / rollup_block_height {:?} / address {:?}",
-            parameter.message.rollup_id,
-            parameter.message.rollup_block_height,
-            parameter.message.executor_address
-        );
-
-        println!("{:?}", parameter);
-        println!("{:?}", rollup);
+        info!("finalize block - {:?}", parameter);
 
         // Verify the message.
         // parameter.signature.verify_message(
@@ -127,9 +119,10 @@ impl FinalizeBlock {
                 if let Some(sequencer_rpc_url) = sequencer_rpc_url {
                     tokio::spawn(async move {
                         let client = RpcClient::new(sequencer_rpc_url).unwrap();
-                        let _ = client
+                        client
                             .request::<SyncBlock, ()>(SyncBlock::METHOD_NAME, rpc_parameter.clone())
-                            .await;
+                            .await
+                            .unwrap();
                     });
                 }
             }

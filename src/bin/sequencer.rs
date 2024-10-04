@@ -85,6 +85,9 @@ pub enum Commands {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt().init();
+    std::panic::set_hook(Box::new(|panic_info| {
+        tracing::error!("{:?}", panic_info);
+    }));
 
     let mut cli = Cli::init();
 
@@ -234,8 +237,9 @@ async fn main() -> Result<(), Error> {
             // Initialize the internal RPC server
             initialize_internal_rpc_server(&app_state).await?;
 
-            // Initialize the cluster RPC server
-            initialize_cluster_rpc_server(&app_state).await?;
+            // TODO - check cluster rpc list
+            // // Initialize the cluster RPC server
+            // initialize_cluster_rpc_server(&app_state).await?;
 
             // Initialize the external RPC server.
             let server_handle = initialize_external_rpc_server(&app_state).await?;
@@ -370,6 +374,16 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
             internal::debug::GetRollup::METHOD_NAME,
             internal::debug::GetRollup::handler,
         )?
+        // cluster
+        .register_rpc_method(
+            cluster::SyncEncryptedTransaction::METHOD_NAME,
+            cluster::SyncEncryptedTransaction::handler,
+        )?
+        .register_rpc_method(
+            cluster::SyncRawTransaction::METHOD_NAME,
+            cluster::SyncRawTransaction::handler,
+        )?
+        .register_rpc_method(cluster::SyncBlock::METHOD_NAME, cluster::SyncBlock::handler)?
         .register_rpc_method(external::GetBlock::METHOD_NAME, external::GetBlock::handler)?
         .init(sequencer_rpc_url.clone())
         .await?;

@@ -24,10 +24,7 @@ impl SendEncryptedTransaction {
         let parameter = parameter.parse::<Self>()?;
         let rollup = RollupModel::get(&parameter.rollup_id)?;
 
-        info!(
-            "SendEncryptedTransaction: rollup_id: {}",
-            parameter.rollup_id
-        );
+        info!("SendEncryptedTransaction: {:?}", parameter);
 
         // 1. Check supported encrypted transaction
         check_supported_encrypted_transaction(&rollup, &parameter.encrypted_transaction)?;
@@ -68,8 +65,6 @@ impl SendEncryptedTransaction {
             .await?;
 
             let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
-
-            println!("transaction_hash: {:?}", transaction_hash);
 
             EncryptedTransactionModel::put_with_transaction_hash(
                 &parameter.rollup_id,
@@ -213,7 +208,7 @@ pub fn sync_encrypted_transaction(
 
                 tokio::spawn(async move {
                     let client = RpcClient::new(follower_rpc_url).unwrap();
-                    let _ = client
+                    client
                         .request::<SyncEncryptedTransaction, ()>(
                             SyncEncryptedTransaction::METHOD_NAME,
                             rpc_parameter,

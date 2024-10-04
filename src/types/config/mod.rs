@@ -17,6 +17,8 @@ pub const CONFIG_FILE_NAME: &str = "Config.toml";
 pub const SIGNING_KEY_PATH: &str = "signing_key";
 pub const DEFAULT_SIGNING_KEY: &str =
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+pub const SENCONDARY_SIGNING_KEY: &str =
+    "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {

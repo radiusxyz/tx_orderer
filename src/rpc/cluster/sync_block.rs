@@ -16,6 +16,8 @@ impl SyncBlock {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        tracing::info!("sync block - {:?}", parameter);
+
         let rollup = RollupModel::get(&parameter.message.rollup_id)?;
 
         // Verify the message.

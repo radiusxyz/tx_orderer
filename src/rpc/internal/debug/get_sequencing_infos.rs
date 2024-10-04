@@ -19,8 +19,6 @@ impl GetSequencingInfos {
     ) -> Result<GetSequencingInfosResponse, RpcError> {
         let sequencing_info_list = SequencingInfoListModel::get()?;
 
-        println!("sequencing_info_list: {:?}", sequencing_info_list);
-
         let sequencing_infos: Vec<((Platform, ServiceProvider), SequencingInfoPayload)> =
             sequencing_info_list
                 .iter()

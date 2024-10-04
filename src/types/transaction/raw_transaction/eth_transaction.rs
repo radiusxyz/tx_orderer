@@ -13,8 +13,6 @@ impl From<String> for EthRawTransaction {
 
 impl EthRawTransaction {
     pub fn raw_transaction_hash(&self) -> RawTransactionHash {
-        println!("self.0: {:?}", self.0);
-
         // TODO: decode_rlp_transaction
         let decoded_transaction = decode_rlp_transaction(&self.0).unwrap();
 

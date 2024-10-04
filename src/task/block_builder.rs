@@ -37,8 +37,8 @@ pub fn block_builder(
     cluster: Cluster,
 ) {
     info!(
-        "rollup_id: {:?}, rollup_block_height: {:?}, transaction_count: {:?}",
-        rollup_id, rollup_block_height, transaction_count
+        "build block - block number: {:?}, transaction count: {:?}",
+        rollup_block_height, transaction_count
     );
 
     match rollup_encrypted_transaction_type {
@@ -75,69 +75,71 @@ pub fn block_builder_skde(
 
         let mut decryption_keys: HashMap<u64, SecretKey> = HashMap::new();
 
-        // 1. Iterate over transactions for a given rollup ID and the block height.
-        for transaction_order in 0..transaction_count {
-            let mut encrypted_transaction = match EncryptedTransactionModel::get(
-                &rollup_id,
-                rollup_block_height,
-                transaction_order,
-            ) {
-                Ok(encrypted_transaction) => Some(encrypted_transaction),
-                Err(error) => {
-                    if error.is_none_type() {
-                        None
-                    } else {
-                        panic!("block_builder: {:?}", error);
-                    }
-                }
-            };
-
-            encrypted_transaction_list.push(encrypted_transaction.clone());
-
-            match RawTransactionModel::get(&rollup_id, rollup_block_height, transaction_order) {
-                // If raw transaction exists, add it to the raw transaction list.
-                Ok(raw_transaction) => {
-                    raw_transaction_list.push(raw_transaction);
-                }
-                Err(error) => {
-                    if error.is_none_type() {
-                        if encrypted_transaction.is_none() {
-                            // 2. Fetch the missing transaction from other sequencers.
-                            encrypted_transaction = Some(
-                                fetch_missing_transaction(
-                                    rollup_id.clone(),
-                                    rollup_block_height,
-                                    transaction_order,
-                                    cluster.clone(),
-                                )
-                                .await
-                                .unwrap(),
-                            );
+        if transaction_count > 0 {
+            // 1. Iterate over transactions for a given rollup ID and the block height.
+            for transaction_order in 0..transaction_count {
+                let mut encrypted_transaction = match EncryptedTransactionModel::get(
+                    &rollup_id,
+                    rollup_block_height,
+                    transaction_order,
+                ) {
+                    Ok(encrypted_transaction) => Some(encrypted_transaction),
+                    Err(error) => {
+                        if error.is_none_type() {
+                            None
+                        } else {
+                            panic!("block_builder: {:?}", error);
                         }
+                    }
+                };
 
-                        match encrypted_transaction.unwrap() {
-                            EncryptedTransaction::Skde(skde_encrypted_transaction) => {
-                                let (raw_transaction, _plain_data) = decrypt_skde_transaction(
-                                    &skde_encrypted_transaction,
-                                    key_management_system_client.clone(),
-                                    &mut decryption_keys,
-                                    context.skde_params(),
-                                )
-                                .await
-                                .unwrap();
+                encrypted_transaction_list.push(encrypted_transaction.clone());
 
-                                RawTransactionModel::put(
-                                    &rollup_id,
-                                    rollup_block_height,
-                                    transaction_order,
-                                    &raw_transaction,
-                                )
-                                .unwrap();
-
-                                raw_transaction_list.push(raw_transaction);
+                match RawTransactionModel::get(&rollup_id, rollup_block_height, transaction_order) {
+                    // If raw transaction exists, add it to the raw transaction list.
+                    Ok(raw_transaction) => {
+                        raw_transaction_list.push(raw_transaction);
+                    }
+                    Err(error) => {
+                        if error.is_none_type() {
+                            if encrypted_transaction.is_none() {
+                                // 2. Fetch the missing transaction from other sequencers.
+                                encrypted_transaction = Some(
+                                    fetch_missing_transaction(
+                                        rollup_id.clone(),
+                                        rollup_block_height,
+                                        transaction_order,
+                                        cluster.clone(),
+                                    )
+                                    .await
+                                    .unwrap(),
+                                );
                             }
-                            _ => {
-                                panic!("error: {:?}", error);
+
+                            match encrypted_transaction.unwrap() {
+                                EncryptedTransaction::Skde(skde_encrypted_transaction) => {
+                                    let (raw_transaction, _plain_data) = decrypt_skde_transaction(
+                                        &skde_encrypted_transaction,
+                                        key_management_system_client.clone(),
+                                        &mut decryption_keys,
+                                        context.skde_params(),
+                                    )
+                                    .await
+                                    .unwrap();
+
+                                    RawTransactionModel::put(
+                                        &rollup_id,
+                                        rollup_block_height,
+                                        transaction_order,
+                                        &raw_transaction,
+                                    )
+                                    .unwrap();
+
+                                    raw_transaction_list.push(raw_transaction);
+                                }
+                                _ => {
+                                    panic!("error: {:?}", error);
+                                }
                             }
                         }
                     }
@@ -232,7 +234,7 @@ async fn decrypt_skde_transaction(
     let decryption_key_id = skde_encrypted_transaction.key_id();
 
     let decryption_key = if !decryption_keys.contains_key(&decryption_key_id) {
-        println!("key_id(): {:?}", skde_encrypted_transaction.key_id());
+        println!("key_id: {:?}", skde_encrypted_transaction.key_id());
 
         let decryption_key = SecretKey {
             sk: key_management_system_client
