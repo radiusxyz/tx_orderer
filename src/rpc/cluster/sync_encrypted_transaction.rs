@@ -13,6 +13,7 @@ pub struct SyncEncryptedTransactionMessage {
     pub transaction_order: u64,
     pub encrypted_transaction: EncryptedTransaction,
     pub order_commitment: OrderCommitment,
+    pub order_hash: OrderHash,
 }
 
 impl SyncEncryptedTransaction {
@@ -71,6 +72,14 @@ impl SyncEncryptedTransaction {
             parameter.message.rollup_block_height,
             parameter.message.transaction_order,
             &parameter.message.order_commitment,
+        )?;
+
+        // Temporary block commitment
+        BlockCommitmentModel::put(
+            &parameter.message.rollup_id,
+            parameter.message.rollup_block_height,
+            parameter.message.transaction_order,
+            &parameter.message.order_hash,
         )?;
 
         Ok(())

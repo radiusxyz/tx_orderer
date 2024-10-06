@@ -104,6 +104,7 @@ impl SendEncryptedTransaction {
                 transaction_order,
                 parameter.encrypted_transaction.clone(),
                 order_commitment.clone(),
+                current_order_hash,
             );
 
             match parameter.encrypted_transaction {
@@ -182,6 +183,7 @@ pub fn sync_encrypted_transaction(
     transaction_order: u64,
     encrypted_transaction: EncryptedTransaction,
     order_commitment: OrderCommitment,
+    order_hash: OrderHash,
 ) {
     tokio::spawn(async move {
         let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
@@ -192,6 +194,7 @@ pub fn sync_encrypted_transaction(
                 transaction_order,
                 encrypted_transaction,
                 order_commitment,
+                order_hash,
             };
             let signature = context
                 .get_signer(platform)
