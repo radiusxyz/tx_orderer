@@ -75,6 +75,14 @@ impl SyncRawTransaction {
             )?;
         }
 
+        // Temporary block commitment
+        BlockCommitmentModel::put(
+            &parameter.message.rollup_id,
+            parameter.message.rollup_block_height,
+            parameter.message.transaction_order,
+            &parameter.message.order_hash,
+        )?;
+
         Ok(())
     }
 }
