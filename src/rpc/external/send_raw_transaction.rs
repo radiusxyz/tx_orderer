@@ -101,6 +101,7 @@ impl SendRawTransaction {
                 transaction_order,
                 parameter.raw_transaction.clone(),
                 order_commitment.clone(),
+                current_order_hash,
             );
 
             info!(
@@ -135,6 +136,7 @@ pub fn sync_raw_transaction(
     transaction_order: u64,
     raw_transaction: RawTransaction,
     order_commitment: OrderCommitment,
+    order_hash: OrderHash,
 ) {
     tokio::spawn(async move {
         let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
@@ -145,6 +147,7 @@ pub fn sync_raw_transaction(
                 transaction_order,
                 raw_transaction,
                 order_commitment: Some(order_commitment), // Temporary
+                order_hash,
             };
             let signature = context
                 .get_signer(platform)

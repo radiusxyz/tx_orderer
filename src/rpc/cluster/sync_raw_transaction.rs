@@ -13,6 +13,7 @@ pub struct SyncRawTransactionMessage {
     pub transaction_order: u64,
     pub raw_transaction: RawTransaction,
     pub order_commitment: Option<OrderCommitment>,
+    pub order_hash: OrderHash,
 }
 
 impl SyncRawTransaction {
