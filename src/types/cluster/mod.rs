@@ -91,9 +91,9 @@ impl Cluster {
             .enumerate()
             .filter_map(|(index, (_address, rpc_url))| {
                 if index == leader_index {
-                    Some(rpc_url.clone())
-                } else {
                     None
+                } else {
+                    Some(rpc_url.clone())
                 }
             })
             .collect()
