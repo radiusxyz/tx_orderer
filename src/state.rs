@@ -1,6 +1,6 @@
 use std::{any::Any, sync::Arc};
 
-use radius_sequencer_sdk::{
+use radius_sdk::{
     kvstore::{CachedKvStore, CachedKvStoreError},
     signature::PrivateKeySigner,
 };

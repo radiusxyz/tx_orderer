@@ -344,7 +344,7 @@ checksum = "4d0f2d905ebd295e7effec65e5f6868d153936130ae718352771de3e7d03c75c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -473,7 +473,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -490,7 +490,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
  "syn-solidity",
  "tiny-keccak",
 ]
@@ -508,7 +508,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "serde_json",
- "syn 2.0.77",
+ "syn 2.0.79",
  "syn-solidity",
 ]
 
@@ -981,7 +981,7 @@ checksum = "16e62a023e7c117e27523144c5d2459f4397fcc3cab0085af8e2224f643a0193"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -992,7 +992,7 @@ checksum = "a27b8a3a6e1a44fa4c8baf1f653e4172e81486d4941f2237e20dc2d0cf4ddff1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -1014,7 +1014,7 @@ checksum = "3c87f3f15e7794432337fc718554eaa4dc8f04c9677a950ffe366f20a162ae42"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -1141,7 +1141,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -1216,7 +1216,7 @@ dependencies = [
 [[package]]
 name = "block-commitment"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=dd71269cd36df0861096891ac94bc92ad7c9d624#dd71269cd36df0861096891ac94bc92ad7c9d624"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-381",
@@ -1444,7 +1444,7 @@ dependencies = [
  "heck 0.5.0",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -1555,7 +1555,7 @@ checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 [[package]]
 name = "context"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=dd71269cd36df0861096891ac94bc92ad7c9d624#dd71269cd36df0861096891ac94bc92ad7c9d624"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
 dependencies = [
  "crossbeam-epoch",
 ]
@@ -1695,7 +1695,7 @@ checksum = "f46882e17999c6cc590af592290432be3bce0428cb0d5f8b6715e4dc7b383eb3"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -1757,7 +1757,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustc_version 0.4.1",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -2086,7 +2086,7 @@ dependencies = [
  "reqwest 0.11.27",
  "serde",
  "serde_json",
- "syn 2.0.77",
+ "syn 2.0.79",
  "toml",
  "walkdir",
 ]
@@ -2104,7 +2104,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "serde_json",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -2130,7 +2130,7 @@ dependencies = [
  "serde",
  "serde_json",
  "strum",
- "syn 2.0.77",
+ "syn 2.0.79",
  "tempfile",
  "thiserror",
  "tiny-keccak",
@@ -2452,7 +2452,7 @@ checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -3134,7 +3134,7 @@ dependencies = [
 [[package]]
 name = "json-rpc"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=dd71269cd36df0861096891ac94bc92ad7c9d624#dd71269cd36df0861096891ac94bc92ad7c9d624"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
 dependencies = [
  "hyper 0.14.30",
  "jsonrpsee",
@@ -3244,7 +3244,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -3373,12 +3373,23 @@ dependencies = [
 [[package]]
 name = "kvstore"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=dd71269cd36df0861096891ac94bc92ad7c9d624#dd71269cd36df0861096891ac94bc92ad7c9d624"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
 dependencies = [
+ "kvstore-macros",
  "rocksdb",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "kvstore-macros"
+version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -3494,7 +3505,7 @@ checksum = "78b3ae25bc7c8c38cec158d1f2757ee79e9b3740fbc7ccf0e59e4b08d793fa89"
 [[package]]
 name = "liveness-radius"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=dd71269cd36df0861096891ac94bc92ad7c9d624#dd71269cd36df0861096891ac94bc92ad7c9d624"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
 dependencies = [
  "alloy",
  "futures",
@@ -3719,7 +3730,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -3791,7 +3802,7 @@ checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -4019,7 +4030,7 @@ dependencies = [
  "phf_shared 0.11.2",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -4057,7 +4068,7 @@ checksum = "2f38a4412a78282e09a2cf38d195ea5420d15ba0602cb375210efbc877243965"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -4141,7 +4152,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "479cf940fbbb3426c32c5d5176f62ad57549a0bb84773423ba8be9d089f5faba"
 dependencies = [
  "proc-macro2",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -4270,9 +4281,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
-name = "radius-sequencer-sdk"
+name = "radius-sdk"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=dd71269cd36df0861096891ac94bc92ad7c9d624#dd71269cd36df0861096891ac94bc92ad7c9d624"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
 dependencies = [
  "block-commitment",
  "context",
@@ -4958,7 +4969,7 @@ dependencies = [
  "ethers",
  "futures",
  "pvde",
- "radius-sequencer-sdk",
+ "radius-sdk",
  "serde",
  "serde_json",
  "sha3 0.10.8",
@@ -4997,7 +5008,7 @@ checksum = "243902eda00fad750862fc144cea25caca5e20d615af0a81bee94ca738f1df1f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -5127,7 +5138,7 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=dd71269cd36df0861096891ac94bc92ad7c9d624#dd71269cd36df0861096891ac94bc92ad7c9d624"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
 dependencies = [
  "bincode",
  "const-hex",
@@ -5312,7 +5323,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -5354,9 +5365,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.77"
+version = "2.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f35bcdf61fd8e7be6caf75f429fdca8beb3ed76584befb503b1569faee373ed"
+checksum = "89132cd0bf050864e1d38dc3bbc07a0eb8e7530af26344d3d2bbbef83499f590"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5372,7 +5383,7 @@ dependencies = [
  "paste",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -5458,7 +5469,7 @@ checksum = "a4558b58466b9ad7ca0f102865eccc95938dca1a74a856f2b57b6629050da261"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -5561,7 +5572,7 @@ checksum = "693d596312e88961bc67d7f1f97af8a70227d9f90c31bba5806eec004978d752"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -5763,7 +5774,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -5971,7 +5982,7 @@ dependencies = [
 [[package]]
 name = "validation-eigenlayer"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=dd71269cd36df0861096891ac94bc92ad7c9d624#dd71269cd36df0861096891ac94bc92ad7c9d624"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=35146ce6f35792cda3b8f6e4665a0575f96d8b41#35146ce6f35792cda3b8f6e4665a0575f96d8b41"
 dependencies = [
  "alloy",
  "chrono",
@@ -6055,7 +6066,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
  "wasm-bindgen-shared",
 ]
 
@@ -6089,7 +6100,7 @@ checksum = "afc340c74d9005395cf9dd098506f7f44e38f2b4a21c6aaacf9a105ea5e1e836"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -6443,7 +6454,7 @@ checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -6463,7 +6474,7 @@ checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.77",
+ "syn 2.0.79",
 ]
 
 [[package]]

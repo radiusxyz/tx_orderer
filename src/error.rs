@@ -2,14 +2,14 @@
 pub enum Error {
     OpenConfig(std::io::Error),
     ParseConfig(toml::de::Error),
-    Database(radius_sequencer_sdk::kvstore::KvStoreError),
-    RpcError(radius_sequencer_sdk::json_rpc::Error),
-    Signature(radius_sequencer_sdk::signature::SignatureError),
+    Database(radius_sdk::kvstore::KvStoreError),
+    RpcError(radius_sdk::json_rpc::Error),
+    Signature(radius_sdk::signature::SignatureError),
     Deserialize(serde_json::Error),
     CreateLivenessClient(Box<dyn std::error::Error>),
     InitializeLivenessClient(Box<dyn std::error::Error>),
     InitializeValidationClient(Box<dyn std::error::Error>),
-    CachedKvStore(radius_sequencer_sdk::kvstore::CachedKvStoreError),
+    CachedKvStore(radius_sdk::kvstore::CachedKvStoreError),
     Uninitialized,
     EmptySequencerList,
     LeaderIndexOutOfBound,
@@ -68,8 +68,8 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<radius_sequencer_sdk::json_rpc::Error> for Error {
-    fn from(value: radius_sequencer_sdk::json_rpc::Error) -> Self {
+impl From<radius_sdk::json_rpc::Error> for Error {
+    fn from(value: radius_sdk::json_rpc::Error) -> Self {
         Self::RpcError(value)
     }
 }

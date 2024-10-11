@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use radius_sequencer_sdk::{
+use radius_sdk::{
     json_rpc::{Error, RpcClient},
     signature::{Address, Signature},
 };

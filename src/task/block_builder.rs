@@ -4,7 +4,7 @@ use futures::{
     future::{select_ok, Fuse},
     FutureExt,
 };
-use radius_sequencer_sdk::json_rpc::RpcClient;
+use radius_sdk::json_rpc::RpcClient;
 use skde::{
     delay_encryption::{decrypt, SecretKey},
     SkdeParams,

@@ -4,7 +4,7 @@ pub mod internal;
 pub(crate) mod prelude {
     pub use std::sync::Arc;
 
-    pub use radius_sequencer_sdk::{
+    pub use radius_sdk::{
         json_rpc::{types::*, RpcClient, RpcError},
         signature::{Address, Signature},
     };

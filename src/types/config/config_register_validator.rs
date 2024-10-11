@@ -63,7 +63,7 @@ pub struct ConfigRegisterValidator {
 
 impl ConfigRegisterValidator {
     pub async fn init(&self) {
-        use radius_sequencer_sdk::validation_eigenlayer::publisher::Publisher;
+        use radius_sdk::validation_eigenlayer::publisher::Publisher;
 
         let client = Publisher::new(
             &self.ethereum_rpc_url,

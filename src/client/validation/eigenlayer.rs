@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use radius_sequencer_sdk::validation_eigenlayer::{
+use radius_sdk::validation_eigenlayer::{
     publisher::Publisher, subscriber::Subscriber, types::Avs,
 };
 use tokio::time::{sleep, Duration};

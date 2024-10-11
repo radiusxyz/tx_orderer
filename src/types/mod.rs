@@ -21,7 +21,7 @@ pub use validation::*;
 pub use zkp::*;
 
 pub(crate) mod prelude {
-    pub use radius_sequencer_sdk::{
+    pub use radius_sdk::{
         kvstore::{kvstore, KvStoreError, Lock},
         signature::{Address, Signature},
     };

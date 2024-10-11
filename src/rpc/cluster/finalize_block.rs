@@ -1,4 +1,4 @@
-use radius_sequencer_sdk::signature::Address;
+use radius_sdk::signature::Address;
 use tracing::info;
 
 use crate::{

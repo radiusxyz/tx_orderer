@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use radius_sequencer_sdk::signature::ChainType;
+use radius_sdk::signature::ChainType;
 
 use crate::{error::Error, types::prelude::*};
 

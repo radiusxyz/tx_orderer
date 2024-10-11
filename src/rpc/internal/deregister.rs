@@ -1,4 +1,4 @@
-use radius_sequencer_sdk::signature::PrivateKeySigner;
+use radius_sdk::signature::PrivateKeySigner;
 
 use crate::rpc::prelude::*;
 

@@ -24,7 +24,7 @@ use pvde::{
         setup as setup_time_lock_puzzle_param,
     },
 };
-use radius_sequencer_sdk::{
+use radius_sdk::{
     json_rpc::RpcServer,
     kvstore::{CachedKvStore, KvStore as Database},
     signature::PrivateKeySigner,

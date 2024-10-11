@@ -1,8 +1,6 @@
 use std::{str::FromStr, sync::Arc};
 
-use radius_sequencer_sdk::liveness_radius::{
-    publisher::Publisher, subscriber::Subscriber, types::Events,
-};
+use radius_sdk::liveness_radius::{publisher::Publisher, subscriber::Subscriber, types::Events};
 use tokio::time::{sleep, Duration};
 
 use crate::{client::liveness::seeder::SeederClient, error::Error, types::*};
