@@ -119,10 +119,9 @@ impl FinalizeBlock {
                 if let Some(sequencer_rpc_url) = sequencer_rpc_url {
                     tokio::spawn(async move {
                         let client = RpcClient::new(sequencer_rpc_url).unwrap();
-                        client
+                        let _ = client
                             .request::<SyncBlock, ()>(SyncBlock::METHOD_NAME, rpc_parameter.clone())
-                            .await
-                            .unwrap();
+                            .await;
                     });
                 }
             }

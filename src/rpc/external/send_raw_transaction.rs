@@ -164,13 +164,12 @@ pub fn sync_raw_transaction(
 
                 tokio::spawn(async move {
                     let client = RpcClient::new(follower_rpc_url).unwrap();
-                    client
+                    let _ = client
                         .request::<SyncRawTransaction, ()>(
                             SyncRawTransaction::METHOD_NAME,
                             rpc_parameter,
                         )
-                        .await
-                        .unwrap();
+                        .await;
                 });
             }
         }

@@ -211,13 +211,12 @@ pub fn sync_encrypted_transaction(
 
                 tokio::spawn(async move {
                     let client = RpcClient::new(follower_rpc_url).unwrap();
-                    client
+                    let _ = client
                         .request::<SyncEncryptedTransaction, ()>(
                             SyncEncryptedTransaction::METHOD_NAME,
                             rpc_parameter,
                         )
-                        .await
-                        .unwrap();
+                        .await;
                 });
             }
         }

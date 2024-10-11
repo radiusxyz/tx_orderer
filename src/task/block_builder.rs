@@ -177,22 +177,24 @@ pub fn block_builder_skde(
                     .unwrap();
 
             match validation_info {
+                // TODO: we have to manage the nonce for the register block commitment.
                 ValidationInfoPayload::EigenLayer(_) => {
-                    let validation_client: validation::eigenlayer::ValidationClient = context
-                        .get_validation_client(rollup.platform(), rollup.service_provider())
-                        .await
-                        .unwrap();
+                    // let validation_client:
+                    // validation::eigenlayer::ValidationClient = context
+                    //     .get_validation_client(rollup.platform(),
+                    // rollup.service_provider())     .await
+                    //     .unwrap();
 
-                    validation_client
-                        .publisher()
-                        .register_block_commitment(
-                            block_commitment,
-                            rollup_block_height,
-                            rollup.rollup_id(),
-                            rollup.cluster_id(),
-                        )
-                        .await
-                        .unwrap();
+                    // validation_client
+                    //     .publisher()
+                    //     .register_block_commitment(
+                    //         block_commitment,
+                    //         rollup_block_height,
+                    //         rollup.rollup_id(),
+                    //         rollup.cluster_id(),
+                    //     )
+                    //     .await
+                    //     .unwrap();
                 }
                 ValidationInfoPayload::Symbiotic(_) => unimplemented!("Unsupported"),
             }
