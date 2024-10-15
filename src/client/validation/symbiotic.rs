@@ -112,11 +112,10 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
                 taskCreatedBlock: event.taskCreatedBlock,
             };
 
-            context
+            let _ = context
                 .publisher()
                 .respond_to_task(task, event.taskIndex, Bytes::from_iter(&[0_u8; 64]))
-                .await
-                .unwrap();
+                .await;
         }
     }
 }
