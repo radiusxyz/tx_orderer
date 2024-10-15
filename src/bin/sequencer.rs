@@ -198,8 +198,19 @@ async fn main() -> Result<(), Error> {
                             .await
                             .map_err(Error::CachedKvStore)?;
                     }
-                    ValidationInfoPayload::Symbiotic(_) => {
-                        todo!("Implement `ValidationClient` for Symbiotic.");
+                    ValidationInfoPayload::Symbiotic(validation_info) => {
+                        let validation_client = validation::symbiotic::ValidationClient::new(
+                            *platform,
+                            *service_provider,
+                            validation_info,
+                            signing_key,
+                        )?;
+                        validation_client.initialize_event_listener();
+
+                        validation_clients
+                            .put(&(*platform, *service_provider), validation_client)
+                            .await
+                            .map_err(Error::CachedKvStore)?;
                     }
                 }
             }
