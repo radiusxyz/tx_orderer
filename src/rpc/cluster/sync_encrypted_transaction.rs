@@ -67,11 +67,10 @@ impl SyncEncryptedTransaction {
             &parameter.message.encrypted_transaction,
         )?;
 
-        OrderCommitmentModel::put(
+        parameter.message.order_commitment.put(
             &parameter.message.rollup_id,
             parameter.message.rollup_block_height,
             parameter.message.transaction_order,
-            &parameter.message.order_commitment,
         )?;
 
         // Temporary block commitment

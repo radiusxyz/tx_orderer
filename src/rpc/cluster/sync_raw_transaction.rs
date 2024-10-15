@@ -66,12 +66,11 @@ impl SyncRawTransaction {
             &parameter.message.raw_transaction,
         )?;
 
-        if parameter.message.order_commitment.is_some() {
-            OrderCommitmentModel::put(
+        if let Some(order_commitment) = parameter.message.order_commitment {
+            order_commitment.put(
                 &parameter.message.rollup_id,
                 parameter.message.rollup_block_height,
                 parameter.message.transaction_order,
-                &parameter.message.order_commitment.unwrap(),
             )?;
         }
 

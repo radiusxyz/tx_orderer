@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use radius_sdk::validation_eigenlayer::{
+use radius_sdk::validation_symbiotic::{
     publisher::Publisher,
     subscriber::Subscriber,
-    types::{Avs, Bytes},
+    types::{Bytes, ValidationServiceManager},
 };
 use tokio::time::{sleep, Duration};
 
@@ -36,22 +36,19 @@ impl ValidationClient {
     pub fn new(
         platform: Platform,
         service_provider: ServiceProvider,
-        validation_info: ValidationEigenLayer,
+        validation_info: ValidationSymbiotic,
         signing_key: impl AsRef<str>,
     ) -> Result<Self, Error> {
         let publisher = Publisher::new(
             validation_info.validation_rpc_url,
             signing_key,
-            validation_info.delegation_manager_contract_address,
-            validation_info.avs_directory_contract_address,
-            validation_info.stake_registry_contract_address,
-            validation_info.avs_contract_address.clone(),
+            validation_info.validation_contract_address.clone(),
         )
         .map_err(|error| Error::InitializeValidationClient(error.into()))?;
 
         let subscriber = Subscriber::new(
             validation_info.validation_websocket_url,
-            validation_info.avs_contract_address,
+            validation_info.validation_contract_address,
         )
         .map_err(|error| Error::InitializeValidationClient(error.into()))?;
 
@@ -94,20 +91,20 @@ impl ValidationClient {
                     .await
                     .unwrap();
 
-                tracing::warn!("Reconnecting EigenLayer validation event listener..");
+                tracing::warn!("Reconnecting Symbiotic validation event listener..");
                 sleep(Duration::from_secs(5)).await;
             }
         });
     }
 }
 
-async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
+async fn callback(event: ValidationServiceManager::NewTaskCreated, context: ValidationClient) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
         let block = Block::get(rollup.rollup_id(), event.task.blockNumber).unwrap();
 
         if !block.is_leader {
-            let task = Avs::Task {
+            let task = ValidationServiceManager::Task {
                 commitment: Bytes::from_iter(&[0u8; 32]),
                 blockNumber: 0,
                 rollupId: rollup.rollup_id().to_owned(),

@@ -1,7 +1,5 @@
 use std::collections::btree_set::{BTreeSet, Iter};
 
-use radius_sdk::kvstore::Model;
-
 use crate::types::prelude::*;
 
 // TODO: Attributing Model
@@ -24,7 +22,11 @@ pub struct ValidationEigenLayer {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ValidationSymbiotic;
+pub struct ValidationSymbiotic {
+    pub validation_rpc_url: String,
+    pub validation_websocket_url: String,
+    pub validation_contract_address: String,
+}
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key())]

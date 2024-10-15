@@ -22,7 +22,7 @@ pub use zkp::*;
 
 pub(crate) mod prelude {
     pub use radius_sdk::{
-        kvstore::{kvstore, KvStoreError, Lock},
+        kvstore::{kvstore, KvStoreError, Lock, Model},
         signature::{Address, Signature},
     };
     pub use serde::{Deserialize, Serialize};

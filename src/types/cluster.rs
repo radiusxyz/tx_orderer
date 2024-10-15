@@ -1,7 +1,5 @@
 use std::collections::btree_set::{self, BTreeSet};
 
-use radius_sdk::kvstore::Model;
-
 use super::prelude::*;
 use crate::error::Error;
 

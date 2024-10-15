@@ -1,5 +1,3 @@
-use radius_sdk::kvstore::Model;
-
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
