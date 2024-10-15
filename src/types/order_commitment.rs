@@ -4,10 +4,8 @@ use sha3::{Digest, Sha3_256};
 
 use crate::{error::Error, types::prelude::*};
 
-mod model;
-pub use model::*;
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Model)]
+#[kvstore(key(rollup_id: &String, rollup_block_height: u64, transaction_order: u64))]
 #[serde(rename_all = "snake_case")]
 #[serde(untagged)]
 pub enum OrderCommitment {

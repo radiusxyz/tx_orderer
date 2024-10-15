@@ -76,12 +76,7 @@ impl SendRawTransaction {
                 &parameter.raw_transaction,
             )?;
 
-            OrderCommitmentModel::put(
-                &parameter.rollup_id,
-                rollup_block_height,
-                transaction_order,
-                &order_commitment,
-            )?;
+            order_commitment.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
 
             // Temporary block commitment
             BlockCommitment::put(

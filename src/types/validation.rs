@@ -1,7 +1,5 @@
 use std::collections::btree_set::{BTreeSet, Iter};
 
-use radius_sdk::kvstore::Model;
-
 use crate::types::prelude::*;
 
 // TODO: Attributing Model
