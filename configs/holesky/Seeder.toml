@@ -1,2 +1,2 @@
-database_path = "./radius/database/seeder_avs"
+database_path = "./radius/database/seeder"
 seeder_rpc_url = "0.0.0.0:3000"
