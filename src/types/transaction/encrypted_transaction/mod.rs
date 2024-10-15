@@ -164,7 +164,7 @@ impl TransactionData {
             Self::Eth(data) => {
                 data.plain_data = Some(plain_data);
             }
-            Self::EthBundle(data) => {
+            Self::EthBundle(_data) => {
                 unimplemented!()
             }
         }

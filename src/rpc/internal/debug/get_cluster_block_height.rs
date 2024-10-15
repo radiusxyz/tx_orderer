@@ -21,14 +21,14 @@ impl GetClusterBlockHeight {
     ) -> Result<GetClusterBlockHeightResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let cluster_block_height = ClusterBlockHeightModel::get(
+        let cluster_block_height = ClusterBlockHeight::get(
             parameter.platform,
             parameter.service_provider,
             &parameter.cluster_id,
         )?;
 
         Ok(GetClusterBlockHeightResponse {
-            cluster_block_height,
+            cluster_block_height: cluster_block_height.inner(),
         })
     }
 }

@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use radius_sdk::validation_eigenlayer::{
-    publisher::Publisher, subscriber::Subscriber, types::Avs,
-};
+use radius_sdk::validation_eigenlayer::{publisher::Publisher, subscriber::Subscriber, types::Avs};
 use tokio::time::{sleep, Duration};
 
 use crate::{error::Error, types::*};
@@ -100,9 +98,9 @@ impl ValidationClient {
 }
 
 async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
-    let rollup = RollupModel::get(&event.rollupId).ok();
+    let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = BlockModel::get(rollup.rollup_id(), event.task.blockNumber).unwrap();
+        let block = Block::get(rollup.rollup_id(), event.task.blockNumber).unwrap();
         if !block.is_leader {
             context
                 .publisher()

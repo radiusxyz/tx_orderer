@@ -20,8 +20,8 @@ pub enum Error {
     InvalidBlockHeight,
     InvalidLeaderIndex,
 
-    LoadConfigOption,
-    ParseTomlString,
+    LoadConfigOption(std::io::Error),
+    ParseTomlString(toml::de::Error),
 
     RemoveConfigDirectory,
     CreateConfigDirectory,

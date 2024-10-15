@@ -14,7 +14,7 @@ const-hex = "1.12"
 ethers = "2.0"
 futures = "0.3.30"
 pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
-radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "f63f1f13aaac4c15a48d3edb664afbc125f86c33", features = ["full"] }
+radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "962f6b983a34826f8d03f8496c03d1a508f0207c", features = ["full"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 sha3 = "0.10"
@@ -23,5 +23,3 @@ tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.13"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
-
-# radius-sequencer-sdk = { path="../radius-sdk-rs/sequencer", features = ["full"] }

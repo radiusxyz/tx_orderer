@@ -33,7 +33,6 @@ impl GetSequencingInfo {
     //         sequencing_info_payload,
     //     })
     // }
-
     pub async fn handler(
         parameter: RpcParameter,
         _context: Arc<AppState>,
@@ -41,7 +40,7 @@ impl GetSequencingInfo {
         let parameter = parameter.parse::<GetSequencingInfo>()?;
 
         let sequencing_info_payload =
-            SequencingInfoPayloadModel::get(parameter.platform, parameter.service_provider)?;
+            SequencingInfoPayload::get(parameter.platform, parameter.service_provider)?;
 
         Ok(GetSequencingInfoResponse {
             sequencing_info_payload,

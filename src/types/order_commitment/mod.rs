@@ -93,6 +93,12 @@ impl Default for OrderHash {
     }
 }
 
+impl From<String> for OrderHash {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
 impl OrderHash {
     pub fn update_order_hash(&self, raw_tx_hash: &RawTransactionHash) -> OrderHash {
         let mut hasher = Sha3_256::new();
@@ -101,5 +107,9 @@ impl OrderHash {
         let order_hash_bytes = hasher.finalize();
 
         OrderHash(const_hex::encode_prefixed(order_hash_bytes))
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
     }
 }

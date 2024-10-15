@@ -1,6 +1,4 @@
-mod model;
-
-pub use model::*;
+use radius_sdk::kvstore::Model;
 
 use crate::types::prelude::*;
 
@@ -17,12 +15,19 @@ impl Timestamp {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Model)]
+#[kvstore(key(rollup_id: &str, block_height: u64, transaction_order: u64))]
 pub struct BlockCommitment(pub String);
 
 impl Default for BlockCommitment {
     fn default() -> Self {
         Self(const_hex::encode([0; 32]))
+    }
+}
+
+impl From<OrderHash> for BlockCommitment {
+    fn from(value: OrderHash) -> Self {
+        Self(value.into_inner())
     }
 }
 
@@ -38,7 +43,8 @@ impl AsRef<str> for BlockCommitment {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Model)]
+#[kvstore(key(rollup_id: &str, block_height: u64))]
 pub struct Block {
     pub block_height: u64,
 

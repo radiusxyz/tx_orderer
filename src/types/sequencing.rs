@@ -3,13 +3,9 @@ use std::{
     str::FromStr,
 };
 
-use radius_sdk::signature::ChainType;
+use radius_sdk::{kvstore::Model, signature::ChainType};
 
 use crate::{error::Error, types::prelude::*};
-
-mod model;
-
-pub use model::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -64,7 +60,9 @@ impl FromStr for ValidationServiceProvider {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+// Todo: attributing model
+#[derive(Clone, Debug, Deserialize, Serialize, Model)]
+#[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
 #[serde(untagged)]
 pub enum SequencingInfoPayload {
     Ethereum(LivenessRadius),
@@ -81,7 +79,8 @@ pub struct LivenessRadius {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LivenessLocal;
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key())]
 pub struct SequencingInfoList(BTreeSet<(Platform, ServiceProvider)>);
 
 impl SequencingInfoList {

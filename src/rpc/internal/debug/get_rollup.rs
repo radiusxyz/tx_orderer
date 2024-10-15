@@ -19,7 +19,7 @@ impl GetRollup {
     ) -> Result<GetRollupResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let rollup = RollupModel::get(&parameter.rollup_id)?;
+        let rollup = Rollup::get(&parameter.rollup_id)?;
 
         Ok(GetRollupResponse { rollup })
     }

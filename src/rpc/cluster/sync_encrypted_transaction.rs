@@ -24,9 +24,9 @@ impl SyncEncryptedTransaction {
 
         tracing::info!("sync encrypted transaction - {:?}", parameter);
 
-        let rollup = RollupModel::get(&parameter.message.rollup_id)?;
-        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.message.rollup_id)?;
-        let cluster = ClusterModel::get(
+        let rollup = Rollup::get(&parameter.message.rollup_id)?;
+        let mut rollup_metadata = RollupMetadata::get_mut(&parameter.message.rollup_id)?;
+        let cluster = Cluster::get(
             rollup.platform(),
             rollup.service_provider(),
             rollup.cluster_id(),
@@ -75,11 +75,11 @@ impl SyncEncryptedTransaction {
         )?;
 
         // Temporary block commitment
-        BlockCommitmentModel::put(
+        BlockCommitment::put(
+            &parameter.message.order_hash.into(),
             &parameter.message.rollup_id,
             parameter.message.rollup_block_height,
             parameter.message.transaction_order,
-            &parameter.message.order_hash,
         )?;
 
         Ok(())

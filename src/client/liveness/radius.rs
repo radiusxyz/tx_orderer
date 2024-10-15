@@ -112,9 +112,10 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
             let platform_block_height = block.header.number.unwrap();
 
             // Get the cluster ID list for a given liveness client.
-            let cluster_id_list = ClusterIdListModel::get_or_default(
+            let cluster_id_list = ClusterIdList::get_or(
                 liveness_client.platform(),
                 liveness_client.service_provider(),
+                ClusterIdList::default,
             )
             .unwrap();
 
@@ -158,7 +159,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
 
                 // Update the rollup info to database
                 for rollup_info in rollup_info_list {
-                    match RollupModel::get(&rollup_info.rollupId) {
+                    match Rollup::get(&rollup_info.rollupId) {
                         Ok(_) => {}
                         Err(error) => {
                             if error.is_none_type() {
@@ -194,7 +195,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                                     liveness_client.service_provider(),
                                 );
 
-                                RollupModel::put(rollup.rollup_id(), &rollup).unwrap();
+                                Rollup::put(&rollup, rollup.rollup_id()).unwrap();
 
                                 // let rollup_metadata =
                                 // RollupMetadata::default();
@@ -220,12 +221,12 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                     block_margin.try_into().unwrap(),
                 );
 
-                ClusterModel::put(
+                Cluster::put_and_update_with_margin(
+                    &cluster,
                     liveness_client.platform(),
                     liveness_client.service_provider(),
-                    &cluster_id,
+                    cluster_id,
                     platform_block_height,
-                    &cluster,
                 )
                 .unwrap();
             }

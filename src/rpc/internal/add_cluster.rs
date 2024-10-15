@@ -19,7 +19,7 @@ impl AddCluster {
         match parameter.platform {
             Platform::Ethereum => {
                 let signing_key = context.config().signing_key();
-                let signer = PrivateKeySigner::from_str(parameter.platform.into(), &signing_key)?;
+                let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
                 let address = signer.address();
 
                 seeder_client
@@ -32,9 +32,10 @@ impl AddCluster {
                     )
                     .await?;
 
-                let mut cluster_id_list = ClusterIdListModel::get_mut_or_default(
+                let mut cluster_id_list = ClusterIdList::get_mut_or(
                     parameter.platform,
                     parameter.service_provider,
+                    ClusterIdList::default,
                 )?;
                 cluster_id_list.insert(&parameter.cluster_id);
                 cluster_id_list.update()?;

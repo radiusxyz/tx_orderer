@@ -151,8 +151,7 @@ pub fn block_builder_skde(
         let address = signer.address().clone();
         let signature = signer.sign_message("").unwrap(); // TODO: set the message.
         let block_commitment = if transaction_count > 0 {
-            BlockCommitmentModel::get(&rollup_id, rollup_block_height, transaction_count - 1)
-                .unwrap()
+            BlockCommitment::get(&rollup_id, rollup_block_height, transaction_count - 1).unwrap()
         } else {
             BlockCommitment::default()
         };
@@ -167,34 +166,31 @@ pub fn block_builder_skde(
             cluster.is_leader(rollup_block_height),
         );
 
-        BlockModel::put(&rollup_id, rollup_block_height, &block).unwrap();
+        Block::put(&block, &rollup_id, rollup_block_height).unwrap();
 
         if cluster.is_leader(rollup_block_height) {
-            let rollup = RollupModel::get(&rollup_id).unwrap();
+            let rollup = Rollup::get(&rollup_id).unwrap();
 
             let validation_info =
-                ValidationInfoPayloadModel::get(rollup.platform(), rollup.service_provider())
-                    .unwrap();
+                ValidationInfoPayload::get(rollup.platform(), rollup.service_provider()).unwrap();
 
             match validation_info {
                 // TODO: we have to manage the nonce for the register block commitment.
                 ValidationInfoPayload::EigenLayer(_) => {
-                    // let validation_client:
-                    // validation::eigenlayer::ValidationClient = context
-                    //     .get_validation_client(rollup.platform(),
-                    // rollup.service_provider())     .await
-                    //     .unwrap();
+                    let validation_client: validation::eigenlayer::ValidationClient = context
+                        .get_validation_client(rollup.platform(), rollup.service_provider())
+                        .await
+                        .unwrap();
 
-                    // validation_client
-                    //     .publisher()
-                    //     .register_block_commitment(
-                    //         block_commitment,
-                    //         rollup_block_height,
-                    //         rollup.rollup_id(),
-                    //         rollup.cluster_id(),
-                    //     )
-                    //     .await
-                    //     .unwrap();
+                    let _ = validation_client
+                        .publisher()
+                        .register_block_commitment(
+                            block_commitment,
+                            rollup_block_height,
+                            rollup.rollup_id(),
+                            rollup.cluster_id(),
+                        )
+                        .await;
                 }
                 ValidationInfoPayload::Symbiotic(_) => unimplemented!("Unsupported"),
             }
@@ -203,10 +199,10 @@ pub fn block_builder_skde(
 }
 
 pub fn block_builder_pvde(
-    context: Arc<AppState>,
-    rollup_id: String,
-    rollup_block_height: u64,
-    transaction_count: u64,
+    _context: Arc<AppState>,
+    _rollup_id: String,
+    _rollup_block_height: u64,
+    _transaction_count: u64,
 ) {
     // TODO
     // let raw_transaction =
@@ -235,7 +231,9 @@ async fn decrypt_skde_transaction(
 ) -> Result<(RawTransaction, PlainData), Error> {
     let decryption_key_id = skde_encrypted_transaction.key_id();
 
-    let decryption_key = if !decryption_keys.contains_key(&decryption_key_id) {
+    let decryption_key = if let std::collections::hash_map::Entry::Vacant(e) =
+        decryption_keys.entry(decryption_key_id)
+    {
         println!("key_id: {:?}", skde_encrypted_transaction.key_id());
 
         let decryption_key = SecretKey {
@@ -247,7 +245,7 @@ async fn decrypt_skde_transaction(
                 .sk,
         };
 
-        decryption_keys.insert(decryption_key_id, decryption_key.clone());
+        e.insert(decryption_key.clone());
         decryption_key
     } else {
         decryption_keys.get(&decryption_key_id).unwrap().clone()

@@ -19,7 +19,7 @@ impl Deregister {
         match parameter.platform {
             Platform::Ethereum => {
                 let signing_key = context.config().signing_key();
-                let signer = PrivateKeySigner::from_str(parameter.platform.into(), &signing_key)?;
+                let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
                 let address = signer.address();
 
                 seeder_client
@@ -42,7 +42,7 @@ impl Deregister {
                     .await?;
 
                 let mut cluster_id_list =
-                    ClusterIdListModel::get_mut(parameter.platform, parameter.service_provider)?;
+                    ClusterIdList::get_mut(parameter.platform, parameter.service_provider)?;
                 cluster_id_list.remove(&parameter.cluster_id);
                 cluster_id_list.update()?;
             }

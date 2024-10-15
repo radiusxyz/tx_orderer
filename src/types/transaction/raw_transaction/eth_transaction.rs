@@ -1,5 +1,3 @@
-use const_hex::{hex, ToHex, ToHexExt};
-
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

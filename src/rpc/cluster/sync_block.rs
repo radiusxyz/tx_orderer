@@ -18,7 +18,7 @@ impl SyncBlock {
 
         tracing::info!("sync block - {:?}", parameter);
 
-        let rollup = RollupModel::get(&parameter.message.rollup_id)?;
+        let rollup = Rollup::get(&parameter.message.rollup_id)?;
 
         // Verify the message.
         // parameter.signature.verify_message(
@@ -27,7 +27,7 @@ impl SyncBlock {
         //     parameter.message.executor_address.clone(),
         // )?;
 
-        let cluster = ClusterModel::get(
+        let cluster = Cluster::get(
             rollup.platform(),
             rollup.service_provider(),
             rollup.cluster_id(),
@@ -37,7 +37,7 @@ impl SyncBlock {
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
         let is_leader = cluster.is_leader(next_rollup_block_height);
 
-        match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
+        match RollupMetadata::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
                 rollup_metadata.set_rollup_block_height(next_rollup_block_height);
                 rollup_metadata.set_order_hash(OrderHash::default());
@@ -60,7 +60,7 @@ impl SyncBlock {
                     rollup_metadata
                         .set_platform_block_height(parameter.message.platform_block_height);
 
-                    RollupMetadataModel::put(&parameter.message.rollup_id, &rollup_metadata)?;
+                    RollupMetadata::put(&rollup_metadata, &parameter.message.rollup_id)?;
                 } else {
                     return Err(error.into());
                 }

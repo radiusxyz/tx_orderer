@@ -20,7 +20,7 @@ impl GetRawTransactionList {
     ) -> Result<GetRawTransactionListResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let block = BlockModel::get(&parameter.rollup_id, parameter.rollup_block_height)?;
+        let block = Block::get(&parameter.rollup_id, parameter.rollup_block_height)?;
 
         let raw_transaction_list: Vec<String> = block
             .raw_transaction_list

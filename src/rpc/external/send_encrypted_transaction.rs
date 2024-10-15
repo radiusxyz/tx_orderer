@@ -22,7 +22,7 @@ impl SendEncryptedTransaction {
         context: Arc<AppState>,
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
-        let rollup = RollupModel::get(&parameter.rollup_id)?;
+        let rollup = Rollup::get(&parameter.rollup_id)?;
 
         info!("SendEncryptedTransaction: {:?}", parameter);
 
@@ -30,14 +30,14 @@ impl SendEncryptedTransaction {
         check_supported_encrypted_transaction(&rollup, &parameter.encrypted_transaction)?;
 
         // 2. Check is leader
-        let mut rollup_metadata = RollupMetadataModel::get_mut(&parameter.rollup_id)?;
+        let mut rollup_metadata = RollupMetadata::get_mut(&parameter.rollup_id)?;
         let platform = rollup.platform();
         let service_provider = rollup.service_provider();
         let cluster_id = rollup_metadata.cluster_id();
         let platform_block_height = rollup_metadata.platform_block_height();
         let rollup_block_height = rollup_metadata.rollup_block_height();
 
-        let cluster = ClusterModel::get(
+        let cluster = Cluster::get(
             platform,
             service_provider,
             cluster_id,
@@ -87,11 +87,11 @@ impl SendEncryptedTransaction {
             )?;
 
             // Temporary block commitment
-            BlockCommitmentModel::put(
+            BlockCommitment::put(
+                &current_order_hash.clone().into(),
                 &parameter.rollup_id,
                 rollup_block_height,
                 transaction_order,
-                &current_order_hash,
             )?;
 
             // Sync Transaction
@@ -174,6 +174,7 @@ fn check_supported_encrypted_transaction(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn sync_encrypted_transaction(
     cluster: Cluster,
     context: Arc<AppState>,
@@ -187,7 +188,7 @@ pub fn sync_encrypted_transaction(
 ) {
     tokio::spawn(async move {
         let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
-        if follower_rpc_url_list.len() > 0 {
+        if !follower_rpc_url_list.is_empty() {
             let message = SyncEncryptedTransactionMessage {
                 rollup_id,
                 rollup_block_height,
@@ -349,6 +350,7 @@ pub fn sync_encrypted_transaction(
 //     Ok(raw_transaction)
 // }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn issue_order_commitment(
     context: Arc<AppState>,
     platform: Platform,

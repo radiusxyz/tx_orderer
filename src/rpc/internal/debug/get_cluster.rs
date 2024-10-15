@@ -22,7 +22,7 @@ impl GetCluster {
         let parameter = parameter.parse::<GetCluster>()?;
 
         let liveness_client_info =
-            SequencingInfoPayloadModel::get(parameter.platform, parameter.service_provider)?;
+            SequencingInfoPayload::get(parameter.platform, parameter.service_provider)?;
         match liveness_client_info {
             SequencingInfoPayload::Ethereum(_) => {
                 let liveness_client = context
@@ -32,7 +32,7 @@ impl GetCluster {
                     )
                     .await?;
                 let platform_block_height = liveness_client.publisher().get_block_number().await?;
-                let cluster_info = ClusterModel::get(
+                let cluster_info = Cluster::get(
                     parameter.platform,
                     parameter.service_provider,
                     &parameter.cluster_id,

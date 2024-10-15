@@ -1,4 +1,3 @@
-use radius_sdk::signature::Address;
 use tracing::info;
 
 use crate::{
@@ -26,7 +25,7 @@ impl FinalizeBlock {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let rollup = RollupModel::get(&parameter.message.rollup_id)?;
+        let rollup = Rollup::get(&parameter.message.rollup_id)?;
 
         info!("finalize block - {:?}", parameter);
 
@@ -39,7 +38,7 @@ impl FinalizeBlock {
 
         // TODO:  check executor_address is in rollup executor addresses.
 
-        let cluster = ClusterModel::get(
+        let cluster = Cluster::get(
             rollup.platform(),
             rollup.service_provider(),
             rollup.cluster_id(),
@@ -50,7 +49,7 @@ impl FinalizeBlock {
         let is_leader = cluster.is_leader(next_rollup_block_height);
 
         let mut transaction_count = 0;
-        match RollupMetadataModel::get_mut(&parameter.message.rollup_id) {
+        match RollupMetadata::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
                 // TODO: check the block generated or generating.
 
@@ -81,7 +80,7 @@ impl FinalizeBlock {
                     rollup_metadata
                         .set_platform_block_height(parameter.message.platform_block_height);
 
-                    RollupMetadataModel::put(&parameter.message.rollup_id, &rollup_metadata)?;
+                    RollupMetadata::put(&rollup_metadata, &parameter.message.rollup_id)?;
                 } else {
                     return Err(error.into());
                 }

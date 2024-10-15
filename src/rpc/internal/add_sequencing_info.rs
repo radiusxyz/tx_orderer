@@ -16,14 +16,14 @@ impl AddSequencingInfo {
         let parameter = parameter.parse::<Self>()?;
 
         // Save `LivenessClient` metadata.
-        let mut sequencing_info_list = SequencingInfoListModel::get_mut_or_default()?;
+        let mut sequencing_info_list = SequencingInfoList::get_mut_or(SequencingInfoList::default)?;
         sequencing_info_list.insert(parameter.platform, parameter.service_provider);
         sequencing_info_list.update()?;
 
-        SequencingInfoPayloadModel::put(
+        SequencingInfoPayload::put(
+            &parameter.payload,
             parameter.platform,
             parameter.service_provider,
-            &parameter.payload,
         )?;
 
         match &parameter.payload {

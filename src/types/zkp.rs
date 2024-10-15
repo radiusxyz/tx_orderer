@@ -43,7 +43,7 @@ impl TimeLockPuzzleProof {
 // Todo(jaemin): Add Skde and handling
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Zkp {
-    Pvde(PvdeZkp),
+    Pvde(Box<PvdeZkp>),
     // Skde(SkdeZkp),
     None,
 }

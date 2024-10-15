@@ -1,12 +1,12 @@
-mod model;
-
 use std::collections::btree_set::{BTreeSet, Iter};
 
-pub use model::*;
+use radius_sdk::kvstore::Model;
 
 use crate::types::prelude::*;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+// TODO: Attributing Model
+#[derive(Clone, Debug, Deserialize, Serialize, Model)]
+#[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
 #[serde(untagged)]
 pub enum ValidationInfoPayload {
     EigenLayer(ValidationEigenLayer),
@@ -26,7 +26,8 @@ pub struct ValidationEigenLayer {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValidationSymbiotic;
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key())]
 pub struct ValidationInfoList(BTreeSet<(Platform, ServiceProvider)>);
 
 impl ValidationInfoList {

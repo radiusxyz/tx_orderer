@@ -1,13 +1,12 @@
-mod model;
-
 use std::collections::btree_set::{self, BTreeSet};
 
-pub use model::*;
+use radius_sdk::kvstore::Model;
 
 use super::prelude::*;
 use crate::error::Error;
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
 pub struct ClusterIdList(BTreeSet<String>);
 
 impl ClusterIdList {
@@ -24,7 +23,8 @@ impl ClusterIdList {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Model)]
+#[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
     sequencer_rpc_url_list: Vec<(String, Option<String>)>,
     rollup_id_list: Vec<String>,
@@ -45,6 +45,43 @@ impl Cluster {
             my_index,
             block_margin,
         }
+    }
+
+    pub fn put_and_update_with_margin(
+        cluster: &Cluster,
+        platform: Platform,
+        service_provider: ServiceProvider,
+        cluster_id: &str,
+        platform_block_height: u64,
+    ) -> Result<(), KvStoreError> {
+        Cluster::put(
+            cluster,
+            platform,
+            service_provider,
+            cluster_id,
+            platform_block_height,
+        )?;
+
+        // Keep [`ClusterInfo`] for `Self::Margin` blocks.
+        let block_height_for_remove = platform_block_height.wrapping_sub(cluster.block_margin);
+
+        let cluster_block_height = ClusterBlockHeight::new(block_height_for_remove + 1);
+
+        ClusterBlockHeight::put(
+            &cluster_block_height,
+            platform,
+            service_provider,
+            cluster_id,
+        )?;
+
+        Cluster::delete(
+            platform,
+            service_provider,
+            cluster_id,
+            block_height_for_remove,
+        )?;
+
+        Ok(())
     }
 
     pub fn my_index(&self) -> usize {
@@ -112,7 +149,21 @@ impl Cluster {
 
         self.sequencer_rpc_url_list
             .get(leader_index)
-            .and_then(|(address, _rpc_url)| Some(address.clone()))
+            .map(|(address, _rpc_url)| address.clone())
             .ok_or(Error::EmptyLeaderRpcUrl)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Model)]
+#[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str))]
+pub struct ClusterBlockHeight(u64);
+
+impl ClusterBlockHeight {
+    pub fn new(block_height: u64) -> Self {
+        Self(block_height)
+    }
+
+    pub fn inner(&self) -> u64 {
+        self.0
     }
 }

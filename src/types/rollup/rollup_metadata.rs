@@ -1,6 +1,9 @@
+use radius_sdk::kvstore::Model;
+
 use super::prelude::*;
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key(rollup_id: &str))]
 pub struct RollupMetadata {
     rollup_block_height: u64,
     transaction_order: u64,
@@ -44,7 +47,7 @@ impl RollupMetadata {
     }
 
     pub fn set_cluster_id(&mut self, cluster_id: &String) {
-        self.cluster_id = cluster_id.to_owned();
+        self.cluster_id.clone_from(cluster_id);
     }
 
     pub fn set_rollup_block_height(&mut self, block_height: u64) {

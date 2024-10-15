@@ -1,15 +1,15 @@
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-};
+// use std::{
+//     env, fs,
+//     path::{Path, PathBuf},
+// };
 
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    error::Error,
-    types::{ConfigOption, CONFIG_FILE_NAME, DEFAULT_SIGNING_KEY, SIGNING_KEY_PATH},
-};
+// use crate::{
+//     error::Error,
+//     types::{ConfigOption, CONFIG_FILE_NAME, DEFAULT_SIGNING_KEY,
+// SIGNING_KEY_PATH}, };
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 pub struct ConfigRegisterValidator {

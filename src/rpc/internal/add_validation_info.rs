@@ -14,14 +14,14 @@ impl AddValidationInfo {
         let parameter = parameter.parse::<Self>()?;
 
         // Save `ValidationClient` metadata.
-        let mut validation_info_list = ValidationInfoListModel::get_mut_or_default()?;
+        let mut validation_info_list = ValidationInfoList::get_mut_or(ValidationInfoList::default)?;
         validation_info_list.insert(parameter.platform, parameter.service_provider);
         validation_info_list.update()?;
 
-        ValidationInfoPayloadModel::put(
+        ValidationInfoPayload::put(
+            &parameter.payload,
             parameter.platform,
             parameter.service_provider,
-            &parameter.payload,
         )?;
 
         match &parameter.payload {

@@ -20,8 +20,7 @@ impl GetClusterIdList {
     ) -> Result<GetClusterIdListResponse, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let cluster_id_list =
-            ClusterIdListModel::get(parameter.platform, parameter.service_provider)?;
+        let cluster_id_list = ClusterIdList::get(parameter.platform, parameter.service_provider)?;
 
         Ok(GetClusterIdListResponse { cluster_id_list })
     }

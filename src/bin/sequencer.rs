@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, str::FromStr};
+use std::{fs, path::Path, str::FromStr};
 
 use clap::{Parser, Subcommand};
 use pvde::{
@@ -133,7 +133,7 @@ async fn main() -> Result<(), Error> {
 
             // Initialize liveness clients
             let sequencing_info_list =
-                SequencingInfoListModel::get_or_default().map_err(Error::Database)?;
+                SequencingInfoList::get_or(SequencingInfoList::default).map_err(Error::Database)?;
             for (platform, service_provider) in sequencing_info_list.iter() {
                 info!(
                     "Initialize sequencing info - platform: {:?}, service_provider: {:?}",
@@ -141,7 +141,7 @@ async fn main() -> Result<(), Error> {
                 );
 
                 // Initialize the signer
-                let signer = PrivateKeySigner::from_str((*platform).into(), &signing_key)
+                let signer = PrivateKeySigner::from_str((*platform).into(), signing_key)
                     .map_err(Error::Signature)?;
                 signers
                     .put(platform, signer)
@@ -149,14 +149,14 @@ async fn main() -> Result<(), Error> {
                     .map_err(Error::CachedKvStore)?;
 
                 let sequencing_info_payload =
-                    SequencingInfoPayloadModel::get(*platform, *service_provider)
+                    SequencingInfoPayload::get(*platform, *service_provider)
                         .map_err(Error::Database)?;
 
                 match sequencing_info_payload {
                     SequencingInfoPayload::Ethereum(liveness_info) => {
                         let liveness_client = liveness::radius::LivenessClient::new(
-                            platform.clone(),
-                            service_provider.clone(),
+                            *platform,
+                            *service_provider,
                             liveness_info,
                             config.signing_key(),
                             seeder_client.clone(),
@@ -177,10 +177,10 @@ async fn main() -> Result<(), Error> {
 
             // Initialize validation clients
             let validation_info_list =
-                ValidationInfoListModel::get_or_default().map_err(Error::Database)?;
+                ValidationInfoList::get_or(ValidationInfoList::default).map_err(Error::Database)?;
             for (platform, service_provider) in validation_info_list.iter() {
                 let validation_info_payload =
-                    ValidationInfoPayloadModel::get(*platform, *service_provider)
+                    ValidationInfoPayload::get(*platform, *service_provider)
                         .map_err(Error::Database)?;
 
                 match validation_info_payload {
@@ -246,6 +246,7 @@ async fn main() -> Result<(), Error> {
 
             server_handle.await.unwrap();
         }
+
         Commands::RegisterValidator { config_option } => {
             config_option.init().await;
         }
@@ -296,7 +297,7 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
     Ok(())
 }
 
-async fn initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> {
+async fn _initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> {
     let cluster_rpc_url = context.config().cluster_rpc_url().to_string();
 
     let sequencer_rpc_server = RpcServer::new(context.clone())
@@ -400,7 +401,7 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
     Ok(server_handle)
 }
 
-pub fn init_time_lock_puzzle_param(config_path: &PathBuf) -> Result<PvdeParams, Error> {
+pub fn init_time_lock_puzzle_param(config_path: &Path) -> Result<PvdeParams, Error> {
     let time_lock_puzzle_param_path = config_path
         .join("time_lock_puzzle_param.json")
         .to_str()

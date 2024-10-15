@@ -14,11 +14,11 @@ const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:6000";
 
 const DEFAULT_KEY_MANAGEMENT_SYSTEM_RPC_URL: &str = "http://127.0.0.1:7100";
 
-const DEFAULT_CLUSTER_TYPE: &str = "local";
+// const DEFAULT_CLUSTER_TYPE: &str = "local";
 
-const DEFAULT_LIVENESS_PROVIDER_RPC_URL: &str = "http://127.0.0.1:8545";
-const DEFAULT_LIVENESS_PROVIDER_WEBSOCKET_URL: &str = "ws://127.0.0.1:8545";
-const DEFAULT_LIVENESS_CONTRACT_ADDRESS: &str = "";
+// const DEFAULT_LIVENESS_PROVIDER_RPC_URL: &str = "http://127.0.0.1:8545";
+// const DEFAULT_LIVENESS_PROVIDER_WEBSOCKET_URL: &str = "ws://127.0.0.1:8545";
+// const DEFAULT_LIVENESS_CONTRACT_ADDRESS: &str = "";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 pub struct ConfigOption {
@@ -103,31 +103,32 @@ impl ConfigOption {
 
     pub fn merge(mut self, other: &ConfigOption) -> Self {
         if other.path.is_some() {
-            self.path = other.path.clone();
+            self.path.clone_from(&other.path);
         }
 
         if other.sequencer_rpc_url.is_some() {
-            self.sequencer_rpc_url = other.sequencer_rpc_url.clone();
+            self.sequencer_rpc_url.clone_from(&other.sequencer_rpc_url);
         }
 
         if other.internal_rpc_url.is_some() {
-            self.internal_rpc_url = other.internal_rpc_url.clone();
+            self.internal_rpc_url.clone_from(&other.internal_rpc_url);
         }
 
         if other.cluster_rpc_url.is_some() {
-            self.cluster_rpc_url = other.cluster_rpc_url.clone();
+            self.cluster_rpc_url.clone_from(&other.cluster_rpc_url);
         }
 
         if other.seeder_rpc_url.is_some() {
-            self.seeder_rpc_url = other.seeder_rpc_url.clone();
+            self.seeder_rpc_url.clone_from(&other.seeder_rpc_url)
         }
 
         if other.key_management_system_rpc_url.is_some() {
-            self.key_management_system_rpc_url = other.key_management_system_rpc_url.clone();
+            self.key_management_system_rpc_url
+                .clone_from(&other.key_management_system_rpc_url);
         }
 
         if other.is_using_zkp.is_some() {
-            self.is_using_zkp = other.is_using_zkp.clone();
+            self.is_using_zkp.clone_from(&other.is_using_zkp);
         }
 
         self
