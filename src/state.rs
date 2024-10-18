@@ -4,7 +4,7 @@ use radius_sdk::{
     kvstore::{CachedKvStore, CachedKvStoreError},
     signature::PrivateKeySigner,
 };
-use skde::SkdeParams;
+use skde::delay_encryption::SkdeParams;
 
 use crate::{
     client::liveness::{key_management_system::KeyManagementSystemClient, seeder::SeederClient},

@@ -5,10 +5,7 @@ use futures::{
     FutureExt,
 };
 use radius_sdk::json_rpc::RpcClient;
-use skde::{
-    delay_encryption::{decrypt, SecretKey},
-    SkdeParams,
-};
+use skde::delay_encryption::{decrypt, SecretKey, SkdeParams};
 use tracing::info;
 
 use crate::{
