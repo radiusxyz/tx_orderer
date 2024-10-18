@@ -1,0 +1,13 @@
+---
+name: Security
+description: Possible security-related issues in dependencies or the current codebase.
+title: "(Provide a brief description of the security issue)"
+labels: [Security]
+assignees: []
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: "A detailed description of the security issue that we have or may arise in the future."
+    validations:
+      required: true

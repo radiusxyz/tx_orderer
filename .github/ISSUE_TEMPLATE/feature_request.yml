@@ -1,0 +1,19 @@
+---
+name: Feature Request
+description: Request a new feature or an improvement.
+title: "(Provide a brief description of the feature)"
+labels: [Feature Request]
+assignees: []
+body:
+  - type: textarea
+    attributes:
+      label: Describe the feature
+      description: "A description of the feature/improvement and why we need it."
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Solution
+      description: "What it will look like after the implementation/improvement."
+    validations:
+      required: true
