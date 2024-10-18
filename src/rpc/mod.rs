@@ -5,7 +5,10 @@ pub(crate) mod prelude {
     pub use std::sync::Arc;
 
     pub use radius_sdk::{
-        json_rpc::{types::*, RpcClient, RpcError},
+        json_rpc::{
+            client::{Id, RpcClient},
+            server::{RpcError, RpcParameter},
+        },
         signature::{Address, Signature},
     };
     pub use serde::{Deserialize, Serialize};

@@ -3,7 +3,8 @@ pub enum Error {
     OpenConfig(std::io::Error),
     ParseConfig(toml::de::Error),
     Database(radius_sdk::kvstore::KvStoreError),
-    RpcError(radius_sdk::json_rpc::Error),
+    RpcClient(radius_sdk::json_rpc::client::RpcClientError),
+    RpcServer(radius_sdk::json_rpc::server::RpcServerError),
     Signature(radius_sdk::signature::SignatureError),
     Deserialize(serde_json::Error),
     CreateLivenessClient(Box<dyn std::error::Error>),
@@ -68,8 +69,14 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<radius_sdk::json_rpc::Error> for Error {
-    fn from(value: radius_sdk::json_rpc::Error) -> Self {
-        Self::RpcError(value)
+impl From<radius_sdk::json_rpc::client::RpcClientError> for Error {
+    fn from(value: radius_sdk::json_rpc::client::RpcClientError) -> Self {
+        Self::RpcClient(value)
+    }
+}
+
+impl From<radius_sdk::json_rpc::server::RpcServerError> for Error {
+    fn from(value: radius_sdk::json_rpc::server::RpcServerError) -> Self {
+        Self::RpcServer(value)
     }
 }

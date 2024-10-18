@@ -1,10 +1,6 @@
-use std::{collections::HashMap, pin::Pin, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
-use futures::{
-    future::{select_ok, Fuse},
-    FutureExt,
-};
-use radius_sdk::json_rpc::RpcClient;
+use radius_sdk::json_rpc::client::{Id, RpcClient};
 use skde::delay_encryption::{decrypt, SecretKey, SkdeParams};
 use tracing::info;
 
@@ -279,30 +275,28 @@ async fn fetch_missing_transaction(
     transaction_order: u64,
     cluster: Cluster,
 ) -> Result<EncryptedTransaction, Error> {
-    let rpc_client_list: Vec<RpcClient> = cluster
+    let others = cluster
         .get_others_rpc_url_list()
         .into_iter()
-        .filter_map(|rpc_url| match rpc_url {
-            Some(rpc_url) => RpcClient::new(rpc_url).ok(),
-            None => None,
-        })
+        .filter_map(|rpc_url| rpc_url)
         .collect();
 
-    let method = GetEncryptedTransactionWithOrderCommitment::METHOD_NAME;
     let parameter = GetEncryptedTransactionWithOrderCommitment {
         rollup_id,
         rollup_block_height,
         transaction_order,
     };
 
-    let fused_futures: Vec<Pin<Box<Fuse<_>>>> = rpc_client_list
-        .iter()
-        .map(|client| Box::pin(client.request(method, parameter.clone()).fuse()))
-        .collect();
-
-    let (rpc_response, _): (EncryptedTransaction, Vec<_>) = select_ok(fused_futures)
+    let rpc_client = RpcClient::new().unwrap();
+    let rpc_response = rpc_client
+        .fetch(
+            others,
+            GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
+            &parameter,
+            Id::Null,
+        )
         .await
-        .map_err(|_| Error::FetchResponse)?;
+        .unwrap();
 
     Ok(rpc_response)
 }

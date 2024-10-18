@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use radius_sdk::{
-    json_rpc::{Error, RpcClient},
+    json_rpc::client::{Id, RpcClient, RpcClientError},
     signature::{Address, Signature},
 };
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,12 @@ use tracing::info;
 use crate::types::*;
 
 pub struct SeederClient {
-    inner: Arc<RpcClient>,
+    inner: Arc<SeederClientInner>,
+}
+
+struct SeederClientInner {
+    rpc_url: String,
+    rpc_client: RpcClient,
 }
 
 impl Clone for SeederClient {
@@ -22,11 +27,14 @@ impl Clone for SeederClient {
 }
 
 impl SeederClient {
-    pub fn new(rpc_url: impl AsRef<str>) -> Result<Self, Error> {
-        let rpc_client = RpcClient::new(rpc_url)?;
+    pub fn new(rpc_url: impl AsRef<str>) -> Result<Self, RpcClientError> {
+        let inner = SeederClientInner {
+            rpc_url: rpc_url.as_ref().to_owned(),
+            rpc_client: RpcClient::new()?,
+        };
 
         Ok(Self {
-            inner: Arc::new(rpc_client),
+            inner: Arc::new(inner),
         })
     }
 
@@ -37,7 +45,7 @@ impl SeederClient {
         cluster_id: &String,
         address: &Address,
         rpc_url: &String,
-    ) -> Result<(), Error> {
+    ) -> Result<(), RpcClientError> {
         let message = RegisterSequencerMessage {
             platform,
             service_provider,
@@ -56,7 +64,13 @@ impl SeederClient {
         );
 
         self.inner
-            .request(RegisterSequencer::METHOD_NAME, parameter)
+            .rpc_client
+            .request(
+                &self.inner.rpc_url,
+                RegisterSequencer::METHOD_NAME,
+                &parameter,
+                Id::Null,
+            )
             .await
     }
 
@@ -66,7 +80,7 @@ impl SeederClient {
         service_provider: ServiceProvider,
         cluster_id: &String,
         address: &Address,
-    ) -> Result<(), Error> {
+    ) -> Result<(), RpcClientError> {
         let message = DeregisterSequencerMessage {
             platform,
             service_provider,
@@ -79,20 +93,32 @@ impl SeederClient {
         };
 
         self.inner
-            .request(DeregisterSequencer::METHOD_NAME, parameter)
+            .rpc_client
+            .request(
+                &self.inner.rpc_url,
+                DeregisterSequencer::METHOD_NAME,
+                &parameter,
+                Id::Null,
+            )
             .await
     }
 
     pub async fn get_sequencer_rpc_url_list(
         &self,
         sequencer_address_list: Vec<String>,
-    ) -> Result<GetSequencerRpcUrlListResponse, Error> {
-        let rpc_parameter = GetSequencerRpcUrlList {
+    ) -> Result<GetSequencerRpcUrlListResponse, RpcClientError> {
+        let parameter = GetSequencerRpcUrlList {
             sequencer_address_list,
         };
 
         self.inner
-            .request(GetSequencerRpcUrlList::METHOD_NAME, rpc_parameter)
+            .rpc_client
+            .request(
+                &self.inner.rpc_url,
+                GetSequencerRpcUrlList::METHOD_NAME,
+                &parameter,
+                Id::Null,
+            )
             .await
     }
 }

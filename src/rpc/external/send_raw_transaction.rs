@@ -111,10 +111,14 @@ impl SendRawTransaction {
             let leader_rpc_url = cluster
                 .get_leader_rpc_url(rollup_block_height)
                 .ok_or(Error::EmptyLeaderRpcUrl)?;
-            let client = RpcClient::new(leader_rpc_url)?;
-
-            let response = client
-                .request(SendRawTransaction::METHOD_NAME, parameter.clone())
+            let rpc_client = RpcClient::new()?;
+            let response = rpc_client
+                .request(
+                    leader_rpc_url,
+                    SendRawTransaction::METHOD_NAME,
+                    &parameter,
+                    Id::Null,
+                )
                 .await?;
 
             Ok(response)
@@ -135,8 +139,13 @@ pub fn sync_raw_transaction(
     order_hash: OrderHash,
 ) {
     tokio::spawn(async move {
-        let follower_rpc_url_list = cluster.get_follower_rpc_url_list(rollup_block_height);
-        if !follower_rpc_url_list.is_empty() {
+        let follower_list: Vec<String> = cluster
+            .get_follower_rpc_url_list(rollup_block_height)
+            .into_iter()
+            .filter_map(|rpc_url| rpc_url)
+            .collect();
+
+        if !follower_list.is_empty() {
             let message = SyncRawTransactionMessage {
                 rollup_id,
                 rollup_block_height,
@@ -151,23 +160,17 @@ pub fn sync_raw_transaction(
                 .unwrap()
                 .sign_message(&message)
                 .unwrap();
-
             let rpc_parameter = SyncRawTransaction { message, signature };
 
-            for follower_rpc_url in follower_rpc_url_list {
-                let rpc_parameter = rpc_parameter.clone();
-                let follower_rpc_url = follower_rpc_url.unwrap();
-
-                tokio::spawn(async move {
-                    let client = RpcClient::new(follower_rpc_url).unwrap();
-                    let _ = client
-                        .request::<SyncRawTransaction, ()>(
-                            SyncRawTransaction::METHOD_NAME,
-                            rpc_parameter,
-                        )
-                        .await;
-                });
-            }
+            let rpc_client = RpcClient::new().unwrap();
+            rpc_client
+                .multicast(
+                    follower_list,
+                    SyncRawTransaction::METHOD_NAME,
+                    &rpc_parameter,
+                    Id::Null,
+                )
+                .await;
         }
     });
 }
