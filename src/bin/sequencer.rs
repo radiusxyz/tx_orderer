@@ -25,7 +25,7 @@ use pvde::{
     },
 };
 use radius_sdk::{
-    json_rpc::RpcServer,
+    json_rpc::server::RpcServer,
     kvstore::{CachedKvStore, KvStore as Database},
     signature::PrivateKeySigner,
 };

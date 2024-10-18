@@ -106,24 +106,21 @@ impl FinalizeBlock {
         let parameter = parameter.clone();
 
         tokio::spawn(async move {
-            let rpc_parameter = SyncBlock {
+            let parameter = SyncBlock {
                 message: parameter.message,
                 signature: parameter.signature,
                 transaction_count,
             };
 
-            for sequencer_rpc_url in cluster.get_others_rpc_url_list() {
-                let rpc_parameter = rpc_parameter.clone();
-
-                if let Some(sequencer_rpc_url) = sequencer_rpc_url {
-                    tokio::spawn(async move {
-                        let client = RpcClient::new(sequencer_rpc_url).unwrap();
-                        let _ = client
-                            .request::<SyncBlock, ()>(SyncBlock::METHOD_NAME, rpc_parameter.clone())
-                            .await;
-                    });
-                }
-            }
+            let rpc_client = RpcClient::new().unwrap();
+            let follower_list: Vec<String> = cluster
+                .get_others_rpc_url_list()
+                .into_iter()
+                .filter_map(|rpc_url| rpc_url)
+                .collect();
+            rpc_client
+                .multicast(follower_list, SyncBlock::METHOD_NAME, &parameter, Id::Null)
+                .await;
         });
     }
 }

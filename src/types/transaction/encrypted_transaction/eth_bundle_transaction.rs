@@ -1,4 +1,4 @@
-use ethers::types as eth_types;
+use ethers_core::types as eth_types;
 
 use crate::{error::Error, types::prelude::*};
 
