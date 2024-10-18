@@ -1104,14 +1104,14 @@ dependencies = [
 [[package]]
 name = "big-integer"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/skde?rev=f02b1cf466f55041a60faa80b18202c029578d58#f02b1cf466f55041a60faa80b18202c029578d58"
+source = "git+https://github.com/radiusxyz/skde?rev=f8417e3611f58b7d38a85f209279d096efe0a378#f8417e3611f58b7d38a85f209279d096efe0a378"
 dependencies = [
  "ff",
  "halo2wrong 0.1.0 (git+https://github.com/privacy-scaling-explorations/halo2wrong?tag=v2023_04_20)",
  "maingate 0.1.0 (git+https://github.com/privacy-scaling-explorations/halo2wrong?tag=v2023_04_20)",
  "num-bigint",
  "num-traits",
- "poseidon 0.1.0 (git+https://github.com/radiusxyz/skde?rev=f02b1cf466f55041a60faa80b18202c029578d58)",
+ "poseidon 0.1.0 (git+https://github.com/radiusxyz/skde?rev=f8417e3611f58b7d38a85f209279d096efe0a378)",
  "rand",
 ]
 
@@ -2714,13 +2714,13 @@ dependencies = [
 [[package]]
 name = "hash"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/skde?rev=f02b1cf466f55041a60faa80b18202c029578d58#f02b1cf466f55041a60faa80b18202c029578d58"
+source = "git+https://github.com/radiusxyz/skde?rev=f8417e3611f58b7d38a85f209279d096efe0a378#f8417e3611f58b7d38a85f209279d096efe0a378"
 dependencies = [
  "ff",
  "halo2wrong 0.1.0 (git+https://github.com/privacy-scaling-explorations/halo2wrong?tag=v2023_04_20)",
  "maingate 0.1.0 (git+https://github.com/privacy-scaling-explorations/halo2wrong?tag=v2023_04_20)",
  "num-bigint",
- "poseidon 0.1.0 (git+https://github.com/radiusxyz/skde?rev=f02b1cf466f55041a60faa80b18202c029578d58)",
+ "poseidon 0.1.0 (git+https://github.com/radiusxyz/skde?rev=f8417e3611f58b7d38a85f209279d096efe0a378)",
  "rand",
 ]
 
@@ -2886,9 +2886,9 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hyper"
-version = "0.14.30"
+version = "0.14.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a152ddd61dfaec7273fe8419ab357f33aee0d914c5f4efbf0d96fa749eea5ec9"
+checksum = "8c08302e8fa335b151b788c775ff56e7a03ae64ff85c548ee820fecb70356e85"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -2910,9 +2910,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.4.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50dfd22e0e76d0f662d429a5f80fcaf3855009297eab6a0a9f8543834744ba05"
+checksum = "bbbff0a806a4728c99295b254c8838933b5b082d75e3cb70c8dab21fdfbcfa9a"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -2935,7 +2935,7 @@ checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
  "http 0.2.12",
- "hyper 0.14.30",
+ "hyper 0.14.31",
  "log",
  "rustls 0.21.12",
  "rustls-native-certs 0.6.3",
@@ -2951,7 +2951,7 @@ checksum = "70206fc6890eaca9fde8a0bf71caa2ddfc9fe045ac9e5c70df101a7dbde866e0"
 dependencies = [
  "bytes",
  "http-body-util",
- "hyper 1.4.1",
+ "hyper 1.5.0",
  "hyper-util",
  "native-tls",
  "tokio",
@@ -2970,7 +2970,7 @@ dependencies = [
  "futures-util",
  "http 1.1.0",
  "http-body 1.0.1",
- "hyper 1.4.1",
+ "hyper 1.5.0",
  "pin-project-lite",
  "socket2",
  "tokio",
@@ -3175,7 +3175,7 @@ name = "json-rpc"
 version = "0.1.0"
 source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=bb13a78d7513f833ac12814b1bfbf8e1a10ac24b#bb13a78d7513f833ac12814b1bfbf8e1a10ac24b"
 dependencies = [
- "hyper 0.14.30",
+ "hyper 0.14.31",
  "jsonrpsee",
  "serde",
  "serde_json",
@@ -3238,7 +3238,7 @@ dependencies = [
  "beef",
  "futures-timer",
  "futures-util",
- "hyper 0.14.30",
+ "hyper 0.14.31",
  "jsonrpsee-types",
  "parking_lot",
  "pin-project",
@@ -3260,7 +3260,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ccf93fc4a0bfe05d851d37d7c32b7f370fe94336b52a2f0efc5f1981895c2e5"
 dependencies = [
  "async-trait",
- "hyper 0.14.30",
+ "hyper 0.14.31",
  "hyper-rustls",
  "jsonrpsee-core",
  "jsonrpsee-types",
@@ -3294,7 +3294,7 @@ checksum = "12d8b6a9674422a8572e0b0abb12feeb3f2aeda86528c80d0350c2bd0923ab41"
 dependencies = [
  "futures-util",
  "http 0.2.12",
- "hyper 0.14.30",
+ "hyper 0.14.31",
  "jsonrpsee-core",
  "jsonrpsee-types",
  "pin-project",
@@ -3820,9 +3820,9 @@ dependencies = [
 
 [[package]]
 name = "openssl"
-version = "0.10.66"
+version = "0.10.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9529f4786b70a3e8c61e11179af17ab6188ad8d0ded78c5529441ed39d4bd9c1"
+checksum = "7b8cefcf97f41316955f9294cd61f639bdcfa9f2f230faac6cb896aa8ab64704"
 dependencies = [
  "bitflags 2.6.0",
  "cfg-if",
@@ -3852,9 +3852,9 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.103"
+version = "0.9.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f9e8deee91df40a943c71b917e5874b951d32a802526c85721ce3b776c929d6"
+checksum = "45abf306cbf99debc8195b66b7346498d7b10c210de50418b5ccd7ceba08c741"
 dependencies = [
  "cc",
  "libc",
@@ -4155,7 +4155,7 @@ dependencies = [
 [[package]]
 name = "poseidon"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/skde?rev=f02b1cf466f55041a60faa80b18202c029578d58#f02b1cf466f55041a60faa80b18202c029578d58"
+source = "git+https://github.com/radiusxyz/skde?rev=f8417e3611f58b7d38a85f209279d096efe0a378#f8417e3611f58b7d38a85f209279d096efe0a378"
 dependencies = [
  "ff",
  "halo2wrong 0.1.0 (git+https://github.com/privacy-scaling-explorations/halo2wrong?tag=v2023_04_20)",
@@ -4464,7 +4464,7 @@ dependencies = [
  "h2",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.30",
+ "hyper 0.14.31",
  "hyper-rustls",
  "ipnet",
  "js-sys",
@@ -4504,7 +4504,7 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.4.1",
+ "hyper 1.5.0",
  "hyper-tls",
  "hyper-util",
  "ipnet",
@@ -4794,9 +4794,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-pki-types"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e696e35370c65c9c541198af4543ccd580cf17fc25d8e05c5a242b202488c55"
+checksum = "16f1201b3c9a7ee8039bcadc17b7e605e2945b27eee7631788c1bd2b0643674b"
 
 [[package]]
 name = "rustls-webpki"
@@ -5220,9 +5220,10 @@ checksum = "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d"
 [[package]]
 name = "skde"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/skde?rev=f02b1cf466f55041a60faa80b18202c029578d58#f02b1cf466f55041a60faa80b18202c029578d58"
+source = "git+https://github.com/radiusxyz/skde?rev=f8417e3611f58b7d38a85f209279d096efe0a378#f8417e3611f58b7d38a85f209279d096efe0a378"
 dependencies = [
- "big-integer 0.1.0 (git+https://github.com/radiusxyz/skde?rev=f02b1cf466f55041a60faa80b18202c029578d58)",
+ "big-integer 0.1.0 (git+https://github.com/radiusxyz/skde?rev=f8417e3611f58b7d38a85f209279d096efe0a378)",
+ "bincode",
  "bitvec",
  "const-hex",
  "ff",
@@ -5232,7 +5233,7 @@ dependencies = [
  "maingate 0.1.0 (git+https://github.com/privacy-scaling-explorations/halo2wrong?tag=v2023_04_20)",
  "num-bigint",
  "num-traits",
- "poseidon 0.1.0 (git+https://github.com/radiusxyz/skde?rev=f02b1cf466f55041a60faa80b18202c029578d58)",
+ "poseidon 0.1.0 (git+https://github.com/radiusxyz/skde?rev=f8417e3611f58b7d38a85f209279d096efe0a378)",
  "rand",
  "rand_core",
  "rayon",

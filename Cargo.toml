@@ -18,7 +18,7 @@ radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "bb13a7
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 sha3 = "0.10"
-skde = { git = "https://github.com/radiusxyz/skde", rev="f02b1cf466f55041a60faa80b18202c029578d58"}
+skde = { git = "https://github.com/radiusxyz/skde", rev="f8417e3611f58b7d38a85f209279d096efe0a378"}
 tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.13"
 tracing = "0.1.37"

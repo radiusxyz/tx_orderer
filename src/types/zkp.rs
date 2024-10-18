@@ -12,7 +12,7 @@ use pvde::{
     },
 };
 use serde::{Deserialize, Serialize};
-use skde::SkdeParams;
+use skde::delay_encryption::SkdeParams;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EncryptionProof(Vec<u8>);
