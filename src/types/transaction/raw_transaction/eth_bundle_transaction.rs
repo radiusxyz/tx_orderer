@@ -1,5 +1,3 @@
-use ethers::utils::hex;
-
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -18,9 +16,8 @@ impl EthRawBundleTransaction {
             serde_json::from_str(&raw_transaction_string).unwrap();
         let decoded_transaction = decode_rlp_transaction(&parsed_raw_transaction_string).unwrap();
 
-        RawTransactionHash::new(format!(
-            "0x{}",
-            hex::encode(decoded_transaction.hash.as_bytes())
+        RawTransactionHash::new(const_hex::encode_prefixed(
+            decoded_transaction.hash.as_bytes(),
         ))
     }
 }

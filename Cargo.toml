@@ -11,7 +11,7 @@ path = "src/bin/sequencer.rs"
 chrono = "0.4.38"
 clap = { version = "4.4.7", features = ["derive"] }
 const-hex = "1.12"
-# ethers = "2.0"
+ethers-core = "2.0"
 pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
 radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "0da56239884aa2c4ca311cb779930abf9fd4aaa6", features = ["full"] }
 serde = { version = "1.0.197", features = ["derive"] }

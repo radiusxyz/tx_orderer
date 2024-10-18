@@ -1,5 +1,4 @@
-// TODO: Remove ethers
-use ethers::{
+use ethers_core::{
     types::{self as eth_types, Bytes, U256},
     utils::rlp::{self, Decodable, DecoderError},
 };
