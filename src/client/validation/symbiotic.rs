@@ -112,10 +112,12 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
                 taskCreatedBlock: event.taskCreatedBlock,
             };
 
-            let _ = context
+            let transaction_hash = context
                 .publisher()
                 .respond_to_task(task, event.taskIndex, Bytes::from_iter(&[0_u8; 64]))
-                .await;
+                .await
+                .unwrap();
+            tracing::info!("[Symbiotic] respond_to_task: {}", transaction_hash);
         }
     }
 }

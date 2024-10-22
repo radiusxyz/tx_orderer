@@ -115,11 +115,12 @@ async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
                 taskCreatedBlock: event.taskCreatedBlock,
             };
 
-            // TODO: Handle result when changing the validation contract.
-            let _ = context
+            let transaction_hash = context
                 .publisher()
                 .respond_to_task(task, event.taskIndex, Bytes::from_iter(&[0_u8; 64]))
-                .await;
+                .await
+                .unwrap();
+            tracing::info!("[EigenLayer] respond_to_task: {}", transaction_hash);
         }
     }
 }
