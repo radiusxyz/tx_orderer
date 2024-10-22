@@ -78,9 +78,9 @@ pub fn merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockCommi
 
     while leaves.len() > 1 {
         if is_multiple_of_two(&leaves) {
-            leaves.push([0_u8; 32]);
             leaves = merkle_proof(&mut leaves);
         } else {
+            leaves.push([0_u8; 32]);
             leaves = merkle_proof(&mut leaves);
         }
     }
