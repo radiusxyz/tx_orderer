@@ -101,20 +101,17 @@ impl ValidationClient {
 async fn callback(event: ValidationServiceManager::NewTaskCreated, context: ValidationClient) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = Block::get(rollup.rollup_id(), event.task.blockNumber).unwrap();
+        let block = Block::get(rollup.rollup_id(), event.blockNumber.try_into().unwrap()).unwrap();
 
         if !block.is_leader {
-            let task = ValidationServiceManager::Task {
-                commitment: Bytes::from_iter(&[0u8; 32]),
-                blockNumber: 0,
-                rollupId: rollup.rollup_id().to_owned(),
-                clusterId: rollup.cluster_id().to_owned(),
-                taskCreatedBlock: event.taskCreatedBlock,
-            };
-
             let transaction_hash = context
                 .publisher()
-                .respond_to_task(task, event.taskIndex, Bytes::from_iter(&[0_u8; 64]))
+                .respond_to_task(
+                    rollup.cluster_id().to_owned(),
+                    rollup.rollup_id().to_owned(),
+                    event.referenceTaskIndex.try_into().unwrap(),
+                    true,
+                )
                 .await
                 .unwrap();
             tracing::info!("[Symbiotic] respond_to_task: {}", transaction_hash);

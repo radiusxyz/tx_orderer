@@ -13,7 +13,7 @@ clap = { version = "4.4.7", features = ["derive"] }
 const-hex = "1.12"
 ethers-core = "2.0"
 pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
-radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "0da56239884aa2c4ca311cb779930abf9fd4aaa6", features = ["full"] }
+radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "9246ff66b8206aac803d1f40582114aecef6143f", features = ["full"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 sha3 = "0.10"
@@ -22,3 +22,5 @@ tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.13"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
+
+# radius-sdk = { path = "../radius-sdk-rs/radius-sdk", features = ["full"] }

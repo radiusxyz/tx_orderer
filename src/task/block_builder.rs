@@ -66,23 +66,23 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
 pub fn merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockCommitment {
     let mut leaves: Vec<[u8; 32]> = Vec::new();
 
-    while transaction_hash_list.len() > 1 {
-        if transaction_hash_list.len() % 2 == 1 {
-            // If odd number of leaves, duplicate the last one
-            let transaction_hash = *transaction_hash_list.last().unwrap();
+    // while transaction_hash_list.len() > 1 {
+    //     if transaction_hash_list.len() % 2 == 1 {
+    //         // If odd number of leaves, duplicate the last one
+    //         let transaction_hash = *transaction_hash_list.last().unwrap();
 
-            let leaf = .as_ref();
-            leaves.push(leaf.as_ref());
-        }
+    //         let leaf = .as_ref();
+    //         leaves.push(leaf.as_ref());
+    //     }
 
-        // Hash pairs of nodes and update the list
-        let mut next_level = Vec::new();
-        for i in (0..leaves.len()).step_by(2) {
-            let combined = [leaves[i], leaves[i + 1]].concat();
-            next_level.push(keccak256(&combined));
-        }
-        leaves = next_level;
-    }
+    //     // Hash pairs of nodes and update the list
+    //     let mut next_level = Vec::new();
+    //     for i in (0..leaves.len()).step_by(2) {
+    //         let combined = [leaves[i], leaves[i + 1]].concat();
+    //         next_level.push(keccak256(&combined));
+    //     }
+    //     leaves = next_level;
+    // }
 
     // Return the root
     BlockCommitment(const_hex::encode(leaves[0]))
@@ -255,7 +255,22 @@ pub fn block_builder_skde(
                         )
                         .await;
                 }
-                ValidationInfoPayload::Symbiotic(_) => unimplemented!("Unsupported"),
+                ValidationInfoPayload::Symbiotic(_) => {
+                    let validation_client: validation::symbiotic::ValidationClient = context
+                        .get_validation_client(rollup.platform(), rollup.service_provider())
+                        .await
+                        .unwrap();
+
+                    let _ = validation_client
+                        .publisher()
+                        .register_block_commitment(
+                            rollup.cluster_id(),
+                            rollup.rollup_id(),
+                            rollup_block_height,
+                            block_commitment,
+                        )
+                        .await;
+                }
             }
         }
     });
