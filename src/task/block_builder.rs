@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::Arc,
+};
 
 use radius_sdk::json_rpc::client::{Id, RpcClient};
 use sha3::{Digest, Keccak256};
@@ -62,7 +65,7 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
     hash
 }
 
-pub fn is_multiple_of_two(transaction_hash_list: &Vec<[u8; 32]>) -> bool {
+pub fn is_multiple_of_two(transaction_hash_list: &VecDeque<[u8; 32]>) -> bool {
     match transaction_hash_list.len() % 2 {
         0 => true,
         _ => false,
@@ -71,37 +74,41 @@ pub fn is_multiple_of_two(transaction_hash_list: &Vec<[u8; 32]>) -> bool {
 
 // Function to construct Merkle root from a list of transaction hashes (leaves)
 pub fn merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockCommitment {
-    let mut leaves: Vec<[u8; 32]> = transaction_hash_list
+    let mut leaves: VecDeque<[u8; 32]> = transaction_hash_list
         .into_iter()
         .map(|transaction_hash| transaction_hash.as_bytes().unwrap())
         .collect();
 
-    while leaves.len() > 1 {
-        if is_multiple_of_two(&leaves) {
-            leaves = merkle_proof(&mut leaves);
-        } else {
-            leaves.push([0_u8; 32]);
-            leaves = merkle_proof(&mut leaves);
+    if leaves.is_empty() {
+        BlockCommitment::default()
+    } else {
+        while leaves.len() > 1 {
+            if is_multiple_of_two(&leaves) {
+                leaves = merkle_proof(&mut leaves);
+            } else {
+                leaves.push_back([0_u8; 32]);
+                leaves = merkle_proof(&mut leaves);
+            }
         }
-    }
 
-    // Return the root
-    // # Safety
-    // It is safe to call unwrap(). because the loop exits with leaves.len() == 1;
-    BlockCommitment::from(leaves.pop().unwrap())
+        // Return the root
+        // # Safety
+        // It is safe to call unwrap(). because the loop exits with leaves.len() == 1;
+        BlockCommitment::from(leaves.pop_front().unwrap())
+    }
 }
 
-pub fn merkle_proof(leaves: &mut Vec<[u8; 32]>) -> Vec<[u8; 32]> {
-    let mut new_leaves: Vec<[u8; 32]> = Vec::new();
+pub fn merkle_proof(leaves: &mut VecDeque<[u8; 32]>) -> VecDeque<[u8; 32]> {
+    let mut new_leaves = VecDeque::<[u8; 32]>::new();
 
     // # Safety
     // It is safe to call unwrap() twice for each rep because we have set the length
     // of the vector to be even.
     while !leaves.is_empty() {
-        let l1 = leaves.pop().unwrap();
-        let l2 = leaves.pop().unwrap();
+        let l1 = leaves.pop_front().unwrap();
+        let l2 = leaves.pop_front().unwrap();
         let combined = keccak256(&[l1, l2].concat());
-        new_leaves.push(combined);
+        new_leaves.push_back(combined);
     }
 
     new_leaves
