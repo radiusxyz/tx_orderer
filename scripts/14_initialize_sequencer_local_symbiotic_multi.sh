@@ -26,7 +26,7 @@ for (( node_index=0; node_index<NODE_COUNT; node_index++ )) do
       "payload": {
         "liveness_rpc_url": "'"$LIVENESS_RPC_URL"'",
         "liveness_websocket_url": "'"$LIVENESS_WS_URL"'",
-        "contract_address": "'"$EIGENLAYER_CONTRACT_ADDRESS"'"
+        "contract_address": "'"$SYMBIOTICS_CONTRACT_ADDRESS"'"
       }
     },
     "id": 1
@@ -63,10 +63,7 @@ for (( node_index=0; node_index<NODE_COUNT; node_index++ )) do
       "payload": {
         "validation_rpc_url": "'"$VALIDATION_RPC_URL"'",
         "validation_websocket_url": "'"$VALIDATION_WS_URL"'",
-        "delegation_manager_contract_address": "'"$DELIGATION_MANAGER_CONTRACT_ADDRESS"'",
-        "stake_registry_contract_address": "'"$STAKE_REGISTRY_CONTRACT_ADDRESS"'",
-        "avs_directory_contract_address": "'"$AVS_DIRECTORY_CONTRACT_ADDRESS"'",
-        "avs_contract_address": "'"$AVS_CONTRACT_ADDRESS"'"
+        "validation_contract_address": "'"$NETWORK_OPTIN_SERVICE_CONTRACT_ADDRESS"'"
       }
     },
     "id": 1
