@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use radius_sdk::json_rpc::client::{Id, RpcClient};
+use sha3::{Digest, Keccak256};
 use skde::delay_encryption::{decrypt, SecretKey, SkdeParams};
 use tracing::info;
 
@@ -51,6 +52,73 @@ pub fn block_builder(
     }
 }
 
+// Keccak256 hash function wrapper
+pub fn keccak256(data: &[u8]) -> [u8; 32] {
+    let mut hasher = Keccak256::new();
+    hasher.update(data);
+    let result = hasher.finalize();
+    let mut hash = [0u8; 32];
+    hash.copy_from_slice(&result);
+    hash
+}
+
+// Function to construct Merkle root from a list of transaction hashes (leaves)
+pub fn merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockCommitment {
+    let mut leaves: Vec<[u8; 32]> = Vec::new();
+
+    while transaction_hash_list.len() > 1 {
+        if transaction_hash_list.len() % 2 == 1 {
+            // If odd number of leaves, duplicate the last one
+            let transaction_hash = *transaction_hash_list.last().unwrap();
+
+            let leaf = .as_ref();
+            leaves.push(leaf.as_ref());
+        }
+
+        // Hash pairs of nodes and update the list
+        let mut next_level = Vec::new();
+        for i in (0..leaves.len()).step_by(2) {
+            let combined = [leaves[i], leaves[i + 1]].concat();
+            next_level.push(keccak256(&combined));
+        }
+        leaves = next_level;
+    }
+
+    // Return the root
+    BlockCommitment(const_hex::encode(leaves[0]))
+}
+
+pub fn merkle_proof(leaves: Vec<[u8; 32]>, index: usize) -> Vec<[u8; 32]> {
+    let mut proof = Vec::new();
+    let mut tree_level = leaves;
+    let mut idx = index;
+
+    while tree_level.len() > 1 {
+        if tree_level.len() % 2 == 1 {
+            tree_level.push(*tree_level.last().unwrap()); // duplicate last leaf
+                                                          // if odd
+        }
+
+        // Add sibling hash to the proof
+        if idx % 2 == 0 {
+            proof.push(tree_level[idx + 1]);
+        } else {
+            proof.push(tree_level[idx - 1]);
+        }
+
+        // Move to the next level
+        let mut next_level = Vec::new();
+        for i in (0..tree_level.len()).step_by(2) {
+            let combined = [tree_level[i], tree_level[i + 1]].concat();
+            next_level.push(keccak256(&combined));
+        }
+        tree_level = next_level;
+        idx /= 2;
+    }
+
+    proof
+}
+
 pub fn block_builder_skde(
     context: Arc<AppState>,
     rollup_id: String,
@@ -65,6 +133,8 @@ pub fn block_builder_skde(
             Vec::<RawTransaction>::with_capacity(transaction_count as usize);
         let mut encrypted_transaction_list =
             Vec::<Option<EncryptedTransaction>>::with_capacity(transaction_count as usize);
+        let mut transaction_hash_list =
+            Vec::<RawTransactionHash>::with_capacity(transaction_count as usize);
 
         let mut decryption_keys: HashMap<u64, SecretKey> = HashMap::new();
 
@@ -120,6 +190,9 @@ pub fn block_builder_skde(
                                     .await
                                     .unwrap();
 
+                                    transaction_hash_list
+                                        .push(raw_transaction.raw_transaction_hash().clone());
+
                                     RawTransactionModel::put(
                                         &rollup_id,
                                         rollup_block_height,
@@ -143,11 +216,8 @@ pub fn block_builder_skde(
         let signer = context.get_signer(Platform::Ethereum).await.unwrap();
         let address = signer.address().clone();
         let signature = signer.sign_message("").unwrap(); // TODO: set the message.
-        let block_commitment = if transaction_count > 0 {
-            BlockCommitment::get(&rollup_id, rollup_block_height, transaction_count - 1).unwrap()
-        } else {
-            BlockCommitment::default()
-        };
+
+        let block_commitment = merkle_root(transaction_hash_list);
 
         let block = Block::new(
             rollup_block_height,
