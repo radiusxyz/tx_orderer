@@ -62,62 +62,81 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
     hash
 }
 
+pub fn is_multiple_of_two(transaction_hash_list: &Vec<[u8; 32]>) -> bool {
+    match transaction_hash_list.len() % 2 {
+        0 => true,
+        _ => false,
+    }
+}
+
 // Function to construct Merkle root from a list of transaction hashes (leaves)
 pub fn merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockCommitment {
-    let mut leaves: Vec<[u8; 32]> = Vec::new();
+    let mut leaves: Vec<[u8; 32]> = transaction_hash_list
+        .into_iter()
+        .map(|transaction_hash| transaction_hash.as_bytes().unwrap())
+        .collect();
 
-    // while transaction_hash_list.len() > 1 {
-    //     if transaction_hash_list.len() % 2 == 1 {
-    //         // If odd number of leaves, duplicate the last one
-    //         let transaction_hash = *transaction_hash_list.last().unwrap();
-
-    //         let leaf = .as_ref();
-    //         leaves.push(leaf.as_ref());
-    //     }
-
-    //     // Hash pairs of nodes and update the list
-    //     let mut next_level = Vec::new();
-    //     for i in (0..leaves.len()).step_by(2) {
-    //         let combined = [leaves[i], leaves[i + 1]].concat();
-    //         next_level.push(keccak256(&combined));
-    //     }
-    //     leaves = next_level;
-    // }
-
-    // Return the root
-    BlockCommitment(const_hex::encode(leaves[0]))
-}
-
-pub fn merkle_proof(leaves: Vec<[u8; 32]>, index: usize) -> Vec<[u8; 32]> {
-    let mut proof = Vec::new();
-    let mut tree_level = leaves;
-    let mut idx = index;
-
-    while tree_level.len() > 1 {
-        if tree_level.len() % 2 == 1 {
-            tree_level.push(*tree_level.last().unwrap()); // duplicate last leaf
-                                                          // if odd
-        }
-
-        // Add sibling hash to the proof
-        if idx % 2 == 0 {
-            proof.push(tree_level[idx + 1]);
+    while leaves.len() > 1 {
+        if is_multiple_of_two(&leaves) {
+            leaves.push([0_u8; 32]);
+            leaves = merkle_proof(&mut leaves);
         } else {
-            proof.push(tree_level[idx - 1]);
+            leaves = merkle_proof(&mut leaves);
         }
-
-        // Move to the next level
-        let mut next_level = Vec::new();
-        for i in (0..tree_level.len()).step_by(2) {
-            let combined = [tree_level[i], tree_level[i + 1]].concat();
-            next_level.push(keccak256(&combined));
-        }
-        tree_level = next_level;
-        idx /= 2;
     }
 
-    proof
+    // Return the root
+    // # Safety
+    // It is safe to call unwrap(). because the loop exits with leaves.len() == 1;
+    BlockCommitment::from(leaves.pop().unwrap())
 }
+
+pub fn merkle_proof(leaves: &mut Vec<[u8; 32]>) -> Vec<[u8; 32]> {
+    let mut new_leaves: Vec<[u8; 32]> = Vec::new();
+
+    // # Safety
+    // It is safe to call unwrap() twice for each rep because we have set the length
+    // of the vector to be even.
+    while !leaves.is_empty() {
+        let l1 = leaves.pop().unwrap();
+        let l2 = leaves.pop().unwrap();
+        let combined = keccak256(&[l1, l2].concat());
+        new_leaves.push(combined);
+    }
+
+    new_leaves
+}
+
+// pub fn merkle_proof(leaves: Vec<[u8; 32]>, index: usize) -> Vec<[u8; 32]> {
+//     let mut proof = Vec::new();
+//     let mut tree_level = leaves;
+//     let mut idx = index;
+
+//     while tree_level.len() > 1 {
+//         if tree_level.len() % 2 == 1 {
+//             tree_level.push(*tree_level.last().unwrap()); // duplicate last
+// leaf                                                           // if odd
+//         }
+
+//         // Add sibling hash to the proof
+//         if idx % 2 == 0 {
+//             proof.push(tree_level[idx + 1]);
+//         } else {
+//             proof.push(tree_level[idx - 1]);
+//         }
+
+//         // Move to the next level
+//         let mut next_level = Vec::new();
+//         for i in (0..tree_level.len()).step_by(2) {
+//             let combined = [tree_level[i], tree_level[i + 1]].concat();
+//             next_level.push(keccak256(&combined));
+//         }
+//         tree_level = next_level;
+//         idx /= 2;
+//     }
+
+//     proof
+// }
 
 pub fn block_builder_skde(
     context: Arc<AppState>,

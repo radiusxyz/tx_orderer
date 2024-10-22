@@ -23,6 +23,12 @@ impl Default for BlockCommitment {
     }
 }
 
+impl From<[u8; 32]> for BlockCommitment {
+    fn from(value: [u8; 32]) -> Self {
+        Self(const_hex::encode(value))
+    }
+}
+
 impl From<OrderHash> for BlockCommitment {
     fn from(value: OrderHash) -> Self {
         Self(value.into_inner())

@@ -17,6 +17,12 @@ impl Default for RawTransactionHash {
     }
 }
 
+impl From<[u8; 32]> for RawTransactionHash {
+    fn from(value: [u8; 32]) -> Self {
+        Self(const_hex::encode(value))
+    }
+}
+
 impl From<String> for RawTransactionHash {
     fn from(value: String) -> Self {
         Self(value)
@@ -42,6 +48,10 @@ impl RawTransactionHash {
 
     pub fn as_string(self) -> String {
         self.0
+    }
+
+    pub fn as_bytes(self) -> Result<[u8; 32], const_hex::FromHexError> {
+        const_hex::decode_to_array::<String, 32>(self.0)
     }
 }
 
