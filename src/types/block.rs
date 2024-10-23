@@ -19,13 +19,13 @@ pub struct BlockCommitment(pub String);
 
 impl Default for BlockCommitment {
     fn default() -> Self {
-        Self(const_hex::encode([0; 32]))
+        Self(const_hex::encode_prefixed([0; 32]))
     }
 }
 
 impl From<[u8; 32]> for BlockCommitment {
     fn from(value: [u8; 32]) -> Self {
-        Self(const_hex::encode(value))
+        Self(const_hex::encode_prefixed(value))
     }
 }
 

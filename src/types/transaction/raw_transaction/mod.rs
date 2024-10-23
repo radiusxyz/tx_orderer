@@ -13,13 +13,13 @@ pub struct RawTransactionHash(String);
 
 impl Default for RawTransactionHash {
     fn default() -> Self {
-        Self(const_hex::encode([0; 32]))
+        Self(const_hex::encode_prefixed([0; 32]))
     }
 }
 
 impl From<[u8; 32]> for RawTransactionHash {
     fn from(value: [u8; 32]) -> Self {
-        Self(const_hex::encode(value))
+        Self(const_hex::encode_prefixed(value))
     }
 }
 
@@ -43,7 +43,7 @@ impl AsRef<str> for RawTransactionHash {
 
 impl RawTransactionHash {
     pub fn new(value: impl AsRef<[u8]>) -> Self {
-        Self(const_hex::encode(value))
+        Self(const_hex::encode_prefixed(value))
     }
 
     pub fn as_string(self) -> String {

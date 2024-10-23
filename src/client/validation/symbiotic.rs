@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use radius_sdk::validation_symbiotic::{
-    publisher::Publisher,
-    subscriber::Subscriber,
-    types::{Bytes, ValidationServiceManager},
+    publisher::Publisher, subscriber::Subscriber, types::ValidationServiceManager,
 };
 use tokio::time::{sleep, Duration};
 

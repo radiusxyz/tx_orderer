@@ -73,7 +73,7 @@ pub fn is_multiple_of_two(transaction_hash_list: &VecDeque<[u8; 32]>) -> bool {
 }
 
 // Function to construct Merkle root from a list of transaction hashes (leaves)
-pub fn merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockCommitment {
+pub fn get_merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockCommitment {
     let mut leaves: VecDeque<[u8; 32]> = transaction_hash_list
         .into_iter()
         .map(|transaction_hash| transaction_hash.as_bytes().unwrap())
@@ -117,37 +117,6 @@ pub fn merkle_proof(leaves: &mut VecDeque<[u8; 32]>) -> VecDeque<[u8; 32]> {
 
     new_leaves
 }
-
-// pub fn merkle_proof(leaves: Vec<[u8; 32]>, index: usize) -> Vec<[u8; 32]> {
-//     let mut proof = Vec::new();
-//     let mut tree_level = leaves;
-//     let mut idx = index;
-
-//     while tree_level.len() > 1 {
-//         if tree_level.len() % 2 == 1 {
-//             tree_level.push(*tree_level.last().unwrap()); // duplicate last
-// leaf                                                           // if odd
-//         }
-
-//         // Add sibling hash to the proof
-//         if idx % 2 == 0 {
-//             proof.push(tree_level[idx + 1]);
-//         } else {
-//             proof.push(tree_level[idx - 1]);
-//         }
-
-//         // Move to the next level
-//         let mut next_level = Vec::new();
-//         for i in (0..tree_level.len()).step_by(2) {
-//             let combined = [tree_level[i], tree_level[i + 1]].concat();
-//             next_level.push(keccak256(&combined));
-//         }
-//         tree_level = next_level;
-//         idx /= 2;
-//     }
-
-//     proof
-// }
 
 pub fn block_builder_skde(
     context: Arc<AppState>,
@@ -247,7 +216,7 @@ pub fn block_builder_skde(
         let address = signer.address().clone();
         let signature = signer.sign_message("").unwrap(); // TODO: set the message.
 
-        let block_commitment = merkle_root(transaction_hash_list);
+        let block_commitment = get_merkle_root(transaction_hash_list);
 
         let block = Block::new(
             rollup_block_height,
@@ -526,7 +495,13 @@ fn works() {
     })
     .collect::<Vec<RawTransactionHash>>();
 
-    let block_commitment = merkle_root(transaction_hash_list);
-    println!("{:?}", block_commitment);
-    // 0x5d68e1af5c97e158bf9eb63489d05ae7da229e264607323c5ec51a927fb90fe1
+    let block_commitment = get_merkle_root(transaction_hash_list);
+
+    let merkle_root = BlockCommitment(
+        "0x5d68e1af5c97e158bf9eb63489d05ae7da229e264607323c5ec51a927fb90fe1".to_string(),
+    );
+
+    println!("block_commitment: {:?}", block_commitment);
+    println!("merkle_root: {:?}", merkle_root);
+    assert_eq!(block_commitment, merkle_root);
 }
