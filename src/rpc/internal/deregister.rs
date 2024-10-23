@@ -37,7 +37,7 @@ impl Deregister {
                         parameter.service_provider,
                         &parameter.cluster_id,
                         address,
-                        context.config().sequencer_rpc_url(),
+                        context.config().external_rpc_url(),
                     )
                     .await?;
 

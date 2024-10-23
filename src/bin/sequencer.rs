@@ -336,7 +336,7 @@ async fn _initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error>
 }
 
 async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle<()>, Error> {
-    let sequencer_rpc_url = context.config().sequencer_rpc_url().to_string();
+    let external_rpc_url = context.config().external_rpc_url().to_string();
 
     // Initialize the external RPC server.
     let external_rpc_server = RpcServer::new(context.clone())
@@ -387,12 +387,12 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
         )?
         .register_rpc_method(cluster::SyncBlock::METHOD_NAME, cluster::SyncBlock::handler)?
         .register_rpc_method(external::GetBlock::METHOD_NAME, external::GetBlock::handler)?
-        .init(sequencer_rpc_url.clone())
+        .init(external_rpc_url.clone())
         .await?;
 
     tracing::info!(
-        "Successfully started the sequencer RPC server: {}",
-        sequencer_rpc_url
+        "Successfully started the sequencer external RPC server: {}",
+        external_rpc_url
     );
 
     let server_handle = tokio::spawn(async move {

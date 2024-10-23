@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ConfigPath;
 
-const DEFAULT_SEQUENCER_RPC_URL: &str = "http://127.0.0.1:3000"; // external rpc url
+const DEFAULT_EXTERNAL_RPC_URL: &str = "http://127.0.0.1:3000"; // external rpc url
 const DEFAULT_INTERNAL_RPC_URL: &str = "http://127.0.0.1:4000";
 // TODO: temporary use external rpc url
 const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:3000";
@@ -26,9 +26,9 @@ pub struct ConfigOption {
     #[clap(long = "path")]
     pub path: Option<PathBuf>,
 
-    #[doc = "Set the sequencer rpc url"]
-    #[clap(long = "sequencer-rpc-url")]
-    pub sequencer_rpc_url: Option<String>,
+    #[doc = "Set the external rpc url"]
+    #[clap(long = "external-rpc-url")]
+    pub external_rpc_url: Option<String>,
 
     #[doc = "Set the internal rpc url"]
     #[clap(long = "internal-rpc-url")]
@@ -56,7 +56,7 @@ impl Default for ConfigOption {
         Self {
             path: Some(ConfigPath::default().as_ref().into()),
 
-            sequencer_rpc_url: Some(DEFAULT_SEQUENCER_RPC_URL.into()),
+            external_rpc_url: Some(DEFAULT_EXTERNAL_RPC_URL.into()),
             internal_rpc_url: Some(DEFAULT_INTERNAL_RPC_URL.into()),
             cluster_rpc_url: Some(DEFAULT_CLUSTER_RPC_URL.into()),
 
@@ -73,11 +73,7 @@ impl ConfigOption {
         let mut toml_string = String::new();
 
         set_toml_comment(&mut toml_string, "Set sequencer rpc url");
-        set_toml_name_value(
-            &mut toml_string,
-            "sequencer_rpc_url",
-            &self.sequencer_rpc_url,
-        );
+        set_toml_name_value(&mut toml_string, "external_rpc_url", &self.external_rpc_url);
 
         set_toml_comment(&mut toml_string, "Set internal rpc url");
         set_toml_name_value(&mut toml_string, "internal_rpc_url", &self.internal_rpc_url);
@@ -106,8 +102,8 @@ impl ConfigOption {
             self.path.clone_from(&other.path);
         }
 
-        if other.sequencer_rpc_url.is_some() {
-            self.sequencer_rpc_url.clone_from(&other.sequencer_rpc_url);
+        if other.external_rpc_url.is_some() {
+            self.external_rpc_url.clone_from(&other.external_rpc_url);
         }
 
         if other.internal_rpc_url.is_some() {

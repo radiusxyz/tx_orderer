@@ -32,7 +32,7 @@ for (( node_index=0; node_index<NODE_COUNT; node_index++ )) do
 
     config_file_path=$data_path/config.toml
     
-    sed -i.temp "s/sequencer_rpc_url = \"http:\/\/127.0.0.1:3000\"/sequencer_rpc_url = \"http:\/\/$HOST:300$node_index\"/g" $config_file_path
+    sed -i.temp "s/external_rpc_url = \"http:\/\/127.0.0.1:3000\"/external_rpc_url = \"http:\/\/$HOST:300$node_index\"/g" $config_file_path
     sed -i.temp "s/internal_rpc_url = \"http:\/\/127.0.0.1:4000\"/internal_rpc_url = \"http:\/\/$HOST:400$node_index\"/g" $config_file_path
     # TODO: temp external_rpc_url
     sed -i.temp "s/cluster_rpc_url = \"http:\/\/127.0.0.1:3000\"/cluster_rpc_url = \"http:\/\/$HOST:300$node_index\"/g" $config_file_path

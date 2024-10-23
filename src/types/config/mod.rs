@@ -64,7 +64,7 @@ impl Config {
 
         Ok(Config {
             path: config_path,
-            sequencer_rpc_url: merged_config_option.sequencer_rpc_url.unwrap(),
+            sequencer_rpc_url: merged_config_option.external_rpc_url.unwrap(),
             internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
             cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
             seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
@@ -82,7 +82,7 @@ impl Config {
         self.path.join(DATABASE_DIR_NAME)
     }
 
-    pub fn sequencer_rpc_url(&self) -> &String {
+    pub fn external_rpc_url(&self) -> &String {
         &self.sequencer_rpc_url
     }
 
