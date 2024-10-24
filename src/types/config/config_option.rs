@@ -8,7 +8,7 @@ use super::ConfigPath;
 const DEFAULT_EXTERNAL_RPC_URL: &str = "http://127.0.0.1:3000"; // external rpc url
 const DEFAULT_INTERNAL_RPC_URL: &str = "http://127.0.0.1:4000";
 // TODO: temporary use external rpc url
-const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:3000";
+const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:5000";
 
 const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:6000";
 
