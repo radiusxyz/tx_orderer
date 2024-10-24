@@ -43,7 +43,7 @@ pub enum Error {
     NotFoundCluster,
     NotFoundClusterId,
     NotFoundSequencingInfo,
-
+    NotFoundExecutorAddress,
     InvalidTransactionOrder,
 
     OtherSequencerRpcClientsCountNotCorrect,

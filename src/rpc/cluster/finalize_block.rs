@@ -1,3 +1,4 @@
+use liveness::radius::LivenessClient;
 use tracing::info;
 
 use crate::{
@@ -36,7 +37,24 @@ impl FinalizeBlock {
         //     parameter.message.executor_address.clone(),
         // )?;
 
-        // TODO:  check executor_address is in rollup executor addresses.
+        // Check the executor address
+        context
+            .get_liveness_client::<LivenessClient>(rollup.platform(), rollup.service_provider())
+            .await?
+            .publisher()
+            .get_rollup_info_list(rollup.cluster_id(), parameter.message.platform_block_height)
+            .await?
+            .iter()
+            .find(|rollup_info| rollup_info.rollupId == parameter.message.rollup_id)
+            .and_then(|rollup_info| {
+                rollup_info
+                    .executorAddresses
+                    .iter()
+                    .find(|&executor_address| {
+                        parameter.message.executor_address == executor_address
+                    })
+            })
+            .ok_or(Error::NotFoundExecutorAddress)?;
 
         let cluster = Cluster::get(
             rollup.platform(),
