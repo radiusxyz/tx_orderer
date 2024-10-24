@@ -15,7 +15,7 @@ impl Timestamp {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Model)]
 #[kvstore(key(rollup_id: &str, block_height: u64, transaction_order: u64))]
-pub struct BlockCommitment(pub String);
+pub struct BlockCommitment(String);
 
 impl Default for BlockCommitment {
     fn default() -> Self {
@@ -35,15 +35,25 @@ impl From<OrderHash> for BlockCommitment {
     }
 }
 
-impl AsRef<[u8]> for BlockCommitment {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_bytes()
+impl From<&str> for BlockCommitment {
+    fn from(value: &str) -> Self {
+        Self(value.to_owned())
     }
 }
 
-impl AsRef<str> for BlockCommitment {
-    fn as_ref(&self) -> &str {
-        self.0.as_str()
+impl From<String> for BlockCommitment {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl BlockCommitment {
+    pub fn as_bytes(self) -> Result<Vec<u8>, const_hex::FromHexError> {
+        const_hex::decode(self.0)
+    }
+
+    pub fn as_hex_string(self) -> String {
+        self.0
     }
 }
 
