@@ -240,48 +240,51 @@ pub fn block_builder_skde(
             )
             .unwrap();
 
-            match validation_info {
-                // TODO: we have to manage the nonce for the register block commitment.
-                ValidationInfoPayload::EigenLayer(_) => {
-                    let validation_client: validation::eigenlayer::ValidationClient = context
-                        .get_validation_client(
-                            rollup_validation_info.platform(),
-                            rollup_validation_info.validation_service_provider(),
-                        )
-                        .await
-                        .unwrap();
+            // TODO: Remove?
+            if rollup_block_height % 10 == 0 {
+              match validation_info {
+                  // TODO: we have to manage the nonce for the register block commitment.
+                  ValidationInfoPayload::EigenLayer(_) => {
+                      let validation_client: validation::eigenlayer::ValidationClient = context
+                          .get_validation_client(
+                              rollup_validation_info.platform(),
+                              rollup_validation_info.validation_service_provider(),
+                          )
+                          .await
+                          .unwrap();
 
-                    validation_client
-                        .publisher()
-                        .register_block_commitment(
-                            rollup.cluster_id(),
-                            rollup.rollup_id(),
-                            rollup_block_height,
-                            block_commitment.as_bytes().unwrap(),
-                        )
-                        .await
-                        .unwrap();
-                }
-                ValidationInfoPayload::Symbiotic(_) => {
-                    let validation_client: validation::symbiotic::ValidationClient = context
-                        .get_validation_client(
-                            rollup_validation_info.platform(),
-                            rollup_validation_info.validation_service_provider(),
-                        )
-                        .await
-                        .unwrap();
+                      validation_client
+                          .publisher()
+                          .register_block_commitment(
+                              rollup.cluster_id(),
+                              rollup.rollup_id(),
+                              rollup_block_height,
+                              block_commitment.as_bytes().unwrap(),
+                          )
+                          .await
+                          .unwrap();
+                  }
+                  ValidationInfoPayload::Symbiotic(_) => {
+                      let validation_client: validation::symbiotic::ValidationClient = context
+                          .get_validation_client(
+                              rollup_validation_info.platform(),
+                              rollup_validation_info.validation_service_provider(),
+                          )
+                          .await
+                          .unwrap();
 
-                    validation_client
-                        .publisher()
-                        .register_block_commitment(
-                            rollup.cluster_id(),
-                            rollup.rollup_id(),
-                            rollup_block_height,
-                            block_commitment.as_bytes().unwrap(),
-                        )
-                        .await
-                        .unwrap();
-                }
+                      validation_client
+                          .publisher()
+                          .register_block_commitment(
+                              rollup.cluster_id(),
+                              rollup.rollup_id(),
+                              rollup_block_height,
+                              block_commitment.as_bytes().unwrap(),
+                          )
+                          .await
+                          .unwrap();
+                  }
+              }
             }
         }
     });
