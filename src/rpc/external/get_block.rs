@@ -36,7 +36,7 @@ impl GetBlock {
             raw_transaction_list: block.raw_transaction_list,
             proposer_address: block.proposer_address.as_hex_string(),
             signature: block.signature.as_hex_string(),
-            block_commitment: const_hex::encode_prefixed(block.block_commitment),
+            block_commitment: block.block_commitment.as_hex_string(),
         })
     }
 }

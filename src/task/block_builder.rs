@@ -251,15 +251,16 @@ pub fn block_builder_skde(
                         .await
                         .unwrap();
 
-                    let _ = validation_client
+                    validation_client
                         .publisher()
                         .register_block_commitment(
-                            block_commitment,
-                            rollup_block_height,
-                            rollup.rollup_id(),
                             rollup.cluster_id(),
+                            rollup.rollup_id(),
+                            rollup_block_height,
+                            block_commitment.as_bytes().unwrap(),
                         )
-                        .await;
+                        .await
+                        .unwrap();
                 }
                 ValidationInfoPayload::Symbiotic(_) => {
                     let validation_client: validation::symbiotic::ValidationClient = context
@@ -270,15 +271,16 @@ pub fn block_builder_skde(
                         .await
                         .unwrap();
 
-                    let _ = validation_client
+                    validation_client
                         .publisher()
                         .register_block_commitment(
                             rollup.cluster_id(),
                             rollup.rollup_id(),
                             rollup_block_height,
-                            block_commitment,
+                            block_commitment.as_bytes().unwrap(),
                         )
-                        .await;
+                        .await
+                        .unwrap();
                 }
             }
         }
@@ -507,9 +509,8 @@ fn works() {
 
     let block_commitment = get_merkle_root(transaction_hash_list);
 
-    let merkle_root = BlockCommitment(
-        "0x5d68e1af5c97e158bf9eb63489d05ae7da229e264607323c5ec51a927fb90fe1".to_string(),
-    );
+    let merkle_root =
+        BlockCommitment::from("0x5d68e1af5c97e158bf9eb63489d05ae7da229e264607323c5ec51a927fb90fe1");
 
     println!("block_commitment: {:?}", block_commitment);
     println!("merkle_root: {:?}", merkle_root);
