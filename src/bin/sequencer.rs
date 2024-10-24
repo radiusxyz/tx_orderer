@@ -238,9 +238,8 @@ async fn main() -> Result<(), Error> {
             // Initialize the internal RPC server
             initialize_internal_rpc_server(&app_state).await?;
 
-            // TODO - check cluster rpc list
-            // // Initialize the cluster RPC server
-            // initialize_cluster_rpc_server(&app_state).await?;
+            // Initialize the cluster RPC server
+            initialize_cluster_rpc_server(&app_state).await?;
 
             // Initialize the external RPC server.
             let server_handle = initialize_external_rpc_server(&app_state).await?;
@@ -298,7 +297,7 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
     Ok(())
 }
 
-async fn _initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> {
+async fn initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> {
     let cluster_rpc_url = context.config().cluster_rpc_url().to_string();
 
     let sequencer_rpc_server = RpcServer::new(context.clone())
@@ -310,7 +309,6 @@ async fn _initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error>
             cluster::SyncRawTransaction::METHOD_NAME,
             cluster::SyncRawTransaction::handler,
         )?
-        // TODO:
         .register_rpc_method(
             cluster::FinalizeBlock::METHOD_NAME,
             cluster::FinalizeBlock::handler,

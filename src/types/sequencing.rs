@@ -60,7 +60,6 @@ impl FromStr for ValidationServiceProvider {
     }
 }
 
-// Todo: attributing model
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
 #[serde(untagged)]

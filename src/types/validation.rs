@@ -2,7 +2,6 @@ use std::collections::btree_set::{BTreeSet, Iter};
 
 use crate::types::prelude::*;
 
-// TODO: Attributing Model
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, validation_service_provider: ValidationServiceProvider))]
 #[serde(untagged)]
