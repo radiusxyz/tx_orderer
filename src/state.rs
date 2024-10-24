@@ -124,13 +124,13 @@ impl AppState {
     pub async fn add_validation_client<T>(
         &self,
         platform: Platform,
-        service_provider: ServiceProvider,
+        validation_service_provider: ValidationServiceProvider,
         validation_client: T,
     ) -> Result<(), CachedKvStoreError>
     where
         T: Clone + Any + Send + 'static,
     {
-        let key = &(platform, service_provider);
+        let key = &(platform, validation_service_provider);
 
         self.inner
             .validation_clients
@@ -141,12 +141,12 @@ impl AppState {
     pub async fn get_validation_client<T>(
         &self,
         platform: Platform,
-        service_provider: ServiceProvider,
+        validation_service_provider: ValidationServiceProvider,
     ) -> Result<T, CachedKvStoreError>
     where
         T: Clone + Any + Send + 'static,
     {
-        let key = &(platform, service_provider);
+        let key = &(platform, validation_service_provider);
 
         self.inner.validation_clients.get(key).await
     }

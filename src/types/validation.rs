@@ -4,7 +4,7 @@ use crate::types::prelude::*;
 
 // TODO: Attributing Model
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
+#[kvstore(key(platform: Platform, validation_service_provider: ValidationServiceProvider))]
 #[serde(untagged)]
 pub enum ValidationInfoPayload {
     EigenLayer(ValidationEigenLayer),
@@ -30,18 +30,18 @@ pub struct ValidationSymbiotic {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key())]
-pub struct ValidationInfoList(BTreeSet<(Platform, ServiceProvider)>);
+pub struct ValidationInfoList(BTreeSet<(Platform, ValidationServiceProvider)>);
 
 impl ValidationInfoList {
-    pub fn insert(&mut self, platform: Platform, service_provider: ServiceProvider) {
+    pub fn insert(&mut self, platform: Platform, service_provider: ValidationServiceProvider) {
         self.0.insert((platform, service_provider));
     }
 
-    pub fn remove(&mut self, platform: Platform, service_provider: ServiceProvider) {
+    pub fn remove(&mut self, platform: Platform, service_provider: ValidationServiceProvider) {
         self.0.remove(&(platform, service_provider));
     }
 
-    pub fn iter(&self) -> Iter<'_, (Platform, ServiceProvider)> {
+    pub fn iter(&self) -> Iter<'_, (Platform, ValidationServiceProvider)> {
         self.0.iter()
     }
 }

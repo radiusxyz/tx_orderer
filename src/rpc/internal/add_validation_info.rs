@@ -3,7 +3,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AddValidationInfo {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub validation_service_provider: ValidationServiceProvider,
     pub payload: ValidationInfoPayload,
 }
 
@@ -15,13 +15,13 @@ impl AddValidationInfo {
 
         // Save `ValidationClient` metadata.
         let mut validation_info_list = ValidationInfoList::get_mut_or(ValidationInfoList::default)?;
-        validation_info_list.insert(parameter.platform, parameter.service_provider);
+        validation_info_list.insert(parameter.platform, parameter.validation_service_provider);
         validation_info_list.update()?;
 
         ValidationInfoPayload::put(
             &parameter.payload,
             parameter.platform,
-            parameter.service_provider,
+            parameter.validation_service_provider,
         )?;
 
         match &parameter.payload {
@@ -30,7 +30,7 @@ impl AddValidationInfo {
 
                 let validation_client = validation::eigenlayer::ValidationClient::new(
                     parameter.platform,
-                    parameter.service_provider,
+                    parameter.validation_service_provider,
                     payload.clone(),
                     signing_key,
                 )?;
@@ -39,7 +39,7 @@ impl AddValidationInfo {
                 context
                     .add_validation_client(
                         parameter.platform,
-                        parameter.service_provider,
+                        parameter.validation_service_provider,
                         validation_client,
                     )
                     .await?;
@@ -49,7 +49,7 @@ impl AddValidationInfo {
 
                 let validation_client = validation::symbiotic::ValidationClient::new(
                     parameter.platform,
-                    parameter.service_provider,
+                    parameter.validation_service_provider,
                     payload.clone(),
                     signing_key,
                 )?;
@@ -58,7 +58,7 @@ impl AddValidationInfo {
                 context
                     .add_validation_client(
                         parameter.platform,
-                        parameter.service_provider,
+                        parameter.validation_service_provider,
                         validation_client,
                     )
                     .await?;

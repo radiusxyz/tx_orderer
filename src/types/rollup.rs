@@ -86,15 +86,23 @@ impl RollupMetadata {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValidationInfo {
     platform: Platform,
-    service_provider: ValidationServiceProvider,
+    validation_service_provider: ValidationServiceProvider,
 }
 
 impl ValidationInfo {
-    pub fn new(platform: Platform, service_provider: ValidationServiceProvider) -> Self {
+    pub fn new(platform: Platform, validation_service_provider: ValidationServiceProvider) -> Self {
         Self {
             platform,
-            service_provider,
+            validation_service_provider,
         }
+    }
+
+    pub fn platform(&self) -> Platform {
+        self.platform
+    }
+
+    pub fn validation_service_provider(&self) -> ValidationServiceProvider {
+        self.validation_service_provider
     }
 }
 
@@ -173,6 +181,10 @@ impl Rollup {
 
     pub fn service_provider(&self) -> ServiceProvider {
         self.service_provider
+    }
+
+    pub fn validation_info(&self) -> &ValidationInfo {
+        &self.validation_info
     }
 }
 

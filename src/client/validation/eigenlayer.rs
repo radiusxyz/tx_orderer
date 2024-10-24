@@ -15,7 +15,7 @@ pub struct ValidationClient {
 
 struct ValidationClientInner {
     platform: Platform,
-    service_provider: ServiceProvider,
+    validation_service_provider: ValidationServiceProvider,
     publisher: Publisher,
     subscriber: Subscriber,
 }
@@ -35,7 +35,7 @@ impl Clone for ValidationClient {
 impl ValidationClient {
     pub fn new(
         platform: Platform,
-        service_provider: ServiceProvider,
+        validation_service_provider: ValidationServiceProvider,
         validation_info: ValidationEigenLayer,
         signing_key: impl AsRef<str>,
     ) -> Result<Self, Error> {
@@ -57,7 +57,7 @@ impl ValidationClient {
 
         let inner = ValidationClientInner {
             platform,
-            service_provider,
+            validation_service_provider,
             publisher,
             subscriber,
         };
@@ -71,8 +71,8 @@ impl ValidationClient {
         self.inner.platform
     }
 
-    pub fn service_provider(&self) -> ServiceProvider {
-        self.inner.service_provider
+    pub fn validation_service_provider(&self) -> ValidationServiceProvider {
+        self.inner.validation_service_provider
     }
 
     pub fn publisher(&self) -> &Publisher {

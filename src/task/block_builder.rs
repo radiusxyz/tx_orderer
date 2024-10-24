@@ -232,15 +232,22 @@ pub fn block_builder_skde(
 
         if cluster.is_leader(rollup_block_height) {
             let rollup = Rollup::get(&rollup_id).unwrap();
+            let rollup_validation_info = rollup.validation_info();
 
-            let validation_info =
-                ValidationInfoPayload::get(rollup.platform(), rollup.service_provider()).unwrap();
+            let validation_info = ValidationInfoPayload::get(
+                rollup_validation_info.platform(),
+                rollup_validation_info.validation_service_provider(),
+            )
+            .unwrap();
 
             match validation_info {
                 // TODO: we have to manage the nonce for the register block commitment.
                 ValidationInfoPayload::EigenLayer(_) => {
                     let validation_client: validation::eigenlayer::ValidationClient = context
-                        .get_validation_client(rollup.platform(), rollup.service_provider())
+                        .get_validation_client(
+                            rollup_validation_info.platform(),
+                            rollup_validation_info.validation_service_provider(),
+                        )
                         .await
                         .unwrap();
 
@@ -256,7 +263,10 @@ pub fn block_builder_skde(
                 }
                 ValidationInfoPayload::Symbiotic(_) => {
                     let validation_client: validation::symbiotic::ValidationClient = context
-                        .get_validation_client(rollup.platform(), rollup.service_provider())
+                        .get_validation_client(
+                            rollup_validation_info.platform(),
+                            rollup_validation_info.validation_service_provider(),
+                        )
                         .await
                         .unwrap();
 
