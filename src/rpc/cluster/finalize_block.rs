@@ -28,7 +28,12 @@ impl FinalizeBlock {
 
         let rollup = Rollup::get(&parameter.message.rollup_id)?;
 
-        info!("finalize block - {:?}", parameter);
+        info!("finalize block - executor address: {:?}, rollup_id: {:?}, platform block height: {:?}, rollup block height: {:?}",
+            parameter.message.executor_address.as_hex_string(),
+            parameter.message.rollup_id,
+            parameter.message.platform_block_height,
+            parameter.message.rollup_block_height,
+        );
 
         // Verify the message.
         // parameter.signature.verify_message(

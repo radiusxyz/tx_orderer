@@ -15,6 +15,13 @@ impl AddCluster {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        tracing::info!(
+            "Add cluster - platform: {:?}, service provider: {:?}, cluster id: {:?}",
+            parameter.platform,
+            parameter.service_provider,
+            parameter.cluster_id
+        );
+
         let seeder_client = context.seeder_client();
         match parameter.platform {
             Platform::Ethereum => {
