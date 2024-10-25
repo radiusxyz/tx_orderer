@@ -153,6 +153,11 @@ async fn main() -> Result<(), Error> {
 
                 match sequencing_info_payload {
                     SequencingInfoPayload::Ethereum(liveness_info) => {
+                        info!(
+                            "Initialize liveness client - platform: {:?}, service_provider: {:?}",
+                            platform, service_provider
+                        );
+
                         let liveness_client = liveness::radius::LivenessClient::new(
                             *platform,
                             *service_provider,
@@ -160,6 +165,7 @@ async fn main() -> Result<(), Error> {
                             config.signing_key(),
                             seeder_client.clone(),
                         )?;
+
                         liveness_client.initialize_event_listener();
 
                         liveness_clients

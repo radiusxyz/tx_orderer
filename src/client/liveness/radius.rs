@@ -86,6 +86,12 @@ impl LivenessClient {
     pub fn initialize_event_listener(&self) {
         let liveness_client = self.clone();
 
+        tracing::info!(
+            "Initialize the liveness event listener for {:?}, {:?}..",
+            liveness_client.platform(),
+            liveness_client.service_provider()
+        );
+
         tokio::spawn(async move {
             loop {
                 liveness_client

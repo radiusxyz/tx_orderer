@@ -29,6 +29,11 @@ impl AddCluster {
                 let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
                 let address = signer.address();
 
+                tracing::info!(
+                    "Register sequencer to seeder - address: {:?}",
+                    address.as_hex_string()
+                );
+
                 seeder_client
                     .register_sequencer(
                         parameter.platform,
