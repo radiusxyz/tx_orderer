@@ -15,12 +15,24 @@ impl AddCluster {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        tracing::info!(
+            "Add cluster - platform: {:?}, service provider: {:?}, cluster id: {:?}",
+            parameter.platform,
+            parameter.service_provider,
+            parameter.cluster_id
+        );
+
         let seeder_client = context.seeder_client();
         match parameter.platform {
             Platform::Ethereum => {
                 let signing_key = context.config().signing_key();
                 let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
                 let address = signer.address();
+
+                tracing::info!(
+                    "Register sequencer to seeder - address: {:?}",
+                    address.as_hex_string()
+                );
 
                 seeder_client
                     .register_sequencer(

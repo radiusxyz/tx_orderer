@@ -15,6 +15,13 @@ impl AddSequencingInfo {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        tracing::info!(
+            "Add sequencing info - platform: {:?}, service provider: {:?}, payload: {:?}",
+            parameter.platform,
+            parameter.service_provider,
+            parameter.payload
+        );
+
         // Save `LivenessClient` metadata.
         let mut sequencing_info_list = SequencingInfoList::get_mut_or(SequencingInfoList::default)?;
         sequencing_info_list.insert(parameter.platform, parameter.service_provider);

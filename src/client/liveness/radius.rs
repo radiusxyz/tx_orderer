@@ -86,6 +86,12 @@ impl LivenessClient {
     pub fn initialize_event_listener(&self) {
         let liveness_client = self.clone();
 
+        tracing::info!(
+            "Initialize the liveness event listener for {:?}, {:?}..",
+            liveness_client.platform(),
+            liveness_client.service_provider()
+        );
+
         tokio::spawn(async move {
             loop {
                 liveness_client
@@ -185,7 +191,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                                 let rollup = Rollup::new(
                                     rollup_info.rollupId.clone(),
                                     rollup_type,
-                                    EncryptedTransactionType::Skde, // TODO
+                                    EncryptedTransactionType::Skde,
                                     rollup_info.owner.to_string(),
                                     validation_info,
                                     order_commitment_type,

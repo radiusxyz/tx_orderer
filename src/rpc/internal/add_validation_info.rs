@@ -13,6 +13,13 @@ impl AddValidationInfo {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
+        tracing::info!(
+            "Add validation info - platform: {:?}, validation service provider: {:?}, payload: {:?}",
+            parameter.platform,
+            parameter.validation_service_provider,
+            parameter.payload
+        );
+
         // Save `ValidationClient` metadata.
         let mut validation_info_list = ValidationInfoList::get_mut_or(ValidationInfoList::default)?;
         validation_info_list.insert(parameter.platform, parameter.validation_service_provider);

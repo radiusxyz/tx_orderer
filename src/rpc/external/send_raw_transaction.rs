@@ -23,6 +23,13 @@ impl SendRawTransaction {
         context: Arc<AppState>,
     ) -> Result<OrderCommitment, RpcError> {
         let parameter = parameter.parse::<Self>()?;
+
+        tracing::info!(
+            "Send raw transaction: rollup_id: {:?}, raw_transaction: {:?}",
+            parameter.rollup_id,
+            parameter.raw_transaction
+        );
+
         let rollup = Rollup::get(&parameter.rollup_id)?;
 
         // 2. Check is leader

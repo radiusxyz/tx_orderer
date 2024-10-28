@@ -16,7 +16,14 @@ impl SyncBlock {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        tracing::info!("sync block - {:?}", parameter);
+        tracing::info!(
+            "sync block - executor address: {:?}, rollup_id: {:?}, platform block height: {:?}, rollup block height: {:?}, transaction count: {:?}",
+            parameter.message.executor_address.as_hex_string(),
+            parameter.message.rollup_id,
+            parameter.message.platform_block_height,
+            parameter.message.rollup_block_height,
+            parameter.transaction_count,
+        );
 
         let rollup = Rollup::get(&parameter.message.rollup_id)?;
 

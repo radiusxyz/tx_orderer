@@ -59,7 +59,7 @@ for (( node_index=0; node_index<NODE_COUNT; node_index++ )) do
     "method": "add_validation_info",
     "params": {
       "platform": "'"$PLATFORM"'",
-      "service_provider": "'"$SERVICE_PROVIDER"'",
+      "validation_service_provider": "'"$VALIDATION_SERVICE_PROVIDER_SYMBIOTIC"'",
       "payload": {
         "validation_rpc_url": "'"$VALIDATION_RPC_URL"'",
         "validation_websocket_url": "'"$VALIDATION_WS_URL"'",

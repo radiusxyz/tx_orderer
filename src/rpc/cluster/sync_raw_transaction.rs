@@ -1,12 +1,6 @@
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SyncRawTransaction {
-    pub message: SyncRawTransactionMessage,
-    pub signature: Signature,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncRawTransactionMessage {
     pub rollup_id: String,
     pub rollup_block_height: u64,
@@ -16,11 +10,26 @@ pub struct SyncRawTransactionMessage {
     pub order_hash: OrderHash,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SyncRawTransaction {
+    pub message: SyncRawTransactionMessage,
+    pub signature: Signature,
+}
+
 impl SyncRawTransaction {
     pub const METHOD_NAME: &'static str = "sync_raw_transaction";
 
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
+
+        tracing::info!(
+            "Sync raw transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}, order hash: {:?}",
+            parameter.message.rollup_id,
+            parameter.message.rollup_block_height,
+            parameter.message.transaction_order,
+            parameter.message.order_commitment,
+            parameter.message.order_hash,
+        );
 
         let rollup = Rollup::get(&parameter.message.rollup_id)?;
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.message.rollup_id)?;

@@ -24,7 +24,10 @@ impl SendEncryptedTransaction {
         let parameter = parameter.parse::<Self>()?;
         let rollup = Rollup::get(&parameter.rollup_id)?;
 
-        info!("SendEncryptedTransaction: {:?}", parameter);
+        info!(
+            "Send encrypted transaction - rollup id: {:?}, encrypted transaction: {:?}",
+            parameter.rollup_id, parameter.encrypted_transaction
+        );
 
         // 1. Check supported encrypted transaction
         check_supported_encrypted_transaction(&rollup, &parameter.encrypted_transaction)?;
