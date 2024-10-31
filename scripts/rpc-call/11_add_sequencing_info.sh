@@ -1,13 +1,6 @@
 #!/bin/bash
-
-SEQUENCER_INTERNAL_RPC_URL="127.0.0.1:4000"
-
-LIVENESS_PLATFORM="ethereum" # Option: [ethereum]
-LIVENESS_SERVICE_PROVIDER="radius" # Option: [radius]
-
-LIVENESS_RPC_URL=""
-LIVENESS_WS_URL=""
-LIVENESS_CONTRACT_ADDRESS=""
+SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $SCRIPT_PATH/env.sh
 
 echo "add_sequencing_info (related to liveness)"
 

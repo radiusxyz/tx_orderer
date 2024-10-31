@@ -1,14 +1,6 @@
 #!/bin/bash
-
-SEQUENCER_INTERNAL_RPC_URL="127.0.0.1:4000"
-
-VALIDATION_PLATFORM="ethereum" # Option: [ethereum]
-VALIDATION_SERVICE_PROVIDER="symbiotic" # Option:  [eigen_layer / symbiotic]
-
-VALIDATION_RPC_URL=""
-VALIDATION_WS_URL=""
-
-VALIDATION_SERVICE_MANAGER_CONTRACT_ADDRESS=""
+SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+source $SCRIPT_PATH/env.sh
 
 echo "add_validation_info"
 
