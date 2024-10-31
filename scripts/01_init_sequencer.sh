@@ -38,7 +38,7 @@ for (( node_index=0; node_index<NODE_COUNT; node_index++ )) do
 
     sed -i.temp "s/seeder_rpc_url = \"http:\/\/127.0.0.1:6000\"/seeder_rpc_url = \"http:\/\/$SEEDER_HOST:6001\"/g" $config_file_path
 
-    sed -i.temp "s/key_management_system_rpc_url = \"http:\/\/127.0.0.1:7100\"/key_management_system_rpc_url = \"http:\/\/$KEY_MANAGEMENT_SYSTEM_HOST:7100\"/g" $config_file_path
+    sed -i.temp "s/distributed_key_generation_rpc_url = \"http:\/\/127.0.0.1:7100\"/distributed_key_generation_rpc_url = \"http:\/\/$DISTRIBUTED_KEY_GENERATION_RPC_URL:7100\"/g" $config_file_path
     
 
     # TODO: remove

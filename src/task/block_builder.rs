@@ -9,7 +9,7 @@ use skde::delay_encryption::{decrypt, SecretKey, SkdeParams};
 use tracing::info;
 
 use crate::{
-    client::{liveness::key_management_system::KeyManagementSystemClient, validation},
+    client::{liveness::distributed_key_generation::DistributedKeyGenerationClient, validation},
     error::Error,
     rpc::external::GetEncryptedTransactionWithOrderCommitment,
     state::AppState,
@@ -125,7 +125,7 @@ pub fn block_builder_skde(
     transaction_count: u64,
     cluster: Cluster,
 ) {
-    let key_management_system_client = context.key_management_system_client().clone();
+    let distributed_key_generation_client = context.distributed_key_generation_client().clone();
 
     tokio::spawn(async move {
         let mut raw_transaction_list =
@@ -182,7 +182,7 @@ pub fn block_builder_skde(
                                 EncryptedTransaction::Skde(skde_encrypted_transaction) => {
                                     let (raw_transaction, _plain_data) = decrypt_skde_transaction(
                                         &skde_encrypted_transaction,
-                                        key_management_system_client.clone(),
+                                        distributed_key_generation_client.clone(),
                                         &mut decryption_keys,
                                         context.skde_params(),
                                     )
@@ -319,7 +319,7 @@ pub fn block_builder_pvde(
 
 async fn decrypt_skde_transaction(
     skde_encrypted_transaction: &SkdeEncryptedTransaction,
-    key_management_system_client: KeyManagementSystemClient,
+    distributed_key_generation_client: DistributedKeyGenerationClient,
     decryption_keys: &mut HashMap<u64, SecretKey>,
     skde_params: &SkdeParams,
 ) -> Result<(RawTransaction, PlainData), Error> {
@@ -331,7 +331,7 @@ async fn decrypt_skde_transaction(
         println!("key_id: {:?}", skde_encrypted_transaction.key_id());
 
         let decryption_key = SecretKey {
-            sk: key_management_system_client
+            sk: distributed_key_generation_client
                 .get_decryption_key(skde_encrypted_transaction.key_id())
                 .await
                 .unwrap()

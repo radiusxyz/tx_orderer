@@ -7,7 +7,9 @@ use radius_sdk::{
 use skde::delay_encryption::SkdeParams;
 
 use crate::{
-    client::liveness::{key_management_system::KeyManagementSystemClient, seeder::SeederClient},
+    client::liveness::{
+        distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient,
+    },
     types::*,
 };
 
@@ -17,7 +19,7 @@ pub struct AppState {
 struct AppStateInner {
     config: Config,
     seeder_client: SeederClient,
-    key_management_client: KeyManagementSystemClient,
+    distributed_key_generation_client: DistributedKeyGenerationClient,
 
     liveness_clients: CachedKvStore,
     validation_clients: CachedKvStore,
@@ -44,7 +46,7 @@ impl AppState {
     pub fn new(
         config: Config,
         seeder_client: SeederClient,
-        key_management_system_client: KeyManagementSystemClient,
+        distributed_key_generation_client: DistributedKeyGenerationClient,
         signers: CachedKvStore,
         liveness_clients: CachedKvStore,
         validation_clients: CachedKvStore,
@@ -54,7 +56,7 @@ impl AppState {
         let inner = AppStateInner {
             config,
             seeder_client,
-            key_management_client: key_management_system_client,
+            distributed_key_generation_client,
             signers,
             liveness_clients,
             validation_clients,
@@ -151,8 +153,8 @@ impl AppState {
         self.inner.validation_clients.get(key).await
     }
 
-    pub fn key_management_system_client(&self) -> &KeyManagementSystemClient {
-        &self.inner.key_management_client
+    pub fn distributed_key_generation_client(&self) -> &DistributedKeyGenerationClient {
+        &self.inner.distributed_key_generation_client
     }
 
     pub fn pvde_params(&self) -> &PvdeParams {

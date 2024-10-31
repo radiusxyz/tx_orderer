@@ -31,7 +31,9 @@ use radius_sdk::{
 };
 use sequencer::{
     client::{
-        liveness::{self, key_management_system::KeyManagementSystemClient, seeder::SeederClient},
+        liveness::{
+            self, distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient,
+        },
         validation,
     },
     error::{self, Error},
@@ -120,10 +122,10 @@ async fn main() -> Result<(), Error> {
                 seeder_rpc_url,
             );
 
-            // Initialize key management system client
-            let key_management_system_rpc_url = config.key_management_system_rpc_url();
-            let key_management_system_client =
-                KeyManagementSystemClient::new(key_management_system_rpc_url)?;
+            // Initialize distributed key generation client
+            let distributed_key_generation_rpc_url = config.distributed_key_generation_rpc_url();
+            let distributed_key_generation_client =
+                DistributedKeyGenerationClient::new(distributed_key_generation_rpc_url)?;
 
             let signing_key = config.signing_key();
             let signers = CachedKvStore::default();
@@ -224,7 +226,7 @@ async fn main() -> Result<(), Error> {
             let path = config_option.path.clone().unwrap();
             let pvde_params = init_time_lock_puzzle_param(&path)?;
 
-            let skde_params = key_management_system_client
+            let skde_params = distributed_key_generation_client
                 .get_skde_params()
                 .await?
                 .skde_params;
@@ -233,7 +235,7 @@ async fn main() -> Result<(), Error> {
             let app_state = AppState::new(
                 config,
                 seeder_client,
-                key_management_system_client,
+                distributed_key_generation_client,
                 signers,
                 liveness_clients,
                 validation_clients,
