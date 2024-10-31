@@ -1,0 +1,38 @@
+#!/bin/bash
+
+SEQUENCER_INTERNAL_RPC_URL="127.0.0.1:4000"
+
+VALIDATION_PLATFORM="ethereum" # Option: [ethereum]
+VALIDATION_SERVICE_PROVIDER="eigen_layer" # Option:  [eigen_layer / symbiotic]
+
+VALIDATION_RPC_URL=""
+VALIDATION_WS_URL=""
+
+DELEGATION_MANAGER_CONTRACT_ADDRESS=""
+STAKE_REGISTRY_CONTRACT_ADDRESS=""
+AVS_DIRECTORY_CONTRACT_ADDRESS=""
+AVS_CONTRACT_ADDRESS=""
+
+echo "add_validation_info"
+
+curl --location $SEQUENCER_INTERNAL_RPC_URL \
+--header 'Content-Type: application/json' \
+--data '{
+  "jsonrpc": "2.0",
+  "method": "add_validation_info",
+  "params": {
+    "platform": "'"$VALIDATION_PLATFORM"'",
+    "validation_service_provider": "'"$VALIDATION_SERVICE_PROVIDER"'",
+    "payload": {
+      "validation_rpc_url": "'"$VALIDATION_RPC_URL"'",
+      "validation_websocket_url": "'"$VALIDATION_WS_URL"'",
+      "delegation_manager_contract_address": "'"$DELEGATION_MANAGER_CONTRACT_ADDRESS"'",
+      "stake_registry_contract_address": "'"$STAKE_REGISTRY_CONTRACT_ADDRESS"'",
+      "avs_directory_contract_address": "'"$AVS_DIRECTORY_CONTRACT_ADDRESS"'",
+      "avs_contract_address": "'"$AVS_CONTRACT_ADDRESS"'",
+    }
+  },
+  "id": 1
+}'
+echo ""
+echo "add_validation_info done"
