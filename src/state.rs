@@ -25,7 +25,6 @@ struct AppStateInner {
     validation_clients: CachedKvStore,
     signers: CachedKvStore,
 
-    pvde_params: PvdeParams,
     skde_params: SkdeParams,
 }
 
@@ -50,7 +49,6 @@ impl AppState {
         signers: CachedKvStore,
         liveness_clients: CachedKvStore,
         validation_clients: CachedKvStore,
-        pvde_params: PvdeParams,
         skde_params: SkdeParams,
     ) -> Self {
         let inner = AppStateInner {
@@ -60,7 +58,6 @@ impl AppState {
             signers,
             liveness_clients,
             validation_clients,
-            pvde_params,
             skde_params,
         };
 
@@ -155,10 +152,6 @@ impl AppState {
 
     pub fn distributed_key_generation_client(&self) -> &DistributedKeyGenerationClient {
         &self.inner.distributed_key_generation_client
-    }
-
-    pub fn pvde_params(&self) -> &PvdeParams {
-        &self.inner.pvde_params
     }
 
     pub fn skde_params(&self) -> &SkdeParams {

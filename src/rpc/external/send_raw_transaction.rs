@@ -149,7 +149,7 @@ pub fn sync_raw_transaction(
         let follower_list: Vec<String> = cluster
             .get_follower_rpc_url_list(rollup_block_height)
             .into_iter()
-            .filter_map(|rpc_url| rpc_url)
+            .flatten()
             .collect();
 
         if !follower_list.is_empty() {

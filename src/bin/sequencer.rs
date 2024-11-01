@@ -1,29 +1,4 @@
-use std::{fs, path::Path};
-
 use clap::{Parser, Subcommand};
-use pvde::{
-    encryption::poseidon_encryption_zkp::{
-        export_proving_key as export_poseidon_encryption_proving_key,
-        export_verifying_key as export_poseidon_encryption_verifying_key,
-        export_zkp_param as export_poseidon_encryption_zkp_param,
-        import_proving_key as import_poseidon_encryption_proving_key,
-        import_verifying_key as import_poseidon_encryption_verifying_key,
-        import_zkp_param as import_poseidon_encryption_zkp_param,
-        setup as setup_poseidon_encryption,
-    },
-    time_lock_puzzle::{
-        export_time_lock_puzzle_param, import_time_lock_puzzle_param,
-        key_validation_zkp::{
-            export_proving_key as export_key_validation_proving_key,
-            export_verifying_key as export_key_validation_verifying_key,
-            export_zkp_param as export_key_validation_zkp_param,
-            import_proving_key as import_key_validation_proving_key,
-            import_verifying_key as import_key_validation_verifying_key,
-            import_zkp_param as import_key_validation_zkp_param, setup as setup_key_validation,
-        },
-        setup as setup_time_lock_puzzle_param,
-    },
-};
 use radius_sdk::{
     json_rpc::server::RpcServer,
     kvstore::{CachedKvStore, KvStore as Database},
@@ -222,10 +197,6 @@ async fn main() -> Result<(), Error> {
                 }
             }
 
-            // TODO: PVDE
-            let path = config_option.path.clone().unwrap();
-            let pvde_params = init_time_lock_puzzle_param(&path)?;
-
             let skde_params = distributed_key_generation_client
                 .get_skde_params()
                 .await?
@@ -239,7 +210,6 @@ async fn main() -> Result<(), Error> {
                 signers,
                 liveness_clients,
                 validation_clients,
-                pvde_params,
                 skde_params,
             );
 
@@ -406,116 +376,4 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
     });
 
     Ok(server_handle)
-}
-
-pub fn init_time_lock_puzzle_param(config_path: &Path) -> Result<PvdeParams, Error> {
-    let time_lock_puzzle_param_path = config_path
-        .join("time_lock_puzzle_param.json")
-        .to_str()
-        .unwrap()
-        .to_string();
-
-    let time_lock_puzzle_param = if fs::metadata(&time_lock_puzzle_param_path).is_ok() {
-        import_time_lock_puzzle_param(&time_lock_puzzle_param_path)
-    } else {
-        let time_lock_puzzle_param = setup_time_lock_puzzle_param(2048);
-        export_time_lock_puzzle_param(&time_lock_puzzle_param_path, time_lock_puzzle_param.clone());
-        time_lock_puzzle_param
-    };
-
-    let mut pvde_params = PvdeParams::default();
-    pvde_params.update_time_lock_puzzle_param(time_lock_puzzle_param);
-
-    let key_validation_param_file_path = config_path
-        .join("key_validation_zkp_param.data")
-        .to_str()
-        .unwrap()
-        .to_string();
-    let key_validation_proving_key_file_path = config_path
-        .join("key_validation_proving_key.data")
-        .to_str()
-        .unwrap()
-        .to_string();
-    let key_validation_verifying_key_file_path = config_path
-        .join("key_validation_verifying_key.data")
-        .to_str()
-        .unwrap()
-        .to_string();
-
-    let (key_validation_zkp_param, key_validation_verifying_key, key_validation_proving_key) =
-        if fs::metadata(&key_validation_param_file_path).is_ok() {
-            (
-                import_key_validation_zkp_param(&key_validation_param_file_path),
-                import_key_validation_verifying_key(&key_validation_verifying_key_file_path),
-                import_key_validation_proving_key(&key_validation_proving_key_file_path),
-            )
-        } else {
-            let setup_results = setup_key_validation(13);
-            export_key_validation_zkp_param(
-                &key_validation_param_file_path,
-                setup_results.0.clone(),
-            );
-            export_key_validation_verifying_key(
-                &key_validation_verifying_key_file_path,
-                setup_results.1.clone(),
-            );
-            export_key_validation_proving_key(
-                &key_validation_proving_key_file_path,
-                setup_results.2.clone(),
-            );
-            setup_results
-        };
-
-    pvde_params.update_key_validation_zkp_param(key_validation_zkp_param);
-    pvde_params.update_key_validation_proving_key(key_validation_proving_key);
-    pvde_params.update_key_validation_verifying_key(key_validation_verifying_key);
-
-    let poseidon_encryption_param_file_path = config_path
-        .join("poseidon_encryption_param.json")
-        .to_str()
-        .unwrap()
-        .to_string();
-    let poseidon_encryption_proving_key_file_path = config_path
-        .join("poseidon_encryption_proving_key.data")
-        .to_str()
-        .unwrap()
-        .to_string();
-    let poseidon_encryption_verifying_key_file_path = config_path
-        .join("poseidon_encryption_verifying_key.data")
-        .to_str()
-        .unwrap()
-        .to_string();
-
-    let (
-        poseidon_encryption_zkp_param,
-        poseidon_encryption_verifying_key,
-        poseidon_encryption_proving_key,
-    ) = if fs::metadata(&poseidon_encryption_param_file_path).is_ok() {
-        (
-            import_poseidon_encryption_zkp_param(&poseidon_encryption_param_file_path),
-            import_poseidon_encryption_verifying_key(&poseidon_encryption_verifying_key_file_path),
-            import_poseidon_encryption_proving_key(&poseidon_encryption_proving_key_file_path),
-        )
-    } else {
-        let setup_results = setup_poseidon_encryption(13);
-        export_poseidon_encryption_zkp_param(
-            &poseidon_encryption_param_file_path,
-            setup_results.0.clone(),
-        );
-        export_poseidon_encryption_verifying_key(
-            &poseidon_encryption_verifying_key_file_path,
-            setup_results.1.clone(),
-        );
-        export_poseidon_encryption_proving_key(
-            &poseidon_encryption_proving_key_file_path,
-            setup_results.2.clone(),
-        );
-        setup_results
-    };
-
-    pvde_params.update_poseidon_encryption_zkp_param(poseidon_encryption_zkp_param);
-    pvde_params.update_poseidon_encryption_proving_key(poseidon_encryption_proving_key);
-    pvde_params.update_poseidon_encryption_verifying_key(poseidon_encryption_verifying_key);
-
-    Ok(pvde_params)
 }

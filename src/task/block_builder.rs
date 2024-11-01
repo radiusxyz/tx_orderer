@@ -39,9 +39,7 @@ pub fn block_builder(
     );
 
     match rollup_encrypted_transaction_type {
-        EncryptedTransactionType::Pvde => {
-            block_builder_pvde(context, rollup_id, rollup_block_height, transaction_count);
-        }
+        EncryptedTransactionType::Pvde => {}
         EncryptedTransactionType::Skde => {
             block_builder_skde(
                 context,
@@ -66,10 +64,7 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
 }
 
 pub fn is_multiple_of_two(transaction_hash_list: &VecDeque<[u8; 32]>) -> bool {
-    match transaction_hash_list.len() % 2 {
-        0 => true,
-        _ => false,
-    }
+    matches!(transaction_hash_list.len() % 2, 0)
 }
 
 // Function to construct Merkle root from a list of transaction hashes (leaves)
@@ -90,7 +85,7 @@ pub fn get_merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockC
                 // Safe to unwrap() because the length of the leaves is guaranteed to be greater
                 // than 1.
                 let last = leaves.back().unwrap();
-                leaves.push_back(last.clone());
+                leaves.push_back(*last);
                 leaves = merkle_proof(&mut leaves);
             }
         }
@@ -292,31 +287,6 @@ pub fn block_builder_skde(
     });
 }
 
-pub fn block_builder_pvde(
-    _context: Arc<AppState>,
-    _rollup_id: String,
-    _rollup_block_height: u64,
-    _transaction_count: u64,
-) {
-    // TODO
-    // let raw_transaction =
-    // decrypt_transaction(
-    //     parameter.encrypted_transaction.
-    // clone(),
-    //     parameter.time_lock_puzzle.
-    // clone(),
-    //     context.config().is_using_zkp(),
-    //     &Some(PvdeParams::default()),
-    // )?;
-    // RawTransactionModel::put(
-    //     &parameter.rollup_id,
-    //     rollup_block_height,
-    //     transaction_order,
-    //     raw_transaction,
-    // )?
-    unimplemented!("Block builder for PVDE is unimplemented.")
-}
-
 async fn decrypt_skde_transaction(
     skde_encrypted_transaction: &SkdeEncryptedTransaction,
     distributed_key_generation_client: DistributedKeyGenerationClient,
@@ -379,7 +349,7 @@ async fn fetch_missing_transaction(
     let others = cluster
         .get_others_rpc_url_list()
         .into_iter()
-        .filter_map(|rpc_url| rpc_url)
+        .flatten()
         .collect();
 
     let parameter = GetEncryptedTransactionWithOrderCommitment {
