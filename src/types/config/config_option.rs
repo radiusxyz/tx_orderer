@@ -11,7 +11,7 @@ const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:5000";
 
 const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:6000";
 
-const DEFAULT_KEY_MANAGEMENT_SYSTEM_RPC_URL: &str = "http://127.0.0.1:7100";
+const DEFAULT_DISTRIBUTED_KEY_GENERATION_RPC_URL: &str = "http://127.0.0.1:7100";
 
 // const DEFAULT_CLUSTER_TYPE: &str = "local";
 
@@ -41,9 +41,9 @@ pub struct ConfigOption {
     #[clap(long = "seeder-rpc-url")]
     pub seeder_rpc_url: Option<String>,
 
-    #[doc = "Set the key management system rpc url"]
-    #[clap(long = "key-management-system-rpc-url")]
-    pub key_management_system_rpc_url: Option<String>,
+    #[doc = "Set the distributed key generation rpc url"]
+    #[clap(long = "distributed-key-generation-rpc-url")]
+    pub distributed_key_generation_rpc_url: Option<String>,
 
     #[doc = "Set using zkp"]
     #[clap(long = "is-using-zkp")]
@@ -60,7 +60,9 @@ impl Default for ConfigOption {
             cluster_rpc_url: Some(DEFAULT_CLUSTER_RPC_URL.into()),
 
             seeder_rpc_url: Some(DEFAULT_SEEDER_RPC_URL.into()),
-            key_management_system_rpc_url: Some(DEFAULT_KEY_MANAGEMENT_SYSTEM_RPC_URL.into()),
+            distributed_key_generation_rpc_url: Some(
+                DEFAULT_DISTRIBUTED_KEY_GENERATION_RPC_URL.into(),
+            ),
 
             is_using_zkp: Some(false),
         }
@@ -83,11 +85,11 @@ impl ConfigOption {
         set_toml_comment(&mut toml_string, "Set seeder rpc url");
         set_toml_name_value(&mut toml_string, "seeder_rpc_url", &self.seeder_rpc_url);
 
-        set_toml_comment(&mut toml_string, "Set key management system rpc url");
+        set_toml_comment(&mut toml_string, "Set distributed key generation rpc url");
         set_toml_name_value(
             &mut toml_string,
-            "key_management_system_rpc_url",
-            &self.key_management_system_rpc_url,
+            "distributed_key_generation_rpc_url",
+            &self.distributed_key_generation_rpc_url,
         );
 
         set_toml_comment(&mut toml_string, "Set using zkp");
@@ -117,9 +119,9 @@ impl ConfigOption {
             self.seeder_rpc_url.clone_from(&other.seeder_rpc_url)
         }
 
-        if other.key_management_system_rpc_url.is_some() {
-            self.key_management_system_rpc_url
-                .clone_from(&other.key_management_system_rpc_url);
+        if other.distributed_key_generation_rpc_url.is_some() {
+            self.distributed_key_generation_rpc_url
+                .clone_from(&other.distributed_key_generation_rpc_url);
         }
 
         if other.is_using_zkp.is_some() {

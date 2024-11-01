@@ -8,7 +8,7 @@ use sha3::{Digest, Keccak256};
 use skde::delay_encryption::{decrypt, SecretKey, SkdeParams};
 
 use crate::{
-    client::{liveness::key_management_system::KeyManagementSystemClient, validation},
+    client::{liveness::distributed_key_generation::DistributedKeyGenerationClient, validation},
     error::Error,
     rpc::external::GetEncryptedTransactionWithOrderCommitment,
     state::AppState,
@@ -40,9 +40,7 @@ pub fn block_builder(
     );
 
     match rollup_encrypted_transaction_type {
-        EncryptedTransactionType::Pvde => {
-            block_builder_pvde(context, rollup_id, rollup_block_height, transaction_count);
-        }
+        EncryptedTransactionType::Pvde => {}
         EncryptedTransactionType::Skde => {
             block_builder_skde(
                 context,
@@ -123,7 +121,7 @@ pub fn block_builder_skde(
     transaction_count: u64,
     cluster: Cluster,
 ) {
-    let key_management_system_client = context.key_management_system_client().clone();
+    let distributed_key_generation_client = context.distributed_key_generation_client().clone();
 
     tokio::spawn(async move {
         let mut raw_transaction_list =
@@ -180,7 +178,7 @@ pub fn block_builder_skde(
                                 EncryptedTransaction::Skde(skde_encrypted_transaction) => {
                                     let (raw_transaction, _plain_data) = decrypt_skde_transaction(
                                         &skde_encrypted_transaction,
-                                        key_management_system_client.clone(),
+                                        distributed_key_generation_client.clone(),
                                         &mut decryption_keys,
                                         context.skde_params(),
                                     )
@@ -293,34 +291,9 @@ pub fn block_builder_skde(
     });
 }
 
-pub fn block_builder_pvde(
-    _context: Arc<AppState>,
-    _rollup_id: String,
-    _rollup_block_height: u64,
-    _transaction_count: u64,
-) {
-    // TODO
-    // let raw_transaction =
-    // decrypt_transaction(
-    //     parameter.encrypted_transaction.
-    // clone(),
-    //     parameter.time_lock_puzzle.
-    // clone(),
-    //     context.config().is_using_zkp(),
-    //     &Some(PvdeParams::default()),
-    // )?;
-    // RawTransactionModel::put(
-    //     &parameter.rollup_id,
-    //     rollup_block_height,
-    //     transaction_order,
-    //     raw_transaction,
-    // )?
-    unimplemented!("Block builder for PVDE is unimplemented.")
-}
-
 async fn decrypt_skde_transaction(
     skde_encrypted_transaction: &SkdeEncryptedTransaction,
-    key_management_system_client: KeyManagementSystemClient,
+    distributed_key_generation_client: DistributedKeyGenerationClient,
     decryption_keys: &mut HashMap<u64, SecretKey>,
     skde_params: &SkdeParams,
 ) -> Result<(RawTransaction, PlainData), Error> {
@@ -332,7 +305,7 @@ async fn decrypt_skde_transaction(
         println!("key_id: {:?}", skde_encrypted_transaction.key_id());
 
         let decryption_key = SecretKey {
-            sk: key_management_system_client
+            sk: distributed_key_generation_client
                 .get_decryption_key(skde_encrypted_transaction.key_id())
                 .await
                 .unwrap()

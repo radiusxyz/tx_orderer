@@ -142,6 +142,7 @@ impl FinalizeBlock {
                 .flatten()
                 .map(|(_, cluster_rpc_url)| cluster_rpc_url)
                 .collect();
+
             rpc_client
                 .multicast(follower_list, SyncBlock::METHOD_NAME, &parameter, Id::Null)
                 .await;

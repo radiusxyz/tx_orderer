@@ -9,7 +9,9 @@ pub enum Error {
     InitializeLivenessClient(Box<dyn std::error::Error>),
     InitializeValidationClient(Box<dyn std::error::Error>),
     CachedKvStore(radius_sdk::kvstore::CachedKvStoreError),
-    KeyManagementSystem(crate::client::liveness::key_management_system::KeyManagementSystemError),
+    KeyManagementSystem(
+        crate::client::liveness::distributed_key_generation::DistributedKeyGenerationClientError,
+    ),
     Seeder(crate::client::liveness::seeder::SeederError),
 
     EmptyLeaderRpcUrl,
@@ -46,9 +48,11 @@ impl From<radius_sdk::json_rpc::server::RpcServerError> for Error {
     }
 }
 
-impl From<crate::client::liveness::key_management_system::KeyManagementSystemError> for Error {
+impl From<crate::client::liveness::distributed_key_generation::DistributedKeyGenerationClientError>
+    for Error
+{
     fn from(
-        value: crate::client::liveness::key_management_system::KeyManagementSystemError,
+        value: crate::client::liveness::distributed_key_generation::DistributedKeyGenerationClientError,
     ) -> Self {
         Self::KeyManagementSystem(value)
     }
