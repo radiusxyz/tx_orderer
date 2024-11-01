@@ -44,7 +44,6 @@ use sequencer::{
 };
 pub use serde::{Deserialize, Serialize};
 use tokio::task::JoinHandle;
-use tracing::info;
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 #[command(author, version, about, long_about = None)]
@@ -134,9 +133,10 @@ async fn main() -> Result<(), Error> {
             let sequencing_info_list =
                 SequencingInfoList::get_or(SequencingInfoList::default).map_err(Error::Database)?;
             for (platform, service_provider) in sequencing_info_list.iter() {
-                info!(
+                tracing::info!(
                     "Initialize sequencing info - platform: {:?}, service_provider: {:?}",
-                    platform, service_provider
+                    platform,
+                    service_provider
                 );
 
                 // Initialize the signer
@@ -153,9 +153,10 @@ async fn main() -> Result<(), Error> {
 
                 match sequencing_info_payload {
                     SequencingInfoPayload::Ethereum(liveness_info) => {
-                        info!(
+                        tracing::info!(
                             "Initialize liveness client - platform: {:?}, service_provider: {:?}",
-                            platform, service_provider
+                            platform,
+                            service_provider
                         );
 
                         let liveness_client = liveness::radius::LivenessClient::new(

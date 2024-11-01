@@ -9,8 +9,6 @@ pub use config_path::*;
 pub use config_register_validator::*;
 use serde::{Deserialize, Serialize};
 
-use crate::error::Error;
-
 pub const DEFAULT_HOME_PATH: &str = ".radius";
 pub const DATABASE_DIR_NAME: &str = "database";
 pub const CONFIG_FILE_NAME: &str = "Config.toml";
@@ -36,7 +34,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(config_option: &mut ConfigOption) -> Result<Self, Error> {
+    pub fn load(config_option: &mut ConfigOption) -> Result<Self, ConfigError> {
         let config_path = match config_option.path.as_mut() {
             Some(config_path) => config_path.clone(),
             None => {
@@ -48,12 +46,11 @@ impl Config {
 
         // Read config file
         let config_file_path = config_path.join(CONFIG_FILE_NAME);
-        let config_string =
-            fs::read_to_string(config_file_path).map_err(Error::LoadConfigOption)?;
+        let config_string = fs::read_to_string(config_file_path).map_err(ConfigError::Load)?;
 
         // Parse String to TOML String
         let config_file: ConfigOption =
-            toml::from_str(&config_string).map_err(Error::ParseTomlString)?;
+            toml::from_str(&config_string).map_err(ConfigError::Parse)?;
 
         // Merge configs from CLI input
         let merged_config_option = config_file.merge(config_option);
@@ -110,3 +107,21 @@ impl Config {
         self.is_using_zkp
     }
 }
+
+#[derive(Debug)]
+pub enum ConfigError {
+    Load(std::io::Error),
+    Parse(toml::de::Error),
+    RemoveConfigDirectory(std::io::Error),
+    CreateConfigDirectory(std::io::Error),
+    CreateConfigFile(std::io::Error),
+    CreatePrivateKeyFile(std::io::Error),
+}
+
+impl std::fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for ConfigError {}

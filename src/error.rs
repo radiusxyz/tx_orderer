@@ -1,62 +1,27 @@
 #[derive(Debug)]
 pub enum Error {
-    OpenConfig(std::io::Error),
-    ParseConfig(toml::de::Error),
+    Config(crate::types::ConfigError),
     Database(radius_sdk::kvstore::KvStoreError),
-    RpcClient(radius_sdk::json_rpc::client::RpcClientError),
     RpcServer(radius_sdk::json_rpc::server::RpcServerError),
     Signature(radius_sdk::signature::SignatureError),
-    Deserialize(serde_json::Error),
+    SerializeEthRawTransaction(serde_json::Error),
     CreateLivenessClient(Box<dyn std::error::Error>),
     InitializeLivenessClient(Box<dyn std::error::Error>),
     InitializeValidationClient(Box<dyn std::error::Error>),
     CachedKvStore(radius_sdk::kvstore::CachedKvStoreError),
-    Uninitialized,
-    EmptySequencerList,
-    LeaderIndexOutOfBound,
+    KeyManagementSystem(crate::client::liveness::key_management_system::KeyManagementSystemError),
+    Seeder(crate::client::liveness::seeder::SeederError),
+
     EmptyLeaderRpcUrl,
-    FetchResponse,
-    ClusterDown,
-    InvalidSequencerPort,
-    InvalidBlockHeight,
-    InvalidLeaderIndex,
-
-    LoadConfigOption(std::io::Error),
-    ParseTomlString(toml::de::Error),
-
-    RemoveConfigDirectory,
-    CreateConfigDirectory,
-    CreateConfigFile,
-    CreatePrivateKeyFile,
-
-    RegisterRpcUrl,
-    GetSequencerRpcUrlList,
-
-    GetSequencingInfo,
-    GetRollupMetadata,
-
-    PvdeZkpInvalid,
-    TryDecryptRawTransaction,
-
-    NotfoundRpcUrl,
-    NotFoundRollupState,
-    NotFoundCluster,
-    NotFoundClusterId,
-    NotFoundSequencingInfo,
-    NotFoundExecutorAddress,
-    InvalidTransactionOrder,
-
-    OtherSequencerRpcClientsCountNotCorrect,
-
-    NotSupportedPlatform,
-    NotSupportedValidationServiceProvider,
-    NotSupportedRollupType,
-
-    NotExistPlainData,
-    NotSupportEncryptedMempool,
+    ExecutorAddressNotFound,
+    PlainDataDoesNotExist,
+    UnsupportedEncryptedMempool,
     BlockHeightMismatch,
 
-    NotSupportedOrderCommitmentType,
+    UnsupportedPlatform,
+    UnsupportedValidationServiceProvider,
+    UnsupportedRollupType,
+    UnsupportedOrderCommitmentType,
 }
 
 unsafe impl Send for Error {}
@@ -69,14 +34,28 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<radius_sdk::json_rpc::client::RpcClientError> for Error {
-    fn from(value: radius_sdk::json_rpc::client::RpcClientError) -> Self {
-        Self::RpcClient(value)
+impl From<crate::types::ConfigError> for Error {
+    fn from(value: crate::types::ConfigError) -> Self {
+        Self::Config(value)
     }
 }
 
 impl From<radius_sdk::json_rpc::server::RpcServerError> for Error {
     fn from(value: radius_sdk::json_rpc::server::RpcServerError) -> Self {
         Self::RpcServer(value)
+    }
+}
+
+impl From<crate::client::liveness::key_management_system::KeyManagementSystemError> for Error {
+    fn from(
+        value: crate::client::liveness::key_management_system::KeyManagementSystemError,
+    ) -> Self {
+        Self::KeyManagementSystem(value)
+    }
+}
+
+impl From<crate::client::liveness::seeder::SeederError> for Error {
+    fn from(value: crate::client::liveness::seeder::SeederError) -> Self {
+        Self::Seeder(value)
     }
 }

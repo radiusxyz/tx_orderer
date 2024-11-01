@@ -27,20 +27,15 @@ impl AddCluster {
             Platform::Ethereum => {
                 let signing_key = context.config().signing_key();
                 let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
-                let address = signer.address();
-
-                tracing::info!(
-                    "Register sequencer to seeder - address: {:?}",
-                    address.as_hex_string()
-                );
 
                 seeder_client
                     .register_sequencer(
                         parameter.platform,
                         parameter.service_provider,
                         &parameter.cluster_id,
-                        address,
+                        context.config().external_rpc_url(),
                         context.config().cluster_rpc_url(),
+                        &signer,
                     )
                     .await?;
 

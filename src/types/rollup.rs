@@ -210,7 +210,7 @@ impl FromStr for RollupType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "polygon_cdk" | "PolygonCdk" => Ok(Self::PolygonCdk),
-            _ => Err(Error::NotSupportedRollupType),
+            _ => Err(Error::UnsupportedRollupType),
         }
     }
 }

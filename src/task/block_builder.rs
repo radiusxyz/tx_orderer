@@ -3,10 +3,9 @@ use std::{
     sync::Arc,
 };
 
-use radius_sdk::json_rpc::client::{Id, RpcClient};
+use radius_sdk::json_rpc::client::{Id, RpcClient, RpcClientError};
 use sha3::{Digest, Keccak256};
 use skde::delay_encryption::{decrypt, SecretKey, SkdeParams};
-use tracing::info;
 
 use crate::{
     client::{liveness::key_management_system::KeyManagementSystemClient, validation},
@@ -33,9 +32,11 @@ pub fn block_builder(
     transaction_count: u64,
     cluster: Cluster,
 ) {
-    info!(
+    tracing::info!(
         "Build block - rollup id: {:?}, block number: {:?}, transaction count: {:?}",
-        rollup_id, rollup_block_height, transaction_count
+        rollup_id,
+        rollup_block_height,
+        transaction_count
     );
 
     match rollup_encrypted_transaction_type {
@@ -247,49 +248,49 @@ pub fn block_builder_skde(
 
             // TODO: Remove?
             if rollup_block_height % 10 == 0 {
-              match validation_info {
-                  // TODO: we have to manage the nonce for the register block commitment.
-                  ValidationInfoPayload::EigenLayer(_) => {
-                      let validation_client: validation::eigenlayer::ValidationClient = context
-                          .get_validation_client(
-                              rollup_validation_info.platform(),
-                              rollup_validation_info.validation_service_provider(),
-                          )
-                          .await
-                          .unwrap();
+                match validation_info {
+                    // TODO: we have to manage the nonce for the register block commitment.
+                    ValidationInfoPayload::EigenLayer(_) => {
+                        let validation_client: validation::eigenlayer::ValidationClient = context
+                            .get_validation_client(
+                                rollup_validation_info.platform(),
+                                rollup_validation_info.validation_service_provider(),
+                            )
+                            .await
+                            .unwrap();
 
-                      validation_client
-                          .publisher()
-                          .register_block_commitment(
-                              rollup.cluster_id(),
-                              rollup.rollup_id(),
-                              rollup_block_height,
-                              block_commitment.as_bytes().unwrap(),
-                          )
-                          .await
-                          .unwrap();
-                  }
-                  ValidationInfoPayload::Symbiotic(_) => {
-                      let validation_client: validation::symbiotic::ValidationClient = context
-                          .get_validation_client(
-                              rollup_validation_info.platform(),
-                              rollup_validation_info.validation_service_provider(),
-                          )
-                          .await
-                          .unwrap();
+                        validation_client
+                            .publisher()
+                            .register_block_commitment(
+                                rollup.cluster_id(),
+                                rollup.rollup_id(),
+                                rollup_block_height,
+                                block_commitment.as_bytes().unwrap(),
+                            )
+                            .await
+                            .unwrap();
+                    }
+                    ValidationInfoPayload::Symbiotic(_) => {
+                        let validation_client: validation::symbiotic::ValidationClient = context
+                            .get_validation_client(
+                                rollup_validation_info.platform(),
+                                rollup_validation_info.validation_service_provider(),
+                            )
+                            .await
+                            .unwrap();
 
-                      validation_client
-                          .publisher()
-                          .register_block_commitment(
-                              rollup.cluster_id(),
-                              rollup.rollup_id(),
-                              rollup_block_height,
-                              block_commitment.as_bytes().unwrap(),
-                          )
-                          .await
-                          .unwrap();
-                  }
-              }
+                        validation_client
+                            .publisher()
+                            .register_block_commitment(
+                                rollup.cluster_id(),
+                                rollup.rollup_id(),
+                                rollup_block_height,
+                                block_commitment.as_bytes().unwrap(),
+                            )
+                            .await
+                            .unwrap();
+                    }
+                }
             }
         }
     });
@@ -378,11 +379,12 @@ async fn fetch_missing_transaction(
     rollup_block_height: u64,
     transaction_order: u64,
     cluster: Cluster,
-) -> Result<EncryptedTransaction, Error> {
+) -> Result<EncryptedTransaction, RpcClientError> {
     let others = cluster
         .get_others_rpc_url_list()
         .into_iter()
         .filter_map(|rpc_url| rpc_url)
+        .map(|(_, cluster_rpc_url)| cluster_rpc_url)
         .collect();
 
     let parameter = GetEncryptedTransactionWithOrderCommitment {
@@ -391,7 +393,7 @@ async fn fetch_missing_transaction(
         transaction_order,
     };
 
-    let rpc_client = RpcClient::new().unwrap();
+    let rpc_client = RpcClient::new()?;
     let rpc_response = rpc_client
         .fetch(
             others,
@@ -399,8 +401,7 @@ async fn fetch_missing_transaction(
             &parameter,
             Id::Null,
         )
-        .await
-        .unwrap();
+        .await?;
 
     Ok(rpc_response)
 }

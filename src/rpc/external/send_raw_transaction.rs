@@ -1,5 +1,3 @@
-use tracing::info;
-
 use crate::{
     rpc::{
         cluster::{SyncRawTransaction, SyncRawTransactionMessage},
@@ -45,8 +43,7 @@ impl SendRawTransaction {
             service_provider,
             cluster_id,
             platform_block_height,
-        )
-        .unwrap();
+        )?;
 
         if rollup_metadata.is_leader() {
             let transaction_order = rollup_metadata.transaction_order();
@@ -106,7 +103,7 @@ impl SendRawTransaction {
                 current_order_hash,
             );
 
-            info!(
+            tracing::info!(
                 "SendRawTransaction: order_commitment: {:?} / rollup_block_height: {:?} / transaction_order: {:?}",
                 order_commitment,
                 rollup_block_height,
@@ -117,7 +114,8 @@ impl SendRawTransaction {
         } else {
             let leader_rpc_url = cluster
                 .get_leader_rpc_url(rollup_block_height)
-                .ok_or(Error::EmptyLeaderRpcUrl)?;
+                .ok_or(Error::EmptyLeaderRpcUrl)?
+                .0;
             let rpc_client = RpcClient::new()?;
             let response = rpc_client
                 .request(
@@ -150,6 +148,7 @@ pub fn sync_raw_transaction(
             .get_follower_rpc_url_list(rollup_block_height)
             .into_iter()
             .filter_map(|rpc_url| rpc_url)
+            .map(|(_, cluster_rpc_url)| cluster_rpc_url)
             .collect();
 
         if !follower_list.is_empty() {

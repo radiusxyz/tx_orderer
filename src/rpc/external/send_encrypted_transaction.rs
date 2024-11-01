@@ -1,5 +1,3 @@
-use tracing::info;
-
 use crate::{
     rpc::{
         cluster::{SyncEncryptedTransaction, SyncEncryptedTransactionMessage},
@@ -24,9 +22,10 @@ impl SendEncryptedTransaction {
         let parameter = parameter.parse::<Self>()?;
         let rollup = Rollup::get(&parameter.rollup_id)?;
 
-        info!(
+        tracing::info!(
             "Send encrypted transaction - rollup id: {:?}, encrypted transaction: {:?}",
-            parameter.rollup_id, parameter.encrypted_transaction
+            parameter.rollup_id,
+            parameter.encrypted_transaction
         );
 
         // 1. Check supported encrypted transaction
@@ -139,7 +138,8 @@ impl SendEncryptedTransaction {
         } else {
             let leader_rpc_url = cluster
                 .get_leader_rpc_url(rollup_block_height)
-                .ok_or(Error::EmptyLeaderRpcUrl)?;
+                .ok_or(Error::EmptyLeaderRpcUrl)?
+                .0;
             let rpc_client = RpcClient::new()?;
             let response = rpc_client
                 .request(
@@ -162,15 +162,15 @@ fn check_supported_encrypted_transaction(
     match rollup.encrypted_transaction_type() {
         EncryptedTransactionType::Pvde => {
             if !matches!(encrypted_transaction, EncryptedTransaction::Pvde(_)) {
-                return Err(Error::NotSupportEncryptedMempool);
+                return Err(Error::UnsupportedEncryptedMempool);
             }
         }
         EncryptedTransactionType::Skde => {
             if !matches!(encrypted_transaction, EncryptedTransaction::Skde(_)) {
-                return Err(Error::NotSupportEncryptedMempool);
+                return Err(Error::UnsupportedEncryptedMempool);
             }
         }
-        EncryptedTransactionType::NotSupport => return Err(Error::NotSupportEncryptedMempool),
+        EncryptedTransactionType::NotSupport => return Err(Error::UnsupportedEncryptedMempool),
     };
 
     Ok(())
@@ -193,6 +193,7 @@ pub fn sync_encrypted_transaction(
             .get_follower_rpc_url_list(rollup_block_height)
             .into_iter()
             .filter_map(|rpc_url| rpc_url)
+            .map(|(_, cluster_rpc_url)| cluster_rpc_url)
             .collect();
 
         if !follower_list.is_empty() {

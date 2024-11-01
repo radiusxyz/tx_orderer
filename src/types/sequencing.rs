@@ -30,7 +30,7 @@ impl FromStr for Platform {
         match s {
             "ethereum" | "Ethereum" => Ok(Self::Ethereum),
             "local" | "Local" => Ok(Self::Local),
-            _ => Err(Error::NotSupportedPlatform),
+            _ => Err(Error::UnsupportedPlatform),
         }
     }
 }
@@ -55,7 +55,7 @@ impl FromStr for ValidationServiceProvider {
         match s {
             "eigen_layer" | "EigenLayer" => Ok(Self::EigenLayer),
             "symbiotic" | "Symbiotic" => Ok(Self::Symbiotic),
-            _ => Err(Error::NotSupportedValidationServiceProvider),
+            _ => Err(Error::UnsupportedValidationServiceProvider),
         }
     }
 }

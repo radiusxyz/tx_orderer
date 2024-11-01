@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use radius_sdk::{
-    json_rpc::client::{Id, RpcClient, RpcClientError},
-    signature::{Address, Signature},
+    json_rpc::client::{Id, RpcClient},
+    signature::{Address, PrivateKeySigner, Signature},
 };
 use serde::{Deserialize, Serialize};
-use tracing::info;
 
 use crate::types::*;
 
@@ -27,10 +26,10 @@ impl Clone for SeederClient {
 }
 
 impl SeederClient {
-    pub fn new(rpc_url: impl AsRef<str>) -> Result<Self, RpcClientError> {
+    pub fn new(rpc_url: impl AsRef<str>) -> Result<Self, SeederError> {
         let inner = SeederClientInner {
             rpc_url: rpc_url.as_ref().to_owned(),
-            rpc_client: RpcClient::new()?,
+            rpc_client: RpcClient::new().map_err(SeederError::Initialize)?,
         };
 
         Ok(Self {
@@ -43,24 +42,27 @@ impl SeederClient {
         platform: Platform,
         service_provider: ServiceProvider,
         cluster_id: &String,
-        address: &Address,
-        rpc_url: &String,
-    ) -> Result<(), RpcClientError> {
+        external_rpc_url: &String,
+        cluster_rpc_url: &String,
+        signer: &PrivateKeySigner,
+    ) -> Result<(), SeederError> {
         let message = RegisterSequencerMessage {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
-            address: address.clone(),
-            rpc_url: rpc_url.to_owned(),
+            address: signer.address().to_owned(),
+            external_rpc_url: external_rpc_url.to_owned(),
+            cluster_rpc_url: cluster_rpc_url.to_owned(),
         };
-        let parameter = RegisterSequencer {
-            message,
-            signature: vec![].into(),
-        };
+        let signature = signer
+            .sign_message(&message)
+            .map_err(SeederError::SignMessage)?;
+        let parameter = RegisterSequencer { message, signature };
 
-        info!(
+        tracing::info!(
             "Register sequencer to seeder - address: {:?}, rpc_url: {:?}",
-            address, rpc_url
+            signer.address(),
+            (external_rpc_url, cluster_rpc_url),
         );
 
         self.inner
@@ -72,6 +74,7 @@ impl SeederClient {
                 Id::Null,
             )
             .await
+            .map_err(SeederError::Register)
     }
 
     pub async fn deregister_sequencer(
@@ -79,18 +82,18 @@ impl SeederClient {
         platform: Platform,
         service_provider: ServiceProvider,
         cluster_id: &String,
-        address: &Address,
-    ) -> Result<(), RpcClientError> {
+        signer: &PrivateKeySigner,
+    ) -> Result<(), SeederError> {
         let message = DeregisterSequencerMessage {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
-            address: address.clone(),
+            address: signer.address().to_owned(),
         };
-        let parameter = DeregisterSequencer {
-            message,
-            signature: vec![].into(),
-        };
+        let signature = signer
+            .sign_message(&message)
+            .map_err(SeederError::SignMessage)?;
+        let parameter = DeregisterSequencer { message, signature };
 
         self.inner
             .rpc_client
@@ -101,12 +104,13 @@ impl SeederClient {
                 Id::Null,
             )
             .await
+            .map_err(SeederError::Deregister)
     }
 
     pub async fn get_sequencer_rpc_url_list(
         &self,
         sequencer_address_list: Vec<String>,
-    ) -> Result<GetSequencerRpcUrlListResponse, RpcClientError> {
+    ) -> Result<GetSequencerRpcUrlListResponse, SeederError> {
         let parameter = GetSequencerRpcUrlList {
             sequencer_address_list,
         };
@@ -120,6 +124,7 @@ impl SeederClient {
                 Id::Null,
             )
             .await
+            .map_err(SeederError::GetSequencerRpcUrlList)
     }
 }
 
@@ -139,7 +144,8 @@ pub struct RegisterSequencerMessage {
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
     pub address: Address,
-    pub rpc_url: String,
+    pub external_rpc_url: String,
+    pub cluster_rpc_url: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -171,5 +177,22 @@ impl GetSequencerRpcUrlList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencerRpcUrlListResponse {
-    pub sequencer_rpc_url_list: Vec<(String, Option<String>)>,
+    pub sequencer_rpc_url_list: Vec<(String, Option<(String, String)>)>,
 }
+
+#[derive(Debug)]
+pub enum SeederError {
+    Initialize(radius_sdk::json_rpc::client::RpcClientError),
+    Register(radius_sdk::json_rpc::client::RpcClientError),
+    Deregister(radius_sdk::json_rpc::client::RpcClientError),
+    GetSequencerRpcUrlList(radius_sdk::json_rpc::client::RpcClientError),
+    SignMessage(radius_sdk::signature::SignatureError),
+}
+
+impl std::fmt::Display for SeederError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for SeederError {}

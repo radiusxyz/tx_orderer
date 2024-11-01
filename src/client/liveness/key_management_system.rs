@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use radius_sdk::json_rpc::client::{Id, RpcClient, RpcClientError};
+use radius_sdk::json_rpc::client::{Id, RpcClient};
 use serde::{Deserialize, Serialize};
 use skde::delay_encryption::SecretKey;
 
@@ -22,10 +22,10 @@ impl Clone for KeyManagementSystemClient {
 }
 
 impl KeyManagementSystemClient {
-    pub fn new(rpc_url: impl AsRef<str>) -> Result<Self, RpcClientError> {
+    pub fn new(rpc_url: impl AsRef<str>) -> Result<Self, KeyManagementSystemError> {
         let inner = KeyManagementSystemClientInner {
             rpc_url: rpc_url.as_ref().to_owned(),
-            rpc_client: RpcClient::new()?,
+            rpc_client: RpcClient::new().map_err(KeyManagementSystemError::Initialize)?,
         };
 
         Ok(Self {
@@ -36,7 +36,7 @@ impl KeyManagementSystemClient {
     pub async fn get_encryption_key(
         &self,
         key_id: u64,
-    ) -> Result<GetEncryptionKeyReturn, RpcClientError> {
+    ) -> Result<GetEncryptionKeyReturn, KeyManagementSystemError> {
         let parameter = GetEncryptionKey { key_id };
 
         self.inner
@@ -48,12 +48,13 @@ impl KeyManagementSystemClient {
                 Id::Null,
             )
             .await
+            .map_err(KeyManagementSystemError::GetEncryptionKey)
     }
 
     pub async fn get_decryption_key(
         &self,
         key_id: u64,
-    ) -> Result<GetDecryptionKeyResponse, RpcClientError> {
+    ) -> Result<GetDecryptionKeyResponse, KeyManagementSystemError> {
         let parameter = GetDecryptionKey { key_id };
 
         self.inner
@@ -65,9 +66,10 @@ impl KeyManagementSystemClient {
                 Id::Null,
             )
             .await
+            .map_err(KeyManagementSystemError::GetDecryptionKey)
     }
 
-    pub async fn get_skde_params(&self) -> Result<GetSkdeParamsResponse, RpcClientError> {
+    pub async fn get_skde_params(&self) -> Result<GetSkdeParamsResponse, KeyManagementSystemError> {
         let parameter = GetSkdeParams {};
 
         self.inner
@@ -79,6 +81,7 @@ impl KeyManagementSystemClient {
                 Id::Null,
             )
             .await
+            .map_err(KeyManagementSystemError::GetSkdeParams)
     }
 }
 
@@ -126,3 +129,19 @@ impl GetSkdeParams {
 pub struct GetSkdeParamsResponse {
     pub skde_params: skde::delay_encryption::SkdeParams,
 }
+
+#[derive(Debug)]
+pub enum KeyManagementSystemError {
+    Initialize(radius_sdk::json_rpc::client::RpcClientError),
+    GetEncryptionKey(radius_sdk::json_rpc::client::RpcClientError),
+    GetDecryptionKey(radius_sdk::json_rpc::client::RpcClientError),
+    GetSkdeParams(radius_sdk::json_rpc::client::RpcClientError),
+}
+
+impl std::fmt::Display for KeyManagementSystemError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for KeyManagementSystemError {}

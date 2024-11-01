@@ -24,7 +24,7 @@ impl ClusterIdList {
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
-    sequencer_rpc_url_list: Vec<(String, Option<String>)>,
+    sequencer_rpc_url_list: Vec<(String, Option<(String, String)>)>,
     rollup_id_list: Vec<String>,
     my_index: usize,
     block_margin: u64,
@@ -32,7 +32,7 @@ pub struct Cluster {
 
 impl Cluster {
     pub fn new(
-        sequencer_rpc_url_list: Vec<(String, Option<String>)>,
+        sequencer_rpc_url_list: Vec<(String, Option<(String, String)>)>,
         rollup_id_list: Vec<String>,
         my_index: usize,
         block_margin: u64,
@@ -86,7 +86,7 @@ impl Cluster {
         self.my_index
     }
 
-    pub fn sequencer_list(&self) -> &Vec<(String, Option<String>)> {
+    pub fn sequencer_list(&self) -> &Vec<(String, Option<(String, String)>)> {
         &self.sequencer_rpc_url_list
     }
 
@@ -104,7 +104,7 @@ impl Cluster {
         leader_index == self.my_index
     }
 
-    pub fn get_others_rpc_url_list(&self) -> Vec<Option<String>> {
+    pub fn get_others_rpc_url_list(&self) -> Vec<Option<(String, String)>> {
         self.sequencer_rpc_url_list
             .iter()
             .enumerate()
@@ -118,7 +118,10 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_follower_rpc_url_list(&self, rollup_block_height: u64) -> Vec<Option<String>> {
+    pub fn get_follower_rpc_url_list(
+        &self,
+        rollup_block_height: u64,
+    ) -> Vec<Option<(String, String)>> {
         let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
 
         self.sequencer_rpc_url_list
@@ -134,7 +137,7 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_leader_rpc_url(&self, rollup_block_height: u64) -> Option<String> {
+    pub fn get_leader_rpc_url(&self, rollup_block_height: u64) -> Option<(String, String)> {
         let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
 
         self.sequencer_rpc_url_list
