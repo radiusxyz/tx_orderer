@@ -67,10 +67,7 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
 }
 
 pub fn is_multiple_of_two(transaction_hash_list: &VecDeque<[u8; 32]>) -> bool {
-    match transaction_hash_list.len() % 2 {
-        0 => true,
-        _ => false,
-    }
+    matches!(transaction_hash_list.len() % 2, 0)
 }
 
 // Function to construct Merkle root from a list of transaction hashes (leaves)
@@ -91,7 +88,7 @@ pub fn get_merkle_root(transaction_hash_list: Vec<RawTransactionHash>) -> BlockC
                 // Safe to unwrap() because the length of the leaves is guaranteed to be greater
                 // than 1.
                 let last = leaves.back().unwrap();
-                leaves.push_back(last.clone());
+                leaves.push_back(*last);
                 leaves = merkle_proof(&mut leaves);
             }
         }
@@ -383,8 +380,8 @@ async fn fetch_missing_transaction(
     let others = cluster
         .get_others_rpc_url_list()
         .into_iter()
-        .filter_map(|rpc_url| rpc_url)
-        .map(|(_, cluster_rpc_url)| cluster_rpc_url)
+        .flatten()
+        .map(|(external_rpc_url, _)| external_rpc_url)
         .collect();
 
     let parameter = GetEncryptedTransactionWithOrderCommitment {

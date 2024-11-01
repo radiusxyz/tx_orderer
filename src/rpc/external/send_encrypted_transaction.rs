@@ -192,7 +192,7 @@ pub fn sync_encrypted_transaction(
         let follower_list: Vec<String> = cluster
             .get_follower_rpc_url_list(rollup_block_height)
             .into_iter()
-            .filter_map(|rpc_url| rpc_url)
+            .flatten()
             .map(|(_, cluster_rpc_url)| cluster_rpc_url)
             .collect();
 

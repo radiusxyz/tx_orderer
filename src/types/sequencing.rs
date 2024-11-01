@@ -14,11 +14,11 @@ pub enum Platform {
     Local,
 }
 
-impl Into<ChainType> for Platform {
-    fn into(self) -> ChainType {
-        match self {
-            Self::Ethereum => ChainType::Ethereum,
-            Self::Local => ChainType::Ethereum,
+impl From<Platform> for ChainType {
+    fn from(value: Platform) -> Self {
+        match value {
+            Platform::Ethereum => ChainType::Ethereum,
+            Platform::Local => ChainType::Ethereum,
         }
     }
 }

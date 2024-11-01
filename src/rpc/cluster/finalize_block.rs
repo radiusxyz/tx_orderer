@@ -139,7 +139,7 @@ impl FinalizeBlock {
             let follower_list: Vec<String> = cluster
                 .get_others_rpc_url_list()
                 .into_iter()
-                .filter_map(|rpc_url| rpc_url)
+                .flatten()
                 .map(|(_, cluster_rpc_url)| cluster_rpc_url)
                 .collect();
             rpc_client
