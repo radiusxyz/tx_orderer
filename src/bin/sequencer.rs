@@ -374,23 +374,9 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
             external::GetRawTransactionList::handler,
         )?
         .register_rpc_method(
-            cluster::FinalizeBlock::METHOD_NAME,
-            cluster::FinalizeBlock::handler,
-        )?
-        .register_rpc_method(
             internal::debug::GetRollup::METHOD_NAME,
             internal::debug::GetRollup::handler,
         )?
-        // cluster
-        .register_rpc_method(
-            cluster::SyncEncryptedTransaction::METHOD_NAME,
-            cluster::SyncEncryptedTransaction::handler,
-        )?
-        .register_rpc_method(
-            cluster::SyncRawTransaction::METHOD_NAME,
-            cluster::SyncRawTransaction::handler,
-        )?
-        .register_rpc_method(cluster::SyncBlock::METHOD_NAME, cluster::SyncBlock::handler)?
         .register_rpc_method(external::GetBlock::METHOD_NAME, external::GetBlock::handler)?
         .init(external_rpc_url.clone())
         .await?;
