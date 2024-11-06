@@ -3,7 +3,7 @@
 :warning: Under Construction
 > This crate is actively being developed. Breaking changes will occur until mainnet when we will start [Semantic Versioning](https://semver.org/).
 
-Sequencing module for [Radius Block Building Solution]() written in Rust programming language.
+Sequencing module for [Radius Block Building Solution](https://github.com/radiusxyz/radius-docs-bbs/blob/main/docs/radius_block_building_solution.md) written in Rust programming language.
 
 Sequencer plays a core role in our block-building solution. Working in cluster with leader-based approach brings the following benefits over consensus-based approach:
 
@@ -28,7 +28,7 @@ If a user receives the order-commitment before a specified time ***t*** has elap
 As rollup executors requests for a block. The leader sequencer builds a block made of decrypted transactions. In order to prove that transactions are properly ordered, the leader submits a block commitment on Validation Contract and followers, upon receiving the submission event, respond to the same contract with boolean response whether the block made by the leader is valid.
 
 ## Contributing
-We appreciate your contributions to our project. To get involved, refer to the [Contributing guide](https://github.com/radiusxyz/radius-docs-bbs/blob/main/contributing_guide.md).
+We appreciate your contributions to our project. To get involved, refer to the [Contributing guide](https://github.com/radiusxyz/radius-docs-bbs/blob/main/docs/contributing_guide.md).
 
 ## Getting Help
-Our developers are willing to answer your questions. If you are first and bewildered, refer to the [Getting Help](https://github.com/radiusxyz/radius-docs-bbs/blob/main/getting_help.md) page.
+Our developers are willing to answer your questions. If you are first and bewildered, refer to the [Getting Help](https://github.com/radiusxyz/radius-docs-bbs/blob/main/docs/getting_help.md) page.
