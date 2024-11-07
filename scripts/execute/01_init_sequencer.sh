@@ -6,7 +6,7 @@ rm -rf $DATA_PATH
 
 echo "Initialize sequencer" 
 
-$SEQUENCER_BIN_PATH init --path $DATA_PATH
+$BIN_PATH init --path $DATA_PATH
 
 sed -i.temp "s|0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80|$SEQUENCER_PRIVATE_KEY|g" $PRIVATE_KEY_PATH
 
