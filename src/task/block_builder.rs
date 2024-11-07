@@ -5,13 +5,10 @@ use std::{
 
 use radius_sdk::json_rpc::client::{Id, RpcClient, RpcClientError};
 use sha3::{Digest, Keccak256};
-use skde::delay_encryption::{decrypt, SecretKey, SkdeParams};
+use skde::delay_encryption::{decrypt, SkdeParams};
 
 use crate::{
-    client::{
-        liveness::distributed_key_generation::{DistributedKeyGenerationClient, PublicKey},
-        validation,
-    },
+    client::{liveness::distributed_key_generation::DistributedKeyGenerationClient, validation},
     error::Error,
     rpc::external::GetEncryptedTransactionWithOrderCommitment,
     state::AppState,
@@ -134,7 +131,7 @@ pub fn block_builder_skde(
         let mut transaction_hash_list =
             Vec::<RawTransactionHash>::with_capacity(transaction_count as usize);
 
-        let mut decryption_keys: HashMap<u64, SecretKey> = HashMap::new();
+        let mut decryption_keys: HashMap<u64, String> = HashMap::new();
 
         if transaction_count > 0 {
             // 1. Iterate over transactions for a given rollup ID and the block height.
@@ -297,7 +294,7 @@ pub fn block_builder_skde(
 async fn decrypt_skde_transaction(
     skde_encrypted_transaction: &SkdeEncryptedTransaction,
     distributed_key_generation_client: DistributedKeyGenerationClient,
-    decryption_keys: &mut HashMap<u64, SecretKey>,
+    decryption_keys: &mut HashMap<u64, String>,
     skde_params: &SkdeParams,
 ) -> Result<(RawTransaction, PlainData), Error> {
     let decryption_key_id = skde_encrypted_transaction.key_id();
@@ -311,12 +308,8 @@ async fn decrypt_skde_transaction(
             .get_decryption_key(skde_encrypted_transaction.key_id())
             .await?;
 
-        let decryption_key = SecretKey {
-            sk: get_decryption_key_response.decryption_key.sk,
-        };
-
-        e.insert(decryption_key.clone());
-        decryption_key
+        e.insert(get_decryption_key_response.decryption_key.sk.clone());
+        get_decryption_key_response.decryption_key.sk
     } else {
         decryption_keys.get(&decryption_key_id).unwrap().clone()
     };
@@ -378,8 +371,8 @@ async fn fetch_missing_transaction(
 }
 
 #[test]
-fn works() {
-    let transaction_hash_list = vec![
+fn block_commitment_test() {
+    let transactions: Vec<RawTransactionHash> = vec![
         "0x2ebbeb5ba2fb0742366d00121750a978d3b72fbec340750fee872a5763ff46f7",
         "0x5194ead3df889a15f3d33e47bcc128114dbb9dcd1147f2de8a8ffba6a815f248",
         "0x183a7d361ca1625fa85289cbdf578effaa4376f038587b9ab574e3fe80e5edc5",
@@ -482,17 +475,26 @@ fn works() {
         "0x295841acb5d43fdd1e51ad6e0566365421b0c70835188e90cee069712a65c1cd",
     ]
     .into_iter()
-    .map(|hex_str| {
-        RawTransactionHash::from(const_hex::decode_to_array::<&str, 32>(hex_str).unwrap())
+    .map(|s| {
+        let a: [u8; 32] = const_hex::decode_to_array(s.to_owned()).unwrap();
+
+        RawTransactionHash::from(a)
     })
-    .collect::<Vec<RawTransactionHash>>();
+    .collect();
 
-    let block_commitment = get_merkle_root(transaction_hash_list);
+    // 07150219efa697cc997c7d7c800f9a264e521ecab11dacff3f5e87d206dec829
+    // 07150219efa697cc997c7d7c800f9a264e521ecab11dacff3f5e87d206dec829
 
-    let merkle_root =
-        BlockCommitment::from("0x5d68e1af5c97e158bf9eb63489d05ae7da229e264607323c5ec51a927fb90fe1");
+    println!("transactions: {:?}", transactions.len());
+    let merkle_root = BlockCommitment(
+        "0x5d68e1af5c97e158bf9eb63489d05ae7da229e264607323c5ec51a927fb90fe1".to_string(),
+    );
 
-    println!("block_commitment: {:?}", block_commitment);
+    // d5fc380f6dad38ed00f79e2c2264d3e0a46adf2e47599116bf201a684c43af7f
+    // 209f0f184ac3b6a0edcbbb2f89e08d99103d9808dd591ac9653daa150949cb7e
+    let block_commitment = get_merkle_root(transactions);
+
+    println!("block_commitment111: {:?}", block_commitment);
     println!("merkle_root: {:?}", merkle_root);
     assert_eq!(block_commitment, merkle_root);
 }

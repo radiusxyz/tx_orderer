@@ -12,12 +12,11 @@ chrono = "0.4.38"
 clap = { version = "4.4.7", features = ["derive"] }
 const-hex = "1.12"
 ethers-core = "2.0"
-pvde = { git = "https://github.com/radiusxyz/pvde", rev="0abc447e775a52ecc5695cf070086fcad9cdaebb"}
 radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "8707315fcf739daec2e8536cb4ca3ecfe9e87981", features = ["full"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 sha3 = "0.10"
-skde = { git = "https://github.com/radiusxyz/skde", rev="3549a4da49053394d3f1aef58ddd2ab416585bbb"}
+skde = { git = "https://github.com/radiusxyz/skde", rev="13f18a4a6846795bb0ca20c4cd5ad494b7b6444f"}
 tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.13"
 tracing = "0.1.37"
