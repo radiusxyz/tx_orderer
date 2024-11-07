@@ -8,7 +8,10 @@ use sha3::{Digest, Keccak256};
 use skde::delay_encryption::{decrypt, SecretKey, SkdeParams};
 
 use crate::{
-    client::{liveness::distributed_key_generation::DistributedKeyGenerationClient, validation},
+    client::{
+        liveness::distributed_key_generation::{DistributedKeyGenerationClient, PublicKey},
+        validation,
+    },
     error::Error,
     rpc::external::GetEncryptedTransactionWithOrderCommitment,
     state::AppState,
@@ -302,15 +305,14 @@ async fn decrypt_skde_transaction(
     let decryption_key = if let std::collections::hash_map::Entry::Vacant(e) =
         decryption_keys.entry(decryption_key_id)
     {
-        println!("key_id: {:?}", skde_encrypted_transaction.key_id());
+        tracing::info!("key_id: {:?}", skde_encrypted_transaction.key_id());
+
+        let get_decryption_key_response = distributed_key_generation_client
+            .get_decryption_key(skde_encrypted_transaction.key_id())
+            .await?;
 
         let decryption_key = SecretKey {
-            sk: distributed_key_generation_client
-                .get_decryption_key(skde_encrypted_transaction.key_id())
-                .await
-                .unwrap()
-                .decryption_key
-                .sk,
+            sk: get_decryption_key_response.decryption_key.sk,
         };
 
         e.insert(decryption_key.clone());
@@ -353,8 +355,7 @@ async fn fetch_missing_transaction(
     let others = cluster
         .get_others_rpc_url_list()
         .into_iter()
-        .flatten()
-        .map(|(external_rpc_url, _)| external_rpc_url)
+        .map(|sequencer_rpc_info| sequencer_rpc_info.external_rpc_url)
         .collect();
 
     let parameter = GetEncryptedTransactionWithOrderCommitment {

@@ -109,7 +109,7 @@ impl SendEncryptedTransaction {
             let leader_rpc_url = cluster
                 .get_leader_rpc_url(rollup_block_height)
                 .ok_or(Error::EmptyLeaderRpcUrl)?
-                .0;
+                .external_rpc_url;
             let rpc_client = RpcClient::new()?;
             let response = rpc_client
                 .request(
@@ -162,8 +162,7 @@ pub fn sync_encrypted_transaction(
         let follower_list: Vec<String> = cluster
             .get_follower_rpc_url_list(rollup_block_height)
             .into_iter()
-            .flatten()
-            .map(|(_, cluster_rpc_url)| cluster_rpc_url)
+            .map(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url)
             .collect();
 
         if !follower_list.is_empty() {

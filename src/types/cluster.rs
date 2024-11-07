@@ -1,7 +1,7 @@
 use std::collections::btree_set::{self, BTreeSet};
 
 use super::prelude::*;
-use crate::error::Error;
+use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
@@ -24,7 +24,7 @@ impl ClusterIdList {
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
-    sequencer_rpc_url_list: Vec<(String, Option<(String, String)>)>,
+    sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
     rollup_id_list: Vec<String>,
     my_index: usize,
     block_margin: u64,
@@ -32,7 +32,7 @@ pub struct Cluster {
 
 impl Cluster {
     pub fn new(
-        sequencer_rpc_url_list: Vec<(String, Option<(String, String)>)>,
+        sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
         rollup_id_list: Vec<String>,
         my_index: usize,
         block_margin: u64,
@@ -86,7 +86,7 @@ impl Cluster {
         self.my_index
     }
 
-    pub fn sequencer_list(&self) -> &Vec<(String, Option<(String, String)>)> {
+    pub fn sequencer_list(&self) -> &Vec<SequencerRpcInfo> {
         &self.sequencer_rpc_url_list
     }
 
@@ -104,13 +104,13 @@ impl Cluster {
         leader_index == self.my_index
     }
 
-    pub fn get_others_rpc_url_list(&self) -> Vec<Option<(String, String)>> {
+    pub fn get_others_rpc_url_list(&self) -> Vec<SequencerRpcInfo> {
         self.sequencer_rpc_url_list
             .iter()
             .enumerate()
-            .filter_map(|(index, (_address, rpc_url))| {
+            .filter_map(|(index, sequencer_rpc_info)| {
                 if index != self.my_index {
-                    Some(rpc_url.clone())
+                    Some(sequencer_rpc_info.clone())
                 } else {
                     None
                 }
@@ -118,31 +118,26 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_follower_rpc_url_list(
-        &self,
-        rollup_block_height: u64,
-    ) -> Vec<Option<(String, String)>> {
+    pub fn get_follower_rpc_url_list(&self, rollup_block_height: u64) -> Vec<SequencerRpcInfo> {
         let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
 
         self.sequencer_rpc_url_list
             .iter()
             .enumerate()
-            .filter_map(|(index, (_address, rpc_url))| {
+            .filter_map(|(index, sequencer_rpc_info)| {
                 if index == leader_index {
                     None
                 } else {
-                    Some(rpc_url.clone())
+                    Some(sequencer_rpc_info.clone())
                 }
             })
             .collect()
     }
 
-    pub fn get_leader_rpc_url(&self, rollup_block_height: u64) -> Option<(String, String)> {
+    pub fn get_leader_rpc_url(&self, rollup_block_height: u64) -> Option<SequencerRpcInfo> {
         let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
 
-        self.sequencer_rpc_url_list
-            .get(leader_index)
-            .and_then(|(_address, rpc_url)| rpc_url.clone())
+        self.sequencer_rpc_url_list.get(leader_index).cloned()
     }
 
     pub fn get_leader_address(&self, rollup_block_height: u64) -> Result<String, Error> {
@@ -150,7 +145,7 @@ impl Cluster {
 
         self.sequencer_rpc_url_list
             .get(leader_index)
-            .map(|(address, _rpc_url)| address.clone())
+            .map(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url.clone())
             .ok_or(Error::EmptyLeaderRpcUrl)
     }
 }

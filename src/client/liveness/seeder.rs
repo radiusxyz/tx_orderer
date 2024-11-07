@@ -61,7 +61,7 @@ impl SeederClient {
 
         tracing::info!(
             "Register sequencer to seeder - address: {:?}, rpc_url: {:?}",
-            signer.address(),
+            signer.address().as_hex_string(),
             (external_rpc_url, cluster_rpc_url),
         );
 
@@ -176,8 +176,15 @@ impl GetSequencerRpcUrlList {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SequencerRpcInfo {
+    pub address: String,
+    pub external_rpc_url: String,
+    pub cluster_rpc_url: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencerRpcUrlListResponse {
-    pub sequencer_rpc_url_list: Vec<(String, Option<(String, String)>)>,
+    pub sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
 }
 
 #[derive(Debug)]
