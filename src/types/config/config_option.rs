@@ -5,20 +5,11 @@ use serde::{Deserialize, Serialize};
 
 use super::ConfigPath;
 
-const DEFAULT_EXTERNAL_RPC_URL: &str = "http://192.168.12.170:3000"; // external rpc url
-const DEFAULT_INTERNAL_RPC_URL: &str = "http://192.168.12.170:4000";
-const DEFAULT_CLUSTER_RPC_URL: &str = "http://192.168.12.170:5000";
-
-const DEFAULT_SEEDER_RPC_URL: &str = "http://192.168.12.170:6000";
-
-const DEFAULT_DISTRIBUTED_KEY_GENERATION_RPC_URL: &str = "http://192.168.12.170:7100";
-
-// const DEFAULT_CLUSTER_TYPE: &str = "local";
-
-// const DEFAULT_LIVENESS_PROVIDER_RPC_URL: &str = "http://192.168.12.170:8545";
-// const DEFAULT_LIVENESS_PROVIDER_WEBSOCKET_URL: &str =
-// "ws://192.168.12.170:8545"; const DEFAULT_LIVENESS_CONTRACT_ADDRESS: &str =
-// "";
+const DEFAULT_EXTERNAL_RPC_URL: &str = "http://127.0.0.1:3000";
+const DEFAULT_INTERNAL_RPC_URL: &str = "http://127.0.0.1:4000";
+const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:5000";
+const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:6000";
+const DEFAULT_DISTRIBUTED_KEY_GENERATION_RPC_URL: &str = "http://127.0.0.1:7100";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 pub struct ConfigOption {

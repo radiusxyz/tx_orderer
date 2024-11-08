@@ -9,7 +9,7 @@ pub enum Error {
     InitializeLivenessClient(Box<dyn std::error::Error>),
     InitializeValidationClient(Box<dyn std::error::Error>),
     CachedKvStore(radius_sdk::kvstore::CachedKvStoreError),
-    KeyManagementSystem(
+    DistributedKeyGeneration(
         crate::client::liveness::distributed_key_generation::DistributedKeyGenerationClientError,
     ),
     Seeder(crate::client::liveness::seeder::SeederError),
@@ -54,7 +54,7 @@ impl From<crate::client::liveness::distributed_key_generation::DistributedKeyGen
     fn from(
         value: crate::client::liveness::distributed_key_generation::DistributedKeyGenerationClientError,
     ) -> Self {
-        Self::KeyManagementSystem(value)
+        Self::DistributedKeyGeneration(value)
     }
 }
 

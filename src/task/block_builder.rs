@@ -230,11 +230,6 @@ pub fn block_builder_skde(
             let rollup = Rollup::get(&rollup_id).unwrap();
             let rollup_validation_info = rollup.validation_info();
 
-            println!("jaemin - platform: {:?}", rollup_validation_info.platform());
-            println!(
-                "jaemin - validation_service_provider: {:?}",
-                rollup_validation_info.validation_service_provider()
-            );
             let validation_info = ValidationInfoPayload::get(
                 rollup_validation_info.platform(),
                 rollup_validation_info.validation_service_provider(),
