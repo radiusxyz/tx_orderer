@@ -97,6 +97,24 @@ impl Config {
         &self.seeder_rpc_url
     }
 
+    pub fn external_port(&self) -> Result<String, ConfigError> {
+        let (_, port) = self
+            .external_rpc_url()
+            .split_once(':')
+            .ok_or(ConfigError::InvalidExternalPort)?;
+
+        Ok(port.to_owned())
+    }
+
+    pub fn cluster_port(&self) -> Result<String, ConfigError> {
+        let (_, port) = self
+            .cluster_rpc_url()
+            .split_once(':')
+            .ok_or(ConfigError::InvalidClusterPort)?;
+
+        Ok(port.to_owned())
+    }
+
     pub fn distributed_key_generation_rpc_url(&self) -> &String {
         &self.distributed_key_generation_rpc_url
     }
@@ -118,6 +136,8 @@ pub enum ConfigError {
     CreateConfigDirectory(std::io::Error),
     CreateConfigFile(std::io::Error),
     CreatePrivateKeyFile(std::io::Error),
+    InvalidExternalPort,
+    InvalidClusterPort,
 }
 
 impl std::fmt::Display for ConfigError {
