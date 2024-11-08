@@ -98,21 +98,21 @@ impl Config {
     }
 
     pub fn external_port(&self) -> Result<String, ConfigError> {
-        let (_, port) = self
+        Ok(self
             .external_rpc_url()
-            .split_once(':')
-            .ok_or(ConfigError::InvalidExternalPort)?;
-
-        Ok(port.to_owned())
+            .split(':')
+            .last()
+            .ok_or(ConfigError::InvalidExternalPort)?
+            .to_string())
     }
 
     pub fn cluster_port(&self) -> Result<String, ConfigError> {
-        let (_, port) = self
+        Ok(self
             .cluster_rpc_url()
-            .split_once(':')
-            .ok_or(ConfigError::InvalidClusterPort)?;
-
-        Ok(port.to_owned())
+            .split(':')
+            .last()
+            .ok_or(ConfigError::InvalidClusterPort)?
+            .to_string())
     }
 
     pub fn distributed_key_generation_rpc_url(&self) -> &String {
