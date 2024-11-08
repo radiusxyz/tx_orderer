@@ -12,6 +12,7 @@ chrono = "0.4.38"
 clap = { version = "4.4.7", features = ["derive"] }
 const-hex = "1.12"
 ethers-core = "2.0"
+local-ip-address = "0.6"
 radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "8707315fcf739daec2e8536cb4ca3ecfe9e87981", features = ["full"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"

@@ -13,6 +13,7 @@ pub enum Error {
         crate::client::liveness::distributed_key_generation::DistributedKeyGenerationClientError,
     ),
     Seeder(crate::client::liveness::seeder::SeederError),
+    LocalIpAddress(local_ip_address::Error),
 
     EmptyLeaderRpcUrl,
     ExecutorAddressNotFound,
