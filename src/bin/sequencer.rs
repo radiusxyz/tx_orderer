@@ -277,11 +277,7 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
 }
 
 async fn initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> {
-    let cluster_rpc_url = format!(
-        "{}:{}",
-        local_ip_address()?,
-        context.config().cluster_port()?
-    );
+    let cluster_rpc_url = anywhere(&context.config().cluster_port()?);
 
     let sequencer_rpc_server = RpcServer::new(context.clone())
         .register_rpc_method(
@@ -317,11 +313,7 @@ async fn initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> 
 }
 
 async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle<()>, Error> {
-    let external_rpc_url = format!(
-        "{}:{}",
-        local_ip_address()?,
-        context.config().external_port()?
-    );
+    let external_rpc_url = anywhere(&context.config().external_port()?);
 
     // Initialize the external RPC server.
     let external_rpc_server = RpcServer::new(context.clone())
@@ -373,8 +365,6 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
     Ok(server_handle)
 }
 
-pub fn local_ip_address() -> Result<String, Error> {
-    Ok(local_ip_address::local_ip()
-        .map_err(Error::LocalIpAddress)?
-        .to_string())
+pub fn anywhere(port: &str) -> String {
+    format!("0.0.0.0:{}", port)
 }
