@@ -196,10 +196,10 @@ pub enum RollupType {
     PolygonCdk,
 }
 
-impl Into<ChainType> for RollupType {
-    fn into(self) -> ChainType {
-        match self {
-            Self::PolygonCdk => ChainType::Ethereum,
+impl From<RollupType> for ChainType {
+    fn from(value: RollupType) -> Self {
+        match value {
+            RollupType::PolygonCdk => ChainType::Ethereum,
         }
     }
 }
@@ -210,7 +210,7 @@ impl FromStr for RollupType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "polygon_cdk" | "PolygonCdk" => Ok(Self::PolygonCdk),
-            _ => Err(Error::NotSupportedRollupType),
+            _ => Err(Error::UnsupportedRollupType),
         }
     }
 }

@@ -120,7 +120,7 @@ async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
                 .respond_to_task(task, event.taskIndex, Bytes::from_iter(&[0_u8; 64]))
                 .await
                 .unwrap();
-            tracing::info!("[EigenLayer] respond_to_task: {}", transaction_hash);
+            tracing::info!("[EigenLayer] respond_to_task: {:?}", transaction_hash);
         }
     }
 }

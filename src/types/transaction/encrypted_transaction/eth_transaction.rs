@@ -37,7 +37,7 @@ impl EthTransactionData {
 
     pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {
         if self.plain_data.is_none() {
-            return Err(Error::NotExistPlainData);
+            return Err(Error::PlainDataDoesNotExist);
         }
 
         Ok(RollupTransaction::Eth(

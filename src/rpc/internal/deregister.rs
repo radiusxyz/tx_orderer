@@ -27,24 +27,13 @@ impl Deregister {
             Platform::Ethereum => {
                 let signing_key = context.config().signing_key();
                 let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
-                let address = signer.address();
 
                 seeder_client
                     .deregister_sequencer(
                         parameter.platform,
                         parameter.service_provider,
                         &parameter.cluster_id,
-                        address,
-                    )
-                    .await?;
-
-                seeder_client
-                    .register_sequencer(
-                        parameter.platform,
-                        parameter.service_provider,
-                        &parameter.cluster_id,
-                        address,
-                        context.config().external_rpc_url(),
+                        &signer,
                     )
                     .await?;
 

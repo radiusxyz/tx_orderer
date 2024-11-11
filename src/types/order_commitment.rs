@@ -51,7 +51,7 @@ impl FromStr for OrderCommitmentType {
         match s {
             "transaction_hash" | "TransactionHash" => Ok(Self::TransactionHash),
             "sign" | "Sign" => Ok(Self::Sign),
-            _ => Err(Error::NotSupportedOrderCommitmentType),
+            _ => Err(Error::UnsupportedOrderCommitmentType),
         }
     }
 }

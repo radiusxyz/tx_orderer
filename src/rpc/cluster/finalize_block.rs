@@ -59,7 +59,7 @@ impl FinalizeBlock {
                         parameter.message.executor_address == executor_address
                     })
             })
-            .ok_or(Error::NotFoundExecutorAddress)?;
+            .ok_or(Error::ExecutorAddressNotFound)?;
 
         let cluster = Cluster::get(
             rollup.platform(),
@@ -139,8 +139,9 @@ impl FinalizeBlock {
             let follower_list: Vec<String> = cluster
                 .get_others_rpc_url_list()
                 .into_iter()
-                .filter_map(|rpc_url| rpc_url)
+                .map(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url)
                 .collect();
+
             rpc_client
                 .multicast(follower_list, SyncBlock::METHOD_NAME, &parameter, Id::Null)
                 .await;

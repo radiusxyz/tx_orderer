@@ -211,8 +211,8 @@ impl RollupTransaction {
     pub fn to_raw_transaction(&self) -> Result<RawTransaction, Error> {
         match self {
             Self::Eth(transaction) => {
-                let raw_transaction_string =
-                    serde_json::to_string(transaction).map_err(Error::Deserialize)?;
+                let raw_transaction_string = serde_json::to_string(transaction)
+                    .map_err(Error::SerializeEthRawTransaction)?;
 
                 Ok(RawTransaction::Eth(EthRawTransaction::from(
                     raw_transaction_string,

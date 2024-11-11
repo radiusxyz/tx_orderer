@@ -101,6 +101,8 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
     if let Some(rollup) = rollup {
         let block = Block::get(rollup.rollup_id(), event.blockNumber.try_into().unwrap()).unwrap();
 
+        tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?} / taskCreatedBlock: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment, event.taskCreatedBlock);
+        
         if !block.is_leader {
             let transaction_hash = context
                 .publisher()
@@ -112,7 +114,7 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
                 )
                 .await
                 .unwrap();
-            tracing::info!("[Symbiotic] respond_to_task: {}", transaction_hash);
+            tracing::info!("[Symbiotic] respond_to_task: {:?}", transaction_hash);
         }
     }
 }
