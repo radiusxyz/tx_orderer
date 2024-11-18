@@ -101,6 +101,11 @@ async fn main() -> Result<(), Error> {
             let distributed_key_generation_client =
                 DistributedKeyGenerationClient::new(distributed_key_generation_rpc_url)?;
 
+            let skde_params = distributed_key_generation_client
+                .get_skde_params()
+                .await?
+                .skde_params;
+
             let signing_key = config.signing_key();
             let signers = CachedKvStore::default();
             let liveness_clients = CachedKvStore::default();
@@ -161,47 +166,48 @@ async fn main() -> Result<(), Error> {
             // Initialize validation clients
             let validation_info_list =
                 ValidationInfoList::get_or(ValidationInfoList::default).map_err(Error::Database)?;
-            for (platform, service_provider) in validation_info_list.iter() {
+            for (platform, validation_service_provider) in validation_info_list.iter() {
                 let validation_info_payload =
-                    ValidationInfoPayload::get(*platform, *service_provider)
+                    ValidationInfoPayload::get(*platform, *validation_service_provider)
                         .map_err(Error::Database)?;
 
                 match validation_info_payload {
                     ValidationInfoPayload::EigenLayer(validation_info) => {
                         let validation_client = validation::eigenlayer::ValidationClient::new(
                             *platform,
-                            *service_provider,
+                            *validation_service_provider,
                             validation_info,
                             signing_key,
                         )?;
                         validation_client.initialize_event_listener();
 
                         validation_clients
-                            .put(&(*platform, *service_provider), validation_client)
+                            .put(
+                                &(*platform, *validation_service_provider),
+                                validation_client,
+                            )
                             .await
                             .map_err(Error::CachedKvStore)?;
                     }
                     ValidationInfoPayload::Symbiotic(validation_info) => {
                         let validation_client = validation::symbiotic::ValidationClient::new(
                             *platform,
-                            *service_provider,
+                            *validation_service_provider,
                             validation_info,
                             signing_key,
                         )?;
                         validation_client.initialize_event_listener();
 
                         validation_clients
-                            .put(&(*platform, *service_provider), validation_client)
+                            .put(
+                                &(*platform, *validation_service_provider),
+                                validation_client,
+                            )
                             .await
                             .map_err(Error::CachedKvStore)?;
                     }
                 }
             }
-
-            let skde_params = distributed_key_generation_client
-                .get_skde_params()
-                .await?
-                .skde_params;
 
             // Initialize an application-wide state instance
             let app_state = AppState::new(
