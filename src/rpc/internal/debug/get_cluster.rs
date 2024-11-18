@@ -5,6 +5,7 @@ pub struct GetCluster {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
+    pub platform_block_height: Option<u64>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -31,7 +32,14 @@ impl GetCluster {
                         parameter.service_provider,
                     )
                     .await?;
-                let platform_block_height = liveness_client.publisher().get_block_number().await?;
+
+                let platform_block_height =
+                    if let Some(platform_block_height) = parameter.platform_block_height {
+                        platform_block_height
+                    } else {
+                        liveness_client.publisher().get_block_number().await?
+                    };
+
                 let cluster_info = Cluster::get(
                     parameter.platform,
                     parameter.service_provider,
