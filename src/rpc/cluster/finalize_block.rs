@@ -43,22 +43,11 @@ impl FinalizeBlock {
         // )?;
 
         // Check the executor address
-        context
-            .get_liveness_client::<LivenessClient>(rollup.platform(), rollup.service_provider())
-            .await?
-            .publisher()
-            .get_rollup_info_list(rollup.cluster_id(), parameter.message.platform_block_height)
-            .await?
+        let rollup = Rollup::get(&parameter.message.rollup_id)?;
+        rollup
+            .executor_address_list()
             .iter()
-            .find(|rollup_info| rollup_info.rollupId == parameter.message.rollup_id)
-            .and_then(|rollup_info| {
-                rollup_info
-                    .executorAddresses
-                    .iter()
-                    .find(|&executor_address| {
-                        parameter.message.executor_address == executor_address
-                    })
-            })
+            .find(|&executor_address| parameter.message.executor_address == *executor_address)
             .ok_or(Error::ExecutorAddressNotFound)?;
 
         let cluster = Cluster::get(
@@ -66,7 +55,37 @@ impl FinalizeBlock {
             rollup.service_provider(),
             rollup.cluster_id(),
             parameter.message.platform_block_height,
-        )?;
+        );
+
+        // TODO: update
+        if cluster.is_err() {
+            let liveness_client = context
+                .get_liveness_client::<LivenessClient>(rollup.platform(), rollup.service_provider())
+                .await?;
+
+            let platform_block_height = liveness_client
+                .publisher()
+                .get_block_number()
+                .await
+                .unwrap();
+
+            let block_margin: u64 = liveness_client
+                .publisher()
+                .get_block_margin()
+                .await
+                .unwrap()
+                .try_into()
+                .unwrap();
+
+            if platform_block_height - block_margin < parameter.message.platform_block_height {
+                return Err(Error::InvalidPlatformBlockHeight)?;
+            }
+
+            // TODO:
+            return Err(Error::ClusterNotFound)?;
+        }
+
+        let cluster = cluster?;
 
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
         let is_leader = cluster.is_leader(next_rollup_block_height);

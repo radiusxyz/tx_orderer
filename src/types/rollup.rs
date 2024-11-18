@@ -186,6 +186,14 @@ impl Rollup {
     pub fn validation_info(&self) -> &ValidationInfo {
         &self.validation_info
     }
+
+    pub fn executor_address_list(&self) -> &Vec<String> {
+        &self.executor_address_list
+    }
+
+    pub fn set_executor_address_list(&mut self, executor_address_list: Vec<String>) {
+        self.executor_address_list = executor_address_list;
+    }
 }
 
 pub type RollupIdList = Vec<String>;
