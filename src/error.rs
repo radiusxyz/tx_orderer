@@ -15,6 +15,8 @@ pub enum Error {
     Seeder(crate::client::liveness::seeder::SeederError),
 
     EmptyLeaderRpcUrl,
+    InvalidPlatformBlockHeight,
+    ClusterNotFound,
     ExecutorAddressNotFound,
     PlainDataDoesNotExist,
     UnsupportedEncryptedMempool,
