@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use clap::{Parser, Subcommand};
 use radius_sdk::{
     json_rpc::server::RpcServer,
@@ -101,11 +103,6 @@ async fn main() -> Result<(), Error> {
             let distributed_key_generation_client =
                 DistributedKeyGenerationClient::new(distributed_key_generation_rpc_url)?;
 
-            let skde_params = distributed_key_generation_client
-                .get_skde_params()
-                .await?
-                .skde_params;
-
             let signing_key = config.signing_key();
             let signers = CachedKvStore::default();
             let liveness_clients = CachedKvStore::default();
@@ -150,6 +147,149 @@ async fn main() -> Result<(), Error> {
                         )?;
 
                         liveness_client.initialize_event_listener();
+                        let current_block = liveness_client
+                            .publisher()
+                            .get_block_number()
+                            .await
+                            .unwrap();
+                        let block_margin: u64 = liveness_client
+                            .publisher()
+                            .get_block_margin()
+                            .await
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
+
+                        // Get the cluster ID list for a given liveness client.
+                        let cluster_id_list = ClusterIdList::get_or(
+                            liveness_client.platform(),
+                            liveness_client.service_provider(),
+                            ClusterIdList::default,
+                        )
+                        .unwrap();
+
+                        for platform_block_height in (current_block - block_margin)..current_block {
+                            for cluster_id in cluster_id_list.iter() {
+                                let mut my_index: Option<usize> = None;
+
+                                // Get the sequencer address list for the cluster ID.
+                                let sequencer_address_list: Vec<String> = liveness_client
+                                    .publisher()
+                                    .get_sequencer_list(cluster_id, platform_block_height)
+                                    .await
+                                    .unwrap()
+                                    .into_iter()
+                                    .enumerate()
+                                    .map(|(index, address)| {
+                                        if address == liveness_client.publisher().address() {
+                                            my_index = Some(index);
+                                        }
+
+                                        address.to_string()
+                                    })
+                                    .collect();
+
+                                // Get the rollup info list
+                                let rollup_info_list = liveness_client
+                                    .publisher()
+                                    .get_rollup_info_list(cluster_id, platform_block_height)
+                                    .await
+                                    .unwrap();
+
+                                let rollup_id_list = rollup_info_list
+                                    .iter()
+                                    .map(|rollup_info| rollup_info.rollupId.clone())
+                                    .collect();
+
+                                // Update the rollup info to database
+                                for rollup_info in rollup_info_list {
+                                    match Rollup::get_mut(&rollup_info.rollupId) {
+                                        Ok(mut rollup) => {
+                                            let new_executor_address_list = rollup_info
+                                                .executorAddresses
+                                                .into_iter()
+                                                .map(|address| address.to_string())
+                                                .collect::<Vec<String>>();
+                                            rollup.set_executor_address_list(
+                                                new_executor_address_list,
+                                            );
+                                            rollup.update().unwrap();
+                                        }
+                                        Err(error) => {
+                                            if error.is_none_type() {
+                                                let order_commitment_type =
+                                                    OrderCommitmentType::from_str(
+                                                        &rollup_info.orderCommitmentType,
+                                                    )
+                                                    .unwrap();
+                                                let rollup_type =
+                                                    RollupType::from_str(&rollup_info.rollupType)
+                                                        .unwrap();
+                                                let validation_info = ValidationInfo::new(
+                                                    Platform::from_str(
+                                                        &rollup_info.validationInfo.platform,
+                                                    )
+                                                    .unwrap(),
+                                                    ValidationServiceProvider::from_str(
+                                                        &rollup_info.validationInfo.serviceProvider,
+                                                    )
+                                                    .unwrap(),
+                                                );
+                                                let executor_address_list = rollup_info
+                                                    .executorAddresses
+                                                    .into_iter()
+                                                    .map(|address| address.to_string())
+                                                    .collect::<Vec<String>>();
+
+                                                let rollup = Rollup::new(
+                                                    rollup_info.rollupId.clone(),
+                                                    rollup_type,
+                                                    EncryptedTransactionType::Skde,
+                                                    rollup_info.owner.to_string(),
+                                                    validation_info,
+                                                    order_commitment_type,
+                                                    executor_address_list,
+                                                    cluster_id.to_owned(),
+                                                    liveness_client.platform(),
+                                                    liveness_client.service_provider(),
+                                                );
+
+                                                Rollup::put(&rollup, rollup.rollup_id()).unwrap();
+
+                                                // let rollup_metadata =
+                                                // RollupMetadata::default();
+                                                // RollupMetadataModel::put(rollup.rollup_id(),
+                                                // &rollup_metadata)
+                                                //     .unwrap();
+                                            }
+                                        }
+                                    }
+                                }
+
+                                let sequencer_rpc_url_list = liveness_client
+                                    .seeder()
+                                    .get_sequencer_rpc_url_list(sequencer_address_list.clone())
+                                    .await
+                                    .unwrap()
+                                    .sequencer_rpc_url_list;
+
+                                let cluster = Cluster::new(
+                                    sequencer_rpc_url_list,
+                                    rollup_id_list,
+                                    my_index.unwrap(),
+                                    block_margin.try_into().unwrap(),
+                                );
+
+                                Cluster::put_and_update_with_margin(
+                                    &cluster,
+                                    liveness_client.platform(),
+                                    liveness_client.service_provider(),
+                                    cluster_id,
+                                    platform_block_height,
+                                )
+                                .unwrap();
+                            }
+                        }
 
                         liveness_clients
                             .put(&(*platform, *service_provider), liveness_client)
@@ -166,48 +306,47 @@ async fn main() -> Result<(), Error> {
             // Initialize validation clients
             let validation_info_list =
                 ValidationInfoList::get_or(ValidationInfoList::default).map_err(Error::Database)?;
-            for (platform, validation_service_provider) in validation_info_list.iter() {
+            for (platform, service_provider) in validation_info_list.iter() {
                 let validation_info_payload =
-                    ValidationInfoPayload::get(*platform, *validation_service_provider)
+                    ValidationInfoPayload::get(*platform, *service_provider)
                         .map_err(Error::Database)?;
 
                 match validation_info_payload {
                     ValidationInfoPayload::EigenLayer(validation_info) => {
                         let validation_client = validation::eigenlayer::ValidationClient::new(
                             *platform,
-                            *validation_service_provider,
+                            *service_provider,
                             validation_info,
                             signing_key,
                         )?;
                         validation_client.initialize_event_listener();
 
                         validation_clients
-                            .put(
-                                &(*platform, *validation_service_provider),
-                                validation_client,
-                            )
+                            .put(&(*platform, *service_provider), validation_client)
                             .await
                             .map_err(Error::CachedKvStore)?;
                     }
                     ValidationInfoPayload::Symbiotic(validation_info) => {
                         let validation_client = validation::symbiotic::ValidationClient::new(
                             *platform,
-                            *validation_service_provider,
+                            *service_provider,
                             validation_info,
                             signing_key,
                         )?;
                         validation_client.initialize_event_listener();
 
                         validation_clients
-                            .put(
-                                &(*platform, *validation_service_provider),
-                                validation_client,
-                            )
+                            .put(&(*platform, *service_provider), validation_client)
                             .await
                             .map_err(Error::CachedKvStore)?;
                     }
                 }
             }
+
+            let skde_params = distributed_key_generation_client
+                .get_skde_params()
+                .await?
+                .skde_params;
 
             // Initialize an application-wide state instance
             let app_state = AppState::new(
