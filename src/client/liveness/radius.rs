@@ -84,28 +84,37 @@ impl LivenessClient {
     }
 
     pub fn initialize_event_listener(&self) {
-        let liveness_client = self.clone();
-
         tracing::info!(
             "Initialize the liveness event listener for {:?}, {:?}..",
-            liveness_client.platform(),
-            liveness_client.service_provider()
+            self.platform(),
+            self.service_provider()
         );
 
-        tokio::spawn(async move {
-            loop {
-                liveness_client
-                    .subscriber()
-                    .initialize_event_handler(callback, liveness_client.clone())
-                    .await
-                    .unwrap();
+        tokio::spawn({
+            let liveness_client = self.clone();
 
-                tracing::warn!(
-                    "Reconnecting the liveness event listener for {:?}, {:?}..",
-                    liveness_client.platform(),
-                    liveness_client.service_provider()
-                );
-                sleep(Duration::from_secs(5)).await;
+            async move {
+                loop {
+                    tokio::spawn({
+                        let liveness_client = liveness_client.clone();
+
+                        async move {
+                            liveness_client
+                                .clone()
+                                .subscriber()
+                                .initialize_event_handler(callback, liveness_client.clone())
+                                .await
+                                .unwrap();
+                        }
+                    });
+
+                    tracing::warn!(
+                        "Reconnecting the liveness event listener for {:?}, {:?}..",
+                        liveness_client.platform(),
+                        liveness_client.service_provider()
+                    );
+                    sleep(Duration::from_secs(5)).await;
+                }
             }
         });
     }
