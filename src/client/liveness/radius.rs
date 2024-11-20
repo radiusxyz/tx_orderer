@@ -84,28 +84,37 @@ impl LivenessClient {
     }
 
     pub fn initialize_event_listener(&self) {
-        let liveness_client = self.clone();
-
         tracing::info!(
-            "Initialize the liveness event listener for {:?}, {:?}..",
-            liveness_client.platform(),
-            liveness_client.service_provider()
+            "Initializing the liveness event listener for {:?}, {:?}..",
+            self.platform(),
+            self.service_provider()
         );
 
-        tokio::spawn(async move {
-            loop {
+        let handle = tokio::spawn({
+            let liveness_client = self.clone();
+
+            async move {
                 liveness_client
                     .subscriber()
                     .initialize_event_handler(callback, liveness_client.clone())
                     .await
                     .unwrap();
+            }
+        });
 
-                tracing::warn!(
-                    "Reconnecting the liveness event listener for {:?}, {:?}..",
-                    liveness_client.platform(),
-                    liveness_client.service_provider()
-                );
-                sleep(Duration::from_secs(5)).await;
+        tokio::spawn({
+            let liveness_client = self.clone();
+
+            async move {
+                if handle.await.is_err() {
+                    tracing::warn!(
+                        "Reconnecting the liveness event listener for {:?}, {:?}..",
+                        liveness_client.platform(),
+                        liveness_client.service_provider()
+                    );
+                    sleep(Duration::from_secs(5)).await;
+                    liveness_client.initialize_event_listener();
+                }
             }
         });
     }
@@ -165,8 +174,16 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
 
                 // Update the rollup info to database
                 for rollup_info in rollup_info_list {
-                    match Rollup::get(&rollup_info.rollupId) {
-                        Ok(_) => {}
+                    match Rollup::get_mut(&rollup_info.rollupId) {
+                        Ok(mut rollup) => {
+                            let new_executor_address_list = rollup_info
+                                .executorAddresses
+                                .into_iter()
+                                .map(|address| address.to_string())
+                                .collect::<Vec<String>>();
+                            rollup.set_executor_address_list(new_executor_address_list);
+                            rollup.update().unwrap();
+                        }
                         Err(error) => {
                             if error.is_none_type() {
                                 let order_commitment_type =

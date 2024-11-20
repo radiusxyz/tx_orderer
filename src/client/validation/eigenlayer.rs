@@ -84,18 +84,33 @@ impl ValidationClient {
     }
 
     pub fn initialize_event_listener(&self) {
-        let validation_client = self.clone();
+        tracing::info!(
+            "Initializing EigenLayer validation event listener for {:?}, {:?}..",
+            self.platform(),
+            self.validation_service_provider()
+        );
 
-        tokio::spawn(async move {
-            loop {
+        let handle = tokio::spawn({
+            let validation_client = self.clone();
+
+            async move {
                 validation_client
                     .subscriber()
                     .initialize_event_handler(callback, validation_client.clone())
                     .await
                     .unwrap();
+            }
+        });
 
-                tracing::warn!("Reconnecting EigenLayer validation event listener..");
-                sleep(Duration::from_secs(5)).await;
+        tokio::spawn({
+            let validation_client = self.clone();
+
+            async move {
+                if handle.await.is_err() {
+                    tracing::warn!("Reconnecting EigenLayer validation event listener..");
+                    sleep(Duration::from_secs(5)).await;
+                    validation_client.initialize_event_listener();
+                }
             }
         });
     }
