@@ -288,35 +288,31 @@ pub fn block_builder_skde(
 
                         println!("stompesi - validation_client - done");
 
-                        tokio::spawn(async move {
-                            loop {
-                                let block_commitment = block_commitment.clone();
-
-                                match validation_client
-                                    .publisher()
-                                    .register_block_commitment(
-                                        rollup.cluster_id(),
-                                        rollup.rollup_id(),
-                                        rollup_block_height,
-                                        block_commitment.as_bytes().unwrap(),
-                                    )
-                                    .await
-                                    .map_err(|error| error.to_string())
-                                {
-                                    Ok(transaction_hash) => {
-                                        println!(
-                                            "kanet - register_block_commitment - {:?}",
-                                            transaction_hash
-                                        );
-                                        break;
-                                    }
-                                    Err(error) => {
-                                        tracing::warn!("{:?}", error);
-                                        sleep(Duration::from_secs(2)).await;
-                                    }
+                        for _ in 0..10 {
+                            match validation_client
+                                .publisher()
+                                .register_block_commitment(
+                                    rollup.cluster_id(),
+                                    rollup.rollup_id(),
+                                    rollup_block_height,
+                                    block_commitment.clone().as_bytes().unwrap(),
+                                )
+                                .await
+                                .map_err(|error| error.to_string())
+                            {
+                                Ok(transaction_hash) => {
+                                    println!(
+                                        "kanet - register_block_commitment - {:?}",
+                                        transaction_hash
+                                    );
+                                    break;
+                                }
+                                Err(error) => {
+                                    tracing::warn!("{:?}", error);
+                                    sleep(Duration::from_secs(2)).await;
                                 }
                             }
-                        });
+                        }
                     }
                 }
             }
