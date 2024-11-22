@@ -9,6 +9,7 @@ use radius_sdk::{
 };
 use sha3::{Digest, Keccak256};
 use skde::delay_encryption::{decrypt, SkdeParams};
+use tokio::time::{sleep, Duration};
 
 use crate::{
     client::{liveness::distributed_key_generation::DistributedKeyGenerationClient, validation},
@@ -17,7 +18,6 @@ use crate::{
     state::AppState,
     types::*,
 };
-
 /// Block-builder task implements block-building mechanism for different
 /// transaction types in the following order:
 ///
@@ -267,7 +267,7 @@ pub fn block_builder_skde(
                             .await
                             .unwrap();
                     }
-                    ValidationInfoPayload::Symbiotic(validation_info) => {
+                    ValidationInfoPayload::Symbiotic(_) => {
                         println!(
                             "stompesi - register_block_commitment start - rollup: {:?}",
                             rollup
@@ -288,44 +288,35 @@ pub fn block_builder_skde(
 
                         println!("stompesi - validation_client - done");
 
-                        match validation_client
-                            .publisher()
-                            .register_block_commitment(
-                                rollup.cluster_id(),
-                                rollup.rollup_id(),
-                                rollup_block_height,
-                                block_commitment.as_bytes().unwrap(),
-                            )
-                            .await
-                        {
-                            Ok(_) => {
-                                println!("stompesi - register_block_commitment - success");
-                            }
-                            Err(error) => {
-                                println!(
-                                    "stompesi - register_block_commitment - error: {:?}",
-                                    error
-                                );
+                        tokio::spawn(async move {
+                            loop {
+                                let block_commitment = block_commitment.clone();
 
-                                let signing_key = context.config().signing_key();
-
-                                let validation_client =
-                                    validation::symbiotic::ValidationClient::new(
-                                        rollup_validation_info.platform(),
-                                        rollup_validation_info.validation_service_provider(),
-                                        validation_info,
-                                        signing_key,
+                                match validation_client
+                                    .publisher()
+                                    .register_block_commitment(
+                                        rollup.cluster_id(),
+                                        rollup.rollup_id(),
+                                        rollup_block_height,
+                                        block_commitment.as_bytes().unwrap(),
                                     )
-                                    .unwrap();
-                                validation_client.initialize_event_listener();
-
-                                context.add_validation_client(
-                                    rollup_validation_info.platform(),
-                                    rollup_validation_info.validation_service_provider(),
-                                    validation_client,
-                                );
+                                    .await
+                                    .map_err(|error| error.to_string())
+                                {
+                                    Ok(transaction_hash) => {
+                                        println!(
+                                            "kanet - register_block_commitment - {:?}",
+                                            transaction_hash
+                                        );
+                                        break;
+                                    }
+                                    Err(error) => {
+                                        tracing::warn!("{:?}", error);
+                                        sleep(Duration::from_secs(2)).await;
+                                    }
+                                }
                             }
-                        }
+                        });
                     }
                 }
             }
