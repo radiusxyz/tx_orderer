@@ -49,7 +49,6 @@ impl FinalizeBlock {
         // TODO: remove this comment /
         // In a rush to test, I couldn't add the executor address to the smart contract,
         // so I temporarily commented it out.
-
         // rollup
         //     .executor_address_list()
         //     .iter()
