@@ -37,6 +37,7 @@ impl SendRawTransaction {
         let cluster_id = rollup_metadata.cluster_id();
         let platform_block_height = rollup_metadata.platform_block_height();
         let rollup_block_height = rollup_metadata.rollup_block_height();
+        let leader_address = rollup_metadata.leader_address().clone();
 
         let cluster = Cluster::get(
             platform,
@@ -45,7 +46,10 @@ impl SendRawTransaction {
             platform_block_height,
         )?;
 
-        if rollup_metadata.is_leader() {
+        let signer = context.get_signer(rollup.platform()).await?;
+        let sequencer_address = signer.address().clone();
+
+        if sequencer_address == rollup_metadata.leader_address() {
             let transaction_order = rollup_metadata.transaction_order();
             rollup_metadata.increase_transaction_order();
             let previous_order_hash = rollup_metadata
@@ -93,6 +97,7 @@ impl SendRawTransaction {
             // Sync Transaction
             sync_raw_transaction(
                 cluster,
+                leader_address,
                 context.clone(),
                 rollup.platform(),
                 parameter.rollup_id.clone(),
@@ -112,8 +117,7 @@ impl SendRawTransaction {
 
             Ok(order_commitment)
         } else {
-            let leader_external_rpc_url =
-                cluster.get_leader_external_rpc_url(rollup_block_height)?;
+            let leader_external_rpc_url = cluster.get_leader_external_rpc_url(&leader_address)?;
 
             let rpc_client = RpcClient::new()?;
             let response = rpc_client
@@ -133,6 +137,7 @@ impl SendRawTransaction {
 #[allow(clippy::too_many_arguments)]
 pub fn sync_raw_transaction(
     cluster: Cluster,
+    leader_address: Address,
     context: Arc<AppState>,
     platform: Platform,
     rollup_id: String,
@@ -143,8 +148,9 @@ pub fn sync_raw_transaction(
     order_hash: OrderHash,
 ) {
     tokio::spawn(async move {
-        let follower_rpc_url_list: Vec<String> =
-            cluster.get_follower_cluster_rpc_url_list(rollup_block_height);
+        let follower_rpc_url_list: Vec<String> = cluster
+            .get_follower_cluster_rpc_url_list(&leader_address)
+            .unwrap();
 
         if !follower_rpc_url_list.is_empty() {
             let message = SyncRawTransactionMessage {

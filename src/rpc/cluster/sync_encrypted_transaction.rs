@@ -34,19 +34,13 @@ impl SyncEncryptedTransaction {
 
         let rollup = Rollup::get(&parameter.message.rollup_id)?;
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.message.rollup_id)?;
-        let cluster = Cluster::get(
-            rollup.platform(),
-            rollup.service_provider(),
-            rollup.cluster_id(),
-            rollup_metadata.platform_block_height(),
-        )?;
 
         // Verify the leader signature
-        let leader_address = cluster.get_leader_address(parameter.message.rollup_block_height)?;
+        let leader_address = rollup_metadata.leader_address();
         parameter.signature.verify_message(
             rollup.platform().into(),
             &parameter.message,
-            Address::from_str(rollup.platform().into(), &leader_address)?,
+            &leader_address,
         )?;
 
         // Check the rollup block height

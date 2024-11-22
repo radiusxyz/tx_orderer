@@ -42,34 +42,27 @@ impl SyncBlock {
         )?;
 
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
-        let signer = context.get_signer(rollup.platform()).await.unwrap();
-        let sequencer_address = signer.address().clone();
-        let is_leader = sequencer_address == parameter.message.next_block_creator_address;
-
-        // let is_leader = cluster.is_leader(next_rollup_block_height);
 
         match RollupMetadata::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
                 rollup_metadata.set_rollup_block_height(next_rollup_block_height);
                 rollup_metadata.set_order_hash(OrderHash::default());
                 rollup_metadata.set_transaction_order(0);
-                rollup_metadata.set_is_leader(is_leader);
+                rollup_metadata.set_leader_address(&parameter.message.next_block_creator_address);
                 rollup_metadata.set_platform_block_height(parameter.message.platform_block_height);
 
                 rollup_metadata.update()?;
             }
             Err(error) => {
                 if error.is_none_type() {
-                    let mut rollup_metadata = RollupMetadata::default();
-
-                    rollup_metadata.set_cluster_id(rollup.cluster_id());
-
-                    rollup_metadata.set_rollup_block_height(next_rollup_block_height);
-                    rollup_metadata.set_order_hash(OrderHash::default());
-                    rollup_metadata.set_transaction_order(0);
-                    rollup_metadata.set_is_leader(is_leader);
-                    rollup_metadata
-                        .set_platform_block_height(parameter.message.platform_block_height);
+                    let rollup_metadata = RollupMetadata::new(
+                        rollup.cluster_id().clone(),
+                        next_rollup_block_height,
+                        OrderHash::default(),
+                        0,
+                        parameter.message.platform_block_height,
+                        parameter.message.next_block_creator_address,
+                    );
 
                     RollupMetadata::put(&rollup_metadata, &parameter.message.rollup_id)?;
                 } else {

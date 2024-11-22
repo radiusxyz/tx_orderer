@@ -46,12 +46,16 @@ impl SendEncryptedTransaction {
             platform_block_height,
         )?;
 
-        if rollup_metadata.is_leader() {
+        let signer = context.get_signer(rollup.platform()).await?;
+        let sequencer_address = signer.address().clone();
+
+        if sequencer_address == rollup_metadata.leader_address() {
             let transaction_order = rollup_metadata.transaction_order();
             rollup_metadata.increase_transaction_order();
             let previous_order_hash = rollup_metadata
                 .update_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
             let current_order_hash = rollup_metadata.order_hash();
+            let leader_address = rollup_metadata.leader_address().clone();
             rollup_metadata.update()?;
 
             let order_commitment = issue_order_commitment(
@@ -94,6 +98,7 @@ impl SendEncryptedTransaction {
             // Sync Transaction
             sync_encrypted_transaction(
                 cluster,
+                leader_address,
                 context.clone(),
                 rollup.platform(),
                 parameter.rollup_id.clone(),
@@ -107,7 +112,7 @@ impl SendEncryptedTransaction {
             Ok(order_commitment)
         } else {
             let leader_external_rpc_url =
-                cluster.get_leader_external_rpc_url(rollup_block_height)?;
+                cluster.get_leader_external_rpc_url(rollup_metadata.leader_address())?;
 
             let rpc_client = RpcClient::new()?;
             let response = rpc_client
@@ -148,6 +153,7 @@ fn check_supported_encrypted_transaction(
 #[allow(clippy::too_many_arguments)]
 pub fn sync_encrypted_transaction(
     cluster: Cluster,
+    leader_address: Address,
     context: Arc<AppState>,
     platform: Platform,
     rollup_id: String,
@@ -158,8 +164,9 @@ pub fn sync_encrypted_transaction(
     order_hash: OrderHash,
 ) {
     tokio::spawn(async move {
-        let follower_cluster_rpc_url_list: Vec<String> =
-            cluster.get_follower_cluster_rpc_url_list(rollup_block_height);
+        let follower_cluster_rpc_url_list: Vec<String> = cluster
+            .get_follower_cluster_rpc_url_list(&leader_address)
+            .unwrap();
 
         if !follower_cluster_rpc_url_list.is_empty() {
             let message = SyncEncryptedTransactionMessage {

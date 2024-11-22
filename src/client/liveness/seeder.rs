@@ -177,7 +177,7 @@ impl GetSequencerRpcUrlList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SequencerRpcInfo {
-    pub address: String,
+    pub address: Address,
     pub external_rpc_url: Option<String>,
     pub cluster_rpc_url: Option<String>,
 }

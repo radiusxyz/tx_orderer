@@ -5,20 +5,38 @@ use radius_sdk::signature::ChainType;
 use super::prelude::*;
 use crate::error::Error;
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(rollup_id: &str))]
 pub struct RollupMetadata {
     rollup_block_height: u64,
     transaction_order: u64,
     order_hash: OrderHash,
 
-    is_leader: bool,
     platform_block_height: u64,
 
     cluster_id: String,
+    leader_address: Address,
 }
 
 impl RollupMetadata {
+    pub fn new(
+        cluster_id: String,
+        rollup_block_height: u64,
+        order_hash: OrderHash,
+        transaction_order: u64,
+        platform_block_height: u64,
+        leader_address: Address,
+    ) -> Self {
+        Self {
+            rollup_block_height,
+            transaction_order,
+            order_hash,
+            platform_block_height,
+            cluster_id,
+            leader_address,
+        }
+    }
+
     pub fn rollup_block_height(&self) -> u64 {
         self.rollup_block_height
     }
@@ -31,10 +49,6 @@ impl RollupMetadata {
         self.order_hash.clone()
     }
 
-    pub fn is_leader(&self) -> bool {
-        self.is_leader
-    }
-
     pub fn cluster_id(&self) -> &String {
         &self.cluster_id
     }
@@ -42,11 +56,15 @@ impl RollupMetadata {
     pub fn platform_block_height(&self) -> u64 {
         self.platform_block_height
     }
+
+    pub fn leader_address(&self) -> &Address {
+        &self.leader_address
+    }
 }
 
 impl RollupMetadata {
-    pub fn set_is_leader(&mut self, is_leader: bool) {
-        self.is_leader = is_leader;
+    pub fn set_leader_address(&mut self, leader_address: &Address) {
+        self.leader_address.clone_from(leader_address);
     }
 
     pub fn set_cluster_id(&mut self, cluster_id: &String) {

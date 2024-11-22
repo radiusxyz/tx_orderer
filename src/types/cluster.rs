@@ -98,12 +98,6 @@ impl Cluster {
         self.block_margin
     }
 
-    // pub fn is_leader(&self, rollup_block_height: u64) -> bool {
-    //     let leader_index = self.get_leader_index(rollup_block_height);
-
-    //     leader_index == self.my_index
-    // }
-
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
         self.sequencer_rpc_url_list
             .iter()
@@ -140,10 +134,14 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_follower_cluster_rpc_url_list(&self, rollup_block_height: u64) -> Vec<String> {
-        let leader_index = self.get_leader_index(rollup_block_height);
+    pub fn get_follower_cluster_rpc_url_list(
+        &self,
+        leader_address: &Address,
+    ) -> Result<Vec<String>, Error> {
+        let leader_index = self.get_leader_index(leader_address)?;
 
-        self.sequencer_rpc_url_list
+        Ok(self
+            .sequencer_rpc_url_list
             .iter()
             .enumerate()
             .filter_map(|(index, sequencer_rpc_info)| {
@@ -156,11 +154,11 @@ impl Cluster {
                     Some(sequencer_rpc_info.cluster_rpc_url.to_owned().unwrap())
                 }
             })
-            .collect()
+            .collect())
     }
 
-    pub fn get_leader_cluster_rpc_url(&self, rollup_block_height: u64) -> Result<String, Error> {
-        let leader_index = self.get_leader_index(rollup_block_height);
+    pub fn get_leader_cluster_rpc_url(&self, leader_address: &Address) -> Result<String, Error> {
+        let leader_index = self.get_leader_index(leader_address)?;
 
         self.sequencer_rpc_url_list
             .get(leader_index)
@@ -168,8 +166,8 @@ impl Cluster {
             .ok_or(Error::EmptyLeaderClusterRpcUrl)
     }
 
-    pub fn get_leader_external_rpc_url(&self, rollup_block_height: u64) -> Result<String, Error> {
-        let leader_index = self.get_leader_index(rollup_block_height);
+    pub fn get_leader_external_rpc_url(&self, leader_address: &Address) -> Result<String, Error> {
+        let leader_index = self.get_leader_index(leader_address)?;
 
         self.sequencer_rpc_url_list
             .get(leader_index)
@@ -177,17 +175,11 @@ impl Cluster {
             .ok_or(Error::EmptyLeaderClusterRpcUrl)
     }
 
-    pub fn get_leader_address(&self, rollup_block_height: u64) -> Result<String, Error> {
-        let leader_index = self.get_leader_index(rollup_block_height);
-
+    pub fn get_leader_index(&self, leader_address: &Address) -> Result<usize, Error> {
         self.sequencer_rpc_url_list
-            .get(leader_index)
-            .map(|sequencer_rpc_info| sequencer_rpc_info.address.clone())
+            .iter()
+            .position(|sequencer_rpc_info| sequencer_rpc_info.address == leader_address)
             .ok_or(Error::EmptyLeader)
-    }
-
-    pub fn get_leader_index(&self, rollup_block_height: u64) -> usize {
-        rollup_block_height as usize % self.sequencer_rpc_url_list.len()
     }
 }
 
