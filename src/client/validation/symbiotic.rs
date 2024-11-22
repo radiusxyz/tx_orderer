@@ -119,17 +119,28 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
         tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?} / taskCreatedBlock: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment, event.taskCreatedBlock);
 
         if block.block_creator_address != context.publisher().address() {
-            let transaction_hash = context
-                .publisher()
-                .respond_to_task(
-                    rollup.cluster_id().to_owned(),
-                    rollup.rollup_id().to_owned(),
-                    event.referenceTaskIndex.try_into().unwrap(),
-                    true,
-                )
-                .await
-                .unwrap();
-            tracing::info!("[Symbiotic] respond_to_task: {:?}", transaction_hash);
+            for _ in 0..10 {
+                match context
+                    .publisher()
+                    .respond_to_task(
+                        rollup.cluster_id().to_owned(),
+                        rollup.rollup_id().to_owned(),
+                        event.referenceTaskIndex.try_into().unwrap(),
+                        true,
+                    )
+                    .await
+                    .map_err(|error| error.to_string())
+                {
+                    Ok(transaction_hash) => {
+                        tracing::info!("[Symbiotic] respond_to_task: {:?}", transaction_hash);
+                        break;
+                    }
+                    Err(error) => {
+                        tracing::warn!("[Symbiotic] respond_to_task: {:?}", error);
+                        sleep(Duration::from_secs(1)).await;
+                    }
+                }
+            }
         }
     }
 }
