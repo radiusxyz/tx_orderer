@@ -137,7 +137,7 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
                     }
                     Err(error) => {
                         tracing::warn!("[Symbiotic] respond_to_task: {:?}", error);
-                        sleep(Duration::from_secs(2)).await;
+                        sleep(Duration::from_secs(1)).await;
                     }
                 }
             }
