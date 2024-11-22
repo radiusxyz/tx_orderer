@@ -10,6 +10,7 @@ use crate::{
 pub struct FinalizeBlockMessage {
     pub executor_address: Address,
     pub block_creator_address: Address,
+    pub next_block_creator_address: Address,
     pub rollup_id: String,
     pub platform_block_height: u64,
     pub rollup_block_height: u64,
@@ -93,7 +94,11 @@ impl FinalizeBlock {
         let cluster = cluster?;
 
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
-        let is_leader = cluster.is_leader(next_rollup_block_height);
+        let signer = context.get_signer(rollup.platform()).await.unwrap();
+        let sequencer_address = signer.address().clone();
+        let is_leader = sequencer_address == parameter.message.next_block_creator_address;
+
+        // let is_leader = cluster.is_leader(next_rollup_block_height);
 
         let mut transaction_count = 0;
         match RollupMetadata::get_mut(&parameter.message.rollup_id) {

@@ -42,7 +42,11 @@ impl SyncBlock {
         )?;
 
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
-        let is_leader = cluster.is_leader(next_rollup_block_height);
+        let signer = context.get_signer(rollup.platform()).await.unwrap();
+        let sequencer_address = signer.address().clone();
+        let is_leader = sequencer_address == parameter.message.next_block_creator_address;
+
+        // let is_leader = cluster.is_leader(next_rollup_block_height);
 
         match RollupMetadata::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
