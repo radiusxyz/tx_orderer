@@ -2,3 +2,6 @@
 
 /data
 /scripts/sequencer
+
+/scripts/execute/env.sh
+/scripts/rpc-call/env.sh
