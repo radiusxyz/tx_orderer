@@ -20,7 +20,7 @@ pub const DEFAULT_SIGNING_KEY: &str =
 pub struct Config {
     path: PathBuf,
 
-    sequencer_rpc_url: String,
+    external_rpc_url: String,
     internal_rpc_url: String,
     cluster_rpc_url: String,
 
@@ -61,7 +61,7 @@ impl Config {
 
         Ok(Config {
             path: config_path,
-            sequencer_rpc_url: merged_config_option.external_rpc_url.unwrap(),
+            external_rpc_url: merged_config_option.external_rpc_url.unwrap(),
             internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
             cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
             seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
@@ -82,7 +82,7 @@ impl Config {
     }
 
     pub fn external_rpc_url(&self) -> &String {
-        &self.sequencer_rpc_url
+        &self.external_rpc_url
     }
 
     pub fn internal_rpc_url(&self) -> &String {
