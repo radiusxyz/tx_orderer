@@ -1,6 +1,9 @@
 use std::{str::FromStr, sync::Arc};
 
-use radius_sdk::liveness_radius::{publisher::Publisher, subscriber::Subscriber, types::Events};
+use radius_sdk::{
+    liveness_radius::{publisher::Publisher, subscriber::Subscriber, types::Events},
+    signature::Address,
+};
 use tokio::time::{sleep, Duration};
 
 use crate::{client::liveness::seeder::SeederClient, error::Error, types::*};
@@ -179,8 +182,17 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                             let new_executor_address_list = rollup_info
                                 .executorAddresses
                                 .into_iter()
-                                .map(|address| address.to_string())
-                                .collect::<Vec<String>>();
+                                .map(|address| {
+                                    Address::from_str(
+                                        Platform::from_str(&rollup_info.validationInfo.platform)
+                                            .unwrap()
+                                            .into(),
+                                        &address.to_string(),
+                                    )
+                                    .unwrap()
+                                })
+                                .collect::<Vec<Address>>();
+
                             rollup.set_executor_address_list(new_executor_address_list);
                             rollup.update().unwrap();
                         }
@@ -202,8 +214,18 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                                 let executor_address_list = rollup_info
                                     .executorAddresses
                                     .into_iter()
-                                    .map(|address| address.to_string())
-                                    .collect::<Vec<String>>();
+                                    .map(|address| {
+                                        Address::from_str(
+                                            Platform::from_str(
+                                                &rollup_info.validationInfo.platform,
+                                            )
+                                            .unwrap()
+                                            .into(),
+                                            &address.to_string(),
+                                        )
+                                        .unwrap()
+                                    })
+                                    .collect::<Vec<Address>>();
 
                                 let rollup = Rollup::new(
                                     rollup_info.rollupId.clone(),

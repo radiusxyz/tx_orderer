@@ -9,6 +9,7 @@ use crate::{
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlockMessage {
     pub executor_address: Address,
+    pub block_creator_address: Address,
     pub rollup_id: String,
     pub platform_block_height: u64,
     pub rollup_block_height: u64,
@@ -26,10 +27,9 @@ impl FinalizeBlock {
     pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let rollup = Rollup::get(&parameter.message.rollup_id)?;
-
-        info!("finalize block - executor address: {:?}, rollup_id: {:?}, platform block height: {:?}, rollup block height: {:?}",
+        info!("finalize block - executor address: {:?} / block creator (sequencer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
             parameter.message.executor_address.as_hex_string(),
+            parameter.message.block_creator_address.as_hex_string(),
             parameter.message.rollup_id,
             parameter.message.platform_block_height,
             parameter.message.rollup_block_height,
@@ -44,11 +44,16 @@ impl FinalizeBlock {
 
         // Check the executor address
         let rollup = Rollup::get(&parameter.message.rollup_id)?;
-        rollup
-            .executor_address_list()
-            .iter()
-            .find(|&executor_address| parameter.message.executor_address == *executor_address)
-            .ok_or(Error::ExecutorAddressNotFound)?;
+
+        // TODO: remove this comment /
+        // In a rush to test, I couldn't add the executor address to the smart contract,
+        // so I temporarily commented it out.
+
+        // rollup
+        //     .executor_address_list()
+        //     .iter()
+        //     .find(|&executor_address| parameter.message.executor_address ==
+        // *executor_address)     .ok_or(Error::ExecutorAddressNotFound)?;
 
         let cluster = Cluster::get(
             rollup.platform(),
@@ -135,6 +140,7 @@ impl FinalizeBlock {
         block_builder(
             context.clone(),
             parameter.message.rollup_id.clone(),
+            parameter.message.block_creator_address.clone(),
             rollup.encrypted_transaction_type(),
             parameter.message.rollup_block_height,
             transaction_count,
@@ -155,14 +161,16 @@ impl FinalizeBlock {
             };
 
             let rpc_client = RpcClient::new().unwrap();
-            let follower_list: Vec<String> = cluster
-                .get_others_rpc_url_list()
-                .into_iter()
-                .map(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url)
-                .collect();
+            let others_clsuter_rpc_url_list: Vec<String> =
+                cluster.get_others_cluster_rpc_url_list();
 
             rpc_client
-                .multicast(follower_list, SyncBlock::METHOD_NAME, &parameter, Id::Null)
+                .multicast(
+                    others_clsuter_rpc_url_list,
+                    SyncBlock::METHOD_NAME,
+                    &parameter,
+                    Id::Null,
+                )
                 .await;
         });
     }

@@ -13,7 +13,7 @@ pub struct GetBlockResponse {
     pub encrypted_transaction_list: Vec<Option<EncryptedTransaction>>,
     pub raw_transaction_list: Vec<RawTransaction>,
 
-    pub proposer_address: String,
+    pub block_creator_address: String,
     pub signature: String,
 
     pub block_commitment: String,
@@ -34,7 +34,7 @@ impl GetBlock {
             block_height: block.block_height,
             encrypted_transaction_list: block.encrypted_transaction_list,
             raw_transaction_list: block.raw_transaction_list,
-            proposer_address: block.proposer_address.as_hex_string(),
+            block_creator_address: block.block_creator_address.as_hex_string(),
             signature: block.signature.as_hex_string(),
             block_commitment: block.block_commitment.as_hex_string(),
         })

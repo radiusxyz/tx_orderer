@@ -3,7 +3,10 @@ use std::{
     sync::Arc,
 };
 
-use radius_sdk::json_rpc::client::{Id, RpcClient, RpcClientError};
+use radius_sdk::{
+    json_rpc::client::{Id, RpcClient, RpcClientError},
+    signature::Address,
+};
 use sha3::{Digest, Keccak256};
 use skde::delay_encryption::{decrypt, SkdeParams};
 
@@ -27,6 +30,7 @@ use crate::{
 pub fn block_builder(
     context: Arc<AppState>,
     rollup_id: String,
+    block_creator_address: Address,
     rollup_encrypted_transaction_type: EncryptedTransactionType,
     rollup_block_height: u64,
     transaction_count: u64,
@@ -45,6 +49,7 @@ pub fn block_builder(
             block_builder_skde(
                 context,
                 rollup_id,
+                block_creator_address,
                 rollup_block_height,
                 transaction_count,
                 cluster,
@@ -117,6 +122,7 @@ pub fn merkle_proof(leaves: &mut VecDeque<[u8; 32]>) -> VecDeque<[u8; 32]> {
 pub fn block_builder_skde(
     context: Arc<AppState>,
     rollup_id: String,
+    block_creator_address: Address,
     rollup_block_height: u64,
     transaction_count: u64,
     cluster: Cluster,
@@ -208,8 +214,10 @@ pub fn block_builder_skde(
             }
         }
 
-        let signer = context.get_signer(Platform::Ethereum).await.unwrap();
-        let address = signer.address().clone();
+        let rollup = Rollup::get(&rollup_id).unwrap();
+
+        let signer = context.get_signer(rollup.platform()).await.unwrap();
+        let sequencer_address = signer.address().clone();
         let signature = signer.sign_message("").unwrap(); // TODO: set the message.
 
         let block_commitment = get_merkle_root(transaction_hash_list);
@@ -218,15 +226,14 @@ pub fn block_builder_skde(
             rollup_block_height,
             encrypted_transaction_list.clone(),
             raw_transaction_list.clone(),
-            address,
             signature,
             block_commitment.clone(),
-            cluster.is_leader(rollup_block_height),
+            block_creator_address.clone(),
         );
 
         Block::put(&block, &rollup_id, rollup_block_height).unwrap();
 
-        if cluster.is_leader(rollup_block_height) {
+        if sequencer_address == block_creator_address {
             let rollup = Rollup::get(&rollup_id).unwrap();
             let rollup_validation_info = rollup.validation_info();
 
@@ -260,7 +267,17 @@ pub fn block_builder_skde(
                             .await
                             .unwrap();
                     }
-                    ValidationInfoPayload::Symbiotic(_) => {
+                    ValidationInfoPayload::Symbiotic(validation_info) => {
+                        println!(
+                            "stompesi - register_block_commitment start - rollup: {:?}",
+                            rollup
+                        );
+
+                        println!(
+                            "stompesi - rollup_validation_info: {:?}",
+                            rollup_validation_info
+                        );
+
                         let validation_client: validation::symbiotic::ValidationClient = context
                             .get_validation_client(
                                 rollup_validation_info.platform(),
@@ -269,7 +286,9 @@ pub fn block_builder_skde(
                             .await
                             .unwrap();
 
-                        validation_client
+                        println!("stompesi - validation_client - done");
+
+                        match validation_client
                             .publisher()
                             .register_block_commitment(
                                 rollup.cluster_id(),
@@ -278,7 +297,35 @@ pub fn block_builder_skde(
                                 block_commitment.as_bytes().unwrap(),
                             )
                             .await
-                            .unwrap();
+                        {
+                            Ok(_) => {
+                                println!("stompesi - register_block_commitment - success");
+                            }
+                            Err(error) => {
+                                println!(
+                                    "stompesi - register_block_commitment - error: {:?}",
+                                    error
+                                );
+
+                                let signing_key = context.config().signing_key();
+
+                                let validation_client =
+                                    validation::symbiotic::ValidationClient::new(
+                                        rollup_validation_info.platform(),
+                                        rollup_validation_info.validation_service_provider(),
+                                        validation_info,
+                                        signing_key,
+                                    )
+                                    .unwrap();
+                                validation_client.initialize_event_listener();
+
+                                context.add_validation_client(
+                                    rollup_validation_info.platform(),
+                                    rollup_validation_info.validation_service_provider(),
+                                    validation_client,
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -340,11 +387,7 @@ async fn fetch_missing_transaction(
     transaction_order: u64,
     cluster: Cluster,
 ) -> Result<EncryptedTransaction, RpcClientError> {
-    let others = cluster
-        .get_others_rpc_url_list()
-        .into_iter()
-        .map(|sequencer_rpc_info| sequencer_rpc_info.external_rpc_url)
-        .collect();
+    let others_external_rpc_url_list = cluster.get_others_external_rpc_url_list();
 
     let parameter = GetEncryptedTransactionWithOrderCommitment {
         rollup_id,
@@ -355,7 +398,7 @@ async fn fetch_missing_transaction(
     let rpc_client = RpcClient::new()?;
     let rpc_response = rpc_client
         .fetch(
-            others,
+            others_external_rpc_url_list,
             GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
             &parameter,
             Id::Null,

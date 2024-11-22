@@ -121,7 +121,7 @@ async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
     if let Some(rollup) = rollup {
         let block = Block::get(rollup.rollup_id(), event.task.blockNumber).unwrap();
 
-        if !block.is_leader {
+        if block.block_creator_address != context.publisher().address() {
             let task = Avs::Task {
                 commitment: Bytes::from_iter(&[0u8; 32]),
                 blockNumber: 0,

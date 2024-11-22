@@ -116,7 +116,7 @@ pub struct Rollup {
     owner: String,
     validation_info: ValidationInfo,
     order_commitment_type: OrderCommitmentType,
-    executor_address_list: Vec<String>,
+    executor_address_list: Vec<Address>,
 
     cluster_id: String,
 
@@ -134,7 +134,7 @@ impl Rollup {
         owner: String,
         validation_info: ValidationInfo,
         order_commitment_type: OrderCommitmentType,
-        executor_address_list: Vec<String>,
+        executor_address_list: Vec<Address>,
 
         cluster_id: String,
 
@@ -187,11 +187,11 @@ impl Rollup {
         &self.validation_info
     }
 
-    pub fn executor_address_list(&self) -> &Vec<String> {
+    pub fn executor_address_list(&self) -> &Vec<Address> {
         &self.executor_address_list
     }
 
-    pub fn set_executor_address_list(&mut self, executor_address_list: Vec<String>) {
+    pub fn set_executor_address_list(&mut self, executor_address_list: Vec<Address>) {
         self.executor_address_list = executor_address_list;
     }
 }

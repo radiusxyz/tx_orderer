@@ -118,7 +118,7 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
 
         tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?} / taskCreatedBlock: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment, event.taskCreatedBlock);
 
-        if !block.is_leader {
+        if block.block_creator_address != context.publisher().address() {
             let transaction_hash = context
                 .publisher()
                 .respond_to_task(

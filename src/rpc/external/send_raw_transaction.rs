@@ -112,14 +112,13 @@ impl SendRawTransaction {
 
             Ok(order_commitment)
         } else {
-            let leader_rpc_url = cluster
-                .get_leader_rpc_url(rollup_block_height)
-                .ok_or(Error::EmptyLeaderRpcUrl)?
-                .external_rpc_url;
+            let leader_external_rpc_url =
+                cluster.get_leader_external_rpc_url(rollup_block_height)?;
+
             let rpc_client = RpcClient::new()?;
             let response = rpc_client
                 .request(
-                    leader_rpc_url,
+                    leader_external_rpc_url,
                     SendRawTransaction::METHOD_NAME,
                     &parameter,
                     Id::Null,
@@ -144,13 +143,10 @@ pub fn sync_raw_transaction(
     order_hash: OrderHash,
 ) {
     tokio::spawn(async move {
-        let follower_list: Vec<String> = cluster
-            .get_follower_rpc_url_list(rollup_block_height)
-            .into_iter()
-            .map(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url)
-            .collect();
+        let follower_rpc_url_list: Vec<String> =
+            cluster.get_follower_cluster_rpc_url_list(rollup_block_height);
 
-        if !follower_list.is_empty() {
+        if !follower_rpc_url_list.is_empty() {
             let message = SyncRawTransactionMessage {
                 rollup_id,
                 rollup_block_height,
@@ -170,7 +166,7 @@ pub fn sync_raw_transaction(
             let rpc_client = RpcClient::new().unwrap();
             rpc_client
                 .multicast(
-                    follower_list,
+                    follower_rpc_url_list,
                     SyncRawTransaction::METHOD_NAME,
                     &rpc_parameter,
                     Id::Null,

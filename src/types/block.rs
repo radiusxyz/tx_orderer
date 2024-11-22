@@ -65,11 +65,10 @@ pub struct Block {
     pub encrypted_transaction_list: Vec<Option<EncryptedTransaction>>,
     pub raw_transaction_list: Vec<RawTransaction>,
 
-    pub proposer_address: Address,
     pub signature: Signature,
 
     pub block_commitment: BlockCommitment,
-    pub is_leader: bool,
+    pub block_creator_address: Address,
 }
 
 impl Block {
@@ -77,19 +76,17 @@ impl Block {
         block_height: u64,
         encrypted_transaction_list: Vec<Option<EncryptedTransaction>>,
         raw_transaction_list: Vec<RawTransaction>,
-        proposer_address: Address,
         signature: Signature,
         block_commitment: BlockCommitment,
-        is_leader: bool,
+        block_creator_address: Address,
     ) -> Self {
         Self {
             block_height,
             encrypted_transaction_list,
             raw_transaction_list,
-            proposer_address,
             signature,
             block_commitment,
-            is_leader,
+            block_creator_address,
         }
     }
 

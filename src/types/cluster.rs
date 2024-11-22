@@ -99,18 +99,22 @@ impl Cluster {
     }
 
     pub fn is_leader(&self, rollup_block_height: u64) -> bool {
-        let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
+        let leader_index = self.get_leader_index(rollup_block_height);
 
         leader_index == self.my_index
     }
 
-    pub fn get_others_rpc_url_list(&self) -> Vec<SequencerRpcInfo> {
+    pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
         self.sequencer_rpc_url_list
             .iter()
             .enumerate()
             .filter_map(|(index, sequencer_rpc_info)| {
                 if index != self.my_index {
-                    Some(sequencer_rpc_info.clone())
+                    if sequencer_rpc_info.cluster_rpc_url.is_none() {
+                        return None;
+                    }
+
+                    Some(sequencer_rpc_info.cluster_rpc_url.to_owned().unwrap())
                 } else {
                     None
                 }
@@ -118,8 +122,26 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_follower_rpc_url_list(&self, rollup_block_height: u64) -> Vec<SequencerRpcInfo> {
-        let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
+    pub fn get_others_external_rpc_url_list(&self) -> Vec<String> {
+        self.sequencer_rpc_url_list
+            .iter()
+            .enumerate()
+            .filter_map(|(index, sequencer_rpc_info)| {
+                if index != self.my_index {
+                    if sequencer_rpc_info.external_rpc_url.is_none() {
+                        return None;
+                    }
+
+                    Some(sequencer_rpc_info.external_rpc_url.to_owned().unwrap())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn get_follower_cluster_rpc_url_list(&self, rollup_block_height: u64) -> Vec<String> {
+        let leader_index = self.get_leader_index(rollup_block_height);
 
         self.sequencer_rpc_url_list
             .iter()
@@ -128,25 +150,44 @@ impl Cluster {
                 if index == leader_index {
                     None
                 } else {
-                    Some(sequencer_rpc_info.clone())
+                    if sequencer_rpc_info.cluster_rpc_url.is_none() {
+                        return None;
+                    }
+                    Some(sequencer_rpc_info.cluster_rpc_url.to_owned().unwrap())
                 }
             })
             .collect()
     }
 
-    pub fn get_leader_rpc_url(&self, rollup_block_height: u64) -> Option<SequencerRpcInfo> {
-        let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
-
-        self.sequencer_rpc_url_list.get(leader_index).cloned()
-    }
-
-    pub fn get_leader_address(&self, rollup_block_height: u64) -> Result<String, Error> {
-        let leader_index = rollup_block_height as usize % self.sequencer_rpc_url_list.len();
+    pub fn get_leader_cluster_rpc_url(&self, rollup_block_height: u64) -> Result<String, Error> {
+        let leader_index = self.get_leader_index(rollup_block_height);
 
         self.sequencer_rpc_url_list
             .get(leader_index)
-            .map(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url.clone())
-            .ok_or(Error::EmptyLeaderRpcUrl)
+            .and_then(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url.clone())
+            .ok_or(Error::EmptyLeaderClusterRpcUrl)
+    }
+
+    pub fn get_leader_external_rpc_url(&self, rollup_block_height: u64) -> Result<String, Error> {
+        let leader_index = self.get_leader_index(rollup_block_height);
+
+        self.sequencer_rpc_url_list
+            .get(leader_index)
+            .and_then(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url.clone())
+            .ok_or(Error::EmptyLeaderClusterRpcUrl)
+    }
+
+    pub fn get_leader_address(&self, rollup_block_height: u64) -> Result<String, Error> {
+        let leader_index = self.get_leader_index(rollup_block_height);
+
+        self.sequencer_rpc_url_list
+            .get(leader_index)
+            .map(|sequencer_rpc_info| sequencer_rpc_info.address.clone())
+            .ok_or(Error::EmptyLeader)
+    }
+
+    pub fn get_leader_index(&self, rollup_block_height: u64) -> usize {
+        rollup_block_height as usize % self.sequencer_rpc_url_list.len()
     }
 }
 

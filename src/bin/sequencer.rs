@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 use radius_sdk::{
     json_rpc::server::RpcServer,
     kvstore::{CachedKvStore, KvStore as Database},
-    signature::PrivateKeySigner,
+    signature::{Address, PrivateKeySigner},
 };
 use sequencer::{
     client::{
@@ -208,8 +208,18 @@ async fn main() -> Result<(), Error> {
                                             let new_executor_address_list = rollup_info
                                                 .executorAddresses
                                                 .into_iter()
-                                                .map(|address| address.to_string())
-                                                .collect::<Vec<String>>();
+                                                .map(|address| {
+                                                    Address::from_str(
+                                                        Platform::from_str(
+                                                            &rollup_info.validationInfo.platform,
+                                                        )
+                                                        .unwrap()
+                                                        .into(),
+                                                        &address.to_string(),
+                                                    )
+                                                    .unwrap()
+                                                })
+                                                .collect::<Vec<Address>>();
                                             rollup.set_executor_address_list(
                                                 new_executor_address_list,
                                             );
@@ -238,8 +248,20 @@ async fn main() -> Result<(), Error> {
                                                 let executor_address_list = rollup_info
                                                     .executorAddresses
                                                     .into_iter()
-                                                    .map(|address| address.to_string())
-                                                    .collect::<Vec<String>>();
+                                                    .map(|address| {
+                                                        Address::from_str(
+                                                            Platform::from_str(
+                                                                &rollup_info
+                                                                    .validationInfo
+                                                                    .platform,
+                                                            )
+                                                            .unwrap()
+                                                            .into(),
+                                                            &address.to_string(),
+                                                        )
+                                                        .unwrap()
+                                                    })
+                                                    .collect::<Vec<Address>>();
 
                                                 let rollup = Rollup::new(
                                                     rollup_info.rollupId.clone(),

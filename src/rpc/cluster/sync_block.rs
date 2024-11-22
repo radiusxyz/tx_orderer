@@ -77,6 +77,7 @@ impl SyncBlock {
         block_builder(
             context.clone(),
             parameter.message.rollup_id.clone(),
+            parameter.message.block_creator_address.clone(),
             rollup.encrypted_transaction_type(),
             parameter.message.rollup_block_height,
             parameter.transaction_count,
