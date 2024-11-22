@@ -459,7 +459,7 @@ async fn initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> 
             cluster::FinalizeBlock::METHOD_NAME,
             cluster::FinalizeBlock::handler,
         )?
-        // TODO:
+        .register_rpc_method(cluster::SyncBlock::METHOD_NAME, cluster::SyncBlock::handler)?
         .register_rpc_method(
             external::GetRawTransactionList::METHOD_NAME,
             external::GetRawTransactionList::handler,
