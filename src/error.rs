@@ -1,7 +1,10 @@
+use crate::logger::LoggerError;
+
 #[derive(Debug)]
 pub enum Error {
     Config(crate::types::ConfigError),
     Database(radius_sdk::kvstore::KvStoreError),
+    LoggerError(LoggerError),
     RpcServer(radius_sdk::json_rpc::server::RpcServerError),
     Signature(radius_sdk::signature::SignatureError),
     SerializeEthRawTransaction(serde_json::Error),

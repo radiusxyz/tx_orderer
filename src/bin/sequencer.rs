@@ -72,7 +72,9 @@ async fn main() -> Result<(), Error> {
             let config = Config::load(config_option)?;
 
             // Initialize the logger.
-            // TODO: Logger::new(config.log_path()).init();
+            Logger::new(config.log_path())
+                .map_err(error::Error::LoggerError)?
+                .init();
 
             tracing::info!(
                 "Successfully loaded the configuration file at {:?}.",
@@ -87,6 +89,8 @@ async fn main() -> Result<(), Error> {
                 "Successfully initialized the database at {:?}.",
                 config.database_path(),
             );
+
+            tracing::error!("Test - {:?}.", config.database_path(),);
 
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
