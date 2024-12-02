@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_HOME_PATH: &str = ".radius";
 pub const DATABASE_DIR_NAME: &str = "database";
+pub const LOG_DIR_NAME: &str = "logs";
+
 pub const CONFIG_FILE_NAME: &str = "Config.toml";
 pub const SIGNING_KEY_PATH: &str = "signing_key";
 pub const DEFAULT_SIGNING_KEY: &str =
@@ -79,6 +81,10 @@ impl Config {
 
     pub fn database_path(&self) -> PathBuf {
         self.path.join(DATABASE_DIR_NAME)
+    }
+
+    pub fn log_path(&self) -> PathBuf {
+        self.path.join(LOG_DIR_NAME)
     }
 
     pub fn external_rpc_url(&self) -> &String {

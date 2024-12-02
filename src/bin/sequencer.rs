@@ -14,6 +14,7 @@ use sequencer::{
         validation,
     },
     error::{self, Error},
+    logger::Logger,
     rpc::{
         cluster, external,
         internal::{self, GetSequencingInfo, GetSequencingInfos},
@@ -61,13 +62,7 @@ pub enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    tracing_subscriber::fmt().init();
-    std::panic::set_hook(Box::new(|panic_info| {
-        tracing::error!("{:?}", panic_info);
-    }));
-
     let mut cli = Cli::init();
-
     match cli.command {
         Commands::Init { ref config_path } => ConfigPath::init(config_path)?,
         Commands::Start {
@@ -75,6 +70,11 @@ async fn main() -> Result<(), Error> {
         } => {
             // Load the configuration from the path
             let config = Config::load(config_option)?;
+
+            // Initialize the logger.
+            Logger::new(config.log_path())
+                .map_err(error::Error::LoggerError)?
+                .init();
 
             tracing::info!(
                 "Successfully loaded the configuration file at {:?}.",
@@ -89,6 +89,8 @@ async fn main() -> Result<(), Error> {
                 "Successfully initialized the database at {:?}.",
                 config.database_path(),
             );
+
+            tracing::error!("Test - {:?}.", config.database_path(),);
 
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
