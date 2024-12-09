@@ -33,42 +33,20 @@ impl AddValidationInfo {
 
         match &parameter.payload {
             ValidationInfoPayload::EigenLayer(payload) => {
-                let signing_key = context.config().signing_key();
-
-                let validation_client = validation::eigenlayer::ValidationClient::new(
+                validation::eigenlayer::ValidationClient::initialize(
+                    (*context).clone(),
                     parameter.platform,
                     parameter.validation_service_provider,
                     payload.clone(),
-                    signing_key,
-                )?;
-                validation_client.initialize_event_listener();
-
-                context
-                    .add_validation_client(
-                        parameter.platform,
-                        parameter.validation_service_provider,
-                        validation_client,
-                    )
-                    .await?;
+                );
             }
             ValidationInfoPayload::Symbiotic(payload) => {
-                let signing_key = context.config().signing_key();
-
-                let validation_client = validation::symbiotic::ValidationClient::new(
+                validation::symbiotic::ValidationClient::initialize(
+                    (*context).clone(),
                     parameter.platform,
                     parameter.validation_service_provider,
                     payload.clone(),
-                    signing_key,
-                )?;
-                validation_client.initialize_event_listener();
-
-                context
-                    .add_validation_client(
-                        parameter.platform,
-                        parameter.validation_service_provider,
-                        validation_client,
-                    )
-                    .await?;
+                );
             }
         }
 
