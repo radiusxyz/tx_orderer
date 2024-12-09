@@ -2,11 +2,11 @@ use std::{str::FromStr, sync::Arc};
 
 use radius_sdk::{
     liveness_radius::{publisher::Publisher, subscriber::Subscriber, types::Events},
-    signature::Address,
+    signature::{Address, PrivateKeySigner},
 };
 use tokio::time::{sleep, Duration};
 
-use crate::{client::liveness::seeder::SeederClient, error::Error, types::*};
+use crate::{client::liveness::seeder::SeederClient, error::Error, state::AppState, types::*};
 
 pub struct LivenessClient {
     inner: Arc<LivenessClientInner>,
@@ -33,6 +33,26 @@ impl Clone for LivenessClient {
 }
 
 impl LivenessClient {
+    pub fn platform(&self) -> Platform {
+        self.inner.platform
+    }
+
+    pub fn service_provider(&self) -> ServiceProvider {
+        self.inner.service_provider
+    }
+
+    pub fn publisher(&self) -> &Publisher {
+        &self.inner.publisher
+    }
+
+    pub fn subscriber(&self) -> &Subscriber {
+        &self.inner.subscriber
+    }
+
+    pub fn seeder(&self) -> &SeederClient {
+        &self.inner.seeder
+    }
+
     pub fn new(
         platform: Platform,
         service_provider: ServiceProvider,
@@ -66,58 +86,57 @@ impl LivenessClient {
         })
     }
 
-    pub fn platform(&self) -> Platform {
-        self.inner.platform
-    }
-
-    pub fn service_provider(&self) -> ServiceProvider {
-        self.inner.service_provider
-    }
-
-    pub fn publisher(&self) -> &Publisher {
-        &self.inner.publisher
-    }
-
-    pub fn subscriber(&self) -> &Subscriber {
-        &self.inner.subscriber
-    }
-
-    pub fn seeder(&self) -> &SeederClient {
-        &self.inner.seeder
-    }
-
-    pub fn initialize_event_listener(&self) {
-        tracing::info!(
-            "Initializing the liveness event listener for {:?}, {:?}..",
-            self.platform(),
-            self.service_provider()
-        );
-
+    pub fn initialize(
+        context: AppState,
+        platform: Platform,
+        service_provider: ServiceProvider,
+        liveness_info: LivenessRadius,
+    ) {
         let handle = tokio::spawn({
-            let liveness_client = self.clone();
+            let context = context.clone();
+            let liveness_info = liveness_info.clone();
 
             async move {
+                let signing_key = context.config().signing_key();
+                let signer = PrivateKeySigner::from_str(platform.into(), signing_key).unwrap();
+                context.add_signer(platform, signer).await.unwrap();
+
+                let liveness_client = Self::new(
+                    platform,
+                    service_provider,
+                    liveness_info,
+                    signing_key,
+                    context.seeder_client().clone(),
+                )
+                .unwrap();
+
+                tracing::info!(
+                    "Initializing the liveness event listener for {:?}, {:?}..",
+                    platform,
+                    service_provider
+                );
                 liveness_client
                     .subscriber()
                     .initialize_event_handler(callback, liveness_client.clone())
                     .await
                     .unwrap();
+
+                context
+                    .add_liveness_client(platform, service_provider, liveness_client)
+                    .await
+                    .unwrap();
             }
         });
 
-        tokio::spawn({
-            let liveness_client = self.clone();
-
-            async move {
-                if handle.await.is_err() {
-                    tracing::warn!(
-                        "Reconnecting the liveness event listener for {:?}, {:?}..",
-                        liveness_client.platform(),
-                        liveness_client.service_provider()
-                    );
-                    sleep(Duration::from_secs(5)).await;
-                    liveness_client.initialize_event_listener();
-                }
+        tokio::spawn(async move {
+            if handle.await.is_err() {
+                tracing::warn!(
+                    "Reconnecting the liveness event listener for {:?}, {:?}..",
+                    platform,
+                    service_provider
+                );
+                sleep(Duration::from_secs(5)).await;
+                Self::initialize(context, platform, service_provider, liveness_info);
             }
         });
     }

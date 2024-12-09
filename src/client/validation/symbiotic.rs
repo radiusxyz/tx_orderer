@@ -5,7 +5,7 @@ use radius_sdk::validation_symbiotic::{
 };
 use tokio::time::{sleep, Duration};
 
-use crate::{error::Error, types::*};
+use crate::{error::Error, state::AppState, types::*};
 
 pub struct ValidationClient {
     inner: Arc<ValidationClientInner>,
@@ -31,6 +31,22 @@ impl Clone for ValidationClient {
 }
 
 impl ValidationClient {
+    pub fn platform(&self) -> Platform {
+        self.inner.platform
+    }
+
+    pub fn validation_service_provider(&self) -> ValidationServiceProvider {
+        self.inner.validation_service_provider
+    }
+
+    pub fn publisher(&self) -> &Publisher {
+        &self.inner.publisher
+    }
+
+    pub fn subscriber(&self) -> &Subscriber {
+        &self.inner.subscriber
+    }
+
     pub fn new(
         platform: Platform,
         validation_service_provider: ValidationServiceProvider,
@@ -62,50 +78,54 @@ impl ValidationClient {
         })
     }
 
-    pub fn platform(&self) -> Platform {
-        self.inner.platform
-    }
-
-    pub fn validation_service_provider(&self) -> ValidationServiceProvider {
-        self.inner.validation_service_provider
-    }
-
-    pub fn publisher(&self) -> &Publisher {
-        &self.inner.publisher
-    }
-
-    pub fn subscriber(&self) -> &Subscriber {
-        &self.inner.subscriber
-    }
-
-    pub fn initialize_event_listener(&self) {
-        tracing::info!(
-            "Initializing Symbiotic validation event listener for {:?}, {:?}..",
-            self.platform(),
-            self.validation_service_provider()
-        );
-
+    pub fn initialize(
+        context: AppState,
+        platform: Platform,
+        validation_service_provider: ValidationServiceProvider,
+        validation_info: ValidationSymbiotic,
+    ) {
         let handle = tokio::spawn({
-            let validation_client = self.clone();
+            let context = context.clone();
+            let validation_info = validation_info.clone();
 
             async move {
+                let signing_key = context.config().signing_key();
+                let validation_client = Self::new(
+                    platform,
+                    validation_service_provider,
+                    validation_info,
+                    signing_key,
+                )
+                .unwrap();
+
+                tracing::info!(
+                    "Initializing Symbiotic validation event listener for {:?}, {:?}..",
+                    platform,
+                    validation_service_provider
+                );
                 validation_client
                     .subscriber()
                     .initialize_event_handler(callback, validation_client.clone())
                     .await
                     .unwrap();
+
+                context
+                    .add_validation_client(platform, validation_service_provider, validation_client)
+                    .await
+                    .unwrap();
             }
         });
 
-        tokio::spawn({
-            let validation_client = self.clone();
-
-            async move {
-                if handle.await.is_err() {
-                    tracing::warn!("Reconnecting Symbiotic validation event listener..");
-                    sleep(Duration::from_secs(5)).await;
-                    validation_client.initialize_event_listener();
-                }
+        tokio::spawn(async move {
+            if handle.await.is_err() {
+                tracing::warn!("Reconnecting Symbiotic validation event listener..");
+                sleep(Duration::from_secs(5)).await;
+                Self::initialize(
+                    context,
+                    platform,
+                    validation_service_provider,
+                    validation_info,
+                );
             }
         });
     }

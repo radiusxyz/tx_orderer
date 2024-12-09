@@ -1,5 +1,3 @@
-use radius_sdk::signature::PrivateKeySigner;
-
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -35,27 +33,12 @@ impl AddSequencingInfo {
 
         match &parameter.payload {
             SequencingInfoPayload::Ethereum(payload) => {
-                let signing_key = context.config().signing_key();
-
-                let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
-                context.add_signer(parameter.platform, signer).await?;
-
-                let liveness_client = liveness::radius::LivenessClient::new(
+                liveness::radius::LivenessClient::initialize(
+                    (*context).clone(),
                     parameter.platform,
                     parameter.service_provider,
                     payload.clone(),
-                    signing_key,
-                    context.seeder_client().clone(),
-                )?;
-                liveness_client.initialize_event_listener();
-
-                context
-                    .add_liveness_client(
-                        parameter.platform,
-                        parameter.service_provider,
-                        liveness_client,
-                    )
-                    .await?;
+                );
             }
             SequencingInfoPayload::Local(_payload) => {
                 // liveness::local::LivenessClient::new()?;
