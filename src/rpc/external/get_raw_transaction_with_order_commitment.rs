@@ -16,12 +16,12 @@ impl GetRawTransactionWithOrderCommitment {
     ) -> Result<RawTransaction, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let encrypted_transaction = RawTransactionModel::get(
+        let raw_transaction = RawTransactionModel::get(
             &parameter.rollup_id,
             parameter.rollup_block_height,
             parameter.transaction_order,
         )?;
 
-        Ok(encrypted_transaction)
+        Ok(raw_transaction)
     }
 }
