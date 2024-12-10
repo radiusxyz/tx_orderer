@@ -87,8 +87,6 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
-            tracing::error!("Test - {:?}.", config.database_path(),);
-
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
             let seeder_client = SeederClient::new(seeder_rpc_url)?;
