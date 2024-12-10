@@ -1,6 +1,7 @@
 mod block;
 mod cluster;
 mod config;
+mod merkle;
 mod order_commitment;
 mod rollup;
 mod sequencing;
@@ -12,6 +13,7 @@ mod zkp;
 pub use block::*;
 pub use cluster::*;
 pub use config::*;
+pub use merkle::*;
 pub use order_commitment::*;
 pub use rollup::*;
 pub use sequencing::*;
