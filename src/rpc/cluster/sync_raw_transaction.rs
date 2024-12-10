@@ -7,7 +7,6 @@ pub struct SyncRawTransactionMessage {
     pub transaction_order: u64,
     pub raw_transaction: RawTransaction,
     pub order_commitment: Option<OrderCommitment>,
-    pub order_hash: OrderHash,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -23,21 +22,27 @@ impl SyncRawTransaction {
         let parameter = parameter.parse::<Self>()?;
 
         tracing::info!(
-            "Sync raw transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}, order hash: {:?}",
+            "Sync raw transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}",
             parameter.message.rollup_id,
             parameter.message.rollup_block_height,
             parameter.message.transaction_order,
             parameter.message.order_commitment,
-            parameter.message.order_hash,
         );
 
         let rollup = Rollup::get(&parameter.message.rollup_id)?;
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.message.rollup_id)?;
+
+        let cluster_block_height = ClusterBlockHeight::get(
+            rollup.platform(),
+            rollup.service_provider(),
+            rollup.cluster_id(),
+        )?;
+
         let cluster = Cluster::get(
             rollup.platform(),
             rollup.service_provider(),
             rollup.cluster_id(),
-            rollup_metadata.platform_block_height(),
+            cluster_block_height.inner(),
         )?;
 
         // Verify the leader signature
@@ -54,9 +59,13 @@ impl SyncRawTransaction {
         }
 
         if parameter.message.transaction_order == rollup_metadata.transaction_order() {
-            rollup_metadata.increase_transaction_order();
-            rollup_metadata
-                .update_order_hash(&parameter.message.raw_transaction.raw_transaction_hash());
+            rollup_metadata.add_transaction_hash(
+                parameter
+                    .message
+                    .raw_transaction
+                    .raw_transaction_hash()
+                    .as_ref(),
+            );
             rollup_metadata.update()?;
         }
 
@@ -82,14 +91,6 @@ impl SyncRawTransaction {
                 parameter.message.transaction_order,
             )?;
         }
-
-        // Temporary block commitment
-        BlockCommitment::put(
-            &parameter.message.order_hash.into(),
-            &parameter.message.rollup_id,
-            parameter.message.rollup_block_height,
-            parameter.message.transaction_order,
-        )?;
 
         Ok(())
     }

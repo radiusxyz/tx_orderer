@@ -13,8 +13,7 @@ impl Timestamp {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Model)]
-#[kvstore(key(rollup_id: &str, block_height: u64, transaction_order: u64))]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BlockCommitment(String);
 
 impl Default for BlockCommitment {

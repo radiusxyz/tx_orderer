@@ -7,7 +7,6 @@ pub struct SyncEncryptedTransactionMessage {
     pub transaction_order: u64,
     pub encrypted_transaction: EncryptedTransaction,
     pub order_commitment: OrderCommitment,
-    pub order_hash: OrderHash,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -24,21 +23,26 @@ impl SyncEncryptedTransaction {
 
         tracing::info!("sync encrypted transaction - {:?}", parameter);
         tracing::info!(
-            "Sync encrypted transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}, order hash: {:?}",
+            "Sync encrypted transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}",
             parameter.message.rollup_id,
             parameter.message.rollup_block_height,
             parameter.message.transaction_order,
             parameter.message.order_commitment,
-            parameter.message.order_hash,
         );
 
         let rollup = Rollup::get(&parameter.message.rollup_id)?;
+        let cluster_block_height = ClusterBlockHeight::get(
+            rollup.platform(),
+            rollup.service_provider(),
+            rollup.cluster_id(),
+        )?;
+
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.message.rollup_id)?;
         let cluster = Cluster::get(
             rollup.platform(),
             rollup.service_provider(),
             rollup.cluster_id(),
-            rollup_metadata.platform_block_height(),
+            cluster_block_height.inner(),
         )?;
 
         // Verify the leader signature
@@ -54,13 +58,13 @@ impl SyncEncryptedTransaction {
             return Err(Error::BlockHeightMismatch.into());
         }
 
-        rollup_metadata.increase_transaction_order();
-        rollup_metadata.update()?;
-
         let transaction_hash = parameter
             .message
             .encrypted_transaction
             .raw_transaction_hash();
+
+        rollup_metadata.add_transaction_hash(transaction_hash.as_ref());
+        rollup_metadata.update()?;
 
         EncryptedTransactionModel::put_with_transaction_hash(
             &parameter.message.rollup_id,
@@ -76,14 +80,6 @@ impl SyncEncryptedTransaction {
         )?;
 
         parameter.message.order_commitment.put(
-            &parameter.message.rollup_id,
-            parameter.message.rollup_block_height,
-            parameter.message.transaction_order,
-        )?;
-
-        // Temporary block commitment
-        BlockCommitment::put(
-            &parameter.message.order_hash.into(),
             &parameter.message.rollup_id,
             parameter.message.rollup_block_height,
             parameter.message.transaction_order,

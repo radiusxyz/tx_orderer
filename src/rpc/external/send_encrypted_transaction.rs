@@ -33,25 +33,33 @@ impl SendEncryptedTransaction {
 
         // 2. Check is leader
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.rollup_id)?;
+
         let platform = rollup.platform();
         let service_provider = rollup.service_provider();
         let cluster_id = rollup_metadata.cluster_id();
-        let platform_block_height = rollup_metadata.platform_block_height();
         let rollup_block_height = rollup_metadata.rollup_block_height();
+
+        let cluster_block_height = ClusterBlockHeight::get(
+            rollup.platform(),
+            rollup.service_provider(),
+            rollup.cluster_id(),
+        )?;
 
         let cluster = Cluster::get(
             platform,
             service_provider,
             cluster_id,
-            platform_block_height,
+            cluster_block_height.inner(),
         )?;
 
         if rollup_metadata.is_leader() {
-            let transaction_order = rollup_metadata.transaction_order();
-            rollup_metadata.increase_transaction_order();
-            let previous_order_hash = rollup_metadata
-                .update_order_hash(&parameter.encrypted_transaction.raw_transaction_hash());
-            let current_order_hash = rollup_metadata.order_hash();
+            let (transaction_order, pre_merkle_path) = rollup_metadata.add_transaction_hash(
+                parameter
+                    .encrypted_transaction
+                    .raw_transaction_hash()
+                    .as_ref(),
+            );
+
             rollup_metadata.update()?;
 
             let order_commitment = issue_order_commitment(
@@ -62,7 +70,7 @@ impl SendEncryptedTransaction {
                 parameter.encrypted_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
-                previous_order_hash,
+                pre_merkle_path.clone(),
             )
             .await?;
 
@@ -83,14 +91,6 @@ impl SendEncryptedTransaction {
 
             order_commitment.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
 
-            // Temporary block commitment
-            BlockCommitment::put(
-                &current_order_hash.clone().into(),
-                &parameter.rollup_id,
-                rollup_block_height,
-                transaction_order,
-            )?;
-
             // Sync Transaction
             sync_encrypted_transaction(
                 cluster,
@@ -101,7 +101,6 @@ impl SendEncryptedTransaction {
                 transaction_order,
                 parameter.encrypted_transaction.clone(),
                 order_commitment.clone(),
-                current_order_hash,
             );
 
             Ok(order_commitment)
@@ -155,7 +154,6 @@ pub fn sync_encrypted_transaction(
     transaction_order: u64,
     encrypted_transaction: EncryptedTransaction,
     order_commitment: OrderCommitment,
-    order_hash: OrderHash,
 ) {
     tokio::spawn(async move {
         let follower_cluster_rpc_url_list: Vec<String> =
@@ -168,7 +166,6 @@ pub fn sync_encrypted_transaction(
                 transaction_order,
                 encrypted_transaction,
                 order_commitment,
-                order_hash,
             };
             let signature = context
                 .get_signer(platform)
@@ -200,7 +197,7 @@ pub async fn issue_order_commitment(
     transaction_hash: RawTransactionHash,
     rollup_block_height: u64,
     transaction_order: u64,
-    order_hash: OrderHash,
+    pre_merkle_path: Vec<String>,
 ) -> Result<OrderCommitment, RpcError> {
     match order_commitment_type {
         OrderCommitmentType::TransactionHash => Ok(OrderCommitment::Single(
@@ -214,7 +211,7 @@ pub async fn issue_order_commitment(
                 rollup_id,
                 block_height: rollup_block_height,
                 transaction_order,
-                previous_order_hash: order_hash,
+                pre_merkle_path: pre_merkle_path,
             };
             let order_commitment = SignOrderCommitment {
                 data: order_commitment_data.clone(),

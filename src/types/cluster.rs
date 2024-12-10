@@ -98,12 +98,6 @@ impl Cluster {
         self.block_margin
     }
 
-    // pub fn is_leader(&self, rollup_block_height: u64) -> bool {
-    //     let leader_index = self.get_leader_index(rollup_block_height);
-
-    //     leader_index == self.my_index
-    // }
-
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
         self.sequencer_rpc_url_list
             .iter()

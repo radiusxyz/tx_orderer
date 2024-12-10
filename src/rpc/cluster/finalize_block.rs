@@ -103,19 +103,11 @@ impl FinalizeBlock {
         let mut transaction_count = 0;
         match RollupMetadata::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
-                // TODO: check the block generated or generating.
-
-                // if rollup_metadata.rollup_block_height() !=
-                // parameter.message.rollup_block_height {     return
-                // Err(Error::InvalidBlockHeight.into()); }
-
                 transaction_count = rollup_metadata.transaction_order();
 
                 rollup_metadata.set_rollup_block_height(next_rollup_block_height);
-                rollup_metadata.set_order_hash(OrderHash::default());
-                rollup_metadata.set_transaction_order(0);
+                rollup_metadata.new_merkle_tree();
                 rollup_metadata.set_is_leader(is_leader);
-                rollup_metadata.set_platform_block_height(parameter.message.platform_block_height);
 
                 rollup_metadata.update()?;
             }
@@ -126,11 +118,8 @@ impl FinalizeBlock {
                     rollup_metadata.set_cluster_id(rollup.cluster_id());
 
                     rollup_metadata.set_rollup_block_height(next_rollup_block_height);
-                    rollup_metadata.set_order_hash(OrderHash::default());
-                    rollup_metadata.set_transaction_order(0);
+                    rollup_metadata.new_merkle_tree();
                     rollup_metadata.set_is_leader(is_leader);
-                    rollup_metadata
-                        .set_platform_block_height(parameter.message.platform_block_height);
 
                     RollupMetadata::put(&rollup_metadata, &parameter.message.rollup_id)?;
                 } else {

@@ -35,22 +35,24 @@ impl SendRawTransaction {
         let platform = rollup.platform();
         let service_provider = rollup.service_provider();
         let cluster_id = rollup_metadata.cluster_id();
-        let platform_block_height = rollup_metadata.platform_block_height();
         let rollup_block_height = rollup_metadata.rollup_block_height();
+
+        let cluster_block_height = ClusterBlockHeight::get(
+            rollup.platform(),
+            rollup.service_provider(),
+            rollup.cluster_id(),
+        )?;
 
         let cluster = Cluster::get(
             platform,
             service_provider,
             cluster_id,
-            platform_block_height,
+            cluster_block_height.inner(),
         )?;
 
         if rollup_metadata.is_leader() {
-            let transaction_order = rollup_metadata.transaction_order();
-            rollup_metadata.increase_transaction_order();
-            let previous_order_hash = rollup_metadata
-                .update_order_hash(&parameter.raw_transaction.raw_transaction_hash());
-            let current_order_hash = rollup_metadata.order_hash();
+            let (transaction_order, pre_merkle_path) = rollup_metadata
+                .add_transaction_hash(parameter.raw_transaction.raw_transaction_hash().as_ref());
             rollup_metadata.update()?;
 
             let order_commitment = issue_order_commitment(
@@ -61,7 +63,7 @@ impl SendRawTransaction {
                 parameter.raw_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
-                previous_order_hash,
+                pre_merkle_path.clone(),
             )
             .await?;
 
@@ -82,14 +84,6 @@ impl SendRawTransaction {
 
             order_commitment.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
 
-            // Temporary block commitment
-            BlockCommitment::put(
-                &current_order_hash.clone().into(),
-                &parameter.rollup_id,
-                rollup_block_height,
-                transaction_order,
-            )?;
-
             // Sync Transaction
             sync_raw_transaction(
                 cluster,
@@ -100,7 +94,6 @@ impl SendRawTransaction {
                 transaction_order,
                 parameter.raw_transaction.clone(),
                 order_commitment.clone(),
-                current_order_hash,
             );
 
             tracing::info!(
@@ -140,7 +133,6 @@ pub fn sync_raw_transaction(
     transaction_order: u64,
     raw_transaction: RawTransaction,
     order_commitment: OrderCommitment,
-    order_hash: OrderHash,
 ) {
     tokio::spawn(async move {
         let follower_rpc_url_list: Vec<String> =
@@ -152,8 +144,7 @@ pub fn sync_raw_transaction(
                 rollup_block_height,
                 transaction_order,
                 raw_transaction,
-                order_commitment: Some(order_commitment), // Temporary
-                order_hash,
+                order_commitment: Some(order_commitment),
             };
             let signature = context
                 .get_signer(platform)
