@@ -92,16 +92,12 @@ impl MerkleTree {
             let mut current_level = 0;
             let mut target_index = leaf_node_index;
 
-            loop {
-                if self.nodes[current_level].len() > target_index + 1 {
-                    current_level += 1;
-                    target_index /= 2;
-                    continue;
-                }
-
-                proof.push(self.nodes[current_level][target_index].clone());
-                break;
+            while self.nodes[current_level].len() > target_index + 1 {
+                current_level += 1;
+                target_index /= 2;
             }
+
+            proof.push(self.nodes[current_level][target_index].clone());
 
             leaf_node_index += 2_usize.pow(current_level as u32);
 
@@ -154,6 +150,20 @@ impl MerkleTree {
         hasher.update(data.as_bytes());
         format!("{:x}", hasher.finalize())
     }
+
+    pub fn get_post_merkle_path(&self, mut index: usize) -> Vec<String> {
+        let mut post_merkle_path = Vec::new();
+
+        for level in self.nodes.iter().take(self.nodes.len() - 1) {
+            if index % 2 == 0 && index + 1 < level.len() {
+                post_merkle_path.push(level[index + 1].clone());
+            }
+
+            index /= 2;
+        }
+
+        post_merkle_path
+    }
 }
 
 #[test]
@@ -169,7 +179,7 @@ fn block_commitment_test() {
         println!("pre_merkle_path: {:?}", pre_merkle_path);
         println!("");
 
-        if index >= 10 {
+        if index >= 7 {
             break;
         }
     }
@@ -181,4 +191,15 @@ fn block_commitment_test() {
     let merkle_root = merkle_tree.get_merkle_root();
     println!("Merkle root: {:?}", merkle_root);
     println!("");
+
+    let mut index = 0;
+    loop {
+        let post_merke_path = merkle_tree.get_post_merkle_path(index);
+        println!("post_merke_path: {:?}", post_merke_path);
+
+        if index >= 7 {
+            break;
+        }
+        index += 1;
+    }
 }
