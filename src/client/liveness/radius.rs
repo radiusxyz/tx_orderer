@@ -106,6 +106,11 @@ impl LivenessClient {
                 )
                 .unwrap();
 
+                context
+                    .add_liveness_client(platform, service_provider, liveness_client.clone())
+                    .await
+                    .unwrap();
+
                 tracing::info!(
                     "Initializing the liveness event listener for {:?}, {:?}..",
                     platform,
@@ -114,11 +119,6 @@ impl LivenessClient {
                 liveness_client
                     .subscriber()
                     .initialize_event_handler(callback, liveness_client.clone())
-                    .await
-                    .unwrap();
-
-                context
-                    .add_liveness_client(platform, service_provider, liveness_client)
                     .await
                     .unwrap();
             }
