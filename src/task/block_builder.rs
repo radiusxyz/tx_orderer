@@ -225,8 +225,8 @@ pub fn block_builder_skde(
                             .map_err(|error| error.to_string())
                         {
                             Ok(transaction_hash) => {
-                                println!(
-                                    "kanet - register_block_commitment - {:?}",
+                                tracing::info!(
+                                    "Registered block commitment - transaction hash: {:?}",
                                     transaction_hash
                                 );
                                 break;

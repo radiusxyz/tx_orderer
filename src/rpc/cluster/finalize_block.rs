@@ -91,7 +91,7 @@ impl FinalizeBlock {
             return Err(Error::ClusterNotFound)?;
         }
 
-        let cluster = cluster?;
+        let cluster = cluster.unwrap();
 
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
         let signer = context.get_signer(rollup.platform()).await.unwrap();
@@ -124,7 +124,7 @@ impl FinalizeBlock {
                     rollup_metadata
                         .set_platform_block_height(parameter.message.platform_block_height);
 
-                    RollupMetadata::put(&rollup_metadata, &parameter.message.rollup_id)?;
+                    rollup_metadata.put(&parameter.message.rollup_id)?;
                 } else {
                     return Err(error.into());
                 }
