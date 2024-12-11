@@ -32,17 +32,11 @@ impl SyncRawTransaction {
         let rollup = Rollup::get(&parameter.message.rollup_id)?;
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.message.rollup_id)?;
 
-        let cluster_block_height = ClusterBlockHeight::get(
-            rollup.platform(),
-            rollup.service_provider(),
-            rollup.cluster_id(),
-        )?;
-
         let cluster = Cluster::get(
             rollup.platform(),
             rollup.service_provider(),
             rollup.cluster_id(),
-            cluster_block_height.inner(),
+            rollup_metadata.platform_block_height(),
         )?;
 
         // Verify the leader signature

@@ -108,6 +108,7 @@ impl FinalizeBlock {
                 rollup_metadata.set_rollup_block_height(next_rollup_block_height);
                 rollup_metadata.new_merkle_tree();
                 rollup_metadata.set_is_leader(is_leader);
+                rollup_metadata.set_platform_block_height(parameter.message.platform_block_height);
 
                 rollup_metadata.update()?;
             }
@@ -120,6 +121,8 @@ impl FinalizeBlock {
                     rollup_metadata.set_rollup_block_height(next_rollup_block_height);
                     rollup_metadata.new_merkle_tree();
                     rollup_metadata.set_is_leader(is_leader);
+                    rollup_metadata
+                        .set_platform_block_height(parameter.message.platform_block_height);
 
                     RollupMetadata::put(&rollup_metadata, &parameter.message.rollup_id)?;
                 } else {

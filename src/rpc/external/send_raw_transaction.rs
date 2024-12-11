@@ -37,17 +37,11 @@ impl SendRawTransaction {
         let cluster_id = rollup_metadata.cluster_id();
         let rollup_block_height = rollup_metadata.rollup_block_height();
 
-        let cluster_block_height = ClusterBlockHeight::get(
-            rollup.platform(),
-            rollup.service_provider(),
-            rollup.cluster_id(),
-        )?;
-
         let cluster = Cluster::get(
             platform,
             service_provider,
             cluster_id,
-            cluster_block_height.inner(),
+            rollup_metadata.platform_block_height(),
         )?;
 
         if rollup_metadata.is_leader() {

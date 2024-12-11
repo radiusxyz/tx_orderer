@@ -14,6 +14,8 @@ pub struct RollupMetadata {
 
     is_leader: bool,
     cluster_id: String,
+
+    platform_block_height: u64,
 }
 
 impl RollupMetadata {
@@ -40,6 +42,10 @@ impl RollupMetadata {
     pub fn cluster_id(&self) -> &String {
         &self.cluster_id
     }
+
+    pub fn platform_block_height(&self) -> u64 {
+        self.platform_block_height
+    }
 }
 
 impl RollupMetadata {
@@ -63,6 +69,10 @@ impl RollupMetadata {
     pub fn add_transaction_hash(&mut self, transaction_hash: &str) -> (u64, Vec<[u8; 32]>) {
         self.transaction_order += 1;
         self.merkle_tree.add_data(transaction_hash)
+    }
+
+    pub fn set_platform_block_height(&mut self, platform_block_height: u64) {
+        self.platform_block_height = platform_block_height;
     }
 }
 
