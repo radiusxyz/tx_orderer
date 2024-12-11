@@ -1255,6 +1255,7 @@ dependencies = [
 [[package]]
 name = "block-commitment"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-381",
@@ -1463,6 +1464,7 @@ checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 [[package]]
 name = "context"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "crossbeam-epoch",
 ]
@@ -2696,6 +2698,7 @@ dependencies = [
 [[package]]
 name = "json-rpc"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "futures",
  "hyper 0.14.31",
@@ -2815,6 +2818,7 @@ dependencies = [
 [[package]]
 name = "kvstore"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "kvstore-macros",
  "rocksdb",
@@ -2826,6 +2830,7 @@ dependencies = [
 [[package]]
 name = "kvstore-macros"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2911,6 +2916,7 @@ checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
 [[package]]
 name = "liveness-radius"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "alloy",
  "futures",
@@ -3509,6 +3515,7 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 [[package]]
 name = "radius-sdk"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "block-commitment",
  "context",
@@ -4163,6 +4170,7 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "bincode",
  "const-hex",
@@ -4852,6 +4860,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 [[package]]
 name = "validation-eigenlayer"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "alloy",
  "chrono",
@@ -4862,6 +4871,7 @@ dependencies = [
 [[package]]
 name = "validation-symbiotic"
 version = "0.1.0"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=57908ba80172ae8bff3a3c10d13a9e9509814fef#57908ba80172ae8bff3a3c10d13a9e9509814fef"
 dependencies = [
  "alloy",
  "chrono",
