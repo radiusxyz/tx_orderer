@@ -204,11 +204,6 @@ pub fn block_builder_skde(
                         .unwrap();
                 }
                 ValidationInfoPayload::Symbiotic(_) => {
-                    println!(
-                        "stompesi - rollup_validation_info: {:?}",
-                        rollup_validation_info
-                    );
-
                     let validation_client: validation::symbiotic::ValidationClient = context
                         .get_validation_client(
                             rollup_validation_info.platform(),
@@ -216,10 +211,6 @@ pub fn block_builder_skde(
                         )
                         .await
                         .unwrap();
-                    println!("stompesi - rollup: {:?}", rollup);
-                    println!("stompesi - rollup: {:?}", rollup);
-                    println!("stompesi - rollup_block_height: {:?}", rollup_block_height);
-                    println!("stompesi - block_commitment: {:?}", block_commitment);
 
                     for _ in 0..10 {
                         match validation_client
