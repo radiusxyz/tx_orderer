@@ -63,7 +63,7 @@ impl SendRawTransaction {
                 parameter.raw_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
-                pre_merkle_path.clone(),
+                pre_merkle_path,
             )
             .await?;
 

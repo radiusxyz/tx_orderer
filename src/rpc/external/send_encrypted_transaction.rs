@@ -197,7 +197,7 @@ pub async fn issue_order_commitment(
     transaction_hash: RawTransactionHash,
     rollup_block_height: u64,
     transaction_order: u64,
-    pre_merkle_path: Vec<String>,
+    pre_merkle_path: Vec<[u8; 32]>,
 ) -> Result<OrderCommitment, RpcError> {
     match order_commitment_type {
         OrderCommitmentType::TransactionHash => Ok(OrderCommitment::Single(

@@ -3,7 +3,7 @@ use sha3::{Digest, Keccak256};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct MerkleTree {
-    nodes: Vec<Vec<String>>, // nodes by tree level
+    nodes: Vec<Vec<[u8; 32]>>, // nodes by tree level
 }
 
 impl MerkleTree {
@@ -25,7 +25,7 @@ impl MerkleTree {
             let right_node = &level[level.len() - 1];
             let left_node = &level[level.len() - 2];
 
-            let parent_node = Self::hash(&(left_node.clone() + right_node));
+            let parent_node = Self::hash(&Self::concat_arrays(*left_node, *right_node));
 
             if self.nodes.len() <= current_level + 1 {
                 self.nodes.push(vec![parent_node]);
@@ -43,18 +43,18 @@ impl MerkleTree {
 
         while self.nodes[current_level].len() > 1 {
             if self.nodes[current_level].len() % 2 == 1 {
-                let left_node = self.nodes[current_level].last().unwrap().clone();
-                let parent_node = Self::hash(&(left_node.clone() + &last_node));
+                let left_node = self.nodes[current_level].last().unwrap();
+                let parent_node = Self::hash(&Self::concat_arrays(*left_node, last_node));
 
-                self.nodes[current_level].push(last_node.clone());
+                self.nodes[current_level].push(last_node);
                 self.nodes[current_level + 1].push(parent_node);
             }
 
             if self.nodes.len() <= current_level + 1 {
-                let left_node = self.nodes[current_level][0].clone();
-                let right_node = self.nodes[current_level][1].clone();
+                let left_node = self.nodes[current_level][0];
+                let right_node = self.nodes[current_level][1];
 
-                let merkle_root = Self::hash(&(left_node.clone() + &right_node));
+                let merkle_root = Self::hash(&Self::concat_arrays(left_node, right_node));
                 self.nodes.push(vec![merkle_root]);
             }
 
@@ -62,19 +62,18 @@ impl MerkleTree {
         }
     }
 
-    pub fn add_data(&mut self, data: &str) -> (u64, Vec<String>) {
+    pub fn add_data(&mut self, data: &str) -> (u64, Vec<[u8; 32]>) {
         self.update_tree();
-        println!("Nodes: {:?}", self.nodes);
 
         let pre_merkle_path = self.get_pre_merkle_path();
 
-        let hashed_data = Self::hash(data);
+        let hashed_data = Self::hash(data.as_bytes());
         self.nodes[0].push(hashed_data);
 
         ((self.nodes[0].len() - 1) as u64, pre_merkle_path)
     }
 
-    fn get_pre_merkle_path(&self) -> Vec<String> {
+    fn get_pre_merkle_path(&self) -> Vec<[u8; 32]> {
         let mut proof = vec![];
         let mut leaf_node_index: usize = 0;
 
@@ -85,7 +84,7 @@ impl MerkleTree {
         }
 
         if leaf_node_count == 1 {
-            return vec![self.nodes[0][0].clone()];
+            return vec![self.nodes[0][0]];
         }
 
         loop {
@@ -97,7 +96,7 @@ impl MerkleTree {
                 target_index /= 2;
             }
 
-            proof.push(self.nodes[current_level][target_index].clone());
+            proof.push(self.nodes[current_level][target_index]);
 
             leaf_node_index += 2_usize.pow(current_level as u32);
 
@@ -109,7 +108,7 @@ impl MerkleTree {
         proof
     }
 
-    pub fn get_merkle_path(&self, index: usize) -> Vec<String> {
+    pub fn get_merkle_path(&self, index: usize) -> Vec<[u8; 32]> {
         let mut path = vec![];
         let mut current_index = index;
 
@@ -125,7 +124,7 @@ impl MerkleTree {
             };
 
             if sibling_index < level.len() {
-                path.push(level[sibling_index].clone());
+                path.push(level[sibling_index]);
             }
 
             current_index /= 2;
@@ -134,9 +133,9 @@ impl MerkleTree {
         path
     }
 
-    pub fn get_merkle_root(&self) -> String {
+    pub fn get_merkle_root(&self) -> [u8; 32] {
         if self.nodes[0].is_empty() {
-            return Self::hash("");
+            return Self::hash(b"");
         }
         self.nodes
             .last()
@@ -144,25 +143,39 @@ impl MerkleTree {
             .unwrap()
     }
 
-    fn hash(data: &str) -> String {
-        // let mut hasher = Sha3_256::new();
+    // fn to_bytes32(data: &str) -> [u8; 32] {
+    //     const_hex::decode_to_array(data).unwrap()
+    // }
+
+    pub fn hash(data: &[u8]) -> [u8; 32] {
         let mut hasher = Keccak256::new();
-        hasher.update(data.as_bytes());
-        format!("{:x}", hasher.finalize())
+        hasher.update(data);
+        let result = hasher.finalize();
+        let mut hash = [0u8; 32];
+        hash.copy_from_slice(&result);
+        hash
     }
 
-    pub fn get_post_merkle_path(&self, mut index: usize) -> Vec<String> {
+    pub fn get_post_merkle_path(&self, mut index: usize) -> Vec<[u8; 32]> {
         let mut post_merkle_path = Vec::new();
 
         for level in self.nodes.iter().take(self.nodes.len() - 1) {
             if index % 2 == 0 && index + 1 < level.len() {
-                post_merkle_path.push(level[index + 1].clone());
+                post_merkle_path.push(level[index + 1]);
             }
 
             index /= 2;
         }
 
         post_merkle_path
+    }
+
+    fn concat_arrays(a: [u8; 32], b: [u8; 32]) -> [u8; 64] {
+        let mut array: [u8; 64] = [0; 64];
+        for (index, value) in a.into_iter().chain(b.into_iter()).enumerate() {
+            array[index] = value;
+        }
+        array
     }
 }
 
@@ -172,6 +185,9 @@ fn block_commitment_test() {
 
     let data = "Example data";
 
+    let check_index = 3;
+    let mut check_pre_merkle_path = Vec::new();
+    let mut check_post_merkle_path = Vec::new();
     loop {
         let (index, pre_merkle_path) = merkle_tree.add_data(data);
         println!("Transaction Index: {}", index);
@@ -179,6 +195,9 @@ fn block_commitment_test() {
         println!("pre_merkle_path: {:?}", pre_merkle_path);
         println!("");
 
+        if index == check_index {
+            check_pre_merkle_path = pre_merkle_path;
+        }
         if index >= 7 {
             break;
         }
@@ -195,11 +214,18 @@ fn block_commitment_test() {
     let mut index = 0;
     loop {
         let post_merke_path = merkle_tree.get_post_merkle_path(index);
-        println!("post_merke_path: {:?}", post_merke_path);
 
+        if index == check_index as usize {
+            check_post_merkle_path = post_merke_path;
+        }
         if index >= 7 {
             break;
         }
         index += 1;
     }
+
+    let merged_merkle_path: Vec<[u8; 32]> =
+        [check_pre_merkle_path, check_post_merkle_path].concat();
+
+    println!("Merged Merkle Path: {:?}", merged_merkle_path);
 }

@@ -56,10 +56,11 @@ impl RollupMetadata {
     }
 
     pub fn new_merkle_tree(&mut self) {
+        self.transaction_order = 0;
         self.merkle_tree = MerkleTree::new();
     }
 
-    pub fn add_transaction_hash(&mut self, transaction_hash: &str) -> (u64, Vec<String>) {
+    pub fn add_transaction_hash(&mut self, transaction_hash: &str) -> (u64, Vec<[u8; 32]>) {
         self.transaction_order += 1;
         self.merkle_tree.add_data(transaction_hash)
     }

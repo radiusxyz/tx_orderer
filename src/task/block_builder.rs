@@ -163,7 +163,7 @@ pub fn block_builder_skde(
             encrypted_transaction_list.clone(),
             raw_transaction_list.clone(),
             signature,
-            BlockCommitment::from(block_commitment.clone()),
+            BlockCommitment::from(block_commitment),
             block_creator_address.clone(),
         );
 
@@ -180,78 +180,75 @@ pub fn block_builder_skde(
             .unwrap();
 
             // TODO: Remove?
-            if rollup_block_height % 10 == 0 {
-                match validation_info {
-                    // TODO: we have to manage the nonce for the register block commitment.
-                    ValidationInfoPayload::EigenLayer(_) => {
-                        let validation_client: validation::eigenlayer::ValidationClient = context
-                            .get_validation_client(
-                                rollup_validation_info.platform(),
-                                rollup_validation_info.validation_service_provider(),
-                            )
-                            .await
-                            .unwrap();
+            // if rollup_block_height % 10 == 0 {
+            match validation_info {
+                // TODO: we have to manage the nonce for the register block commitment.
+                ValidationInfoPayload::EigenLayer(_) => {
+                    let validation_client: validation::eigenlayer::ValidationClient = context
+                        .get_validation_client(
+                            rollup_validation_info.platform(),
+                            rollup_validation_info.validation_service_provider(),
+                        )
+                        .await
+                        .unwrap();
 
-                        validation_client
+                    validation_client
+                        .publisher()
+                        .register_block_commitment(
+                            rollup.cluster_id(),
+                            rollup.rollup_id(),
+                            rollup_block_height,
+                            block_commitment,
+                        )
+                        .await
+                        .unwrap();
+                }
+                ValidationInfoPayload::Symbiotic(_) => {
+                    println!(
+                        "stompesi - rollup_validation_info: {:?}",
+                        rollup_validation_info
+                    );
+
+                    let validation_client: validation::symbiotic::ValidationClient = context
+                        .get_validation_client(
+                            rollup_validation_info.platform(),
+                            rollup_validation_info.validation_service_provider(),
+                        )
+                        .await
+                        .unwrap();
+                    println!("stompesi - rollup: {:?}", rollup);
+                    println!("stompesi - rollup: {:?}", rollup);
+                    println!("stompesi - rollup_block_height: {:?}", rollup_block_height);
+                    println!("stompesi - block_commitment: {:?}", block_commitment);
+
+                    for _ in 0..10 {
+                        match validation_client
                             .publisher()
                             .register_block_commitment(
                                 rollup.cluster_id(),
                                 rollup.rollup_id(),
                                 rollup_block_height,
-                                block_commitment.as_bytes(),
+                                block_commitment,
                             )
                             .await
-                            .unwrap();
-                    }
-                    ValidationInfoPayload::Symbiotic(_) => {
-                        println!(
-                            "stompesi - register_block_commitment start - rollup: {:?}",
-                            rollup
-                        );
-
-                        println!(
-                            "stompesi - rollup_validation_info: {:?}",
-                            rollup_validation_info
-                        );
-
-                        let validation_client: validation::symbiotic::ValidationClient = context
-                            .get_validation_client(
-                                rollup_validation_info.platform(),
-                                rollup_validation_info.validation_service_provider(),
-                            )
-                            .await
-                            .unwrap();
-
-                        println!("stompesi - validation_client - done");
-
-                        for _ in 0..10 {
-                            match validation_client
-                                .publisher()
-                                .register_block_commitment(
-                                    rollup.cluster_id(),
-                                    rollup.rollup_id(),
-                                    rollup_block_height,
-                                    block_commitment.clone().as_bytes(),
-                                )
-                                .await
-                                .map_err(|error| error.to_string())
-                            {
-                                Ok(transaction_hash) => {
-                                    println!(
-                                        "kanet - register_block_commitment - {:?}",
-                                        transaction_hash
-                                    );
-                                    break;
-                                }
-                                Err(error) => {
-                                    tracing::warn!("{:?}", error);
-                                    sleep(Duration::from_secs(2)).await;
-                                }
+                            .map_err(|error| error.to_string())
+                        {
+                            Ok(transaction_hash) => {
+                                println!(
+                                    "kanet - register_block_commitment - {:?}",
+                                    transaction_hash
+                                );
+                                break;
+                            }
+                            Err(error) => {
+                                tracing::warn!("{:?}", error);
+                                sleep(Duration::from_secs(2)).await;
                             }
                         }
                     }
                 }
             }
+            // }
         }
     });
 }
