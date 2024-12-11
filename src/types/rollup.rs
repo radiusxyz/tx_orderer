@@ -10,12 +10,12 @@ use crate::error::Error;
 pub struct RollupMetadata {
     rollup_block_height: u64,
     transaction_order: u64,
-    order_hash: OrderHash,
+    merkle_tree: MerkleTree,
 
     is_leader: bool,
-    platform_block_height: u64,
-
     cluster_id: String,
+
+    platform_block_height: u64,
 }
 
 impl RollupMetadata {
@@ -27,8 +27,12 @@ impl RollupMetadata {
         self.transaction_order
     }
 
-    pub fn order_hash(&self) -> OrderHash {
-        self.order_hash.clone()
+    pub fn merkle_tree(&self) -> &MerkleTree {
+        &self.merkle_tree
+    }
+
+    pub fn mut_merkle_tree(&mut self) -> &mut MerkleTree {
+        &mut self.merkle_tree
     }
 
     pub fn is_leader(&self) -> bool {
@@ -57,29 +61,18 @@ impl RollupMetadata {
         self.rollup_block_height = block_height;
     }
 
-    pub fn set_order_hash(&mut self, order_hash: OrderHash) {
-        self.order_hash = order_hash;
+    pub fn new_merkle_tree(&mut self) {
+        self.transaction_order = 0;
+        self.merkle_tree = MerkleTree::new();
     }
 
-    pub fn set_transaction_order(&mut self, transaction_order: u64) {
-        self.transaction_order = transaction_order;
+    pub fn add_transaction_hash(&mut self, transaction_hash: &str) -> (u64, Vec<[u8; 32]>) {
+        self.transaction_order += 1;
+        self.merkle_tree.add_data(transaction_hash)
     }
 
     pub fn set_platform_block_height(&mut self, platform_block_height: u64) {
         self.platform_block_height = platform_block_height;
-    }
-
-    pub fn increase_transaction_order(&mut self) -> u64 {
-        self.transaction_order += 1;
-
-        self.transaction_order
-    }
-
-    pub fn update_order_hash(&mut self, raw_transaction_hash: &RawTransactionHash) -> OrderHash {
-        let previous_order_hash = self.order_hash.clone();
-        self.order_hash = self.order_hash.update_order_hash(raw_transaction_hash);
-
-        previous_order_hash
     }
 }
 
@@ -87,13 +80,19 @@ impl RollupMetadata {
 pub struct ValidationInfo {
     platform: Platform,
     validation_service_provider: ValidationServiceProvider,
+    validation_service_manager: Address,
 }
 
 impl ValidationInfo {
-    pub fn new(platform: Platform, validation_service_provider: ValidationServiceProvider) -> Self {
+    pub fn new(
+        platform: Platform,
+        validation_service_provider: ValidationServiceProvider,
+        validation_service_manager: Address,
+    ) -> Self {
         Self {
             platform,
             validation_service_provider,
+            validation_service_manager,
         }
     }
 

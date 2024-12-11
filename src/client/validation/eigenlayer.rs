@@ -20,10 +20,6 @@ struct ValidationClientInner {
     subscriber: Subscriber,
 }
 
-unsafe impl Send for ValidationClient {}
-
-unsafe impl Sync for ValidationClient {}
-
 impl Clone for ValidationClient {
     fn clone(&self) -> Self {
         Self {
@@ -103,6 +99,15 @@ impl ValidationClient {
                 )
                 .unwrap();
 
+                context
+                    .add_validation_client(
+                        platform,
+                        validation_service_provider,
+                        validation_client.clone(),
+                    )
+                    .await
+                    .unwrap();
+
                 tracing::info!(
                     "Initializing EigenLayer validation event listener for {:?}, {:?}..",
                     platform,
@@ -111,11 +116,6 @@ impl ValidationClient {
                 validation_client
                     .subscriber()
                     .initialize_event_handler(callback, validation_client.clone())
-                    .await
-                    .unwrap();
-
-                context
-                    .add_validation_client(platform, validation_service_provider, validation_client)
                     .await
                     .unwrap();
             }

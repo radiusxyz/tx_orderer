@@ -26,7 +26,7 @@ impl RawTransactionModel {
     ) -> Result<(), KvStoreError> {
         let key = &(Self::ID, rollup_id, block_height, transaction_order);
 
-        kvstore()?.put(&key, raw_transaction)
+        kvstore()?.put(key, raw_transaction)
     }
 
     pub fn get_with_transaction_hash(

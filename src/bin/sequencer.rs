@@ -87,8 +87,6 @@ async fn main() -> Result<(), Error> {
                 config.database_path(),
             );
 
-            tracing::error!("Test - {:?}.", config.database_path(),);
-
             // Initialize seeder client
             let seeder_rpc_url = config.seeder_rpc_url();
             let seeder_client = SeederClient::new(seeder_rpc_url)?;
@@ -301,6 +299,10 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
         .register_rpc_method(
             external::GetRawTransactionWithOrderCommitment::METHOD_NAME,
             external::GetRawTransactionWithOrderCommitment::handler,
+        )?
+        .register_rpc_method(
+            external::GetOrderCommitment::METHOD_NAME,
+            external::GetOrderCommitment::handler,
         )?
         .register_rpc_method(
             external::SendRawTransaction::METHOD_NAME,

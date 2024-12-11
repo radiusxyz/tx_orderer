@@ -20,10 +20,6 @@ struct LivenessClientInner {
     seeder: SeederClient,
 }
 
-unsafe impl Send for LivenessClient {}
-
-unsafe impl Sync for LivenessClient {}
-
 impl Clone for LivenessClient {
     fn clone(&self) -> Self {
         Self {
@@ -110,6 +106,11 @@ impl LivenessClient {
                 )
                 .unwrap();
 
+                context
+                    .add_liveness_client(platform, service_provider, liveness_client.clone())
+                    .await
+                    .unwrap();
+
                 tracing::info!(
                     "Initializing the liveness event listener for {:?}, {:?}..",
                     platform,
@@ -118,11 +119,6 @@ impl LivenessClient {
                 liveness_client
                     .subscriber()
                     .initialize_event_handler(callback, liveness_client.clone())
-                    .await
-                    .unwrap();
-
-                context
-                    .add_liveness_client(platform, service_provider, liveness_client)
                     .await
                     .unwrap();
             }
@@ -222,13 +218,28 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                                         .unwrap();
                                 let rollup_type =
                                     RollupType::from_str(&rollup_info.rollupType).unwrap();
-                                let validation_info = ValidationInfo::new(
+                                let platform =
                                     Platform::from_str(&rollup_info.validationInfo.platform)
-                                        .unwrap(),
+                                        .unwrap();
+                                let validation_service_provider =
                                     ValidationServiceProvider::from_str(
                                         &rollup_info.validationInfo.serviceProvider,
                                     )
-                                    .unwrap(),
+                                    .unwrap();
+
+                                let validation_service_manager = Address::from_str(
+                                    platform.into(),
+                                    &rollup_info
+                                        .validationInfo
+                                        .validationServiceManager
+                                        .to_string(),
+                                )
+                                .unwrap();
+
+                                let validation_info = ValidationInfo::new(
+                                    platform,
+                                    validation_service_provider,
+                                    validation_service_manager,
                                 );
                                 let executor_address_list = rollup_info
                                     .executorAddresses

@@ -61,16 +61,7 @@ impl Cluster {
         )?;
 
         // Keep [`ClusterInfo`] for `Self::Margin` blocks.
-        let block_height_for_remove = platform_block_height.wrapping_sub(cluster.block_margin);
-
-        let cluster_block_height = ClusterBlockHeight::new(block_height_for_remove + 1);
-
-        ClusterBlockHeight::put(
-            &cluster_block_height,
-            platform,
-            service_provider,
-            cluster_id,
-        )?;
+        let block_height_for_remove = platform_block_height.wrapping_sub(cluster.block_margin * 2);
 
         Cluster::delete(
             platform,
@@ -97,12 +88,6 @@ impl Cluster {
     pub fn block_margin(&self) -> u64 {
         self.block_margin
     }
-
-    // pub fn is_leader(&self, rollup_block_height: u64) -> bool {
-    //     let leader_index = self.get_leader_index(rollup_block_height);
-
-    //     leader_index == self.my_index
-    // }
 
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
         self.sequencer_rpc_url_list
@@ -188,19 +173,5 @@ impl Cluster {
 
     pub fn get_leader_index(&self, rollup_block_height: u64) -> usize {
         rollup_block_height as usize % self.sequencer_rpc_url_list.len()
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str))]
-pub struct ClusterBlockHeight(u64);
-
-impl ClusterBlockHeight {
-    pub fn new(block_height: u64) -> Self {
-        Self(block_height)
-    }
-
-    pub fn inner(&self) -> u64 {
-        self.0
     }
 }

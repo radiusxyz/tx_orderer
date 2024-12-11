@@ -74,7 +74,7 @@ pub struct OrderCommitmentData {
     pub rollup_id: String,
     pub block_height: u64,
     pub transaction_order: u64,
-    pub previous_order_hash: OrderHash,
+    pub pre_merkle_path: Vec<[u8; 32]>,
 }
 
 // #############################################################################

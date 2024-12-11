@@ -15,11 +15,11 @@ impl GetRawTransactionWithTransactionHash {
     ) -> Result<RawTransaction, RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        let encrypted_transaction = RawTransactionModel::get_with_transaction_hash(
+        let raw_transaction = RawTransactionModel::get_with_transaction_hash(
             &parameter.rollup_id,
             &parameter.transaction_hash,
         )?;
 
-        Ok(encrypted_transaction)
+        Ok(raw_transaction)
     }
 }

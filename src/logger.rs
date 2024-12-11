@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use chrono::Local;
+use chrono::{Days, Local, NaiveDate};
 use tracing::Level;
 use tracing_subscriber::fmt::writer::MakeWriter;
 
@@ -61,8 +61,8 @@ impl Logger {
         }));
     }
 
-    fn today() -> String {
-        Local::now().date_naive().to_string()
+    fn today() -> NaiveDate {
+        Local::now().date_naive()
     }
 
     fn open_file(path: impl AsRef<Path>) -> Result<std::fs::File, LoggerError> {
@@ -73,8 +73,20 @@ impl Logger {
             .map_err(LoggerError::OpenFile)
     }
 
+    fn remove_file(path: impl AsRef<Path>) {
+        let _ = std::fs::remove_file(path);
+    }
+
     fn trace_writer(&self) -> Result<LogWriter<'_>, LoggerError> {
-        let trace_path = self.trace_path.join(Self::today());
+        let today = Self::today().to_string();
+        let week_ago = Self::today()
+            .checked_sub_days(Days::new(7))
+            .ok_or(LoggerError::CalculateWeekAgo)?
+            .to_string();
+
+        let trace_path = self.trace_path.join(today);
+        let trace_path_to_be_removed = self.trace_path.join(week_ago);
+        Self::remove_file(trace_path_to_be_removed);
 
         Ok(LogWriter::new(
             self.stdout.lock(),
@@ -84,8 +96,19 @@ impl Logger {
     }
 
     fn error_writer(&self) -> Result<LogWriter<'_>, LoggerError> {
-        let trace_path = self.trace_path.join(Self::today());
-        let error_path = self.error_path.join(Self::today());
+        let today = Self::today().to_string();
+        let week_ago = Self::today()
+            .checked_sub_days(Days::new(7))
+            .ok_or(LoggerError::CalculateWeekAgo)?
+            .to_string();
+
+        let trace_path = self.trace_path.join(&today);
+        let trace_path_to_be_removed = self.trace_path.join(&week_ago);
+        Self::remove_file(trace_path_to_be_removed);
+
+        let error_path = self.error_path.join(&today);
+        let error_path_to_be_removed = self.error_path.join(&week_ago);
+        Self::remove_file(error_path_to_be_removed);
 
         Ok(LogWriter::new(
             self.stdout.lock(),
@@ -177,6 +200,7 @@ impl<'a> LogWriter<'a> {
 pub enum LoggerError {
     CreateDirectory(std::io::Error),
     OpenFile(std::io::Error),
+    CalculateWeekAgo,
 }
 
 impl std::fmt::Display for LoggerError {
