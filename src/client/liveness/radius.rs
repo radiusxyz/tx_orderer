@@ -20,10 +20,6 @@ struct LivenessClientInner {
     seeder: SeederClient,
 }
 
-unsafe impl Send for LivenessClient {}
-
-unsafe impl Sync for LivenessClient {}
-
 impl Clone for LivenessClient {
     fn clone(&self) -> Self {
         Self {
