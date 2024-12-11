@@ -16,6 +16,7 @@ use crate::{
 pub struct AppState {
     inner: Arc<AppStateInner>,
 }
+
 struct AppStateInner {
     config: Config,
     seeder_client: SeederClient,
@@ -27,10 +28,6 @@ struct AppStateInner {
 
     skde_params: SkdeParams,
 }
-
-unsafe impl Send for AppState {}
-
-unsafe impl Sync for AppState {}
 
 impl Clone for AppState {
     fn clone(&self) -> Self {
