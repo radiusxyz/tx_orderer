@@ -126,6 +126,26 @@ impl SeederClient {
             .await
             .map_err(SeederError::GetSequencerRpcUrlList)
     }
+
+    pub async fn get_sequencer_rpc_url(
+        &self,
+        sequencer_address: String,
+    ) -> Result<GetSequencerRpcUrlResponse, SeederError> {
+        let parameter = GetSequencerRpcUrl {
+            address: sequencer_address,
+        };
+
+        self.inner
+            .rpc_client
+            .request(
+                &self.inner.rpc_url,
+                GetSequencerRpcUrl::METHOD_NAME,
+                &parameter,
+                Id::Null,
+            )
+            .await
+            .map_err(SeederError::GetSequencerRpcUrl)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -187,12 +207,27 @@ pub struct GetSequencerRpcUrlListResponse {
     pub sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetSequencerRpcUrl {
+    address: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetSequencerRpcUrlResponse {
+    pub sequencer_rpc_url: SequencerRpcInfo,
+}
+
+impl GetSequencerRpcUrl {
+    pub const METHOD_NAME: &'static str = "get_sequencer_rpc_url";
+}
+
 #[derive(Debug)]
 pub enum SeederError {
     Initialize(radius_sdk::json_rpc::client::RpcClientError),
     Register(radius_sdk::json_rpc::client::RpcClientError),
     Deregister(radius_sdk::json_rpc::client::RpcClientError),
     GetSequencerRpcUrlList(radius_sdk::json_rpc::client::RpcClientError),
+    GetSequencerRpcUrl(radius_sdk::json_rpc::client::RpcClientError),
     SignMessage(radius_sdk::signature::SignatureError),
 }
 

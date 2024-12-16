@@ -174,4 +174,71 @@ impl Cluster {
     pub fn get_leader_index(&self, rollup_block_height: u64) -> usize {
         rollup_block_height as usize % self.sequencer_rpc_url_list.len()
     }
+
+    pub fn adjust_my_index(&mut self, my_address: &str) {
+        let my_index = self
+            .sequencer_rpc_url_list
+            .iter()
+            .enumerate()
+            .find(|(_index, sequencer)| sequencer.address == my_address)
+            .map(|(index, _sequencer)| index);
+
+        if let Some(my_index) = my_index {
+            self.my_index = my_index;
+        }
+    }
+
+    pub fn register_sequencer(&mut self, index: usize, sequencer_rpc_info: SequencerRpcInfo) {
+        if index > self.sequencer_rpc_url_list.len() {
+            self.sequencer_rpc_url_list.push(sequencer_rpc_info);
+        } else {
+            self.sequencer_rpc_url_list
+                .insert(index, sequencer_rpc_info);
+        }
+    }
+
+    pub fn deregister_sequencer(&mut self, sequencer_address: &str) {
+        let sequencer_index = self
+            .sequencer_rpc_url_list
+            .iter()
+            .enumerate()
+            .find(|(_index, sequencer)| sequencer.address == sequencer_address)
+            .map(|(index, _sequencer)| index);
+
+        if let Some(sequencer_index) = sequencer_index {
+            self.sequencer_rpc_url_list.remove(sequencer_index);
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key(cluster_id: &String, platform_block_height: u64))]
+pub struct LivenessEventList(Vec<LivenessEventType>);
+
+impl LivenessEventList {
+    pub fn push(&mut self, event_type: impl Into<LivenessEventType>) {
+        self.0.push(event_type.into())
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<LivenessEventType> {
+        self.0.iter()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum LivenessEventType {
+    RegisterSequencer((usize, SequencerRpcInfo)),
+    DeregisterSequencer(String),
+}
+
+impl From<(usize, SequencerRpcInfo)> for LivenessEventType {
+    fn from(value: (usize, SequencerRpcInfo)) -> Self {
+        Self::RegisterSequencer(value)
+    }
+}
+
+impl From<String> for LivenessEventType {
+    fn from(value: String) -> Self {
+        Self::DeregisterSequencer(value)
+    }
 }
