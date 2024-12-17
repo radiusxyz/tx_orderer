@@ -205,8 +205,12 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
             previous_block_height,
         ) {
             Ok(mut cluster) => {
-                let liveness_event_list =
-                    LivenessEventList::get(cluster_id, previous_block_height).unwrap();
+                let liveness_event_list = LivenessEventList::get_or(
+                    cluster_id,
+                    previous_block_height,
+                    LivenessEventList::default,
+                )
+                .unwrap();
                 for event in liveness_event_list.iter() {
                     match event {
                         LivenessEventType::RegisterSequencer((
