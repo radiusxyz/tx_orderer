@@ -3,49 +3,20 @@ use std::str::FromStr;
 use radius_sdk::signature::ChainType;
 
 use super::prelude::*;
-use crate::error::Error;
+use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key(rollup_id: &str))]
 pub struct RollupMetadata {
-    rollup_block_height: u64,
-    transaction_order: u64,
-    merkle_tree: MerkleTree,
+    pub rollup_block_height: u64,
+    pub transaction_order: u64,
+    pub merkle_tree: MerkleTree,
 
-    is_leader: bool,
-    cluster_id: String,
+    pub cluster_id: String,
 
-    platform_block_height: u64,
-}
-
-impl RollupMetadata {
-    pub fn rollup_block_height(&self) -> u64 {
-        self.rollup_block_height
-    }
-
-    pub fn transaction_order(&self) -> u64 {
-        self.transaction_order
-    }
-
-    pub fn merkle_tree(&self) -> &MerkleTree {
-        &self.merkle_tree
-    }
-
-    pub fn mut_merkle_tree(&mut self) -> &mut MerkleTree {
-        &mut self.merkle_tree
-    }
-
-    pub fn is_leader(&self) -> bool {
-        self.is_leader
-    }
-
-    pub fn cluster_id(&self) -> &String {
-        &self.cluster_id
-    }
-
-    pub fn platform_block_height(&self) -> u64 {
-        self.platform_block_height
-    }
+    pub platform_block_height: u64,
+    pub is_leader: bool,
+    pub leader_sequencer_rpc_info: SequencerRpcInfo,
 }
 
 impl RollupMetadata {

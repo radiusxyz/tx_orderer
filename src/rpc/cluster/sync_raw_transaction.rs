@@ -36,7 +36,7 @@ impl SyncRawTransaction {
             rollup.platform(),
             rollup.service_provider(),
             rollup.cluster_id(),
-            rollup_metadata.platform_block_height(),
+            rollup_metadata.platform_block_height,
         )?;
 
         // Verify the leader signature
@@ -48,11 +48,11 @@ impl SyncRawTransaction {
         )?;
 
         // Check the rollup block height
-        if parameter.message.rollup_block_height != rollup_metadata.rollup_block_height() {
+        if parameter.message.rollup_block_height != rollup_metadata.rollup_block_height {
             return Err(Error::BlockHeightMismatch.into());
         }
 
-        if parameter.message.transaction_order == rollup_metadata.transaction_order() {
+        if parameter.message.transaction_order == rollup_metadata.transaction_order {
             rollup_metadata.add_transaction_hash(
                 parameter
                     .message

@@ -103,7 +103,7 @@ impl FinalizeBlock {
         let mut transaction_count = 0;
         match RollupMetadata::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
-                transaction_count = rollup_metadata.transaction_order();
+                transaction_count = rollup_metadata.transaction_order;
 
                 rollup_metadata.set_rollup_block_height(next_rollup_block_height);
                 rollup_metadata.new_merkle_tree();

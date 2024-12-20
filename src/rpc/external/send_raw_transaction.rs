@@ -34,17 +34,17 @@ impl SendRawTransaction {
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.rollup_id)?;
         let platform = rollup.platform();
         let service_provider = rollup.service_provider();
-        let cluster_id = rollup_metadata.cluster_id();
-        let rollup_block_height = rollup_metadata.rollup_block_height();
+        let cluster_id = &rollup_metadata.cluster_id;
+        let rollup_block_height = rollup_metadata.rollup_block_height;
 
         let cluster = Cluster::get(
             platform,
             service_provider,
             cluster_id,
-            rollup_metadata.platform_block_height(),
+            rollup_metadata.platform_block_height,
         )?;
 
-        if rollup_metadata.is_leader() {
+        if rollup_metadata.is_leader {
             let (transaction_order, pre_merkle_path) = rollup_metadata
                 .add_transaction_hash(parameter.raw_transaction.raw_transaction_hash().as_ref());
             rollup_metadata.update()?;
@@ -104,16 +104,24 @@ impl SendRawTransaction {
                 cluster.get_leader_external_rpc_url(rollup_block_height)?;
 
             let rpc_client = RpcClient::new()?;
-            let response = rpc_client
+            match rpc_client
                 .request(
                     leader_external_rpc_url,
                     SendRawTransaction::METHOD_NAME,
                     &parameter,
                     Id::Null,
                 )
-                .await?;
-
-            Ok(response)
+                .await
+            {
+                Ok(response) => Ok(response),
+                Err(error) => {
+                    tracing::error!(
+                        "Send raw transaction - leader external rpc error: {:?}",
+                        error
+                    );
+                    Err(error.into())
+                }
+            }
         }
     }
 }

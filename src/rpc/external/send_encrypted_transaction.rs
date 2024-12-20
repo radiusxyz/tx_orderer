@@ -36,17 +36,17 @@ impl SendEncryptedTransaction {
 
         let platform = rollup.platform();
         let service_provider = rollup.service_provider();
-        let cluster_id = rollup_metadata.cluster_id();
-        let rollup_block_height = rollup_metadata.rollup_block_height();
+        let cluster_id = &rollup_metadata.cluster_id;
+        let rollup_block_height = rollup_metadata.rollup_block_height;
 
         let cluster = Cluster::get(
             platform,
             service_provider,
             cluster_id,
-            rollup_metadata.platform_block_height(),
+            rollup_metadata.platform_block_height,
         )?;
 
-        if rollup_metadata.is_leader() {
+        if rollup_metadata.is_leader {
             let (transaction_order, pre_merkle_path) = rollup_metadata.add_transaction_hash(
                 parameter
                     .encrypted_transaction
