@@ -20,18 +20,6 @@ pub struct RollupMetadata {
 }
 
 impl RollupMetadata {
-    pub fn set_is_leader(&mut self, is_leader: bool) {
-        self.is_leader = is_leader;
-    }
-
-    pub fn set_cluster_id(&mut self, cluster_id: &String) {
-        self.cluster_id.clone_from(cluster_id);
-    }
-
-    pub fn set_rollup_block_height(&mut self, block_height: u64) {
-        self.rollup_block_height = block_height;
-    }
-
     pub fn new_merkle_tree(&mut self) {
         self.transaction_order = 0;
         self.merkle_tree = MerkleTree::new();
@@ -41,19 +29,15 @@ impl RollupMetadata {
         self.transaction_order += 1;
         self.merkle_tree.add_data(transaction_hash)
     }
-
-    pub fn set_platform_block_height(&mut self, platform_block_height: u64) {
-        self.platform_block_height = platform_block_height;
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValidationInfo {
-    platform: Platform,
-    validation_service_provider: ValidationServiceProvider,
+    pub platform: Platform,
+    pub validation_service_provider: ValidationServiceProvider,
 
     #[serde(serialize_with = "serialize_address")]
-    validation_service_manager: Address,
+    pub validation_service_manager: Address,
 }
 
 impl ValidationInfo {
@@ -68,35 +52,27 @@ impl ValidationInfo {
             validation_service_manager,
         }
     }
-
-    pub fn platform(&self) -> Platform {
-        self.platform
-    }
-
-    pub fn validation_service_provider(&self) -> ValidationServiceProvider {
-        self.validation_service_provider
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(rollup_id: &str))]
 pub struct Rollup {
-    rollup_id: String,
-    rollup_type: RollupType,
-    encrypted_transaction_type: EncryptedTransactionType,
+    pub rollup_id: String,
+    pub rollup_type: RollupType,
+    pub encrypted_transaction_type: EncryptedTransactionType,
 
     #[serde(serialize_with = "serialize_address")]
-    owner: Address,
-    validation_info: ValidationInfo,
-    order_commitment_type: OrderCommitmentType,
+    pub owner: Address,
+    pub validation_info: ValidationInfo,
+    pub order_commitment_type: OrderCommitmentType,
 
     #[serde(serialize_with = "serialize_address_list")]
-    executor_address_list: Vec<Address>,
+    pub executor_address_list: Vec<Address>,
 
-    cluster_id: String,
+    pub cluster_id: String,
 
-    platform: Platform,
-    service_provider: ServiceProvider,
+    pub platform: Platform,
+    pub service_provider: ServiceProvider,
 }
 
 impl Rollup {
@@ -128,42 +104,6 @@ impl Rollup {
             platform,
             service_provider,
         }
-    }
-
-    pub fn rollup_id(&self) -> &String {
-        &self.rollup_id
-    }
-
-    pub fn rollup_type(&self) -> RollupType {
-        self.rollup_type
-    }
-
-    pub fn encrypted_transaction_type(&self) -> EncryptedTransactionType {
-        self.encrypted_transaction_type
-    }
-
-    pub fn order_commitment_type(&self) -> OrderCommitmentType {
-        self.order_commitment_type
-    }
-
-    pub fn cluster_id(&self) -> &String {
-        &self.cluster_id
-    }
-
-    pub fn platform(&self) -> Platform {
-        self.platform
-    }
-
-    pub fn service_provider(&self) -> ServiceProvider {
-        self.service_provider
-    }
-
-    pub fn validation_info(&self) -> &ValidationInfo {
-        &self.validation_info
-    }
-
-    pub fn executor_address_list(&self) -> &Vec<Address> {
-        &self.executor_address_list
     }
 
     pub fn set_executor_address_list(&mut self, executor_address_list: Vec<Address>) {

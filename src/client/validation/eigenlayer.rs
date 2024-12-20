@@ -90,7 +90,7 @@ impl ValidationClient {
             let validation_info = validation_info.clone();
 
             async move {
-                let signing_key = context.config().signing_key();
+                let signing_key = &context.config().signing_key;
                 let validation_client = Self::new(
                     platform,
                     validation_service_provider,
@@ -139,14 +139,14 @@ impl ValidationClient {
 async fn callback(event: Avs::NewTaskCreated, context: ValidationClient) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = Block::get(rollup.rollup_id(), event.task.blockNumber).unwrap();
+        let block = Block::get(&rollup.rollup_id, event.task.blockNumber).unwrap();
 
         if block.block_creator_address != context.publisher().address() {
             let task = IValidationServiceManager::Task {
                 commitment: Bytes::from_iter(&[0u8; 32]),
                 blockNumber: 0,
-                rollupId: rollup.rollup_id().to_owned(),
-                clusterId: rollup.cluster_id().to_owned(),
+                rollupId: rollup.rollup_id,
+                clusterId: rollup.cluster_id,
                 taskCreatedBlock: event.taskCreatedBlock,
             };
 

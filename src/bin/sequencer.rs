@@ -49,12 +49,6 @@ pub enum Commands {
         #[clap(flatten)]
         config_option: Box<ConfigOption>,
     },
-
-    /// Register Sequencer: registerSequencer
-    RegisterValidator {
-        #[clap(flatten)]
-        config_option: Box<ConfigRegisterValidator>,
-    },
 }
 
 #[tokio::main]
@@ -75,7 +69,7 @@ async fn main() -> Result<(), Error> {
 
             tracing::info!(
                 "Successfully loaded the configuration file at {:?}.",
-                config.path(),
+                config.path,
             );
 
             // Initialize the database
@@ -88,7 +82,7 @@ async fn main() -> Result<(), Error> {
             );
 
             // Initialize seeder client
-            let seeder_rpc_url = config.seeder_rpc_url();
+            let seeder_rpc_url = &config.seeder_rpc_url;
             let seeder_client = SeederClient::new(seeder_rpc_url)?;
             tracing::info!(
                 "Successfully initialized seeder client {:?}.",
@@ -96,7 +90,7 @@ async fn main() -> Result<(), Error> {
             );
 
             // Initialize distributed key generation client
-            let distributed_key_generation_rpc_url = config.distributed_key_generation_rpc_url();
+            let distributed_key_generation_rpc_url = &config.distributed_key_generation_rpc_url;
             let distributed_key_generation_client =
                 DistributedKeyGenerationClient::new(distributed_key_generation_rpc_url)?;
 
@@ -188,17 +182,13 @@ async fn main() -> Result<(), Error> {
 
             server_handle.await.unwrap();
         }
-
-        Commands::RegisterValidator { config_option } => {
-            config_option.init().await;
-        }
     }
 
     Ok(())
 }
 
 async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error> {
-    let internal_rpc_url = context.config().internal_rpc_url().to_string();
+    let internal_rpc_url = context.config().internal_rpc_url.to_string();
 
     // Initialize the internal RPC server.
     let internal_rpc_server = RpcServer::new(context.clone())

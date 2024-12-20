@@ -25,7 +25,7 @@ impl Deregister {
         let seeder_client = context.seeder_client();
         match parameter.platform {
             Platform::Ethereum => {
-                let signing_key = context.config().signing_key();
+                let signing_key = &context.config().signing_key;
                 let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
 
                 seeder_client

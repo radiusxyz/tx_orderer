@@ -7,7 +7,7 @@ pub struct GetRollup {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRollupResponse {
-    rollup: Rollup,
+    pub rollup: Rollup,
 }
 
 impl GetRollup {

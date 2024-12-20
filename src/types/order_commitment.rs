@@ -17,8 +17,8 @@ pub enum OrderCommitment {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BundleOrderCommitment {
-    order_commitment_list: Vec<SingleOrderCommitment>,
-    signature: Signature,
+    pub order_commitment_list: Vec<SingleOrderCommitment>,
+    pub signature: Signature,
 }
 
 // #############################################################################
@@ -78,9 +78,6 @@ pub struct OrderCommitmentData {
 }
 
 // #############################################################################
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct OrderHashList(Vec<OrderHash>);
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct OrderHash(String);

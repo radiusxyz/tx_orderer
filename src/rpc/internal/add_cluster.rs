@@ -25,7 +25,7 @@ impl AddCluster {
         let seeder_client = context.seeder_client();
         match parameter.platform {
             Platform::Ethereum => {
-                let signing_key = context.config().signing_key();
+                let signing_key = &context.config().signing_key;
                 let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
 
                 seeder_client
@@ -33,8 +33,8 @@ impl AddCluster {
                         parameter.platform,
                         parameter.service_provider,
                         &parameter.cluster_id,
-                        context.config().external_rpc_url(),
-                        context.config().cluster_rpc_url(),
+                        &context.config().external_rpc_url,
+                        &context.config().cluster_rpc_url,
                         &signer,
                     )
                     .await?;

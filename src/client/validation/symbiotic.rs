@@ -85,12 +85,11 @@ impl ValidationClient {
             let validation_info = validation_info.clone();
 
             async move {
-                let signing_key = context.config().signing_key();
                 let validation_client = Self::new(
                     platform,
                     validation_service_provider,
                     validation_info,
-                    signing_key,
+                    &context.config().signing_key,
                 )
                 .unwrap();
 
@@ -134,7 +133,7 @@ impl ValidationClient {
 async fn callback(event: ValidationServiceManager::NewTaskCreated, context: ValidationClient) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = Block::get(rollup.rollup_id(), event.blockNumber.try_into().unwrap()).unwrap();
+        let block = Block::get(&rollup.rollup_id, event.blockNumber.try_into().unwrap()).unwrap();
 
         tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?} / taskCreatedBlock: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment, event.taskCreatedBlock);
 
@@ -143,8 +142,8 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
                 match context
                     .publisher()
                     .respond_to_task(
-                        rollup.cluster_id().to_owned(),
-                        rollup.rollup_id().to_owned(),
+                        &rollup.cluster_id,
+                        &rollup.rollup_id,
                         event.referenceTaskIndex.try_into().unwrap(),
                         true,
                     )

@@ -97,7 +97,7 @@ impl LivenessClient {
             let liveness_info = liveness_info.clone();
 
             async move {
-                let signing_key = context.config().signing_key();
+                let signing_key = &context.config().signing_key;
                 let signer = PrivateKeySigner::from_str(platform.into(), signing_key).unwrap();
                 context.add_signer(platform, signer).await.unwrap();
 
@@ -369,7 +369,7 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                                         liveness_client.service_provider(),
                                     );
 
-                                    Rollup::put(&rollup, rollup.rollup_id()).unwrap();
+                                    Rollup::put(&rollup, &rollup.rollup_id).unwrap();
                                 }
                             }
                         }

@@ -10,7 +10,7 @@ pub struct GetSequencingInfo {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfoResponse {
-    sequencing_info_payload: SequencingInfoPayload,
+    pub sequencing_info_payload: SequencingInfoPayload,
 }
 
 impl GetSequencingInfo {

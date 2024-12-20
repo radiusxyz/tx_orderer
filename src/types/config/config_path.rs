@@ -14,7 +14,7 @@ use crate::types::{
 pub struct ConfigPath {
     #[doc = "Set the sequencer configuration path"]
     #[clap(long = "path", default_value_t = Self::default().to_string())]
-    path: String,
+    pub path: String,
 }
 
 impl std::fmt::Display for ConfigPath {

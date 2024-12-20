@@ -3,7 +3,7 @@ use sha3::{Digest, Keccak256};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct MerkleTree {
-    nodes: Vec<Vec<[u8; 32]>>, // nodes by tree level
+    pub nodes: Vec<Vec<[u8; 32]>>, // nodes by tree level
 }
 
 impl MerkleTree {

@@ -32,8 +32,8 @@ impl SendRawTransaction {
 
         // 2. Check is leader
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.rollup_id)?;
-        let platform = rollup.platform();
-        let service_provider = rollup.service_provider();
+        let platform = rollup.platform;
+        let service_provider = rollup.service_provider;
         let cluster_id = &rollup_metadata.cluster_id;
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
@@ -51,9 +51,9 @@ impl SendRawTransaction {
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
-                rollup.platform(),
+                rollup.platform,
                 parameter.rollup_id.clone(),
-                rollup.order_commitment_type(),
+                rollup.order_commitment_type,
                 parameter.raw_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
@@ -82,7 +82,7 @@ impl SendRawTransaction {
             sync_raw_transaction(
                 cluster,
                 context.clone(),
-                rollup.platform(),
+                rollup.platform,
                 parameter.rollup_id.clone(),
                 rollup_block_height,
                 transaction_order,
