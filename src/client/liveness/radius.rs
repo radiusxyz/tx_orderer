@@ -179,6 +179,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                 )
                 .unwrap();
                 liveness_event_list.push(sequencer_address);
+                liveness_event_list.update().unwrap();
             }
             _others => {}
         },
