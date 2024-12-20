@@ -99,20 +99,29 @@ impl SendEncryptedTransaction {
 
             Ok(order_commitment)
         } else {
+            drop(rollup_metadata);
             let leader_external_rpc_url =
                 cluster.get_leader_external_rpc_url(rollup_block_height)?;
 
             let rpc_client = RpcClient::new()?;
-            let response = rpc_client
+            match rpc_client
                 .request(
                     leader_external_rpc_url,
                     SendEncryptedTransaction::METHOD_NAME,
                     &parameter,
                     Id::Null,
                 )
-                .await?;
-
-            Ok(response)
+                .await
+            {
+                Ok(response) => Ok(response),
+                Err(error) => {
+                    tracing::error!(
+                        "Send encrypted transaction - leader external rpc error: {:?}",
+                        error
+                    );
+                    Err(error.into())
+                }
+            }
         }
     }
 }

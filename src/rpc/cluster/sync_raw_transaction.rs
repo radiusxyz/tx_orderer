@@ -61,6 +61,8 @@ impl SyncRawTransaction {
                     .as_ref(),
             );
             rollup_metadata.update()?;
+        } else {
+            drop(rollup_metadata);
         }
 
         let transaction_hash = parameter.message.raw_transaction.raw_transaction_hash();

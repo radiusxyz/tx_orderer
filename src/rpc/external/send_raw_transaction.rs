@@ -99,6 +99,7 @@ impl SendRawTransaction {
 
             Ok(order_commitment)
         } else {
+            drop(rollup_metadata);
             let leader_external_rpc_url =
                 cluster.get_leader_external_rpc_url(rollup_block_height)?;
 
