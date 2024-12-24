@@ -8,8 +8,8 @@ use crate::{error::Error, types::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EthTransactionData {
-    encrypted_data: EncryptedData,
-    open_data: EthOpenData,
+    pub encrypted_data: EncryptedData,
+    pub open_data: EthOpenData,
 
     pub plain_data: Option<EthPlainData>,
 }
@@ -21,18 +21,6 @@ impl EthTransactionData {
             open_data,
             plain_data: None,
         }
-    }
-
-    pub fn encrypted_data(&self) -> &EncryptedData {
-        &self.encrypted_data
-    }
-
-    pub fn open_data(&self) -> &EthOpenData {
-        &self.open_data
-    }
-
-    pub fn plain_data(&self) -> Option<&EthPlainData> {
-        self.plain_data.as_ref()
     }
 
     pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {

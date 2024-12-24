@@ -8,7 +8,7 @@ pub struct GetClusterIdList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterIdListResponse {
-    cluster_id_list: ClusterIdList,
+    pub cluster_id_list: ClusterIdList,
 }
 
 impl GetClusterIdList {

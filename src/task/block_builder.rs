@@ -151,7 +151,7 @@ pub fn block_builder_skde(
 
         let rollup = Rollup::get(&rollup_id).unwrap();
 
-        let signer = context.get_signer(rollup.platform()).await.unwrap();
+        let signer = context.get_signer(rollup.platform).await.unwrap();
         let sequencer_address = signer.address().clone();
         let signature = signer.sign_message("").unwrap(); // TODO: set the message.
 
@@ -171,11 +171,11 @@ pub fn block_builder_skde(
 
         if sequencer_address == block_creator_address {
             let rollup = Rollup::get(&rollup_id).unwrap();
-            let rollup_validation_info = rollup.validation_info();
+            let rollup_validation_info = rollup.validation_info;
 
             let validation_info = ValidationInfoPayload::get(
-                rollup_validation_info.platform(),
-                rollup_validation_info.validation_service_provider(),
+                rollup_validation_info.platform,
+                rollup_validation_info.validation_service_provider,
             )
             .unwrap();
 
@@ -186,8 +186,8 @@ pub fn block_builder_skde(
                     ValidationInfoPayload::EigenLayer(_) => {
                         let validation_client: validation::eigenlayer::ValidationClient = context
                             .get_validation_client(
-                                rollup_validation_info.platform(),
-                                rollup_validation_info.validation_service_provider(),
+                                rollup_validation_info.platform,
+                                rollup_validation_info.validation_service_provider,
                             )
                             .await
                             .unwrap();
@@ -195,8 +195,8 @@ pub fn block_builder_skde(
                         validation_client
                             .publisher()
                             .register_block_commitment(
-                                rollup.cluster_id(),
-                                rollup.rollup_id(),
+                                rollup.cluster_id,
+                                rollup.rollup_id,
                                 rollup_block_height,
                                 block_commitment,
                             )
@@ -206,8 +206,8 @@ pub fn block_builder_skde(
                     ValidationInfoPayload::Symbiotic(_) => {
                         let validation_client: validation::symbiotic::ValidationClient = context
                             .get_validation_client(
-                                rollup_validation_info.platform(),
-                                rollup_validation_info.validation_service_provider(),
+                                rollup_validation_info.platform,
+                                rollup_validation_info.validation_service_provider,
                             )
                             .await
                             .unwrap();
@@ -216,8 +216,8 @@ pub fn block_builder_skde(
                             match validation_client
                                 .publisher()
                                 .register_block_commitment(
-                                    rollup.cluster_id(),
-                                    rollup.rollup_id(),
+                                    &rollup.cluster_id,
+                                    &rollup.rollup_id,
                                     rollup_block_height,
                                     block_commitment,
                                 )
@@ -250,26 +250,26 @@ async fn decrypt_skde_transaction(
     decryption_keys: &mut HashMap<u64, String>,
     skde_params: &SkdeParams,
 ) -> Result<(RawTransaction, PlainData), Error> {
-    let decryption_key_id = skde_encrypted_transaction.key_id();
+    let decryption_key_id = skde_encrypted_transaction.key_id;
 
     let decryption_key = if let std::collections::hash_map::Entry::Vacant(e) =
         decryption_keys.entry(decryption_key_id)
     {
-        tracing::info!("key_id: {:?}", skde_encrypted_transaction.key_id());
+        tracing::info!("key_id: {:?}", decryption_key_id);
 
         let get_decryption_key_response = distributed_key_generation_client
-            .get_decryption_key(skde_encrypted_transaction.key_id())
+            .get_decryption_key(decryption_key_id)
             .await?;
 
-        e.insert(get_decryption_key_response.decryption_key.sk.clone());
-        get_decryption_key_response.decryption_key.sk
+        e.insert(get_decryption_key_response.decryption_key.clone());
+        get_decryption_key_response.decryption_key
     } else {
         decryption_keys.get(&decryption_key_id).unwrap().clone()
     };
 
-    match skde_encrypted_transaction.transaction_data() {
+    match &skde_encrypted_transaction.transaction_data {
         TransactionData::Eth(transaction_data) => {
-            let encrypted_data = transaction_data.encrypted_data().clone();
+            let encrypted_data = transaction_data.encrypted_data.clone();
 
             let decrypted_data =
                 decrypt(skde_params, encrypted_data.as_ref(), &decryption_key).unwrap();
@@ -277,7 +277,7 @@ async fn decrypt_skde_transaction(
             let eth_plain_data: EthPlainData = serde_json::from_str(&decrypted_data).unwrap();
 
             let rollup_transaction = transaction_data
-                .open_data()
+                .open_data
                 .convert_to_rollup_transaction(&eth_plain_data);
 
             let eth_raw_transaction = EthRawTransaction::from(to_raw_tx(rollup_transaction));

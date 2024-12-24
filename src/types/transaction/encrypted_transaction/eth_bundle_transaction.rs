@@ -4,10 +4,10 @@ use crate::{error::Error, types::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EthBundleTransactionData {
-    encrypted_data: EncryptedData,
-    open_data: EthBundleOpenData,
+    pub encrypted_data: EncryptedData,
+    pub open_data: EthBundleOpenData,
 
-    plain_data: Option<EthBundlePlainData>,
+    pub plain_data: Option<EthBundlePlainData>,
 }
 
 impl EthBundleTransactionData {
@@ -22,14 +22,6 @@ impl EthBundleTransactionData {
         // .convert_to_rollup_transaction(self.plain_data.as_ref().unwrap());
 
         Ok(RollupTransaction::EthBundle)
-    }
-
-    pub fn encrypted_data(&self) -> &EncryptedData {
-        &self.encrypted_data
-    }
-
-    pub fn open_data(&self) -> &EthBundleOpenData {
-        &self.open_data
     }
 }
 

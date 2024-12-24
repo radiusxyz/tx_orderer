@@ -1,12 +1,10 @@
 mod config_option;
 mod config_path;
-mod config_register_validator;
 
 use std::{fs, path::PathBuf};
 
 pub use config_option::*;
 pub use config_path::*;
-pub use config_register_validator::*;
 use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_HOME_PATH: &str = ".radius";
@@ -20,19 +18,19 @@ pub const DEFAULT_SIGNING_KEY: &str =
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
-    path: PathBuf,
+    pub path: PathBuf,
 
-    external_rpc_url: String,
-    internal_rpc_url: String,
-    cluster_rpc_url: String,
+    pub external_rpc_url: String,
+    pub internal_rpc_url: String,
+    pub cluster_rpc_url: String,
 
-    seeder_rpc_url: String,
+    pub seeder_rpc_url: String,
 
-    distributed_key_generation_rpc_url: String,
+    pub distributed_key_generation_rpc_url: String,
 
-    signing_key: String,
+    pub signing_key: String,
 
-    is_using_zkp: bool,
+    pub is_using_zkp: bool,
 }
 
 impl Config {
@@ -75,10 +73,6 @@ impl Config {
         })
     }
 
-    pub fn path(&self) -> &PathBuf {
-        &self.path
-    }
-
     pub fn database_path(&self) -> PathBuf {
         self.path.join(DATABASE_DIR_NAME)
     }
@@ -87,25 +81,9 @@ impl Config {
         self.path.join(LOG_DIR_NAME)
     }
 
-    pub fn external_rpc_url(&self) -> &String {
-        &self.external_rpc_url
-    }
-
-    pub fn internal_rpc_url(&self) -> &String {
-        &self.internal_rpc_url
-    }
-
-    pub fn cluster_rpc_url(&self) -> &String {
-        &self.cluster_rpc_url
-    }
-
-    pub fn seeder_rpc_url(&self) -> &String {
-        &self.seeder_rpc_url
-    }
-
     pub fn external_port(&self) -> Result<String, ConfigError> {
         Ok(self
-            .external_rpc_url()
+            .external_rpc_url
             .split(':')
             .last()
             .ok_or(ConfigError::InvalidExternalPort)?
@@ -114,23 +92,11 @@ impl Config {
 
     pub fn cluster_port(&self) -> Result<String, ConfigError> {
         Ok(self
-            .cluster_rpc_url()
+            .cluster_rpc_url
             .split(':')
             .last()
             .ok_or(ConfigError::InvalidClusterPort)?
             .to_string())
-    }
-
-    pub fn distributed_key_generation_rpc_url(&self) -> &String {
-        &self.distributed_key_generation_rpc_url
-    }
-
-    pub fn signing_key(&self) -> &String {
-        &self.signing_key
-    }
-
-    pub fn is_using_zkp(&self) -> bool {
-        self.is_using_zkp
     }
 }
 

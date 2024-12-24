@@ -9,7 +9,7 @@ pub struct GetOrderCommitment {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetOrderCommitmentResponse {
-    order_commitment: OrderCommitment,
+    pub order_commitment: OrderCommitment,
 }
 
 impl GetOrderCommitment {

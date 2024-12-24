@@ -34,19 +34,19 @@ impl SendEncryptedTransaction {
         // 2. Check is leader
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.rollup_id)?;
 
-        let platform = rollup.platform();
-        let service_provider = rollup.service_provider();
-        let cluster_id = rollup_metadata.cluster_id();
-        let rollup_block_height = rollup_metadata.rollup_block_height();
+        let platform = rollup.platform;
+        let service_provider = rollup.service_provider;
+        let cluster_id = &rollup_metadata.cluster_id;
+        let rollup_block_height = rollup_metadata.rollup_block_height;
 
         let cluster = Cluster::get(
             platform,
             service_provider,
             cluster_id,
-            rollup_metadata.platform_block_height(),
+            rollup_metadata.platform_block_height,
         )?;
 
-        if rollup_metadata.is_leader() {
+        if rollup_metadata.is_leader {
             let (transaction_order, pre_merkle_path) = rollup_metadata.add_transaction_hash(
                 parameter
                     .encrypted_transaction
@@ -58,9 +58,9 @@ impl SendEncryptedTransaction {
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
-                rollup.platform(),
+                rollup.platform,
                 parameter.rollup_id.clone(),
-                rollup.order_commitment_type(),
+                rollup.order_commitment_type,
                 parameter.encrypted_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
@@ -89,7 +89,7 @@ impl SendEncryptedTransaction {
             sync_encrypted_transaction(
                 cluster,
                 context.clone(),
-                rollup.platform(),
+                rollup.platform,
                 parameter.rollup_id.clone(),
                 rollup_block_height,
                 transaction_order,
@@ -99,20 +99,29 @@ impl SendEncryptedTransaction {
 
             Ok(order_commitment)
         } else {
+            drop(rollup_metadata);
             let leader_external_rpc_url =
                 cluster.get_leader_external_rpc_url(rollup_block_height)?;
 
             let rpc_client = RpcClient::new()?;
-            let response = rpc_client
+            match rpc_client
                 .request(
                     leader_external_rpc_url,
                     SendEncryptedTransaction::METHOD_NAME,
                     &parameter,
                     Id::Null,
                 )
-                .await?;
-
-            Ok(response)
+                .await
+            {
+                Ok(response) => Ok(response),
+                Err(error) => {
+                    tracing::error!(
+                        "Send encrypted transaction - leader external rpc error: {:?}",
+                        error
+                    );
+                    Err(error.into())
+                }
+            }
         }
     }
 }
@@ -121,7 +130,7 @@ fn check_supported_encrypted_transaction(
     rollup: &Rollup,
     encrypted_transaction: &EncryptedTransaction,
 ) -> Result<(), Error> {
-    match rollup.encrypted_transaction_type() {
+    match rollup.encrypted_transaction_type {
         EncryptedTransactionType::Pvde => {
             if !matches!(encrypted_transaction, EncryptedTransaction::Pvde(_)) {
                 return Err(Error::UnsupportedEncryptedMempool);

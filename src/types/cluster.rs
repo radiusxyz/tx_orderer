@@ -24,10 +24,10 @@ impl ClusterIdList {
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
-    sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
-    rollup_id_list: Vec<String>,
-    my_index: usize,
-    block_margin: u64,
+    pub sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
+    pub rollup_id_list: Vec<String>,
+    pub my_index: usize,
+    pub block_margin: u64,
 }
 
 impl Cluster {
@@ -71,22 +71,6 @@ impl Cluster {
         )?;
 
         Ok(())
-    }
-
-    pub fn my_index(&self) -> usize {
-        self.my_index
-    }
-
-    pub fn sequencer_list(&self) -> &Vec<SequencerRpcInfo> {
-        &self.sequencer_rpc_url_list
-    }
-
-    pub fn rollup_id_list(&self) -> &Vec<String> {
-        &self.rollup_id_list
-    }
-
-    pub fn block_margin(&self) -> u64 {
-        self.block_margin
     }
 
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
@@ -158,7 +142,7 @@ impl Cluster {
 
         self.sequencer_rpc_url_list
             .get(leader_index)
-            .and_then(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url.clone())
+            .and_then(|sequencer_rpc_info| sequencer_rpc_info.external_rpc_url.clone())
             .ok_or(Error::EmptyLeaderClusterRpcUrl)
     }
 

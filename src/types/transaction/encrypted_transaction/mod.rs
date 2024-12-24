@@ -49,29 +49,29 @@ impl EncryptedTransaction {
 
     pub fn transaction_data(&self) -> &TransactionData {
         match self {
-            Self::Pvde(pvde_encrypted_transaction) => pvde_encrypted_transaction.transaction_data(),
-            Self::Skde(skde_encrypted_transaction) => skde_encrypted_transaction.transaction_data(),
+            Self::Pvde(pvde_encrypted_transaction) => &pvde_encrypted_transaction.transaction_data,
+            Self::Skde(skde_encrypted_transaction) => &skde_encrypted_transaction.transaction_data,
         }
     }
 
     pub fn encrypted_data(&self) -> &EncryptedData {
         match self {
-            Self::Pvde(pvde_encrypted_transaction) => pvde_encrypted_transaction
-                .transaction_data()
-                .encrypted_data(),
-            Self::Skde(skde_encrypted_transaction) => skde_encrypted_transaction
-                .transaction_data()
-                .encrypted_data(),
+            Self::Pvde(pvde_encrypted_transaction) => {
+                &pvde_encrypted_transaction.transaction_data.encrypted_data()
+            }
+            Self::Skde(skde_encrypted_transaction) => {
+                &skde_encrypted_transaction.transaction_data.encrypted_data()
+            }
         }
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PvdeEncryptedTransaction {
-    transaction_data: TransactionData,
+    pub transaction_data: TransactionData,
 
-    time_lock_puzzle: TimeLockPuzzle,
-    pvde_zkp: Option<PvdeZkp>,
+    pub time_lock_puzzle: TimeLockPuzzle,
+    pub pvde_zkp: Option<PvdeZkp>,
 }
 
 impl PvdeEncryptedTransaction {
@@ -87,18 +87,6 @@ impl PvdeEncryptedTransaction {
         }
     }
 
-    pub fn transaction_data(&self) -> &TransactionData {
-        &self.transaction_data
-    }
-
-    pub fn time_lock_puzzle(&self) -> &TimeLockPuzzle {
-        &self.time_lock_puzzle
-    }
-
-    pub fn pvde_zkp(&self) -> Option<&PvdeZkp> {
-        self.pvde_zkp.as_ref()
-    }
-
     pub fn set_pvde_zkp(&mut self, pvde_zkp: PvdeZkp) {
         self.pvde_zkp = Some(pvde_zkp);
     }
@@ -106,8 +94,8 @@ impl PvdeEncryptedTransaction {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SkdeEncryptedTransaction {
-    transaction_data: TransactionData,
-    key_id: u64,
+    pub transaction_data: TransactionData,
+    pub key_id: u64,
 }
 
 impl SkdeEncryptedTransaction {
@@ -116,18 +104,6 @@ impl SkdeEncryptedTransaction {
             transaction_data,
             key_id,
         }
-    }
-
-    pub fn transaction_data(&self) -> &TransactionData {
-        &self.transaction_data
-    }
-
-    pub fn mut_transaction_data(&mut self) -> &mut TransactionData {
-        &mut self.transaction_data
-    }
-
-    pub fn key_id(&self) -> u64 {
-        self.key_id
     }
 }
 
@@ -172,8 +148,8 @@ impl TransactionData {
 
     pub fn encrypted_data(&self) -> &EncryptedData {
         match self {
-            Self::Eth(data) => data.encrypted_data(),
-            Self::EthBundle(data) => data.encrypted_data(),
+            Self::Eth(data) => &data.encrypted_data,
+            Self::EthBundle(data) => &data.encrypted_data,
         }
     }
 }

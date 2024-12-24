@@ -33,26 +33,26 @@ impl SyncRawTransaction {
         let mut rollup_metadata = RollupMetadata::get_mut(&parameter.message.rollup_id)?;
 
         let cluster = Cluster::get(
-            rollup.platform(),
-            rollup.service_provider(),
-            rollup.cluster_id(),
-            rollup_metadata.platform_block_height(),
+            rollup.platform,
+            rollup.service_provider,
+            &rollup.cluster_id,
+            rollup_metadata.platform_block_height,
         )?;
 
         // Verify the leader signature
         let leader_address = cluster.get_leader_address(parameter.message.rollup_block_height)?;
         parameter.signature.verify_message(
-            rollup.platform().into(),
+            rollup.platform.into(),
             &parameter.message,
-            Address::from_str(rollup.platform().into(), &leader_address)?,
+            Address::from_str(rollup.platform.into(), &leader_address)?,
         )?;
 
         // Check the rollup block height
-        if parameter.message.rollup_block_height != rollup_metadata.rollup_block_height() {
+        if parameter.message.rollup_block_height != rollup_metadata.rollup_block_height {
             return Err(Error::BlockHeightMismatch.into());
         }
 
-        if parameter.message.transaction_order == rollup_metadata.transaction_order() {
+        if parameter.message.transaction_order == rollup_metadata.transaction_order {
             rollup_metadata.add_transaction_hash(
                 parameter
                     .message
@@ -61,6 +61,8 @@ impl SyncRawTransaction {
                     .as_ref(),
             );
             rollup_metadata.update()?;
+        } else {
+            drop(rollup_metadata);
         }
 
         let transaction_hash = parameter.message.raw_transaction.raw_transaction_hash();

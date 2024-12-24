@@ -97,7 +97,7 @@ impl LivenessClient {
             let liveness_info = liveness_info.clone();
 
             async move {
-                let signing_key = context.config().signing_key();
+                let signing_key = &context.config().signing_key;
                 let signer = PrivateKeySigner::from_str(platform.into(), signing_key).unwrap();
                 context.add_signer(platform, signer).await.unwrap();
 
@@ -352,7 +352,15 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                                         rollup_info.rollupId.clone(),
                                         rollup_type,
                                         EncryptedTransactionType::Skde,
-                                        rollup_info.owner.to_string(),
+                                        Address::from_str(
+                                            Platform::from_str(
+                                                &rollup_info.validationInfo.platform,
+                                            )
+                                            .unwrap()
+                                            .into(),
+                                            &rollup_info.owner.to_string(),
+                                        )
+                                        .unwrap(),
                                         validation_info,
                                         order_commitment_type,
                                         executor_address_list,
@@ -361,7 +369,7 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                                         liveness_client.service_provider(),
                                     );
 
-                                    Rollup::put(&rollup, rollup.rollup_id()).unwrap();
+                                    Rollup::put(&rollup, &rollup.rollup_id).unwrap();
                                 }
                             }
                         }

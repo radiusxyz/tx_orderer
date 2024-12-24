@@ -38,7 +38,7 @@ impl FinalizeBlock {
 
         // Verify the message.
         // parameter.signature.verify_message(
-        //     rollup.platform().into(),
+        //     rollup.platform.into(),
         //     &parameter.message,
         //     parameter.message.executor_address.clone(),
         // )?;
@@ -57,16 +57,16 @@ impl FinalizeBlock {
         // *executor_address)     .ok_or(Error::ExecutorAddressNotFound)?;
 
         let cluster = Cluster::get(
-            rollup.platform(),
-            rollup.service_provider(),
-            rollup.cluster_id(),
+            rollup.platform,
+            rollup.service_provider,
+            &rollup.cluster_id,
             parameter.message.platform_block_height,
         );
 
         // TODO: update
         if cluster.is_err() {
             let liveness_client = context
-                .get_liveness_client::<LivenessClient>(rollup.platform(), rollup.service_provider())
+                .get_liveness_client::<LivenessClient>(rollup.platform, rollup.service_provider)
                 .await?;
 
             let platform_block_height = liveness_client
@@ -94,7 +94,7 @@ impl FinalizeBlock {
         let cluster = cluster.unwrap();
 
         let next_rollup_block_height = parameter.message.rollup_block_height + 1;
-        let signer = context.get_signer(rollup.platform()).await.unwrap();
+        let signer = context.get_signer(rollup.platform).await.unwrap();
         let sequencer_address = signer.address().clone();
         let is_leader = sequencer_address == parameter.message.next_block_creator_address;
 
@@ -103,12 +103,12 @@ impl FinalizeBlock {
         let mut transaction_count = 0;
         match RollupMetadata::get_mut(&parameter.message.rollup_id) {
             Ok(mut rollup_metadata) => {
-                transaction_count = rollup_metadata.transaction_order();
+                transaction_count = rollup_metadata.transaction_order;
 
-                rollup_metadata.set_rollup_block_height(next_rollup_block_height);
+                rollup_metadata.rollup_block_height = next_rollup_block_height;
                 rollup_metadata.new_merkle_tree();
-                rollup_metadata.set_is_leader(is_leader);
-                rollup_metadata.set_platform_block_height(parameter.message.platform_block_height);
+                rollup_metadata.is_leader = is_leader;
+                rollup_metadata.platform_block_height = parameter.message.platform_block_height;
 
                 rollup_metadata.update()?;
             }
@@ -116,13 +116,11 @@ impl FinalizeBlock {
                 if error.is_none_type() {
                     let mut rollup_metadata = RollupMetadata::default();
 
-                    rollup_metadata.set_cluster_id(rollup.cluster_id());
-
-                    rollup_metadata.set_rollup_block_height(next_rollup_block_height);
+                    rollup_metadata.cluster_id = rollup.cluster_id;
+                    rollup_metadata.rollup_block_height = next_rollup_block_height;
+                    rollup_metadata.is_leader = is_leader;
                     rollup_metadata.new_merkle_tree();
-                    rollup_metadata.set_is_leader(is_leader);
-                    rollup_metadata
-                        .set_platform_block_height(parameter.message.platform_block_height);
+                    rollup_metadata.platform_block_height = parameter.message.platform_block_height;
 
                     rollup_metadata.put(&parameter.message.rollup_id)?;
                 } else {
@@ -138,7 +136,7 @@ impl FinalizeBlock {
             context.clone(),
             parameter.message.rollup_id.clone(),
             parameter.message.block_creator_address.clone(),
-            rollup.encrypted_transaction_type(),
+            rollup.encrypted_transaction_type,
             parameter.message.rollup_block_height,
             transaction_count,
             cluster,

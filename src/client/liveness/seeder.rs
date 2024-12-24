@@ -195,7 +195,7 @@ impl GetSequencerRpcUrlList {
     pub const METHOD_NAME: &'static str = "get_sequencer_rpc_url_list";
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct SequencerRpcInfo {
     pub address: String,
     pub external_rpc_url: Option<String>,
