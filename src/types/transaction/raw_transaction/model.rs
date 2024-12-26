@@ -10,11 +10,12 @@ impl RawTransactionModel {
         rollup_id: &String,
         transaction_hash: &RawTransactionHash,
 
-        raw_transaction: &RawTransaction,
+        raw_transaction: RawTransaction,
+        is_direct_sent: bool,
     ) -> Result<(), KvStoreError> {
         let key = &(Self::ID, rollup_id, transaction_hash);
 
-        kvstore()?.put(key, raw_transaction)
+        kvstore()?.put(key, &(raw_transaction, is_direct_sent))
     }
 
     pub fn put(
@@ -22,17 +23,18 @@ impl RawTransactionModel {
         block_height: u64,
         transaction_order: u64,
 
-        raw_transaction: &RawTransaction,
+        raw_transaction: RawTransaction,
+        is_direct_sent: bool,
     ) -> Result<(), KvStoreError> {
         let key = &(Self::ID, rollup_id, block_height, transaction_order);
 
-        kvstore()?.put(key, raw_transaction)
+        kvstore()?.put(key, &(raw_transaction, is_direct_sent))
     }
 
     pub fn get_with_transaction_hash(
         rollup_id: &String,
         transaction_hash: &String,
-    ) -> Result<RawTransaction, KvStoreError> {
+    ) -> Result<(RawTransaction, bool), KvStoreError> {
         let key = &(Self::ID, rollup_id, transaction_hash);
 
         kvstore()?.get(key)
@@ -42,7 +44,7 @@ impl RawTransactionModel {
         rollup_id: &String,
         block_height: u64,
         transaction_order: u64,
-    ) -> Result<RawTransaction, KvStoreError> {
+    ) -> Result<(RawTransaction, bool), KvStoreError> {
         let key = &(Self::ID, rollup_id, block_height, transaction_order);
 
         kvstore()?.get(key)

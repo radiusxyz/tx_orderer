@@ -66,14 +66,16 @@ impl SendRawTransaction {
             RawTransactionModel::put_with_transaction_hash(
                 &parameter.rollup_id,
                 &transaction_hash,
-                &parameter.raw_transaction,
+                parameter.raw_transaction.clone(),
+                true,
             )?;
 
             RawTransactionModel::put(
                 &parameter.rollup_id,
                 rollup_block_height,
                 transaction_order,
-                &parameter.raw_transaction,
+                parameter.raw_transaction.clone(),
+                true,
             )?;
 
             order_commitment.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
@@ -88,6 +90,7 @@ impl SendRawTransaction {
                 transaction_order,
                 parameter.raw_transaction.clone(),
                 order_commitment.clone(),
+                true,
             );
 
             tracing::info!(
@@ -139,6 +142,7 @@ pub fn sync_raw_transaction(
     transaction_order: u64,
     raw_transaction: RawTransaction,
     order_commitment: OrderCommitment,
+    is_direct_sent: bool,
 ) {
     tokio::spawn(async move {
         let follower_rpc_url_list: Vec<String> =
@@ -151,6 +155,7 @@ pub fn sync_raw_transaction(
                 transaction_order,
                 raw_transaction,
                 order_commitment: Some(order_commitment),
+                is_direct_sent,
             };
             let signature = context
                 .get_signer(platform)

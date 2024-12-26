@@ -7,6 +7,7 @@ pub struct SyncRawTransactionMessage {
     pub transaction_order: u64,
     pub raw_transaction: RawTransaction,
     pub order_commitment: Option<OrderCommitment>,
+    pub is_direct_sent: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -70,14 +71,16 @@ impl SyncRawTransaction {
         RawTransactionModel::put_with_transaction_hash(
             &parameter.message.rollup_id,
             &transaction_hash,
-            &parameter.message.raw_transaction,
+            parameter.message.raw_transaction.clone(),
+            parameter.message.is_direct_sent,
         )?;
 
         RawTransactionModel::put(
             &parameter.message.rollup_id,
             parameter.message.rollup_block_height,
             parameter.message.transaction_order,
-            &parameter.message.raw_transaction,
+            parameter.message.raw_transaction.clone(),
+            parameter.message.is_direct_sent,
         )?;
 
         if let Some(order_commitment) = parameter.message.order_commitment {
