@@ -53,6 +53,9 @@ impl SyncBlock {
                 rollup_metadata.rollup_block_height = next_rollup_block_height;
                 rollup_metadata.new_merkle_tree();
                 rollup_metadata.is_leader = is_leader;
+                rollup_metadata.leader_sequencer_rpc_info = cluster
+                    .get_sequencer_rpc_info(&parameter.message.next_block_creator_address)
+                    .unwrap();
                 rollup_metadata.platform_block_height = parameter.message.platform_block_height;
 
                 rollup_metadata.update()?;
@@ -64,6 +67,9 @@ impl SyncBlock {
                     rollup_metadata.cluster_id = rollup.cluster_id;
                     rollup_metadata.rollup_block_height = next_rollup_block_height;
                     rollup_metadata.is_leader = is_leader;
+                    rollup_metadata.leader_sequencer_rpc_info = cluster
+                        .get_sequencer_rpc_info(&parameter.message.next_block_creator_address)
+                        .unwrap();
                     rollup_metadata.platform_block_height = parameter.message.platform_block_height;
                     rollup_metadata.new_merkle_tree();
 

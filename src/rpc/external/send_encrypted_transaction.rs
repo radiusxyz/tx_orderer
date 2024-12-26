@@ -99,9 +99,12 @@ impl SendEncryptedTransaction {
 
             Ok(order_commitment)
         } else {
+            let leader_external_rpc_url = rollup_metadata
+                .leader_sequencer_rpc_info
+                .external_rpc_url
+                .clone()
+                .unwrap();
             drop(rollup_metadata);
-            let leader_external_rpc_url =
-                cluster.get_leader_external_rpc_url(rollup_block_height)?;
 
             let rpc_client = RpcClient::new()?;
             match rpc_client
