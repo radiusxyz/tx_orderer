@@ -353,17 +353,27 @@ async fn fetch_missing_transaction(
         transaction_order,
     };
 
+    println!(
+        "fetch_missing_transaction - others_external_rpc_url_list: {:?}",
+        others_external_rpc_url_list
+    );
+
     let rpc_client = RpcClient::new()?;
-    let rpc_response = rpc_client
+    match rpc_client
         .fetch(
             others_external_rpc_url_list,
             GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
             &parameter,
             Id::Null,
         )
-        .await?;
-
-    Ok(rpc_response)
+        .await
+    {
+        Ok(rpc_response) => Ok(rpc_response),
+        Err(error) => {
+            tracing::error!("fetch_missing_transaction - error: {:?}", error);
+            Err(error)
+        }
+    }
 }
 
 async fn fetch_raw_transaction(
