@@ -306,6 +306,10 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
             external::GetRollup::METHOD_NAME,
             external::GetRollup::handler,
         )?
+        .register_rpc_method(
+            external::GetRollupMetadata::METHOD_NAME,
+            external::GetRollupMetadata::handler,
+        )?
         .register_rpc_method(external::GetBlock::METHOD_NAME, external::GetBlock::handler)?
         .init(external_rpc_url.clone())
         .await?;
