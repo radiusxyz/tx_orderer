@@ -51,3 +51,14 @@ where
     }
     seq.end()
 }
+
+fn serialize_merkle_path<S>(paths: &Vec<[u8; 32]>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let mut seq = serializer.serialize_seq(Some(paths.len()))?;
+    for path in paths {
+        seq.serialize_element(&const_hex::encode_prefixed(path))?;
+    }
+    seq.end()
+}

@@ -1,7 +1,5 @@
 use std::str::FromStr;
 
-use sha3::{Digest, Sha3_256};
-
 use crate::{error::Error, types::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
@@ -64,47 +62,51 @@ pub struct TransactionHashOrderCommitment(pub String);
 // #############################################################################
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+
 pub struct SignOrderCommitment {
     pub data: OrderCommitmentData,
     pub signature: String,
 }
 
 #[derive(Clone, Default, Debug, Deserialize, Serialize)]
+
 pub struct OrderCommitmentData {
     pub rollup_id: String,
     pub block_height: u64,
     pub transaction_order: u64,
+
+    #[serde(serialize_with = "serialize_merkle_path")]
     pub pre_merkle_path: Vec<[u8; 32]>,
 }
 
 // #############################################################################
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-pub struct OrderHash(String);
+// #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+// pub struct OrderHash(String);
 
-impl Default for OrderHash {
-    fn default() -> Self {
-        Self(const_hex::encode_prefixed([0; 32]))
-    }
-}
+// impl Default for OrderHash {
+//     fn default() -> Self {
+//         Self(const_hex::encode_prefixed([0; 32]))
+//     }
+// }
 
-impl From<String> for OrderHash {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
-}
+// impl From<String> for OrderHash {
+//     fn from(value: String) -> Self {
+//         Self(value)
+//     }
+// }
 
-impl OrderHash {
-    pub fn update_order_hash(&self, raw_tx_hash: &RawTransactionHash) -> OrderHash {
-        let mut hasher = Sha3_256::new();
-        hasher.update(self.0.as_bytes());
-        hasher.update(raw_tx_hash);
-        let order_hash_bytes = hasher.finalize();
+// impl OrderHash {
+//     pub fn update_order_hash(&self, raw_tx_hash: &RawTransactionHash) ->
+// OrderHash {         let mut hasher = Sha3_256::new();
+//         hasher.update(self.0.as_bytes());
+//         hasher.update(raw_tx_hash);
+//         let order_hash_bytes = hasher.finalize();
 
-        OrderHash(const_hex::encode_prefixed(order_hash_bytes))
-    }
+//         OrderHash(const_hex::encode_prefixed(order_hash_bytes))
+//     }
 
-    pub fn into_inner(self) -> String {
-        self.0
-    }
-}
+//     pub fn into_inner(self) -> String {
+//         self.0
+//     }
+// }

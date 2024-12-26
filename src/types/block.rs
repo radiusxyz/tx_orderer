@@ -28,12 +28,6 @@ impl From<[u8; 32]> for BlockCommitment {
     }
 }
 
-impl From<OrderHash> for BlockCommitment {
-    fn from(value: OrderHash) -> Self {
-        Self(value.into_inner())
-    }
-}
-
 impl From<&str> for BlockCommitment {
     fn from(value: &str) -> Self {
         Self(value.to_owned())
