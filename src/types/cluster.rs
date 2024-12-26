@@ -29,6 +29,8 @@ impl ClusterIdList {
 pub struct Cluster {
     pub sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
     pub rollup_id_list: Vec<String>,
+
+    #[serde(serialize_with = "serialize_address")]
     pub address: Address,
     pub block_margin: u64,
 }

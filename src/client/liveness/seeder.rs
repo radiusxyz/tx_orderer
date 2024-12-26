@@ -183,6 +183,8 @@ pub struct DeregisterSequencerMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
+
+    #[serde(serialize_with = "serialize_address")]
     pub address: Address,
 }
 
@@ -197,7 +199,9 @@ impl GetSequencerRpcUrlList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SequencerRpcInfo {
+    #[serde(serialize_with = "serialize_address")]
     pub address: Address,
+
     pub external_rpc_url: Option<String>,
     pub cluster_rpc_url: Option<String>,
 }
