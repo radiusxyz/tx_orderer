@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 
 use radius_sdk::{
     liveness_radius::{
@@ -10,6 +10,7 @@ use radius_sdk::{
 };
 use tokio::time::{sleep, Duration};
 
+use super::seeder::SequencerRpcInfo;
 use crate::{client::liveness::seeder::SeederClient, error::Error, state::AppState, types::*};
 
 pub struct LivenessClient {
@@ -227,7 +228,6 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                     }
                 }
 
-                cluster.adjust_my_index(&liveness_client.publisher().address().to_string());
                 cluster
                     .put(
                         liveness_client.platform(),
@@ -239,8 +239,6 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
             }
             Err(error) => {
                 if error.is_none_type() {
-                    let mut my_index: Option<usize> = None;
-
                     // Get the sequencer address list for the cluster ID.
                     let sequencer_address_list: Vec<String> = liveness_client
                         .publisher()
@@ -249,22 +247,23 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                         .unwrap()
                         .into_iter()
                         .enumerate()
-                        .map(|(index, address)| {
-                            if address == liveness_client.publisher().address() {
-                                my_index = Some(index);
-                            }
-
-                            address.to_string()
-                        })
+                        .map(|(_, address)| address.to_string())
                         .collect();
 
                     // Get the sequencer RPC URL list for the cluster.
-                    let sequencer_rpc_url_list = liveness_client
+                    let sequencer_rpc_info_list = liveness_client
                         .seeder()
                         .get_sequencer_rpc_url_list(sequencer_address_list.clone())
                         .await
                         .unwrap()
                         .sequencer_rpc_url_list;
+
+                    let sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo> =
+                        sequencer_rpc_info_list
+                            .into_iter()
+                            .enumerate()
+                            .map(|(index, sequencer_rpc_info)| (index, sequencer_rpc_info))
+                            .collect();
 
                     // Get the rollup info list
                     let rollup_info_list = liveness_client
@@ -381,10 +380,16 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                         .await
                         .unwrap();
 
+                    let sequencer_address = Address::from_str(
+                        liveness_client.platform().into(),
+                        &liveness_client.publisher().address().to_string(),
+                    )
+                    .unwrap();
+
                     let cluster = Cluster::new(
-                        sequencer_rpc_url_list,
+                        sequencer_rpc_infos,
                         rollup_id_list,
-                        my_index.unwrap(),
+                        sequencer_address,
                         block_margin.try_into().unwrap(),
                     );
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use radius_sdk::{
     json_rpc::client::{Id, RpcClient},
-    signature::{Address, PrivateKeySigner, Signature},
+    signature::{Address, ChainType, PrivateKeySigner, Signature},
 };
 use serde::{Deserialize, Serialize};
 
@@ -195,11 +195,21 @@ impl GetSequencerRpcUrlList {
     pub const METHOD_NAME: &'static str = "get_sequencer_rpc_url_list";
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SequencerRpcInfo {
-    pub address: String,
+    pub address: Address,
     pub external_rpc_url: Option<String>,
     pub cluster_rpc_url: Option<String>,
+}
+
+impl Default for SequencerRpcInfo {
+    fn default() -> Self {
+        Self {
+            address: Address::from_slice(ChainType::Ethereum, &[0u8; 20]).unwrap(),
+            external_rpc_url: None,
+            cluster_rpc_url: None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

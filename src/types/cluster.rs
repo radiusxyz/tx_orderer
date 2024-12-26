@@ -1,4 +1,7 @@
-use std::collections::btree_set::{self, BTreeSet};
+use std::collections::{
+    btree_set::{self, BTreeSet},
+    BTreeMap,
+};
 
 use super::prelude::*;
 use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error};
@@ -24,23 +27,23 @@ impl ClusterIdList {
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
-    pub sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
+    pub sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
     pub rollup_id_list: Vec<String>,
-    pub my_index: usize,
+    pub address: Address,
     pub block_margin: u64,
 }
 
 impl Cluster {
     pub fn new(
-        sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
+        sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
         rollup_id_list: Vec<String>,
-        my_index: usize,
+        address: Address,
         block_margin: u64,
     ) -> Self {
         Self {
-            sequencer_rpc_url_list,
+            sequencer_rpc_infos,
             rollup_id_list,
-            my_index,
+            address,
             block_margin,
         }
     }
@@ -74,11 +77,10 @@ impl Cluster {
     }
 
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
-        self.sequencer_rpc_url_list
+        self.sequencer_rpc_infos
             .iter()
-            .enumerate()
-            .filter_map(|(index, sequencer_rpc_info)| {
-                if index != self.my_index {
+            .filter_map(|(_, sequencer_rpc_info)| {
+                if sequencer_rpc_info.address != self.address {
                     if sequencer_rpc_info.cluster_rpc_url.is_none() {
                         return None;
                     }
@@ -92,11 +94,10 @@ impl Cluster {
     }
 
     pub fn get_others_external_rpc_url_list(&self) -> Vec<String> {
-        self.sequencer_rpc_url_list
+        self.sequencer_rpc_infos
             .iter()
-            .enumerate()
-            .filter_map(|(index, sequencer_rpc_info)| {
-                if index != self.my_index {
+            .filter_map(|(_, sequencer_rpc_info)| {
+                if sequencer_rpc_info.address != self.address {
                     if sequencer_rpc_info.external_rpc_url.is_none() {
                         return None;
                     }
@@ -112,11 +113,10 @@ impl Cluster {
     pub fn get_follower_cluster_rpc_url_list(&self, rollup_block_height: u64) -> Vec<String> {
         let leader_index = self.get_leader_index(rollup_block_height);
 
-        self.sequencer_rpc_url_list
+        self.sequencer_rpc_infos
             .iter()
-            .enumerate()
             .filter_map(|(index, sequencer_rpc_info)| {
-                if index == leader_index {
+                if *index == leader_index {
                     None
                 } else {
                     if sequencer_rpc_info.cluster_rpc_url.is_none() {
@@ -131,8 +131,8 @@ impl Cluster {
     pub fn get_leader_cluster_rpc_url(&self, rollup_block_height: u64) -> Result<String, Error> {
         let leader_index = self.get_leader_index(rollup_block_height);
 
-        self.sequencer_rpc_url_list
-            .get(leader_index)
+        self.sequencer_rpc_infos
+            .get(&leader_index)
             .and_then(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url.clone())
             .ok_or(Error::EmptyLeaderClusterRpcUrl)
     }
@@ -140,57 +140,45 @@ impl Cluster {
     pub fn get_leader_external_rpc_url(&self, rollup_block_height: u64) -> Result<String, Error> {
         let leader_index = self.get_leader_index(rollup_block_height);
 
-        self.sequencer_rpc_url_list
-            .get(leader_index)
+        self.sequencer_rpc_infos
+            .get(&leader_index)
             .and_then(|sequencer_rpc_info| sequencer_rpc_info.external_rpc_url.clone())
             .ok_or(Error::EmptyLeaderClusterRpcUrl)
     }
 
-    pub fn get_leader_address(&self, rollup_block_height: u64) -> Result<String, Error> {
+    pub fn get_leader_address(&self, rollup_block_height: u64) -> Result<Address, Error> {
         let leader_index = self.get_leader_index(rollup_block_height);
 
-        self.sequencer_rpc_url_list
-            .get(leader_index)
+        self.sequencer_rpc_infos
+            .get(&leader_index)
             .map(|sequencer_rpc_info| sequencer_rpc_info.address.clone())
             .ok_or(Error::EmptyLeader)
     }
 
-    pub fn get_leader_index(&self, rollup_block_height: u64) -> usize {
-        rollup_block_height as usize % self.sequencer_rpc_url_list.len()
+    pub fn get_sequencer_rpc_info(&self, address: &Address) -> Option<SequencerRpcInfo> {
+        self.sequencer_rpc_infos
+            .iter()
+            .find(|(_index, sequencer_rpc_info)| sequencer_rpc_info.address == address)
+            .map(|(_index, sequencer_rpc_info)| sequencer_rpc_info.clone())
     }
 
-    pub fn adjust_my_index(&mut self, my_address: &str) {
-        let my_index = self
-            .sequencer_rpc_url_list
-            .iter()
-            .enumerate()
-            .find(|(_index, sequencer)| sequencer.address == my_address)
-            .map(|(index, _sequencer)| index);
-
-        if let Some(my_index) = my_index {
-            self.my_index = my_index;
-        }
+    pub fn get_leader_index(&self, rollup_block_height: u64) -> usize {
+        rollup_block_height as usize % self.sequencer_rpc_infos.len()
     }
 
     pub fn register_sequencer(&mut self, index: usize, sequencer_rpc_info: SequencerRpcInfo) {
-        if index > self.sequencer_rpc_url_list.len() {
-            self.sequencer_rpc_url_list.push(sequencer_rpc_info);
-        } else {
-            self.sequencer_rpc_url_list
-                .insert(index, sequencer_rpc_info);
-        }
+        self.sequencer_rpc_infos.insert(index, sequencer_rpc_info);
     }
 
     pub fn deregister_sequencer(&mut self, sequencer_address: &str) {
         let sequencer_index = self
-            .sequencer_rpc_url_list
+            .sequencer_rpc_infos
             .iter()
-            .enumerate()
-            .find(|(_index, sequencer)| sequencer.address == sequencer_address)
-            .map(|(index, _sequencer)| index);
+            .find(|(_index, sequencer_rpc_info)| sequencer_rpc_info.address == sequencer_address)
+            .map(|(index, _sequencer)| *index);
 
         if let Some(sequencer_index) = sequencer_index {
-            self.sequencer_rpc_url_list.remove(sequencer_index);
+            self.sequencer_rpc_infos.remove(&sequencer_index);
         }
     }
 }

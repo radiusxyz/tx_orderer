@@ -45,7 +45,7 @@ impl SyncEncryptedTransaction {
         parameter.signature.verify_message(
             rollup.platform.into(),
             &parameter.message,
-            Address::from_str(rollup.platform.into(), &leader_address)?,
+            leader_address,
         )?;
 
         // Check the rollup block height
