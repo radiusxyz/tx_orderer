@@ -354,8 +354,8 @@ async fn fetch_missing_transaction(
     };
 
     println!(
-        "fetch_missing_transaction - others_external_rpc_url_list: {:?}",
-        others_external_rpc_url_list
+        "fetch_missing_transaction - others_external_rpc_url_list: {:?} / parameter: {:?}",
+        others_external_rpc_url_list, parameter
     );
 
     let rpc_client = RpcClient::new()?;
