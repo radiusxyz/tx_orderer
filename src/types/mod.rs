@@ -62,3 +62,41 @@ where
     }
     seq.end()
 }
+
+fn deserialize_merkle_path<'de, D>(deserializer: D) -> Result<Vec<[u8; 32]>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    struct MerklePathVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for MerklePathVisitor {
+        type Value = Vec<[u8; 32]>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a list of 32-byte hex strings")
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::SeqAccess<'de>,
+        {
+            let mut paths = Vec::new();
+            while let Some(path) = seq.next_element::<String>()? {
+                let decoded = const_hex::decode(&path).map_err(serde::de::Error::custom)?;
+                if decoded.len() != 32 {
+                    return Err(serde::de::Error::custom(format!(
+                        "expected 32 bytes, got {} bytes",
+                        decoded.len()
+                    )));
+                }
+
+                let mut array = [0u8; 32];
+                array.copy_from_slice(&decoded);
+                paths.push(array);
+            }
+            Ok(paths)
+        }
+    }
+
+    deserializer.deserialize_seq(MerklePathVisitor)
+}

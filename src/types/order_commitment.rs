@@ -76,6 +76,7 @@ pub struct OrderCommitmentData {
     pub transaction_order: u64,
 
     #[serde(serialize_with = "serialize_merkle_path")]
+    #[serde(deserialize_with = "deserialize_merkle_path")]
     pub pre_merkle_path: Vec<[u8; 32]>,
 }
 
