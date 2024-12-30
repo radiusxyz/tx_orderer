@@ -77,9 +77,3 @@ impl From<std::io::Error> for Error {
         Self::Syscall(value)
     }
 }
-
-impl From<std::io::Error> for Error {
-    fn from(value: std::io::Error) -> Self {
-        Self::Syscall(value)
-    }
-}
