@@ -46,19 +46,21 @@ impl ValidationClient {
     pub fn new(
         platform: Platform,
         validation_service_provider: ValidationServiceProvider,
-        validation_info: ValidationSymbiotic,
+        symbiotic_validation_info: SymbioticValidationInfo,
         signing_key: impl AsRef<str>,
     ) -> Result<Self, Error> {
         let publisher = Publisher::new(
-            validation_info.validation_rpc_url,
+            symbiotic_validation_info.validation_rpc_url,
             signing_key,
-            validation_info.validation_contract_address.clone(),
+            symbiotic_validation_info
+                .validation_contract_address
+                .clone(),
         )
         .map_err(|error| Error::InitializeValidationClient(error.into()))?;
 
         let subscriber = Subscriber::new(
-            validation_info.validation_websocket_url,
-            validation_info.validation_contract_address,
+            symbiotic_validation_info.validation_websocket_url,
+            symbiotic_validation_info.validation_contract_address,
         )
         .map_err(|error| Error::InitializeValidationClient(error.into()))?;
 
@@ -78,11 +80,11 @@ impl ValidationClient {
         context: AppState,
         platform: Platform,
         validation_service_provider: ValidationServiceProvider,
-        validation_info: ValidationSymbiotic,
+        symbiotic_validation_info: SymbioticValidationInfo,
     ) {
         let handle = tokio::spawn({
             let context = context.clone();
-            let validation_info = validation_info.clone();
+            let validation_info = symbiotic_validation_info.clone();
 
             async move {
                 let validation_client = Self::new(
@@ -123,7 +125,7 @@ impl ValidationClient {
                     context,
                     platform,
                     validation_service_provider,
-                    validation_info,
+                    symbiotic_validation_info,
                 );
             }
         });

@@ -326,7 +326,7 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                                     )
                                     .unwrap();
 
-                                    let validation_info = ValidationInfo::new(
+                                    let rollup_validation_info = RollupValidationInfo::new(
                                         platform,
                                         validation_service_provider,
                                         validation_service_manager,
@@ -360,7 +360,7 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                                             &rollup_info.owner.to_string(),
                                         )
                                         .unwrap(),
-                                        validation_info,
+                                        rollup_validation_info,
                                         order_commitment_type,
                                         executor_address_list,
                                         cluster_id.to_owned(),

@@ -71,52 +71,17 @@ impl AppState {
         &self.inner.seeder_client
     }
 
-    pub async fn add_signer(
-        &self,
-        platform: Platform,
-        signer: PrivateKeySigner,
-    ) -> Result<(), CachedKvStoreError> {
-        let key = &(platform);
-
-        self.inner.signers.put(key, signer).await
+    pub fn distributed_key_generation_client(&self) -> &DistributedKeyGenerationClient {
+        &self.inner.distributed_key_generation_client
     }
 
-    pub async fn get_signer(
-        &self,
-        platform: Platform,
-    ) -> Result<PrivateKeySigner, CachedKvStoreError> {
-        let key = &(platform);
-
-        self.inner.signers.get(key).await
+    pub fn skde_params(&self) -> &SkdeParams {
+        &self.inner.skde_params
     }
+}
 
-    pub async fn add_liveness_client<T>(
-        &self,
-        platform: Platform,
-        service_provider: ServiceProvider,
-        liveness_client: T,
-    ) -> Result<(), CachedKvStoreError>
-    where
-        T: Clone + Any + Send + 'static,
-    {
-        let key = &(platform, service_provider);
-
-        self.inner.liveness_clients.put(key, liveness_client).await
-    }
-
-    pub async fn get_liveness_client<T>(
-        &self,
-        platform: Platform,
-        service_provider: ServiceProvider,
-    ) -> Result<T, CachedKvStoreError>
-    where
-        T: Clone + Any + Send + 'static,
-    {
-        let key = &(platform, service_provider);
-
-        self.inner.liveness_clients.get(key).await
-    }
-
+/// Validation client functions
+impl AppState {
     pub async fn add_validation_client<T>(
         &self,
         platform: Platform,
@@ -146,12 +111,56 @@ impl AppState {
 
         self.inner.validation_clients.get(key).await
     }
+}
 
-    pub fn distributed_key_generation_client(&self) -> &DistributedKeyGenerationClient {
-        &self.inner.distributed_key_generation_client
+/// Liveness client functions
+impl AppState {
+    pub async fn add_liveness_client<T>(
+        &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+        liveness_client: T,
+    ) -> Result<(), CachedKvStoreError>
+    where
+        T: Clone + Any + Send + 'static,
+    {
+        let key = &(platform, service_provider);
+
+        self.inner.liveness_clients.put(key, liveness_client).await
     }
 
-    pub fn skde_params(&self) -> &SkdeParams {
-        &self.inner.skde_params
+    pub async fn get_liveness_client<T>(
+        &self,
+        platform: Platform,
+        service_provider: ServiceProvider,
+    ) -> Result<T, CachedKvStoreError>
+    where
+        T: Clone + Any + Send + 'static,
+    {
+        let key = &(platform, service_provider);
+
+        self.inner.liveness_clients.get(key).await
+    }
+}
+
+/// Signer functions
+impl AppState {
+    pub async fn add_signer(
+        &self,
+        platform: Platform,
+        signer: PrivateKeySigner,
+    ) -> Result<(), CachedKvStoreError> {
+        let key = &(platform);
+
+        self.inner.signers.put(key, signer).await
+    }
+
+    pub async fn get_signer(
+        &self,
+        platform: Platform,
+    ) -> Result<PrivateKeySigner, CachedKvStoreError> {
+        let key = &(platform);
+
+        self.inner.signers.get(key).await
     }
 }

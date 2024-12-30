@@ -143,7 +143,7 @@ pub fn block_builder_skde(
 
                                     raw_transaction_list.push(raw_transaction);
                                 }
-                                Err(error) => {
+                                Err(_error) => {
                                     encrypted_transaction = Some(
                                         fetch_missing_transaction(
                                             rollup_id.clone(),
@@ -184,9 +184,6 @@ pub fn block_builder_skde(
 
                                             raw_transaction_list.push(raw_transaction);
                                         }
-                                        _ => {
-                                            panic!("error: {:?}", error);
-                                        }
                                     }
                                 }
                             }
@@ -220,7 +217,7 @@ pub fn block_builder_skde(
             let rollup = Rollup::get(&rollup_id).unwrap();
             let rollup_validation_info = rollup.validation_info;
 
-            let validation_info = ValidationInfoPayload::get(
+            let validation_info = ValidationInfo::get(
                 rollup_validation_info.platform,
                 rollup_validation_info.validation_service_provider,
             )
@@ -230,7 +227,7 @@ pub fn block_builder_skde(
             if rollup_block_height % 100 == 0 {
                 match validation_info {
                     // TODO: we have to manage the nonce for the register block commitment.
-                    ValidationInfoPayload::EigenLayer(_) => {
+                    ValidationInfo::EigenLayer(_) => {
                         let validation_client: validation::eigenlayer::ValidationClient = context
                             .get_validation_client(
                                 rollup_validation_info.platform,
@@ -250,7 +247,7 @@ pub fn block_builder_skde(
                             .await
                             .unwrap();
                     }
-                    ValidationInfoPayload::Symbiotic(_) => {
+                    ValidationInfo::Symbiotic(_) => {
                         let validation_client: validation::symbiotic::ValidationClient = context
                             .get_validation_client(
                                 rollup_validation_info.platform,
