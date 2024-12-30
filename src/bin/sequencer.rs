@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use radius_sdk::{
     json_rpc::server::RpcServer,
     kvstore::{CachedKvStore, KvStore as Database},
+    util::{get_resource_limit, set_resource_limit, ResourceType},
 };
 use sequencer::{
     client::{
@@ -12,10 +13,7 @@ use sequencer::{
     },
     error::{self, Error},
     logger::Logger,
-    rpc::{
-        cluster, external,
-        internal::{self, GetSequencingInfo, GetSequencingInfos},
-    },
+    rpc::{cluster, external, internal},
     state::AppState,
     types::*,
 };
@@ -59,6 +57,9 @@ async fn main() -> Result<(), Error> {
         Commands::Start {
             ref mut config_option,
         } => {
+            let rlimit = get_resource_limit(ResourceType::RLIMIT_NOFILE)?;
+            set_resource_limit(ResourceType::RLIMIT_NOFILE, rlimit.hard_limit)?;
+
             // Load the configuration from the path
             let config = Config::load(config_option)?;
 
@@ -73,7 +74,7 @@ async fn main() -> Result<(), Error> {
             );
 
             // Initialize the database
-            Database::new(config.database_path())
+            Database::open(config.database_path())
                 .map_err(error::Error::Database)?
                 .init();
             tracing::info!(
@@ -144,28 +145,28 @@ async fn main() -> Result<(), Error> {
             }
 
             // Initialize validation clients
-            let validation_info_list =
-                ValidationInfoList::get_or(ValidationInfoList::default).map_err(Error::Database)?;
-            for (platform, validation_service_provider) in validation_info_list.iter() {
-                let validation_info_payload =
-                    ValidationInfoPayload::get(*platform, *validation_service_provider)
-                        .map_err(Error::Database)?;
+            let validation_service_providers =
+                ValidationServiceProviders::get_or(ValidationServiceProviders::default)
+                    .map_err(Error::Database)?;
+            for (platform, validation_service_provider) in validation_service_providers.iter() {
+                let validation_info = ValidationInfo::get(*platform, *validation_service_provider)
+                    .map_err(Error::Database)?;
 
-                match validation_info_payload {
-                    ValidationInfoPayload::EigenLayer(validation_info) => {
+                match validation_info {
+                    ValidationInfo::EigenLayer(eigen_layer_validation_info) => {
                         validation::eigenlayer::ValidationClient::initialize(
                             app_state.clone(),
                             *platform,
                             *validation_service_provider,
-                            validation_info,
+                            eigen_layer_validation_info,
                         );
                     }
-                    ValidationInfoPayload::Symbiotic(validation_info) => {
+                    ValidationInfo::Symbiotic(symbiotic_validation_info) => {
                         validation::symbiotic::ValidationClient::initialize(
                             app_state.clone(),
                             *platform,
                             *validation_service_provider,
-                            validation_info,
+                            symbiotic_validation_info,
                         );
                     }
                 }
@@ -205,15 +206,21 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
             internal::AddCluster::handler,
         )?
         .register_rpc_method(
-            internal::debug::GetCluster::METHOD_NAME,
-            internal::debug::GetCluster::handler,
+            internal::GetCluster::METHOD_NAME,
+            internal::GetCluster::handler,
         )?
         .register_rpc_method(
-            internal::debug::GetClusterIdList::METHOD_NAME,
-            internal::debug::GetClusterIdList::handler,
+            internal::GetClusterIdList::METHOD_NAME,
+            internal::GetClusterIdList::handler,
         )?
-        .register_rpc_method(GetSequencingInfos::METHOD_NAME, GetSequencingInfos::handler)?
-        .register_rpc_method(GetSequencingInfo::METHOD_NAME, GetSequencingInfo::handler)?
+        .register_rpc_method(
+            internal::GetSequencingInfos::METHOD_NAME,
+            internal::GetSequencingInfos::handler,
+        )?
+        .register_rpc_method(
+            internal::GetSequencingInfo::METHOD_NAME,
+            internal::GetSequencingInfo::handler,
+        )?
         .init(internal_rpc_url.clone())
         .await?;
 

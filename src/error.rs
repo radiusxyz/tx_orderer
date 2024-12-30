@@ -2,6 +2,8 @@ use crate::logger::LoggerError;
 
 #[derive(Debug)]
 pub enum Error {
+    Syscall(std::io::Error),
+
     Config(crate::types::ConfigError),
     Database(radius_sdk::kvstore::KvStoreError),
     LoggerError(LoggerError),
@@ -67,5 +69,17 @@ impl From<crate::client::liveness::distributed_key_generation::DistributedKeyGen
 impl From<crate::client::liveness::seeder::SeederError> for Error {
     fn from(value: crate::client::liveness::seeder::SeederError) -> Self {
         Self::Seeder(value)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        Self::Syscall(value)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        Self::Syscall(value)
     }
 }
