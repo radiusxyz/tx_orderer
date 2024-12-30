@@ -76,6 +76,7 @@ async fn main() -> Result<(), Error> {
             // Initialize the database
             KvStoreBuilder::default()
                 .set_default_lock_timeout(5000)
+                .set_txn_lock_timeout(5000)
                 .build(config.database_path())
                 .map_err(error::Error::Database)?
                 .init();
