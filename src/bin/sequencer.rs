@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use radius_sdk::{
     json_rpc::server::RpcServer,
-    kvstore::{CachedKvStore, KvStore as Database},
+    kvstore::{CachedKvStore, KvStoreBuilder},
     util::{get_resource_limit, set_resource_limit, ResourceType},
 };
 use sequencer::{
@@ -74,9 +74,15 @@ async fn main() -> Result<(), Error> {
             );
 
             // Initialize the database
-            Database::open(config.database_path())
+            KvStoreBuilder::default()
+                .set_default_lock_timeout(5000)
+                .build(config.database_path())
                 .map_err(error::Error::Database)?
                 .init();
+
+            // Database::open(config.database_path())
+            //     .map_err(error::Error::Database)?
+            //     .init();
             tracing::info!(
                 "Successfully initialized the database at {:?}.",
                 config.database_path(),
