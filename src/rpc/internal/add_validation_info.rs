@@ -4,7 +4,7 @@ use crate::rpc::prelude::*;
 pub struct AddValidationInfo {
     pub platform: Platform,
     pub validation_service_provider: ValidationServiceProvider,
-    pub payload: ValidationInfoPayload,
+    pub validation_info: ValidationInfo,
 }
 
 impl AddValidationInfo {
@@ -17,22 +17,24 @@ impl AddValidationInfo {
             "Add validation info - platform: {:?}, validation service provider: {:?}, payload: {:?}",
             parameter.platform,
             parameter.validation_service_provider,
-            parameter.payload
+            parameter.validation_info
         );
 
         // Save `ValidationClient` metadata.
-        let mut validation_info_list = ValidationInfoList::get_mut_or(ValidationInfoList::default)?;
-        validation_info_list.insert(parameter.platform, parameter.validation_service_provider);
-        validation_info_list.update()?;
+        let mut validation_service_providers =
+            ValidationServiceProviders::get_mut_or(ValidationServiceProviders::default)?;
+        validation_service_providers
+            .insert(parameter.platform, parameter.validation_service_provider);
+        validation_service_providers.update()?;
 
-        ValidationInfoPayload::put(
-            &parameter.payload,
+        ValidationInfo::put(
+            &parameter.validation_info,
             parameter.platform,
             parameter.validation_service_provider,
         )?;
 
-        match &parameter.payload {
-            ValidationInfoPayload::EigenLayer(payload) => {
+        match &parameter.validation_info {
+            ValidationInfo::EigenLayer(payload) => {
                 validation::eigenlayer::ValidationClient::initialize(
                     (*context).clone(),
                     parameter.platform,
@@ -40,7 +42,7 @@ impl AddValidationInfo {
                     payload.clone(),
                 );
             }
-            ValidationInfoPayload::Symbiotic(payload) => {
+            ValidationInfo::Symbiotic(payload) => {
                 validation::symbiotic::ValidationClient::initialize(
                     (*context).clone(),
                     parameter.platform,

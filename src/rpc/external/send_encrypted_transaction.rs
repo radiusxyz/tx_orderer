@@ -134,11 +134,7 @@ fn check_supported_encrypted_transaction(
     encrypted_transaction: &EncryptedTransaction,
 ) -> Result<(), Error> {
     match rollup.encrypted_transaction_type {
-        EncryptedTransactionType::Pvde => {
-            if !matches!(encrypted_transaction, EncryptedTransaction::Pvde(_)) {
-                return Err(Error::UnsupportedEncryptedMempool);
-            }
-        }
+        EncryptedTransactionType::Pvde => {}
         EncryptedTransactionType::Skde => {
             if !matches!(encrypted_transaction, EncryptedTransaction::Skde(_)) {
                 return Err(Error::UnsupportedEncryptedMempool);
@@ -207,7 +203,7 @@ pub async fn issue_order_commitment(
 ) -> Result<OrderCommitment, RpcError> {
     match order_commitment_type {
         OrderCommitmentType::TransactionHash => Ok(OrderCommitment::Single(
-            SingleOrderCommitment::TransactionHash(TransactionHashOrderCommitment(
+            SingleOrderCommitment::TransactionHash(TransactionHashOrderCommitment::new(
                 transaction_hash.as_string(),
             )),
         )),

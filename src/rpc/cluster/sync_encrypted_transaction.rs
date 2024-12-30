@@ -21,7 +21,6 @@ impl SyncEncryptedTransaction {
     pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
         let parameter = parameter.parse::<Self>()?;
 
-        tracing::info!("sync encrypted transaction - {:?}", parameter);
         tracing::info!(
             "Sync encrypted transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}",
             parameter.message.rollup_id,
