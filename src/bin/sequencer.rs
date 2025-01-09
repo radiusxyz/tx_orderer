@@ -13,6 +13,7 @@ use sequencer::{
     },
     error::{self, Error},
     logger::Logger,
+    profiler::Profiler,
     rpc::{cluster, external, internal},
     state::AppState,
     types::*,
@@ -59,6 +60,9 @@ async fn main() -> Result<(), Error> {
         } => {
             let rlimit = get_resource_limit(ResourceType::RLIMIT_NOFILE)?;
             set_resource_limit(ResourceType::RLIMIT_NOFILE, rlimit.hard_limit)?;
+
+            // Initialize the profiler.
+            let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
 
             // Load the configuration from the path
             let config = Config::load(config_option)?;
@@ -120,6 +124,7 @@ async fn main() -> Result<(), Error> {
                 liveness_clients,
                 validation_clients,
                 skde_params,
+                profiler,
             );
 
             // Initialize liveness clients

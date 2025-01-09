@@ -10,6 +10,7 @@ use crate::{
     client::liveness::{
         distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient,
     },
+    profiler::Profiler,
     types::*,
 };
 
@@ -27,6 +28,8 @@ struct AppStateInner {
     signers: CachedKvStore,
 
     skde_params: SkdeParams,
+
+    profiler: Profiler,
 }
 
 impl Clone for AppState {
@@ -47,6 +50,7 @@ impl AppState {
         liveness_clients: CachedKvStore,
         validation_clients: CachedKvStore,
         skde_params: SkdeParams,
+        profiler: Profiler,
     ) -> Self {
         let inner = AppStateInner {
             config,
@@ -56,6 +60,7 @@ impl AppState {
             liveness_clients,
             validation_clients,
             skde_params,
+            profiler,
         };
 
         Self {
@@ -77,6 +82,10 @@ impl AppState {
 
     pub fn skde_params(&self) -> &SkdeParams {
         &self.inner.skde_params
+    }
+
+    pub fn profiler(&self) -> Profiler {
+        self.inner.profiler.clone()
     }
 }
 
