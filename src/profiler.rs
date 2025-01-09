@@ -77,8 +77,6 @@ impl Profiler {
     ///
     /// ```rust
     /// pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
-    ///     let parameter = parameter.parse::<Self>()?;
-    ///
     ///     let (start, end) = context.profiler().tag_wrapper().await?;
     ///
     ///     start("send_encrypted_transaction", "arbitrary_function_1");
@@ -92,11 +90,8 @@ impl Profiler {
     /// ```
     ///
     /// You may group multiple functions with the same tag.
-    ///
     /// ```rust
     /// pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
-    ///     let parameter = parameter.parse::<Self>()?;
-    ///
     ///     let (start, end) = context.profiler().tag_wrapper().await?;
     ///
     ///     start("send_encrypted_transaction", "multiple functions");
