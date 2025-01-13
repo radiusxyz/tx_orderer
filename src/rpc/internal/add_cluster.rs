@@ -47,6 +47,7 @@ impl AddCluster {
                 cluster_id_list.insert(&parameter.cluster_id);
                 cluster_id_list.update()?;
             }
+            Platform::Holesky => unimplemented!("Holesky client needs to be implemented."),
             Platform::Local => unimplemented!("Local client needs to be implemented."),
         }
 

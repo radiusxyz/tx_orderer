@@ -14,7 +14,7 @@ impl AddValidationInfo {
         let parameter = parameter.parse::<Self>()?;
 
         tracing::info!(
-            "Add validation info - platform: {:?}, validation service provider: {:?}, payload: {:?}",
+            "Adding validation info - Platform: {:?}, Provider: {:?}, Info: {:?}",
             parameter.platform,
             parameter.validation_service_provider,
             parameter.validation_info
@@ -23,35 +23,53 @@ impl AddValidationInfo {
         // Save `ValidationClient` metadata.
         let mut validation_service_providers =
             ValidationServiceProviders::get_mut_or(ValidationServiceProviders::default)?;
-        validation_service_providers
-            .insert(parameter.platform, parameter.validation_service_provider);
+        validation_service_providers.insert(
+            parameter.platform.clone(),
+            parameter.validation_service_provider.clone(),
+        );
         validation_service_providers.update()?;
 
         ValidationInfo::put(
             &parameter.validation_info,
-            parameter.platform,
-            parameter.validation_service_provider,
+            parameter.platform.clone(),
+            parameter.validation_service_provider.clone(),
         )?;
 
-        match &parameter.validation_info {
+        // Initialize the validation client
+        Self::initialize_validation_client(
+            context,
+            parameter.platform,
+            parameter.validation_service_provider,
+            parameter.validation_info,
+        )?;
+
+        Ok(())
+    }
+
+    fn initialize_validation_client(
+        context: Arc<AppState>,
+        platform: Platform,
+        provider: ValidationServiceProvider,
+        validation_info: ValidationInfo,
+    ) -> Result<(), RpcError> {
+        match validation_info {
             ValidationInfo::EigenLayer(payload) => {
                 validation::eigenlayer::ValidationClient::initialize(
                     (*context).clone(),
-                    parameter.platform,
-                    parameter.validation_service_provider,
-                    payload.clone(),
+                    platform,
+                    provider,
+                    payload,
                 );
             }
             ValidationInfo::Symbiotic(payload) => {
                 validation::symbiotic::ValidationClient::initialize(
                     (*context).clone(),
-                    parameter.platform,
-                    parameter.validation_service_provider,
-                    payload.clone(),
+                    platform,
+                    provider,
+                    payload,
                 );
             }
         }
-
         Ok(())
     }
 }

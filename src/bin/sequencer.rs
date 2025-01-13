@@ -78,7 +78,7 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
     // initialize_logger(&config)?;
 
     // Initialize the profiler.
-    // let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
+    let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
 
     // Initialize the database
     KvStoreBuilder::default()
@@ -106,6 +106,7 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
         CachedKvStore::default(),
         CachedKvStore::default(),
         skde_params,
+        profiler,
     );
 
     initialize_clients(&app_state).await?;
