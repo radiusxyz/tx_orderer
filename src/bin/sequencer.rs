@@ -124,7 +124,7 @@ fn set_resource_limits() -> Result<(), Error> {
 #[allow(dead_code)]
 fn initialize_logger(config: &Config) -> Result<(), Error> {
     Logger::new(config.log_path())
-        .map_err(error::Error::LoggerError)?
+        .map_err(error::Error::Logger)?
         .init();
     tracing::info!("Logger initialized.");
     Ok(())

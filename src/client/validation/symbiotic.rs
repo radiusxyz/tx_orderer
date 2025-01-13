@@ -56,13 +56,13 @@ impl ValidationClient {
                 .validation_contract_address
                 .clone(),
         )
-        .map_err(|error| Error::InitializeValidationClient(error.into()))?;
+        .map_err(|error| Error::ValidationClient(error.into()))?;
 
         let subscriber = Subscriber::new(
             symbiotic_validation_info.validation_websocket_url,
             symbiotic_validation_info.validation_contract_address,
         )
-        .map_err(|error| Error::InitializeValidationClient(error.into()))?;
+        .map_err(|error| Error::ValidationClient(error.into()))?;
 
         let inner = ValidationClientInner {
             platform,

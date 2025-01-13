@@ -68,13 +68,13 @@ impl LivenessClient {
             signing_key,
             &liveness_info.contract_address,
         )
-        .map_err(|error| Error::CreateLivenessClient(error.into()))?;
+        .map_err(|error| Error::LivenessClient(error.into()))?;
 
         let subscriber = Subscriber::new(
             liveness_info.liveness_websocket_url,
             liveness_info.contract_address,
         )
-        .map_err(|error| Error::CreateLivenessClient(error.into()))?;
+        .map_err(|error| Error::LivenessClient(error.into()))?;
 
         let inner = LivenessClientInner {
             platform,

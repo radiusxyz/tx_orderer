@@ -3,17 +3,15 @@ use crate::logger::LoggerError;
 #[derive(Debug)]
 pub enum Error {
     Syscall(std::io::Error),
-
     Config(crate::types::ConfigError),
+    Logger(LoggerError),
     Database(radius_sdk::kvstore::KvStoreError),
-    LoggerError(LoggerError),
     RpcServer(radius_sdk::json_rpc::server::RpcServerError),
     Internal(Box<dyn std::error::Error>),
     Signature(radius_sdk::signature::SignatureError),
     SerializeEthRawTransaction(serde_json::Error),
-    CreateLivenessClient(Box<dyn std::error::Error>),
-    InitializeLivenessClient(Box<dyn std::error::Error>),
-    InitializeValidationClient(Box<dyn std::error::Error>),
+    LivenessClient(Box<dyn std::error::Error>),
+    ValidationClient(Box<dyn std::error::Error>),
     CachedKvStore(radius_sdk::kvstore::CachedKvStoreError),
     DistributedKeyGeneration(
         crate::client::liveness::distributed_key_generation::DistributedKeyGenerationClientError,
@@ -29,7 +27,6 @@ pub enum Error {
     PlainDataDoesNotExist,
     UnsupportedEncryptedMempool,
     BlockHeightMismatch,
-
     UnsupportedPlatform,
     UnsupportedValidationServiceProvider,
     UnsupportedRollupType,
@@ -49,6 +46,12 @@ impl std::error::Error for Error {}
 impl From<crate::types::ConfigError> for Error {
     fn from(value: crate::types::ConfigError) -> Self {
         Self::Config(value)
+    }
+}
+
+impl From<crate::logger::LoggerError> for Error {
+    fn from(value: crate::logger::LoggerError) -> Self {
+        Self::Logger(value)
     }
 }
 

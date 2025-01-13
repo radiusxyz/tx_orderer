@@ -59,13 +59,13 @@ impl ValidationClient {
             eigen_layer_validation_info.stake_registry_contract_address,
             eigen_layer_validation_info.avs_contract_address.clone(),
         )
-        .map_err(|error| Error::InitializeValidationClient(error.into()))?;
+        .map_err(|error| Error::ValidationClient(error.into()))?;
 
         let subscriber = Subscriber::new(
             eigen_layer_validation_info.validation_websocket_url,
             eigen_layer_validation_info.avs_contract_address,
         )
-        .map_err(|error| Error::InitializeValidationClient(error.into()))?;
+        .map_err(|error| Error::ValidationClient(error.into()))?;
 
         let inner = ValidationClientInner {
             platform,
