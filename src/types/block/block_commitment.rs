@@ -28,11 +28,13 @@ impl From<String> for BlockCommitment {
 }
 
 impl BlockCommitment {
-    pub fn as_bytes(self) -> Result<Vec<u8>, const_hex::FromHexError> {
-        const_hex::decode(self.0)
+    /// Converts the hex string to a byte vector.
+    pub fn as_bytes(&self) -> Result<Vec<u8>, const_hex::FromHexError> {
+        const_hex::decode(&self.0)
     }
 
-    pub fn as_hex_string(self) -> String {
-        self.0
+    /// Returns the inner hex string representation.
+    pub fn as_hex_string(&self) -> &str {
+        &self.0
     }
 }

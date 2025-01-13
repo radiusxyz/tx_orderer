@@ -80,8 +80,8 @@ impl Cluster {
 
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
         self.sequencer_rpc_infos
-            .iter()
-            .filter_map(|(_, sequencer_rpc_info)| {
+            .values()
+            .filter_map(|sequencer_rpc_info| {
                 if sequencer_rpc_info.address != self.address {
                     if sequencer_rpc_info.cluster_rpc_url.is_none() {
                         return None;
@@ -97,8 +97,8 @@ impl Cluster {
 
     pub fn get_others_external_rpc_url_list(&self) -> Vec<String> {
         self.sequencer_rpc_infos
-            .iter()
-            .filter_map(|(_, sequencer_rpc_info)| {
+            .values()
+            .filter_map(|sequencer_rpc_info| {
                 if sequencer_rpc_info.address != self.address {
                     if sequencer_rpc_info.external_rpc_url.is_none() {
                         return None;
@@ -194,7 +194,7 @@ impl LivenessEventList {
         self.0.push(event_type.into())
     }
 
-    pub fn iter(&self) -> std::slice::Iter<LivenessEventType> {
+    pub fn iter(&self) -> impl Iterator<Item = &LivenessEventType> {
         self.0.iter()
     }
 }

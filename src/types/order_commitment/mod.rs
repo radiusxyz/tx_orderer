@@ -16,3 +16,9 @@ pub enum OrderCommitment {
     Single(SingleOrderCommitment),
     Bundle(BundleOrderCommitment),
 }
+
+impl Default for OrderCommitment {
+    fn default() -> Self {
+        Self::Single(SingleOrderCommitment::default())
+    }
+}

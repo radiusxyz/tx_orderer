@@ -20,9 +20,9 @@ impl FromStr for OrderCommitmentType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "transaction_hash" | "TransactionHash" => Ok(Self::TransactionHash),
-            "sign" | "Sign" => Ok(Self::Sign),
+        match s.to_lowercase().as_str() {
+            "transaction_hash" => Ok(Self::TransactionHash),
+            "sign" => Ok(Self::Sign),
             _ => Err(Error::UnsupportedOrderCommitmentType),
         }
     }

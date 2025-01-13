@@ -4,6 +4,7 @@ mod config;
 mod liveness;
 mod merkle;
 mod order_commitment;
+mod platform;
 mod rollup;
 mod transaction;
 mod validation;
@@ -14,6 +15,7 @@ pub use config::*;
 pub use liveness::*;
 pub use merkle::*;
 pub use order_commitment::*;
+pub use platform::*;
 use radius_sdk::signature::Address;
 pub use rollup::*;
 use serde::ser::SerializeSeq;
@@ -37,7 +39,7 @@ where
     serializer.serialize_str(&address.as_hex_string())
 }
 
-fn serialize_address_list<S>(addresses: &Vec<Address>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_address_list<S>(addresses: &[Address], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
@@ -48,7 +50,7 @@ where
     seq.end()
 }
 
-fn serialize_merkle_path<S>(paths: &Vec<[u8; 32]>, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_merkle_path<S>(paths: &[[u8; 32]], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
@@ -59,7 +61,7 @@ where
     seq.end()
 }
 
-fn deserialize_merkle_path<'de, D>(deserializer: D) -> Result<Vec<[u8; 32]>, D::Error>
+pub fn deserialize_merkle_path<'de, D>(deserializer: D) -> Result<Vec<[u8; 32]>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {

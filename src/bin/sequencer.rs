@@ -12,7 +12,7 @@ use sequencer::{
         validation,
     },
     error::{self, Error},
-    logger::Logger,
+    logger::{Logger, PanicLog},
     profiler::Profiler,
     rpc::{cluster, external, internal},
     state::AppState,
@@ -58,145 +58,152 @@ async fn main() -> Result<(), Error> {
         Commands::Start {
             ref mut config_option,
         } => {
-            let rlimit = get_resource_limit(ResourceType::RLIMIT_NOFILE)?;
-            set_resource_limit(ResourceType::RLIMIT_NOFILE, rlimit.hard_limit)?;
-
-            // Initialize the profiler.
-            let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
-
-            // Load the configuration from the path
-            let config = Config::load(config_option)?;
-
-            // Initialize the logger.
-            Logger::new(config.log_path())
-                .map_err(error::Error::LoggerError)?
-                .init();
-
-            tracing::info!(
-                "Successfully loaded the configuration file at {:?}.",
-                config.path,
-            );
-
-            // Initialize the database
-            KvStoreBuilder::default()
-                .set_default_lock_timeout(5000)
-                .set_txn_lock_timeout(5000)
-                .build(config.database_path())
-                .map_err(error::Error::Database)?
-                .init();
-
-            // Database::open(config.database_path())
-            //     .map_err(error::Error::Database)?
-            //     .init();
-            tracing::info!(
-                "Successfully initialized the database at {:?}.",
-                config.database_path(),
-            );
-
-            // Initialize seeder client
-            let seeder_rpc_url = &config.seeder_rpc_url;
-            let seeder_client = SeederClient::new(seeder_rpc_url)?;
-            tracing::info!(
-                "Successfully initialized seeder client {:?}.",
-                seeder_rpc_url,
-            );
-
-            // Initialize distributed key generation client
-            let distributed_key_generation_rpc_url = &config.distributed_key_generation_rpc_url;
-            let distributed_key_generation_client =
-                DistributedKeyGenerationClient::new(distributed_key_generation_rpc_url)?;
-
-            let signers = CachedKvStore::default();
-            let liveness_clients = CachedKvStore::default();
-            let validation_clients = CachedKvStore::default();
-
-            let skde_params = distributed_key_generation_client
-                .get_skde_params()
-                .await?
-                .skde_params;
-
-            // Initialize an application-wide state instance
-            let app_state: AppState = AppState::new(
-                config,
-                seeder_client,
-                distributed_key_generation_client,
-                signers,
-                liveness_clients,
-                validation_clients,
-                skde_params,
-                profiler,
-            );
-
-            // Initialize liveness clients
-            let sequencing_info_list =
-                SequencingInfoList::get_or(SequencingInfoList::default).map_err(Error::Database)?;
-            for (platform, service_provider) in sequencing_info_list.iter() {
-                tracing::info!(
-                    "Initialize sequencing info - platform: {:?}, service_provider: {:?}",
-                    platform,
-                    service_provider
-                );
-                let sequencing_info_payload =
-                    SequencingInfoPayload::get(*platform, *service_provider)
-                        .map_err(Error::Database)?;
-
-                match sequencing_info_payload {
-                    SequencingInfoPayload::Ethereum(liveness_info) => {
-                        liveness::radius::LivenessClient::initialize(
-                            app_state.clone(),
-                            *platform,
-                            *service_provider,
-                            liveness_info,
-                        );
-                    }
-                    SequencingInfoPayload::Local(_payload) => {
-                        // liveness::local::LivenessClient::new()?;
-                        todo!("Implement 'LivenessClient' for local sequencing.");
-                    }
-                }
-            }
-
-            // Initialize validation clients
-            let validation_service_providers =
-                ValidationServiceProviders::get_or(ValidationServiceProviders::default)
-                    .map_err(Error::Database)?;
-            for (platform, validation_service_provider) in validation_service_providers.iter() {
-                let validation_info = ValidationInfo::get(*platform, *validation_service_provider)
-                    .map_err(Error::Database)?;
-
-                match validation_info {
-                    ValidationInfo::EigenLayer(eigen_layer_validation_info) => {
-                        validation::eigenlayer::ValidationClient::initialize(
-                            app_state.clone(),
-                            *platform,
-                            *validation_service_provider,
-                            eigen_layer_validation_info,
-                        );
-                    }
-                    ValidationInfo::Symbiotic(symbiotic_validation_info) => {
-                        validation::symbiotic::ValidationClient::initialize(
-                            app_state.clone(),
-                            *platform,
-                            *validation_service_provider,
-                            symbiotic_validation_info,
-                        );
-                    }
-                }
-            }
-
-            // Initialize the internal RPC server
-            initialize_internal_rpc_server(&app_state).await?;
-
-            // Initialize the cluster RPC server
-            initialize_cluster_rpc_server(&app_state).await?;
-
-            // Initialize the external RPC server.
-            let server_handle = initialize_external_rpc_server(&app_state).await?;
-
-            server_handle.await.unwrap();
+            start_sequencer(config_option).await?;
         }
     }
 
+    Ok(())
+}
+
+async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> {
+    tracing_subscriber::fmt().init();
+    std::panic::set_hook(Box::new(|panic_info| {
+        let panic_log: PanicLog = panic_info.into();
+        tracing::error!("{:?}", panic_log);
+    }));
+
+    set_resource_limits()?;
+
+    let config = Config::load(config_option)?;
+    // initialize_logger(&config)?;
+
+    // Initialize the profiler.
+    // let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
+
+    // Initialize the database
+    KvStoreBuilder::default()
+        .set_default_lock_timeout(5000)
+        .set_txn_lock_timeout(5000)
+        .build(config.database_path())
+        .map_err(error::Error::Database)?
+        .init();
+
+    tracing::info!("Database initialized at {:?}", config.database_path());
+
+    let seeder_client = initialize_seeder_client(&config)?;
+    let distributed_key_generation_client = initialize_dkg_client(&config)?;
+
+    let skde_params = distributed_key_generation_client
+        .get_skde_params()
+        .await?
+        .skde_params;
+
+    let app_state: AppState = AppState::new(
+        config,
+        seeder_client,
+        distributed_key_generation_client,
+        CachedKvStore::default(),
+        CachedKvStore::default(),
+        CachedKvStore::default(),
+        skde_params,
+    );
+
+    initialize_clients(&app_state).await?;
+    initialize_rpc_servers(&app_state).await?;
+
+    Ok(())
+}
+
+fn set_resource_limits() -> Result<(), Error> {
+    let rlimit = get_resource_limit(ResourceType::RLIMIT_NOFILE)?;
+    set_resource_limit(ResourceType::RLIMIT_NOFILE, rlimit.hard_limit)?;
+    Ok(())
+}
+
+fn initialize_logger(config: &Config) -> Result<(), Error> {
+    Logger::new(config.log_path())
+        .map_err(error::Error::LoggerError)?
+        .init();
+    tracing::info!("Logger initialized.");
+    Ok(())
+}
+
+fn initialize_seeder_client(config: &Config) -> Result<SeederClient, Error> {
+    let seeder_client = SeederClient::new(&config.seeder_rpc_url)?;
+    tracing::info!("Seeder client initialized: {:?}", config.seeder_rpc_url);
+    Ok(seeder_client)
+}
+
+fn initialize_dkg_client(config: &Config) -> Result<DistributedKeyGenerationClient, Error> {
+    let dkg_client =
+        DistributedKeyGenerationClient::new(&config.distributed_key_generation_rpc_url)?;
+    tracing::info!(
+        "Distributed Key Generation client initialized: {:?}",
+        config.distributed_key_generation_rpc_url
+    );
+    Ok(dkg_client)
+}
+
+async fn initialize_clients(app_state: &AppState) -> Result<(), Error> {
+    let sequencing_info_list =
+        SequencingInfoList::get_or(SequencingInfoList::default).map_err(Error::Database)?;
+
+    for (platform, service_provider) in sequencing_info_list.iter() {
+        let sequencing_info_payload =
+            SequencingInfoPayload::get(*platform, *service_provider).map_err(Error::Database)?;
+
+        match sequencing_info_payload {
+            SequencingInfoPayload::Ethereum(liveness_info) => {
+                liveness::radius::LivenessClient::initialize(
+                    app_state.clone(),
+                    *platform,
+                    *service_provider,
+                    liveness_info,
+                );
+            }
+            SequencingInfoPayload::Local(_payload) => {
+                todo!("Implement 'LivenessClient' for local sequencing.");
+            }
+        }
+    }
+
+    let validation_service_providers =
+        ValidationServiceProviders::get_or(ValidationServiceProviders::default)
+            .map_err(Error::Database)?;
+
+    for (platform, provider) in validation_service_providers.iter() {
+        let validation_info = ValidationInfo::get(*platform, *provider).map_err(Error::Database)?;
+
+        match validation_info {
+            ValidationInfo::EigenLayer(info) => {
+                validation::eigenlayer::ValidationClient::initialize(
+                    app_state.clone(),
+                    *platform,
+                    *provider,
+                    info,
+                );
+            }
+            ValidationInfo::Symbiotic(info) => {
+                validation::symbiotic::ValidationClient::initialize(
+                    app_state.clone(),
+                    *platform,
+                    *provider,
+                    info,
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn initialize_rpc_servers(app_state: &AppState) -> Result<(), Error> {
+    initialize_internal_rpc_server(app_state).await?;
+    initialize_cluster_rpc_server(app_state).await?;
+    initialize_external_rpc_server(app_state)
+        .await?
+        .await
+        .unwrap();
     Ok(())
 }
 
