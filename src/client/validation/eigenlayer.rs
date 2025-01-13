@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use radius_sdk::validation_eigenlayer::{
+use radius_sdk::validation::eigenlayer::{
     publisher::Publisher,
     subscriber::Subscriber,
     types::{Avs, Bytes, IValidationServiceManager},

@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 
 use radius_sdk::{
-    liveness_radius::{
+    liveness::radius::{
         publisher::Publisher,
         subscriber::Subscriber,
         types::{
