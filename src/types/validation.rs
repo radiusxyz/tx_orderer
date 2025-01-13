@@ -59,3 +59,37 @@ pub struct SymbioticValidationInfo {
     pub validation_websocket_url: String,
     pub validation_contract_address: String,
 }
+
+impl EigenLayerValidationInfo {
+    pub fn new(
+        validation_rpc_url: String,
+        validation_websocket_url: String,
+        delegation_manager_contract_address: String,
+        stake_registry_contract_address: String,
+        avs_directory_contract_address: String,
+        avs_contract_address: String,
+    ) -> Self {
+        Self {
+            validation_rpc_url,
+            validation_websocket_url,
+            delegation_manager_contract_address,
+            stake_registry_contract_address,
+            avs_directory_contract_address,
+            avs_contract_address,
+        }
+    }
+}
+
+impl SymbioticValidationInfo {
+    pub fn new(
+        validation_rpc_url: String,
+        validation_websocket_url: String,
+        validation_contract_address: String,
+    ) -> Self {
+        Self {
+            validation_rpc_url,
+            validation_websocket_url,
+            validation_contract_address,
+        }
+    }
+}
