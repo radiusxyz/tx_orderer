@@ -18,6 +18,7 @@ pub enum Error {
         crate::client::liveness::distributed_key_generation::DistributedKeyGenerationClientError,
     ),
     Seeder(crate::client::liveness::seeder::SeederError),
+    Profiler(crate::profiler::ProfilerError),
 
     EmptyLeader,
     EmptyLeaderClusterRpcUrl,
@@ -69,6 +70,12 @@ impl From<crate::client::liveness::distributed_key_generation::DistributedKeyGen
 impl From<crate::client::liveness::seeder::SeederError> for Error {
     fn from(value: crate::client::liveness::seeder::SeederError) -> Self {
         Self::Seeder(value)
+    }
+}
+
+impl From<crate::profiler::ProfilerError> for Error {
+    fn from(value: crate::profiler::ProfilerError) -> Self {
+        Self::Profiler(value)
     }
 }
 

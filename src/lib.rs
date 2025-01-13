@@ -1,6 +1,7 @@
 pub mod client;
 pub mod error;
 pub mod logger;
+pub mod profiler;
 pub mod rpc;
 pub mod state;
 pub mod task;
