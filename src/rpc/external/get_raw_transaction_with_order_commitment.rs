@@ -13,19 +13,18 @@ pub struct GetRawTransactionWithOrderCommitmentResponse {
     pub is_direct_sent: bool,
 }
 
-impl GetRawTransactionWithOrderCommitment {
-    pub const METHOD_NAME: &'static str = "get_raw_transaction_with_order_commitment";
+impl RpcParameter<AppState> for GetRawTransactionWithOrderCommitment {
+    type Response = GetRawTransactionWithOrderCommitmentResponse;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<GetRawTransactionWithOrderCommitmentResponse, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_raw_transaction_with_order_commitment"
+    }
 
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let (raw_transaction, is_direct_sent) = RawTransactionModel::get(
-            &parameter.rollup_id,
-            parameter.rollup_block_height,
-            parameter.transaction_order,
+            &self.rollup_id,
+            self.rollup_block_height,
+            self.transaction_order,
         )?;
 
         Ok(GetRawTransactionWithOrderCommitmentResponse {

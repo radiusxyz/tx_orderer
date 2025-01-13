@@ -7,6 +7,12 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FinalizeBlock {
+    pub message: FinalizeBlockMessage,
+    pub signature: Signature,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlockMessage {
     pub executor_address: Address,
     pub block_creator_address: Address,
@@ -16,35 +22,33 @@ pub struct FinalizeBlockMessage {
     pub rollup_block_height: u64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct FinalizeBlock {
-    pub message: FinalizeBlockMessage,
-    pub signature: Signature,
-}
+impl RpcParameter<AppState> for FinalizeBlock {
+    type Response = ();
 
-impl FinalizeBlock {
-    pub const METHOD_NAME: &'static str = "finalize_block";
+    fn method() -> &'static str {
+        "finalize_block"
+    }
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
-        let parameter = parameter.parse::<Self>()?;
-
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
         info!("finalize block - executor address: {:?} / block creator (sequencer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
-            parameter.message.executor_address.as_hex_string(),
-            parameter.message.block_creator_address.as_hex_string(),
-            parameter.message.rollup_id,
-            parameter.message.platform_block_height,
-            parameter.message.rollup_block_height,
-        );
+        self.message.executor_address.as_hex_string(),
+        self.message.block_creator_address.as_hex_string(),
+        self.message.rollup_id,
+        self.message.platform_block_height,
+        self.message.rollup_block_height,);
 
         // Verify the message.
-        // parameter.signature.verify_message(
+        // self.signature.verify_message(
+
         //     rollup.platform.into(),
-        //     &parameter.message,
-        //     parameter.message.executor_address.clone(),
+        //     &self.message,
+
+        //     self.message.executor_address.clone(),
+
         // )?;
 
         // Check the executor address
-        let rollup = Rollup::get(&parameter.message.rollup_id)?;
+        let rollup = Rollup::get(&self.message.rollup_id)?;
 
         // TODO: remove this comment /
         // In a rush to test, I couldn't add the executor address to the smart contract,
@@ -52,14 +56,15 @@ impl FinalizeBlock {
         // rollup
         //     .executor_address_list()
         //     .iter()
-        //     .find(|&executor_address| parameter.message.executor_address ==
+        //     .find(|&executor_address| self.message.executor_address ==
+
         // *executor_address)     .ok_or(Error::ExecutorAddressNotFound)?;
 
         let cluster = Cluster::get(
             rollup.platform,
             rollup.service_provider,
             &rollup.cluster_id,
-            parameter.message.platform_block_height,
+            self.message.platform_block_height,
         );
 
         // TODO: update
@@ -82,7 +87,7 @@ impl FinalizeBlock {
                 .try_into()
                 .unwrap();
 
-            if platform_block_height - block_margin < parameter.message.platform_block_height {
+            if platform_block_height - block_margin < self.message.platform_block_height {
                 return Err(Error::InvalidPlatformBlockHeight)?;
             }
 
@@ -92,23 +97,25 @@ impl FinalizeBlock {
 
         let cluster = cluster.unwrap();
 
-        let next_rollup_block_height = parameter.message.rollup_block_height + 1;
+        let next_rollup_block_height = self.message.rollup_block_height + 1;
+
         let signer = context.get_signer(rollup.platform).await.unwrap();
         let sequencer_address = signer.address().clone();
-        let is_leader = sequencer_address == parameter.message.next_block_creator_address;
+        let is_leader = sequencer_address == self.message.next_block_creator_address;
 
         // let is_leader = cluster.is_leader(next_rollup_block_height);
 
         let mut transaction_count = 0;
-        match RollupMetadata::get_mut(&parameter.message.rollup_id) {
+        match RollupMetadata::get_mut(&self.message.rollup_id) {
             Ok(mut rollup_metadata) => {
                 transaction_count = rollup_metadata.transaction_order;
 
                 rollup_metadata.rollup_block_height = next_rollup_block_height;
-                rollup_metadata.platform_block_height = parameter.message.platform_block_height;
+                rollup_metadata.platform_block_height = self.message.platform_block_height;
+
                 rollup_metadata.is_leader = is_leader;
                 rollup_metadata.leader_sequencer_rpc_info = cluster
-                    .get_sequencer_rpc_info(&parameter.message.next_block_creator_address)
+                    .get_sequencer_rpc_info(&self.message.next_block_creator_address)
                     .unwrap();
                 rollup_metadata.new_merkle_tree();
 
@@ -120,42 +127,47 @@ impl FinalizeBlock {
 
                     rollup_metadata.cluster_id = rollup.cluster_id;
                     rollup_metadata.rollup_block_height = next_rollup_block_height;
-                    rollup_metadata.platform_block_height = parameter.message.platform_block_height;
+                    rollup_metadata.platform_block_height = self.message.platform_block_height;
+
                     rollup_metadata.is_leader = is_leader;
                     rollup_metadata.leader_sequencer_rpc_info = cluster
-                        .get_sequencer_rpc_info(&parameter.message.next_block_creator_address)
+                        .get_sequencer_rpc_info(&self.message.next_block_creator_address)
                         .unwrap();
                     rollup_metadata.new_merkle_tree();
 
-                    rollup_metadata.put(&parameter.message.rollup_id)?;
+                    rollup_metadata.put(&self.message.rollup_id)?;
                 } else {
                     return Err(error.into());
                 }
             }
         };
 
-        Self::sync_block(&parameter, transaction_count, cluster.clone());
+        self.sync_block(transaction_count, cluster.clone());
 
         block_builder(
             context.clone(),
-            parameter.message.rollup_id.clone(),
-            parameter.message.block_creator_address.clone(),
+            self.message.rollup_id.clone(),
+            self.message.block_creator_address.clone(),
             rollup.encrypted_transaction_type,
-            parameter.message.rollup_block_height,
+            self.message.rollup_block_height,
             transaction_count,
             cluster,
         );
 
         Ok(())
     }
+}
 
-    pub fn sync_block(parameter: &Self, transaction_count: u64, cluster: Cluster) {
-        let parameter = parameter.clone();
+impl FinalizeBlock {
+    pub fn sync_block(&self, transaction_count: u64, cluster: Cluster) {
+        let parameter = self.clone();
 
         tokio::spawn(async move {
             let parameter = SyncBlock {
                 message: parameter.message,
+
                 signature: parameter.signature,
+
                 transaction_count,
             };
 
@@ -166,11 +178,12 @@ impl FinalizeBlock {
             rpc_client
                 .multicast(
                     others_clsuter_rpc_url_list,
-                    SyncBlock::METHOD_NAME,
+                    SyncBlock::method(),
                     &parameter,
                     Id::Null,
                 )
-                .await;
+                .await
+                .unwrap();
         });
     }
 }

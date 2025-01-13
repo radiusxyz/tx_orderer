@@ -11,16 +11,15 @@ pub struct GetClusterIdListResponse {
     pub cluster_id_list: ClusterIdList,
 }
 
-impl GetClusterIdList {
-    pub const METHOD_NAME: &'static str = "get_cluster_id_list";
+impl RpcParameter<AppState> for GetClusterIdList {
+    type Response = GetClusterIdListResponse;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<GetClusterIdListResponse, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_cluster_id_list"
+    }
 
-        let cluster_id_list = ClusterIdList::get(parameter.platform, parameter.service_provider)?;
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
+        let cluster_id_list = ClusterIdList::get(self.platform, self.service_provider)?;
 
         Ok(GetClusterIdListResponse { cluster_id_list })
     }

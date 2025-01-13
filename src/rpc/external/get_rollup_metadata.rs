@@ -10,16 +10,15 @@ pub struct GetRollupMetadataResponse {
     pub rollup_metadata: RollupMetadata,
 }
 
-impl GetRollupMetadata {
-    pub const METHOD_NAME: &'static str = "get_rollup_metadata";
+impl RpcParameter<AppState> for GetRollupMetadata {
+    type Response = GetRollupMetadataResponse;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<GetRollupMetadataResponse, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_rollup_metadata"
+    }
 
-        let rollup_metadata = RollupMetadata::get(&parameter.rollup_id)?;
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
+        let rollup_metadata = RollupMetadata::get(&self.rollup_id)?;
 
         Ok(GetRollupMetadataResponse { rollup_metadata })
     }

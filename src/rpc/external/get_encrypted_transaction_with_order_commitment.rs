@@ -7,19 +7,18 @@ pub struct GetEncryptedTransactionWithOrderCommitment {
     pub transaction_order: u64,
 }
 
-impl GetEncryptedTransactionWithOrderCommitment {
-    pub const METHOD_NAME: &'static str = "get_encrypted_transaction_with_order_commitment";
+impl RpcParameter<AppState> for GetEncryptedTransactionWithOrderCommitment {
+    type Response = EncryptedTransaction;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<EncryptedTransaction, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_encrypted_transaction_with_order_commitment"
+    }
 
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let encrypted_transaction = EncryptedTransactionModel::get(
-            &parameter.rollup_id,
-            parameter.rollup_block_height,
-            parameter.transaction_order,
+            &self.rollup_id,
+            self.rollup_block_height,
+            self.transaction_order,
         )?;
 
         Ok(encrypted_transaction)

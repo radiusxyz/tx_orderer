@@ -20,16 +20,15 @@ pub struct GetBlockResponse {
     pub block_commitment: BlockCommitment,
 }
 
-impl GetBlock {
-    pub const METHOD_NAME: &'static str = "get_block";
+impl RpcParameter<AppState> for GetBlock {
+    type Response = GetBlockResponse;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<GetBlockResponse, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_block"
+    }
 
-        let block = Block::get(&parameter.rollup_id, parameter.rollup_block_height)?;
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
+        let block = Block::get(&self.rollup_id, self.rollup_block_height)?;
 
         Ok(GetBlockResponse {
             block_height: block.block_height,

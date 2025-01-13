@@ -121,6 +121,7 @@ fn set_resource_limits() -> Result<(), Error> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn initialize_logger(config: &Config) -> Result<(), Error> {
     Logger::new(config.log_path())
         .map_err(error::Error::LoggerError)?
@@ -213,34 +214,13 @@ async fn initialize_internal_rpc_server(context: &AppState) -> Result<(), Error>
 
     // Initialize the internal RPC server.
     let internal_rpc_server = RpcServer::new(context.clone())
-        .register_rpc_method(
-            internal::AddSequencingInfo::METHOD_NAME,
-            internal::AddSequencingInfo::handler,
-        )?
-        .register_rpc_method(
-            internal::AddValidationInfo::METHOD_NAME,
-            internal::AddValidationInfo::handler,
-        )?
-        .register_rpc_method(
-            internal::AddCluster::METHOD_NAME,
-            internal::AddCluster::handler,
-        )?
-        .register_rpc_method(
-            internal::GetCluster::METHOD_NAME,
-            internal::GetCluster::handler,
-        )?
-        .register_rpc_method(
-            internal::GetClusterIdList::METHOD_NAME,
-            internal::GetClusterIdList::handler,
-        )?
-        .register_rpc_method(
-            internal::GetSequencingInfos::METHOD_NAME,
-            internal::GetSequencingInfos::handler,
-        )?
-        .register_rpc_method(
-            internal::GetSequencingInfo::METHOD_NAME,
-            internal::GetSequencingInfo::handler,
-        )?
+        .register_rpc_method::<internal::AddSequencingInfo>()?
+        .register_rpc_method::<internal::AddValidationInfo>()?
+        .register_rpc_method::<internal::AddCluster>()?
+        .register_rpc_method::<internal::GetCluster>()?
+        .register_rpc_method::<internal::GetClusterIdList>()?
+        .register_rpc_method::<internal::GetSequencingInfos>()?
+        .register_rpc_method::<internal::GetSequencingInfo>()?
         .init(internal_rpc_url.clone())
         .await?;
 
@@ -260,23 +240,11 @@ async fn initialize_cluster_rpc_server(context: &AppState) -> Result<(), Error> 
     let cluster_rpc_url = anywhere(&context.config().cluster_port()?);
 
     let sequencer_rpc_server = RpcServer::new(context.clone())
-        .register_rpc_method(
-            cluster::SyncEncryptedTransaction::METHOD_NAME,
-            cluster::SyncEncryptedTransaction::handler,
-        )?
-        .register_rpc_method(
-            cluster::SyncRawTransaction::METHOD_NAME,
-            cluster::SyncRawTransaction::handler,
-        )?
-        .register_rpc_method(
-            cluster::FinalizeBlock::METHOD_NAME,
-            cluster::FinalizeBlock::handler,
-        )?
-        .register_rpc_method(cluster::SyncBlock::METHOD_NAME, cluster::SyncBlock::handler)?
-        .register_rpc_method(
-            external::GetRawTransactionList::METHOD_NAME,
-            external::GetRawTransactionList::handler,
-        )?
+        .register_rpc_method::<cluster::SyncEncryptedTransaction>()?
+        .register_rpc_method::<cluster::SyncRawTransaction>()?
+        .register_rpc_method::<cluster::FinalizeBlock>()?
+        .register_rpc_method::<cluster::SyncBlock>()?
+        .register_rpc_method::<external::GetRawTransactionList>()?
         .init(cluster_rpc_url.clone())
         .await?;
 
@@ -297,47 +265,17 @@ async fn initialize_external_rpc_server(context: &AppState) -> Result<JoinHandle
 
     // Initialize the external RPC server.
     let external_rpc_server = RpcServer::new(context.clone())
-        .register_rpc_method(
-            external::SendEncryptedTransaction::METHOD_NAME,
-            external::SendEncryptedTransaction::handler,
-        )?
-        .register_rpc_method(
-            external::GetEncryptedTransactionWithTransactionHash::METHOD_NAME,
-            external::GetEncryptedTransactionWithTransactionHash::handler,
-        )?
-        .register_rpc_method(
-            external::GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
-            external::GetEncryptedTransactionWithOrderCommitment::handler,
-        )?
-        .register_rpc_method(
-            external::GetRawTransactionWithTransactionHash::METHOD_NAME,
-            external::GetRawTransactionWithTransactionHash::handler,
-        )?
-        .register_rpc_method(
-            external::GetRawTransactionWithOrderCommitment::METHOD_NAME,
-            external::GetRawTransactionWithOrderCommitment::handler,
-        )?
-        .register_rpc_method(
-            external::GetOrderCommitment::METHOD_NAME,
-            external::GetOrderCommitment::handler,
-        )?
-        .register_rpc_method(
-            external::SendRawTransaction::METHOD_NAME,
-            external::SendRawTransaction::handler,
-        )?
-        .register_rpc_method(
-            external::GetRawTransactionList::METHOD_NAME,
-            external::GetRawTransactionList::handler,
-        )?
-        .register_rpc_method(
-            external::GetRollup::METHOD_NAME,
-            external::GetRollup::handler,
-        )?
-        .register_rpc_method(
-            external::GetRollupMetadata::METHOD_NAME,
-            external::GetRollupMetadata::handler,
-        )?
-        .register_rpc_method(external::GetBlock::METHOD_NAME, external::GetBlock::handler)?
+        .register_rpc_method::<external::SendEncryptedTransaction>()?
+        .register_rpc_method::<external::GetEncryptedTransactionWithTransactionHash>()?
+        .register_rpc_method::<external::GetEncryptedTransactionWithOrderCommitment>()?
+        .register_rpc_method::<external::GetRawTransactionWithTransactionHash>()?
+        .register_rpc_method::<external::GetRawTransactionWithOrderCommitment>()?
+        .register_rpc_method::<external::GetOrderCommitment>()?
+        .register_rpc_method::<external::SendRawTransaction>()?
+        .register_rpc_method::<external::GetRawTransactionList>()?
+        .register_rpc_method::<external::GetRollup>()?
+        .register_rpc_method::<external::GetRollupMetadata>()?
+        .register_rpc_method::<external::GetBlock>()?
         .init(external_rpc_url.clone())
         .await?;
 

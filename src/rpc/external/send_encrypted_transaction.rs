@@ -12,27 +12,27 @@ pub struct SendEncryptedTransaction {
     pub encrypted_transaction: EncryptedTransaction,
 }
 
-impl SendEncryptedTransaction {
-    pub const METHOD_NAME: &'static str = "send_encrypted_transaction";
+impl RpcParameter<AppState> for SendEncryptedTransaction {
+    type Response = OrderCommitment;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        context: Arc<AppState>,
-    ) -> Result<OrderCommitment, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
-        let rollup = Rollup::get(&parameter.rollup_id)?;
+    fn method() -> &'static str {
+        "send_encrypted_transaction"
+    }
+
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
+        let rollup = Rollup::get(&self.rollup_id)?;
 
         tracing::info!(
             "Send encrypted transaction - rollup id: {:?}, encrypted transaction: {:?}",
-            parameter.rollup_id,
-            parameter.encrypted_transaction
+            self.rollup_id,
+            self.encrypted_transaction
         );
 
         // 1. Check supported encrypted transaction
-        check_supported_encrypted_transaction(&rollup, &parameter.encrypted_transaction)?;
+        check_supported_encrypted_transaction(&rollup, &self.encrypted_transaction)?;
 
         // 2. Check is leader
-        let mut rollup_metadata = RollupMetadata::get_mut(&parameter.rollup_id)?;
+        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
 
         let platform = rollup.platform;
         let service_provider = rollup.service_provider;
@@ -47,53 +47,49 @@ impl SendEncryptedTransaction {
         )?;
 
         if rollup_metadata.is_leader {
-            let (transaction_order, pre_merkle_path) = rollup_metadata.add_transaction_hash(
-                parameter
-                    .encrypted_transaction
-                    .raw_transaction_hash()
-                    .as_ref(),
-            );
+            let (transaction_order, pre_merkle_path) = rollup_metadata
+                .add_transaction_hash(self.encrypted_transaction.raw_transaction_hash().as_ref());
 
             rollup_metadata.update()?;
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
                 rollup.platform,
-                parameter.rollup_id.clone(),
+                self.rollup_id.clone(),
                 rollup.order_commitment_type,
-                parameter.encrypted_transaction.raw_transaction_hash(),
+                self.encrypted_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
                 pre_merkle_path.clone(),
             )
             .await?;
 
-            let transaction_hash = parameter.encrypted_transaction.raw_transaction_hash();
+            let transaction_hash = self.encrypted_transaction.raw_transaction_hash();
 
             EncryptedTransactionModel::put_with_transaction_hash(
-                &parameter.rollup_id,
+                &self.rollup_id,
                 &transaction_hash,
-                &parameter.encrypted_transaction,
+                &self.encrypted_transaction,
             )?;
 
             EncryptedTransactionModel::put(
-                &parameter.rollup_id,
+                &self.rollup_id,
                 rollup_block_height,
                 transaction_order,
-                &parameter.encrypted_transaction,
+                &self.encrypted_transaction,
             )?;
 
-            order_commitment.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
+            order_commitment.put(&self.rollup_id, rollup_block_height, transaction_order)?;
 
             // Sync Transaction
             sync_encrypted_transaction(
                 cluster,
                 context.clone(),
                 rollup.platform,
-                parameter.rollup_id.clone(),
+                self.rollup_id.clone(),
                 rollup_block_height,
                 transaction_order,
-                parameter.encrypted_transaction.clone(),
+                self.encrypted_transaction.clone(),
                 order_commitment.clone(),
             );
 
@@ -110,8 +106,8 @@ impl SendEncryptedTransaction {
             match rpc_client
                 .request(
                     leader_external_rpc_url,
-                    SendEncryptedTransaction::METHOD_NAME,
-                    &parameter,
+                    SendEncryptedTransaction::method(),
+                    &self,
                     Id::Null,
                 )
                 .await
@@ -149,7 +145,7 @@ fn check_supported_encrypted_transaction(
 #[allow(clippy::too_many_arguments)]
 pub fn sync_encrypted_transaction(
     cluster: Cluster,
-    context: Arc<AppState>,
+    context: AppState,
     platform: Platform,
     rollup_id: String,
     rollup_block_height: u64,
@@ -175,24 +171,25 @@ pub fn sync_encrypted_transaction(
                 .unwrap()
                 .sign_message(&message)
                 .unwrap();
-            let rpc_parameter = SyncEncryptedTransaction { message, signature };
+            let rpc_self = SyncEncryptedTransaction { message, signature };
 
             let rpc_client = RpcClient::new().unwrap();
             rpc_client
                 .multicast(
                     follower_cluster_rpc_url_list,
-                    SyncEncryptedTransaction::METHOD_NAME,
-                    &rpc_parameter,
+                    SyncEncryptedTransaction::method(),
+                    &rpc_self,
                     Id::Null,
                 )
-                .await;
+                .await
+                .unwrap();
         }
     });
 }
 
 #[allow(clippy::too_many_arguments)]
 pub async fn issue_order_commitment(
-    context: Arc<AppState>,
+    context: AppState,
     platform: Platform,
     rollup_id: String,
     order_commitment_type: OrderCommitmentType,

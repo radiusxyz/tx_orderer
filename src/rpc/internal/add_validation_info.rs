@@ -7,47 +7,51 @@ pub struct AddValidationInfo {
     pub validation_info: ValidationInfo,
 }
 
-impl AddValidationInfo {
-    pub const METHOD_NAME: &'static str = "add_validation_info";
+impl RpcParameter<AppState> for AddValidationInfo {
+    type Response = ();
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "add_validation_info"
+    }
 
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
         tracing::info!(
             "Adding validation info - Platform: {:?}, Provider: {:?}, Info: {:?}",
-            parameter.platform,
-            parameter.validation_service_provider,
-            parameter.validation_info
+            self.platform,
+            self.validation_service_provider,
+            self.validation_info
         );
 
         // Save `ValidationClient` metadata.
         let mut validation_service_providers =
             ValidationServiceProviders::get_mut_or(ValidationServiceProviders::default)?;
         validation_service_providers.insert(
-            parameter.platform.clone(),
-            parameter.validation_service_provider.clone(),
+            self.platform.clone(),
+            self.validation_service_provider.clone(),
         );
         validation_service_providers.update()?;
 
         ValidationInfo::put(
-            &parameter.validation_info,
-            parameter.platform.clone(),
-            parameter.validation_service_provider.clone(),
+            &self.validation_info,
+            self.platform.clone(),
+            self.validation_service_provider.clone(),
         )?;
 
         // Initialize the validation client
         Self::initialize_validation_client(
             context,
-            parameter.platform,
-            parameter.validation_service_provider,
-            parameter.validation_info,
+            self.platform,
+            self.validation_service_provider,
+            self.validation_info,
         )?;
 
         Ok(())
     }
+}
 
+impl AddValidationInfo {
     fn initialize_validation_client(
-        context: Arc<AppState>,
+        context: AppState,
         platform: Platform,
         provider: ValidationServiceProvider,
         validation_info: ValidationInfo,
@@ -55,7 +59,7 @@ impl AddValidationInfo {
         match validation_info {
             ValidationInfo::EigenLayer(payload) => {
                 validation::eigenlayer::ValidationClient::initialize(
-                    (*context).clone(),
+                    context.clone(),
                     platform,
                     provider,
                     payload,
@@ -63,7 +67,7 @@ impl AddValidationInfo {
             }
             ValidationInfo::Symbiotic(payload) => {
                 validation::symbiotic::ValidationClient::initialize(
-                    (*context).clone(),
+                    context.clone(),
                     platform,
                     provider,
                     payload,

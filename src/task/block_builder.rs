@@ -1,7 +1,10 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use radius_sdk::{
-    json_rpc::client::{Id, RpcClient, RpcClientError},
+    json_rpc::{
+        client::{Id, RpcClient, RpcClientError},
+        server::RpcParameter,
+    },
     signature::Address,
 };
 use skde::delay_encryption::{decrypt, SkdeParams};
@@ -27,7 +30,7 @@ use crate::{
 /// 4. Build the block with the list of raw transactions.
 /// 5. (Leader) Submit the block commitment.
 pub fn block_builder(
-    context: Arc<AppState>,
+    context: AppState,
     rollup_id: String,
     block_creator_address: Address,
     rollup_encrypted_transaction_type: EncryptedTransactionType,
@@ -59,7 +62,7 @@ pub fn block_builder(
 }
 
 pub fn block_builder_skde(
-    context: Arc<AppState>,
+    context: AppState,
     rollup_id: String,
     block_creator_address: Address,
     rollup_block_height: u64,
@@ -359,7 +362,7 @@ async fn fetch_missing_transaction(
     match rpc_client
         .fetch(
             others_external_rpc_url_list,
-            GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
+            GetEncryptedTransactionWithOrderCommitment::method(),
             &parameter,
             Id::Null,
         )
@@ -391,7 +394,7 @@ async fn fetch_raw_transaction(
     let rpc_response: GetRawTransactionWithOrderCommitmentResponse = rpc_client
         .fetch(
             others_external_rpc_url_list,
-            GetRawTransactionWithOrderCommitment::METHOD_NAME,
+            GetRawTransactionWithOrderCommitment::method(),
             &parameter,
             Id::Null,
         )

@@ -13,25 +13,24 @@ pub struct SendRawTransaction {
     pub raw_transaction: RawTransaction,
 }
 
-impl SendRawTransaction {
-    pub const METHOD_NAME: &'static str = "send_raw_transaction";
+impl RpcParameter<AppState> for SendRawTransaction {
+    type Response = OrderCommitment;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        context: Arc<AppState>,
-    ) -> Result<OrderCommitment, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "send_raw_transaction"
+    }
 
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
         tracing::info!(
             "Send raw transaction: rollup_id: {:?}, raw_transaction: {:?}",
-            parameter.rollup_id,
-            parameter.raw_transaction
+            self.rollup_id,
+            self.raw_transaction
         );
 
-        let rollup = Rollup::get(&parameter.rollup_id)?;
+        let rollup = Rollup::get(&self.rollup_id)?;
 
         // 2. Check is leader
-        let mut rollup_metadata = RollupMetadata::get_mut(&parameter.rollup_id)?;
+        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
         let platform = rollup.platform;
         let service_provider = rollup.service_provider;
         let cluster_id = &rollup_metadata.cluster_id;
@@ -46,49 +45,49 @@ impl SendRawTransaction {
 
         if rollup_metadata.is_leader {
             let (transaction_order, pre_merkle_path) = rollup_metadata
-                .add_transaction_hash(parameter.raw_transaction.raw_transaction_hash().as_ref());
+                .add_transaction_hash(self.raw_transaction.raw_transaction_hash().as_ref());
             rollup_metadata.update()?;
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
                 rollup.platform,
-                parameter.rollup_id.clone(),
+                self.rollup_id.clone(),
                 rollup.order_commitment_type,
-                parameter.raw_transaction.raw_transaction_hash(),
+                self.raw_transaction.raw_transaction_hash(),
                 rollup_block_height,
                 transaction_order,
                 pre_merkle_path,
             )
             .await?;
 
-            let transaction_hash = parameter.raw_transaction.raw_transaction_hash();
+            let transaction_hash = self.raw_transaction.raw_transaction_hash();
 
             RawTransactionModel::put_with_transaction_hash(
-                &parameter.rollup_id,
+                &self.rollup_id,
                 &transaction_hash,
-                parameter.raw_transaction.clone(),
+                self.raw_transaction.clone(),
                 true,
             )?;
 
             RawTransactionModel::put(
-                &parameter.rollup_id,
+                &self.rollup_id,
                 rollup_block_height,
                 transaction_order,
-                parameter.raw_transaction.clone(),
+                self.raw_transaction.clone(),
                 true,
             )?;
 
-            order_commitment.put(&parameter.rollup_id, rollup_block_height, transaction_order)?;
+            order_commitment.put(&self.rollup_id, rollup_block_height, transaction_order)?;
 
             // Sync Transaction
             sync_raw_transaction(
                 cluster,
                 context.clone(),
                 rollup.platform,
-                parameter.rollup_id.clone(),
+                self.rollup_id.clone(),
                 rollup_block_height,
                 transaction_order,
-                parameter.raw_transaction.clone(),
+                self.raw_transaction.clone(),
                 order_commitment.clone(),
                 true,
             );
@@ -113,8 +112,8 @@ impl SendRawTransaction {
             match rpc_client
                 .request(
                     leader_external_rpc_url,
-                    SendRawTransaction::METHOD_NAME,
-                    &parameter,
+                    SendRawTransaction::method(),
+                    &self,
                     Id::Null,
                 )
                 .await
@@ -135,7 +134,7 @@ impl SendRawTransaction {
 #[allow(clippy::too_many_arguments)]
 pub fn sync_raw_transaction(
     cluster: Cluster,
-    context: Arc<AppState>,
+    context: AppState,
     platform: Platform,
     rollup_id: String,
     rollup_block_height: u64,
@@ -163,17 +162,18 @@ pub fn sync_raw_transaction(
                 .unwrap()
                 .sign_message(&message)
                 .unwrap();
-            let rpc_parameter = SyncRawTransaction { message, signature };
+            let rpc_self = SyncRawTransaction { message, signature };
 
             let rpc_client = RpcClient::new().unwrap();
             rpc_client
                 .multicast(
                     follower_rpc_url_list,
-                    SyncRawTransaction::METHOD_NAME,
-                    &rpc_parameter,
+                    SyncRawTransaction::method(),
+                    &rpc_self,
                     Id::Null,
                 )
-                .await;
+                .await
+                .unwrap();
         }
     });
 }

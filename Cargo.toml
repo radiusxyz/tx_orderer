@@ -26,4 +26,4 @@ pyroscope = "0.5.4"
 pyroscope_pprofrs = "0.2"
 
 skde = { git = "https://github.com/radiusxyz/skde", rev="d46d66fa1e59aa5d555a1124cf3b89cef4753fd1"}
-radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "2ffe413fc990e8f38ea8fc76d5f4956c698c8b41", features = ["full"] }
+radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", tag = "v0.1", features = ["full"] }

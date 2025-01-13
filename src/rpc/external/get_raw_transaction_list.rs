@@ -11,16 +11,15 @@ pub struct GetRawTransactionListResponse {
     pub raw_transaction_list: Vec<String>,
 }
 
-impl GetRawTransactionList {
-    pub const METHOD_NAME: &'static str = "get_raw_transaction_list";
+impl RpcParameter<AppState> for GetRawTransactionList {
+    type Response = GetRawTransactionListResponse;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<GetRawTransactionListResponse, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_raw_transaction_list"
+    }
 
-        let block = Block::get(&parameter.rollup_id, parameter.rollup_block_height)?;
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
+        let block = Block::get(&self.rollup_id, self.rollup_block_height)?;
 
         let raw_transaction_list: Vec<String> = block
             .raw_transaction_list

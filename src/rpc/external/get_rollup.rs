@@ -10,16 +10,15 @@ pub struct GetRollupResponse {
     pub rollup: Rollup,
 }
 
-impl GetRollup {
-    pub const METHOD_NAME: &'static str = "get_rollup";
+impl RpcParameter<AppState> for GetRollup {
+    type Response = GetRollupResponse;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<GetRollupResponse, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_rollup"
+    }
 
-        let rollup = Rollup::get(&parameter.rollup_id)?;
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
+        let rollup = Rollup::get(&self.rollup_id)?;
 
         Ok(GetRollupResponse { rollup })
     }

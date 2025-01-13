@@ -12,18 +12,17 @@ pub struct GetRawTransactionWithTransactionHashResponse {
     pub is_direct_sent: bool,
 }
 
-impl GetRawTransactionWithTransactionHash {
-    pub const METHOD_NAME: &'static str = "get_raw_transaction_with_transaction_hash";
+impl RpcParameter<AppState> for GetRawTransactionWithTransactionHash {
+    type Response = GetRawTransactionWithTransactionHashResponse;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<GetRawTransactionWithTransactionHashResponse, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_raw_transaction_with_transaction_hash"
+    }
 
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let (raw_transaction, is_direct_sent) = RawTransactionModel::get_with_transaction_hash(
-            &parameter.rollup_id,
-            &parameter.transaction_hash,
+            &self.rollup_id,
+            &self.transaction_hash,
         )?;
 
         Ok(GetRawTransactionWithTransactionHashResponse {

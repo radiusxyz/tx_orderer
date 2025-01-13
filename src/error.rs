@@ -8,6 +8,7 @@ pub enum Error {
     Database(radius_sdk::kvstore::KvStoreError),
     LoggerError(LoggerError),
     RpcServer(radius_sdk::json_rpc::server::RpcServerError),
+    Internal(Box<dyn std::error::Error>),
     Signature(radius_sdk::signature::SignatureError),
     SerializeEthRawTransaction(serde_json::Error),
     CreateLivenessClient(Box<dyn std::error::Error>),
