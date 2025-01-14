@@ -6,6 +6,7 @@ mod get_raw_transaction_list;
 mod get_raw_transaction_with_order_commitment;
 mod get_raw_transaction_with_transaction_hash;
 mod get_rollup;
+mod get_rollup_metadata;
 mod send_encrypted_transaction;
 mod send_raw_transaction;
 
@@ -17,5 +18,6 @@ pub use get_raw_transaction_list::*;
 pub use get_raw_transaction_with_order_commitment::*;
 pub use get_raw_transaction_with_transaction_hash::*;
 pub use get_rollup::*;
+pub use get_rollup_metadata::*;
 pub use send_encrypted_transaction::*;
 pub use send_raw_transaction::*;

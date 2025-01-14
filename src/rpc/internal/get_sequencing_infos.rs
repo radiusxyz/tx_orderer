@@ -10,13 +10,14 @@ pub struct GetSequencingInfosResponse {
     pub sequencing_infos: Vec<((Platform, ServiceProvider), SequencingInfoPayload)>,
 }
 
-impl GetSequencingInfos {
-    pub const METHOD_NAME: &'static str = "get_sequencing_infos";
+impl RpcParameter<AppState> for GetSequencingInfos {
+    type Response = GetSequencingInfosResponse;
 
-    pub async fn handler(
-        _parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<GetSequencingInfosResponse, RpcError> {
+    fn method() -> &'static str {
+        "get_sequencing_infos"
+    }
+
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let sequencing_info_list = SequencingInfoList::get()?;
 
         let sequencing_infos: Vec<((Platform, ServiceProvider), SequencingInfoPayload)> =

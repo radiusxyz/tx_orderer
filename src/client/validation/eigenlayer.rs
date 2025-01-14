@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use radius_sdk::validation_eigenlayer::{
+use radius_sdk::validation::eigenlayer::{
     publisher::Publisher,
     subscriber::Subscriber,
     types::{Avs, Bytes, IValidationServiceManager},
@@ -48,24 +48,24 @@ impl ValidationClient {
     pub fn new(
         platform: Platform,
         validation_service_provider: ValidationServiceProvider,
-        validation_info: ValidationEigenLayer,
+        eigen_layer_validation_info: EigenLayerValidationInfo,
         signing_key: impl AsRef<str>,
     ) -> Result<Self, Error> {
         let publisher = Publisher::new(
-            validation_info.validation_rpc_url,
+            eigen_layer_validation_info.validation_rpc_url,
             signing_key,
-            validation_info.delegation_manager_contract_address,
-            validation_info.avs_directory_contract_address,
-            validation_info.stake_registry_contract_address,
-            validation_info.avs_contract_address.clone(),
+            eigen_layer_validation_info.delegation_manager_contract_address,
+            eigen_layer_validation_info.avs_directory_contract_address,
+            eigen_layer_validation_info.stake_registry_contract_address,
+            eigen_layer_validation_info.avs_contract_address.clone(),
         )
-        .map_err(|error| Error::InitializeValidationClient(error.into()))?;
+        .map_err(|error| Error::ValidationClient(error.into()))?;
 
         let subscriber = Subscriber::new(
-            validation_info.validation_websocket_url,
-            validation_info.avs_contract_address,
+            eigen_layer_validation_info.validation_websocket_url,
+            eigen_layer_validation_info.avs_contract_address,
         )
-        .map_err(|error| Error::InitializeValidationClient(error.into()))?;
+        .map_err(|error| Error::ValidationClient(error.into()))?;
 
         let inner = ValidationClientInner {
             platform,
@@ -83,11 +83,11 @@ impl ValidationClient {
         context: AppState,
         platform: Platform,
         validation_service_provider: ValidationServiceProvider,
-        validation_info: ValidationEigenLayer,
+        eigen_layer_validation_info: EigenLayerValidationInfo,
     ) {
         let handle = tokio::spawn({
             let context = context.clone();
-            let validation_info = validation_info.clone();
+            let validation_info = eigen_layer_validation_info.clone();
 
             async move {
                 let signing_key = &context.config().signing_key;
@@ -129,7 +129,7 @@ impl ValidationClient {
                     context,
                     platform,
                     validation_service_provider,
-                    validation_info,
+                    eigen_layer_validation_info,
                 );
             }
         });

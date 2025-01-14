@@ -1,36 +1,39 @@
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SyncRawTransaction {
+    pub message: SyncRawTransactionMessage,
+    pub signature: Signature,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncRawTransactionMessage {
     pub rollup_id: String,
     pub rollup_block_height: u64,
     pub transaction_order: u64,
     pub raw_transaction: RawTransaction,
     pub order_commitment: Option<OrderCommitment>,
+    pub is_direct_sent: bool,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SyncRawTransaction {
-    pub message: SyncRawTransactionMessage,
-    pub signature: Signature,
-}
+impl RpcParameter<AppState> for SyncRawTransaction {
+    type Response = ();
 
-impl SyncRawTransaction {
-    pub const METHOD_NAME: &'static str = "sync_raw_transaction";
+    fn method() -> &'static str {
+        "sync_raw_transaction"
+    }
 
-    pub async fn handler(parameter: RpcParameter, _context: Arc<AppState>) -> Result<(), RpcError> {
-        let parameter = parameter.parse::<Self>()?;
-
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         tracing::info!(
             "Sync raw transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}",
-            parameter.message.rollup_id,
-            parameter.message.rollup_block_height,
-            parameter.message.transaction_order,
-            parameter.message.order_commitment,
+            self.message.rollup_id,
+            self.message.rollup_block_height,
+            self.message.transaction_order,
+            self.message.order_commitment,
         );
 
-        let rollup = Rollup::get(&parameter.message.rollup_id)?;
-        let mut rollup_metadata = RollupMetadata::get_mut(&parameter.message.rollup_id)?;
+        let rollup = Rollup::get(&self.message.rollup_id)?;
+        let mut rollup_metadata = RollupMetadata::get_mut(&self.message.rollup_id)?;
 
         let cluster = Cluster::get(
             rollup.platform,
@@ -40,51 +43,45 @@ impl SyncRawTransaction {
         )?;
 
         // Verify the leader signature
-        let leader_address = cluster.get_leader_address(parameter.message.rollup_block_height)?;
-        parameter.signature.verify_message(
-            rollup.platform.into(),
-            &parameter.message,
-            Address::from_str(rollup.platform.into(), &leader_address)?,
-        )?;
+        let leader_address = cluster.get_leader_address(self.message.rollup_block_height)?;
+        self.signature
+            .verify_message(rollup.platform.into(), &self.message, leader_address)?;
 
         // Check the rollup block height
-        if parameter.message.rollup_block_height != rollup_metadata.rollup_block_height {
+        if self.message.rollup_block_height != rollup_metadata.rollup_block_height {
             return Err(Error::BlockHeightMismatch.into());
         }
 
-        if parameter.message.transaction_order == rollup_metadata.transaction_order {
-            rollup_metadata.add_transaction_hash(
-                parameter
-                    .message
-                    .raw_transaction
-                    .raw_transaction_hash()
-                    .as_ref(),
-            );
+        if self.message.transaction_order == rollup_metadata.transaction_order {
+            rollup_metadata
+                .add_transaction_hash(self.message.raw_transaction.raw_transaction_hash().as_ref());
             rollup_metadata.update()?;
         } else {
             drop(rollup_metadata);
         }
 
-        let transaction_hash = parameter.message.raw_transaction.raw_transaction_hash();
+        let transaction_hash = self.message.raw_transaction.raw_transaction_hash();
 
         RawTransactionModel::put_with_transaction_hash(
-            &parameter.message.rollup_id,
+            &self.message.rollup_id,
             &transaction_hash,
-            &parameter.message.raw_transaction,
+            self.message.raw_transaction.clone(),
+            self.message.is_direct_sent,
         )?;
 
         RawTransactionModel::put(
-            &parameter.message.rollup_id,
-            parameter.message.rollup_block_height,
-            parameter.message.transaction_order,
-            &parameter.message.raw_transaction,
+            &self.message.rollup_id,
+            self.message.rollup_block_height,
+            self.message.transaction_order,
+            self.message.raw_transaction.clone(),
+            self.message.is_direct_sent,
         )?;
 
-        if let Some(order_commitment) = parameter.message.order_commitment {
+        if let Some(order_commitment) = self.message.order_commitment {
             order_commitment.put(
-                &parameter.message.rollup_id,
-                parameter.message.rollup_block_height,
-                parameter.message.transaction_order,
+                &self.message.rollup_id,
+                self.message.rollup_block_height,
+                self.message.transaction_order,
             )?;
         }
 

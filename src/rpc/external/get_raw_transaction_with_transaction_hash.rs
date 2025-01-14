@@ -6,20 +6,28 @@ pub struct GetRawTransactionWithTransactionHash {
     pub transaction_hash: String,
 }
 
-impl GetRawTransactionWithTransactionHash {
-    pub const METHOD_NAME: &'static str = "get_raw_transaction_with_transaction_hash";
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetRawTransactionWithTransactionHashResponse {
+    pub raw_transaction: RawTransaction,
+    pub is_direct_sent: bool,
+}
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<RawTransaction, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+impl RpcParameter<AppState> for GetRawTransactionWithTransactionHash {
+    type Response = GetRawTransactionWithTransactionHashResponse;
 
-        let raw_transaction = RawTransactionModel::get_with_transaction_hash(
-            &parameter.rollup_id,
-            &parameter.transaction_hash,
+    fn method() -> &'static str {
+        "get_raw_transaction_with_transaction_hash"
+    }
+
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
+        let (raw_transaction, is_direct_sent) = RawTransactionModel::get_with_transaction_hash(
+            &self.rollup_id,
+            &self.transaction_hash,
         )?;
 
-        Ok(raw_transaction)
+        Ok(GetRawTransactionWithTransactionHashResponse {
+            raw_transaction,
+            is_direct_sent,
+        })
     }
 }

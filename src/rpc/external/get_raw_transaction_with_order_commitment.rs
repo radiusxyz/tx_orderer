@@ -7,21 +7,29 @@ pub struct GetRawTransactionWithOrderCommitment {
     pub transaction_order: u64,
 }
 
-impl GetRawTransactionWithOrderCommitment {
-    pub const METHOD_NAME: &'static str = "get_raw_transaction_with_order_commitment";
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetRawTransactionWithOrderCommitmentResponse {
+    pub raw_transaction: RawTransaction,
+    pub is_direct_sent: bool,
+}
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<RawTransaction, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+impl RpcParameter<AppState> for GetRawTransactionWithOrderCommitment {
+    type Response = GetRawTransactionWithOrderCommitmentResponse;
 
-        let raw_transaction = RawTransactionModel::get(
-            &parameter.rollup_id,
-            parameter.rollup_block_height,
-            parameter.transaction_order,
+    fn method() -> &'static str {
+        "get_raw_transaction_with_order_commitment"
+    }
+
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
+        let (raw_transaction, is_direct_sent) = RawTransactionModel::get(
+            &self.rollup_id,
+            self.rollup_block_height,
+            self.transaction_order,
         )?;
 
-        Ok(raw_transaction)
+        Ok(GetRawTransactionWithOrderCommitmentResponse {
+            raw_transaction,
+            is_direct_sent,
+        })
     }
 }

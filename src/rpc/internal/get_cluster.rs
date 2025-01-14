@@ -13,37 +13,42 @@ pub struct GetClusterResponse {
     pub cluster_info: Cluster,
 }
 
-impl GetCluster {
-    pub const METHOD_NAME: &'static str = "get_cluster";
+impl RpcParameter<AppState> for GetCluster {
+    type Response = GetClusterResponse;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        context: Arc<AppState>,
-    ) -> Result<GetClusterResponse, RpcError> {
-        let parameter = parameter.parse::<GetCluster>()?;
+    fn method() -> &'static str {
+        "get_cluster"
+    }
 
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
         let liveness_client_info =
-            SequencingInfoPayload::get(parameter.platform, parameter.service_provider)?;
+            SequencingInfoPayload::get(self.platform, self.service_provider)?;
         match liveness_client_info {
             SequencingInfoPayload::Ethereum(_) => {
                 let liveness_client = context
                     .get_liveness_client::<liveness::radius::LivenessClient>(
-                        parameter.platform,
-                        parameter.service_provider,
+                        self.platform,
+                        self.service_provider,
                     )
                     .await?;
 
                 let platform_block_height =
-                    if let Some(platform_block_height) = parameter.platform_block_height {
+                    if let Some(platform_block_height) = self.platform_block_height {
                         platform_block_height
                     } else {
-                        liveness_client.publisher().get_block_number().await?
+                        let block_height = liveness_client
+                            .publisher()
+                            .get_block_number()
+                            .await
+                            .map_err(|error| Error::Internal(error.into()))?;
+
+                        block_height
                     };
 
                 let cluster_info = Cluster::get(
-                    parameter.platform,
-                    parameter.service_provider,
-                    &parameter.cluster_id,
+                    self.platform,
+                    self.service_provider,
+                    &self.cluster_id,
                     platform_block_height,
                 )?;
 

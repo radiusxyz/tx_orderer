@@ -9,30 +9,32 @@ pub struct AddCluster {
     pub cluster_id: String,
 }
 
-impl AddCluster {
-    pub const METHOD_NAME: &'static str = "add_cluster";
+impl RpcParameter<AppState> for AddCluster {
+    type Response = ();
 
-    pub async fn handler(parameter: RpcParameter, context: Arc<AppState>) -> Result<(), RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "add_cluster"
+    }
 
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
         tracing::info!(
             "Add cluster - platform: {:?}, service provider: {:?}, cluster id: {:?}",
-            parameter.platform,
-            parameter.service_provider,
-            parameter.cluster_id
+            self.platform,
+            self.service_provider,
+            self.cluster_id
         );
 
         let seeder_client = context.seeder_client();
-        match parameter.platform {
+        match self.platform {
             Platform::Ethereum => {
                 let signing_key = &context.config().signing_key;
-                let signer = PrivateKeySigner::from_str(parameter.platform.into(), signing_key)?;
+                let signer = PrivateKeySigner::from_str(self.platform.into(), signing_key)?;
 
                 seeder_client
                     .register_sequencer(
-                        parameter.platform,
-                        parameter.service_provider,
-                        &parameter.cluster_id,
+                        self.platform,
+                        self.service_provider,
+                        &self.cluster_id,
                         &context.config().external_rpc_url,
                         &context.config().cluster_rpc_url,
                         &signer,
@@ -40,13 +42,14 @@ impl AddCluster {
                     .await?;
 
                 let mut cluster_id_list = ClusterIdList::get_mut_or(
-                    parameter.platform,
-                    parameter.service_provider,
+                    self.platform,
+                    self.service_provider,
                     ClusterIdList::default,
                 )?;
-                cluster_id_list.insert(&parameter.cluster_id);
+                cluster_id_list.insert(&self.cluster_id);
                 cluster_id_list.update()?;
             }
+            Platform::Holesky => unimplemented!("Holesky client needs to be implemented."),
             Platform::Local => unimplemented!("Local client needs to be implemented."),
         }
 

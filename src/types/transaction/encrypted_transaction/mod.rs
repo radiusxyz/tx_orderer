@@ -27,7 +27,6 @@ impl EncryptedTransactionList {
 #[serde(tag = "type", content = "data")]
 #[serde(rename_all = "snake_case")]
 pub enum EncryptedTransaction {
-    Pvde(PvdeEncryptedTransaction),
     Skde(SkdeEncryptedTransaction),
 }
 
@@ -38,9 +37,6 @@ impl EncryptedTransaction {
 
     pub fn update_transaction_data(&mut self, transaction_data: TransactionData) {
         match self {
-            Self::Pvde(pvde) => {
-                pvde.transaction_data = transaction_data;
-            }
             Self::Skde(skde) => {
                 skde.transaction_data = transaction_data;
             }
@@ -49,46 +45,16 @@ impl EncryptedTransaction {
 
     pub fn transaction_data(&self) -> &TransactionData {
         match self {
-            Self::Pvde(pvde_encrypted_transaction) => &pvde_encrypted_transaction.transaction_data,
             Self::Skde(skde_encrypted_transaction) => &skde_encrypted_transaction.transaction_data,
         }
     }
 
     pub fn encrypted_data(&self) -> &EncryptedData {
         match self {
-            Self::Pvde(pvde_encrypted_transaction) => {
-                &pvde_encrypted_transaction.transaction_data.encrypted_data()
-            }
             Self::Skde(skde_encrypted_transaction) => {
                 &skde_encrypted_transaction.transaction_data.encrypted_data()
             }
         }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PvdeEncryptedTransaction {
-    pub transaction_data: TransactionData,
-
-    pub time_lock_puzzle: TimeLockPuzzle,
-    pub pvde_zkp: Option<PvdeZkp>,
-}
-
-impl PvdeEncryptedTransaction {
-    pub fn new(
-        transaction_data: TransactionData,
-        time_lock_puzzle: TimeLockPuzzle,
-        pvde_zkp: Option<PvdeZkp>,
-    ) -> Self {
-        Self {
-            transaction_data,
-            time_lock_puzzle,
-            pvde_zkp,
-        }
-    }
-
-    pub fn set_pvde_zkp(&mut self, pvde_zkp: PvdeZkp) {
-        self.pvde_zkp = Some(pvde_zkp);
     }
 }
 

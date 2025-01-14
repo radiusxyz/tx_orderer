@@ -2,8 +2,6 @@ pub mod cluster;
 pub mod external;
 pub mod internal;
 pub(crate) mod prelude {
-    pub use std::sync::Arc;
-
     pub use radius_sdk::{
         json_rpc::{
             client::{Id, RpcClient},

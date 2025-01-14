@@ -6,18 +6,17 @@ pub struct GetEncryptedTransactionWithTransactionHash {
     pub transaction_hash: String,
 }
 
-impl GetEncryptedTransactionWithTransactionHash {
-    pub const METHOD_NAME: &'static str = "get_encrypted_transaction_with_transaction_hash";
+impl RpcParameter<AppState> for GetEncryptedTransactionWithTransactionHash {
+    type Response = EncryptedTransaction;
 
-    pub async fn handler(
-        parameter: RpcParameter,
-        _context: Arc<AppState>,
-    ) -> Result<EncryptedTransaction, RpcError> {
-        let parameter = parameter.parse::<Self>()?;
+    fn method() -> &'static str {
+        "get_encrypted_transaction_with_transaction_hash"
+    }
 
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let encrypted_transaction = EncryptedTransactionModel::get_with_transaction_hash(
-            &parameter.rollup_id,
-            &parameter.transaction_hash,
+            &self.rollup_id,
+            &self.transaction_hash,
         )?;
 
         Ok(encrypted_transaction)

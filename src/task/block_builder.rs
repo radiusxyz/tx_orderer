@@ -1,7 +1,10 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use radius_sdk::{
-    json_rpc::client::{Id, RpcClient, RpcClientError},
+    json_rpc::{
+        client::{Id, RpcClient, RpcClientError},
+        server::RpcParameter,
+    },
     signature::Address,
 };
 use skde::delay_encryption::{decrypt, SkdeParams};
@@ -10,7 +13,10 @@ use tokio::time::{sleep, Duration};
 use crate::{
     client::{liveness::distributed_key_generation::DistributedKeyGenerationClient, validation},
     error::Error,
-    rpc::external::GetEncryptedTransactionWithOrderCommitment,
+    rpc::external::{
+        GetEncryptedTransactionWithOrderCommitment, GetRawTransactionWithOrderCommitment,
+        GetRawTransactionWithOrderCommitmentResponse,
+    },
     state::AppState,
     types::*,
 };
@@ -24,7 +30,7 @@ use crate::{
 /// 4. Build the block with the list of raw transactions.
 /// 5. (Leader) Submit the block commitment.
 pub fn block_builder(
-    context: Arc<AppState>,
+    context: AppState,
     rollup_id: String,
     block_creator_address: Address,
     rollup_encrypted_transaction_type: EncryptedTransactionType,
@@ -56,7 +62,7 @@ pub fn block_builder(
 }
 
 pub fn block_builder_skde(
-    context: Arc<AppState>,
+    context: AppState,
     rollup_id: String,
     block_creator_address: Address,
     rollup_block_height: u64,
@@ -96,35 +102,35 @@ pub fn block_builder_skde(
 
                 match RawTransactionModel::get(&rollup_id, rollup_block_height, transaction_order) {
                     // If raw transaction exists, add it to the raw transaction list.
-                    Ok(raw_transaction) => {
+                    Ok((raw_transaction, _)) => {
                         raw_transaction_list.push(raw_transaction);
                     }
                     Err(error) => {
                         if error.is_none_type() {
-                            if encrypted_transaction.is_none() {
-                                // 2. Fetch the missing transaction from other sequencers.
-                                encrypted_transaction = Some(
-                                    fetch_missing_transaction(
-                                        rollup_id.clone(),
-                                        rollup_block_height,
-                                        transaction_order,
-                                        cluster.clone(),
-                                    )
-                                    .await
-                                    .unwrap(),
-                                );
-                            }
+                            match fetch_raw_transaction(
+                                rollup_id.clone(),
+                                rollup_block_height,
+                                transaction_order,
+                                cluster.clone(),
+                            )
+                            .await
+                            {
+                                Ok((raw_transaction, is_direct_sent)) => {
+                                    if is_direct_sent && encrypted_transaction.is_none() {
+                                        encrypted_transaction = Some(
+                                            fetch_missing_transaction(
+                                                rollup_id.clone(),
+                                                rollup_block_height,
+                                                transaction_order,
+                                                cluster.clone(),
+                                            )
+                                            .await
+                                            .unwrap(),
+                                        );
 
-                            match encrypted_transaction.unwrap() {
-                                EncryptedTransaction::Skde(skde_encrypted_transaction) => {
-                                    let (raw_transaction, _plain_data) = decrypt_skde_transaction(
-                                        &skde_encrypted_transaction,
-                                        distributed_key_generation_client.clone(),
-                                        &mut decryption_keys,
-                                        context.skde_params(),
-                                    )
-                                    .await
-                                    .unwrap();
+                                        encrypted_transaction_list
+                                            .push(encrypted_transaction.clone());
+                                    }
 
                                     merkle_tree
                                         .add_data(raw_transaction.raw_transaction_hash().as_ref());
@@ -133,14 +139,55 @@ pub fn block_builder_skde(
                                         &rollup_id,
                                         rollup_block_height,
                                         transaction_order,
-                                        &raw_transaction,
+                                        raw_transaction.clone(),
+                                        is_direct_sent,
                                     )
                                     .unwrap();
 
                                     raw_transaction_list.push(raw_transaction);
                                 }
-                                _ => {
-                                    panic!("error: {:?}", error);
+                                Err(_error) => {
+                                    encrypted_transaction = Some(
+                                        fetch_missing_transaction(
+                                            rollup_id.clone(),
+                                            rollup_block_height,
+                                            transaction_order,
+                                            cluster.clone(),
+                                        )
+                                        .await
+                                        .unwrap(),
+                                    );
+
+                                    encrypted_transaction_list.push(encrypted_transaction.clone());
+
+                                    match encrypted_transaction.unwrap() {
+                                        EncryptedTransaction::Skde(skde_encrypted_transaction) => {
+                                            let (raw_transaction, _plain_data) =
+                                                decrypt_skde_transaction(
+                                                    &skde_encrypted_transaction,
+                                                    distributed_key_generation_client.clone(),
+                                                    &mut decryption_keys,
+                                                    context.skde_params(),
+                                                )
+                                                .await
+                                                .unwrap();
+
+                                            merkle_tree.add_data(
+                                                raw_transaction.raw_transaction_hash().as_ref(),
+                                            );
+
+                                            RawTransactionModel::put(
+                                                &rollup_id,
+                                                rollup_block_height,
+                                                transaction_order,
+                                                raw_transaction.clone(),
+                                                false,
+                                            )
+                                            .unwrap();
+
+                                            raw_transaction_list.push(raw_transaction);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -173,7 +220,7 @@ pub fn block_builder_skde(
             let rollup = Rollup::get(&rollup_id).unwrap();
             let rollup_validation_info = rollup.validation_info;
 
-            let validation_info = ValidationInfoPayload::get(
+            let validation_info = ValidationInfo::get(
                 rollup_validation_info.platform,
                 rollup_validation_info.validation_service_provider,
             )
@@ -183,7 +230,7 @@ pub fn block_builder_skde(
             if rollup_block_height % 100 == 0 {
                 match validation_info {
                     // TODO: we have to manage the nonce for the register block commitment.
-                    ValidationInfoPayload::EigenLayer(_) => {
+                    ValidationInfo::EigenLayer(_) => {
                         let validation_client: validation::eigenlayer::ValidationClient = context
                             .get_validation_client(
                                 rollup_validation_info.platform,
@@ -203,7 +250,7 @@ pub fn block_builder_skde(
                             .await
                             .unwrap();
                     }
-                    ValidationInfoPayload::Symbiotic(_) => {
+                    ValidationInfo::Symbiotic(_) => {
                         let validation_client: validation::symbiotic::ValidationClient = context
                             .get_validation_client(
                                 rollup_validation_info.platform,
@@ -306,15 +353,52 @@ async fn fetch_missing_transaction(
         transaction_order,
     };
 
+    println!(
+        "fetch_missing_transaction - others_external_rpc_url_list: {:?} / parameter: {:?}",
+        others_external_rpc_url_list, parameter
+    );
+
     let rpc_client = RpcClient::new()?;
-    let rpc_response = rpc_client
+    match rpc_client
         .fetch(
             others_external_rpc_url_list,
-            GetEncryptedTransactionWithOrderCommitment::METHOD_NAME,
+            GetEncryptedTransactionWithOrderCommitment::method(),
+            &parameter,
+            Id::Null,
+        )
+        .await
+    {
+        Ok(rpc_response) => Ok(rpc_response),
+        Err(error) => {
+            tracing::error!("fetch_missing_transaction - error: {:?}", error);
+            Err(error)
+        }
+    }
+}
+
+async fn fetch_raw_transaction(
+    rollup_id: String,
+    rollup_block_height: u64,
+    transaction_order: u64,
+    cluster: Cluster,
+) -> Result<(RawTransaction, bool), RpcClientError> {
+    let others_external_rpc_url_list = cluster.get_others_external_rpc_url_list();
+
+    let parameter = GetRawTransactionWithOrderCommitment {
+        rollup_id,
+        rollup_block_height,
+        transaction_order,
+    };
+
+    let rpc_client = RpcClient::new()?;
+    let rpc_response: GetRawTransactionWithOrderCommitmentResponse = rpc_client
+        .fetch(
+            others_external_rpc_url_list,
+            GetRawTransactionWithOrderCommitment::method(),
             &parameter,
             Id::Null,
         )
         .await?;
 
-    Ok(rpc_response)
+    Ok((rpc_response.raw_transaction, rpc_response.is_direct_sent))
 }
