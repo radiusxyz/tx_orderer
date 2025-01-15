@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{deserialize_merkle_path, serialize_merkle_path};
+use crate::types::{deserialize_merkle_path, serialize_merkle_path, RawTransactionHash};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignOrderCommitment {
@@ -13,6 +13,8 @@ pub struct OrderCommitmentData {
     pub rollup_id: String,
     pub block_height: u64,
     pub transaction_order: u64,
+
+    pub transaction_hash: String,
 
     #[serde(
         serialize_with = "serialize_merkle_path",
@@ -27,6 +29,7 @@ impl Default for OrderCommitmentData {
             rollup_id: String::new(),
             block_height: 0,
             transaction_order: 0,
+            transaction_hash: RawTransactionHash::default().as_string(),
             pre_merkle_path: Vec::new(),
         }
     }

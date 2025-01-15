@@ -63,7 +63,7 @@ pub struct EthOpenData {
 impl From<eth_types::Transaction> for EthOpenData {
     fn from(transaction: eth_types::Transaction) -> Self {
         Self {
-            raw_tx_hash: RawTransactionHash::default(),
+            raw_tx_hash: const_hex::encode(transaction.hash.as_bytes()).into(),
             from: transaction.from,
             nonce: transaction.nonce,
             gas_price: transaction.gas_price,

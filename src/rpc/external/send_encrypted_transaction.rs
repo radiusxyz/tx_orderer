@@ -209,6 +209,7 @@ pub async fn issue_order_commitment(
             let order_commitment_data = OrderCommitmentData {
                 rollup_id,
                 block_height: rollup_block_height,
+                transaction_hash: transaction_hash.as_string(),
                 transaction_order,
                 pre_merkle_path: pre_merkle_path,
             };

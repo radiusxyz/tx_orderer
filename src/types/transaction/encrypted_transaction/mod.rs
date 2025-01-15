@@ -32,7 +32,13 @@ pub enum EncryptedTransaction {
 
 impl EncryptedTransaction {
     pub fn raw_transaction_hash(&self) -> RawTransactionHash {
-        RawTransactionHash::new("hi")
+        match self {
+            Self::Skde(skde_encrypted_transaction) => {
+                return skde_encrypted_transaction
+                    .transaction_data
+                    .raw_transaction_hash();
+            }
+        }
     }
 
     pub fn update_transaction_data(&mut self, transaction_data: TransactionData) {
@@ -116,6 +122,13 @@ impl TransactionData {
         match self {
             Self::Eth(data) => &data.encrypted_data,
             Self::EthBundle(data) => &data.encrypted_data,
+        }
+    }
+
+    pub fn raw_transaction_hash(&self) -> RawTransactionHash {
+        match self {
+            Self::Eth(data) => data.open_data.raw_tx_hash.clone(),
+            Self::EthBundle(data) => data.open_data.raw_tx_hash.clone(),
         }
     }
 }
