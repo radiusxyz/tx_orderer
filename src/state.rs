@@ -29,7 +29,7 @@ struct AppStateInner {
 
     skde_params: SkdeParams,
 
-    profiler: Profiler,
+    profiler: Option<Profiler>,
 }
 
 impl Clone for AppState {
@@ -50,7 +50,7 @@ impl AppState {
         liveness_clients: CachedKvStore,
         validation_clients: CachedKvStore,
         skde_params: SkdeParams,
-        profiler: Profiler,
+        profiler: Option<Profiler>,
     ) -> Self {
         let inner = AppStateInner {
             config,
@@ -84,7 +84,7 @@ impl AppState {
         &self.inner.skde_params
     }
 
-    pub fn profiler(&self) -> Profiler {
+    pub fn profiler(&self) -> Option<Profiler> {
         self.inner.profiler.clone()
     }
 }

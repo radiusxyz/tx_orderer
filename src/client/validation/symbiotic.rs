@@ -137,7 +137,7 @@ async fn callback(event: ValidationServiceManager::NewTaskCreated, context: Vali
     if let Some(rollup) = rollup {
         let block = Block::get(&rollup.rollup_id, event.blockNumber.try_into().unwrap()).unwrap();
 
-        tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?} / taskCreatedBlock: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment, event.taskCreatedBlock);
+        tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment);
 
         if block.block_creator_address != context.publisher().address() {
             for _ in 0..10 {

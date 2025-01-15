@@ -5,7 +5,8 @@ use radius_sdk::{
         publisher::Publisher,
         subscriber::Subscriber,
         types::{
-            rpc::types::Header, Events, ILivenessRadius::RollupInfo, Liveness::LivenessEvents,
+            rpc::types::Header, Events, ILivenessRadius::Rollup as RollupInfo,
+            Liveness::LivenessEvents,
         },
     },
     signature::{Address, PrivateKeySigner},
@@ -149,11 +150,11 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
     match events {
         Events::Block(block) => on_new_block(block, liveness_client).await,
         Events::LivenessEvents(liveness_event, log) => match liveness_event {
-            LivenessEvents::RegisterSequencer(register_sequencer) => {
+            LivenessEvents::RegisteredSequencer(register_sequencer) => {
                 let cluster_id = register_sequencer.clusterId;
                 let platform_block_height = log.block_number.unwrap();
                 let sequencer_index: usize = register_sequencer.index.try_into().unwrap();
-                let sequencer_address = register_sequencer.sequencerAddress.to_string();
+                let sequencer_address = register_sequencer.sequencer.to_string();
                 let sequencer_rpc_info = liveness_client
                     .seeder()
                     .get_sequencer_rpc_url(sequencer_address.to_string())
@@ -170,10 +171,10 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                 liveness_event_list.push((sequencer_index, sequencer_rpc_info));
                 liveness_event_list.update().unwrap();
             }
-            LivenessEvents::DeregisterSequencer(deregister_sequencer) => {
+            LivenessEvents::DeregisteredSequencer(deregister_sequencer) => {
                 let cluster_id = deregister_sequencer.clusterId;
                 let platform_block_height = log.block_number.unwrap();
-                let sequencer_address = deregister_sequencer.sequencerAddress.to_string();
+                let sequencer_address = deregister_sequencer.sequencer.to_string();
 
                 let mut liveness_event_list = LivenessEventList::get_mut_or(
                     &cluster_id,
@@ -272,10 +273,10 @@ async fn update_cluster(
 
     for event in liveness_event_list.iter() {
         match event {
-            LivenessEventType::RegisterSequencer((sequencer_index, sequencer_rpc_info)) => {
+            LivenessEventType::RegisteredSequencer((sequencer_index, sequencer_rpc_info)) => {
                 cluster.register_sequencer(*sequencer_index, sequencer_rpc_info.clone());
             }
-            LivenessEventType::DeregisterSequencer(sequencer_address) => {
+            LivenessEventType::DeregisteredSequencer(sequencer_address) => {
                 cluster.deregister_sequencer(sequencer_address);
             }
         }
@@ -378,7 +379,7 @@ async fn fetch_and_update_rollups(
 
     rollup_info_list
         .iter()
-        .map(|info| info.rollupId.clone())
+        .map(|rollup| rollup.id.clone())
         .collect()
 }
 
@@ -389,10 +390,10 @@ fn update_or_create_rollup(
     cluster_id: &str,
     rollup_info: &RollupInfo,
 ) -> Result<(), Error> {
-    match Rollup::get_mut(&rollup_info.rollupId) {
+    match Rollup::get_mut(&rollup_info.id) {
         Ok(mut rollup) => {
             let executor_addresses = rollup_info
-                .executorAddresses
+                .executors
                 .iter()
                 .map(|addr| address_from_str(platform, addr.to_string()))
                 .collect();
@@ -413,13 +414,13 @@ fn update_or_create_rollup(
             );
 
             let executor_addresses: Vec<Address> = rollup_info
-                .executorAddresses
+                .executors
                 .iter()
                 .map(|addr| address_from_str(platform, addr.to_string()))
                 .collect();
 
             let rollup = Rollup::new(
-                rollup_info.rollupId.clone(),
+                rollup_info.id.clone(),
                 RollupType::from_str(&rollup_info.rollupType).unwrap(),
                 EncryptedTransactionType::Skde,
                 address_from_str(platform, rollup_info.owner.to_string()),

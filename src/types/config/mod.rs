@@ -55,7 +55,7 @@ impl Config {
         // Merge configs from CLI input
         let merged_config_option = config_file.merge(config_option);
 
-        // Read signing key (TODO:)
+        // Read signing key
         let signing_key_path = config_path.join(SIGNING_KEY_PATH);
         let signing_key = fs::read_to_string(signing_key_path).unwrap();
 

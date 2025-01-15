@@ -52,6 +52,12 @@ pub enum Commands {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    tracing_subscriber::fmt().init();
+    std::panic::set_hook(Box::new(|panic_info| {
+        let panic_log: PanicLog = panic_info.into();
+        tracing::error!("{:?}", panic_log);
+    }));
+
     let mut cli = Cli::init();
     match cli.command {
         Commands::Init { ref config_path } => ConfigPath::init(config_path)?,
@@ -66,19 +72,14 @@ async fn main() -> Result<(), Error> {
 }
 
 async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> {
-    tracing_subscriber::fmt().init();
-    std::panic::set_hook(Box::new(|panic_info| {
-        let panic_log: PanicLog = panic_info.into();
-        tracing::error!("{:?}", panic_log);
-    }));
-
     set_resource_limits()?;
 
     let config = Config::load(config_option)?;
     // initialize_logger(&config)?;
 
     // Initialize the profiler.
-    let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
+    // let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
+    let profiler = None;
 
     // Initialize the database
     KvStoreBuilder::default()

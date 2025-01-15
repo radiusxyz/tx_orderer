@@ -201,18 +201,18 @@ impl LivenessEventList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum LivenessEventType {
-    RegisterSequencer((usize, SequencerRpcInfo)),
-    DeregisterSequencer(String),
+    RegisteredSequencer((usize, SequencerRpcInfo)),
+    DeregisteredSequencer(String),
 }
 
 impl From<(usize, SequencerRpcInfo)> for LivenessEventType {
     fn from(value: (usize, SequencerRpcInfo)) -> Self {
-        Self::RegisterSequencer(value)
+        Self::RegisteredSequencer(value)
     }
 }
 
 impl From<String> for LivenessEventType {
     fn from(value: String) -> Self {
-        Self::DeregisterSequencer(value)
+        Self::DeregisteredSequencer(value)
     }
 }
