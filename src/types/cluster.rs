@@ -28,7 +28,7 @@ impl ClusterIdList {
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
     pub sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
-    pub rollup_id_list: Vec<String>,
+    pub rollup_id_list: BTreeSet<String>,
 
     #[serde(serialize_with = "serialize_address")]
     pub address: Address,
@@ -38,7 +38,7 @@ pub struct Cluster {
 impl Cluster {
     pub fn new(
         sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
-        rollup_id_list: Vec<String>,
+        rollup_id_list: BTreeSet<String>,
         address: Address,
         block_margin: u64,
     ) -> Self {
@@ -183,6 +183,10 @@ impl Cluster {
             self.sequencer_rpc_infos.remove(&sequencer_index);
         }
     }
+
+    pub fn add_rollup(&mut self, rollup_id: &str) {
+        self.rollup_id_list.insert(rollup_id.to_owned());
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
@@ -190,7 +194,7 @@ impl Cluster {
 pub struct LivenessEventList(Vec<LivenessEventType>);
 
 impl LivenessEventList {
-    pub fn push(&mut self, event_type: impl Into<LivenessEventType>) {
+    pub fn push(&mut self, event_type: LivenessEventType) {
         self.0.push(event_type.into())
     }
 
@@ -201,18 +205,7 @@ impl LivenessEventList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum LivenessEventType {
-    RegisteredSequencer((usize, SequencerRpcInfo)),
+    RegisteredSequencer(usize, SequencerRpcInfo),
     DeregisteredSequencer(String),
-}
-
-impl From<(usize, SequencerRpcInfo)> for LivenessEventType {
-    fn from(value: (usize, SequencerRpcInfo)) -> Self {
-        Self::RegisteredSequencer(value)
-    }
-}
-
-impl From<String> for LivenessEventType {
-    fn from(value: String) -> Self {
-        Self::DeregisteredSequencer(value)
-    }
+    AddedRollup(String, String),
 }

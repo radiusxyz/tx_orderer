@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, str::FromStr, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    str::FromStr,
+    sync::Arc,
+};
 
 use radius_sdk::{
     liveness::radius::{
@@ -114,6 +118,21 @@ impl LivenessClient {
                 )
                 .unwrap();
 
+                let cluster_id_list =
+                    ClusterIdList::get_or(platform, service_provider, ClusterIdList::default)
+                        .unwrap();
+
+                let platform_block_height = liveness_client
+                    .publisher()
+                    .get_block_number()
+                    .await
+                    .unwrap();
+
+                for cluster_id in cluster_id_list.iter() {
+                    initialize_new_cluster(&liveness_client, cluster_id, platform_block_height)
+                        .await;
+                }
+
                 context
                     .add_liveness_client(platform, service_provider, liveness_client.clone())
                     .await
@@ -168,7 +187,12 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                     LivenessEventList::default,
                 )
                 .unwrap();
-                liveness_event_list.push((sequencer_index, sequencer_rpc_info));
+
+                liveness_event_list.push(LivenessEventType::RegisteredSequencer(
+                    sequencer_index,
+                    sequencer_rpc_info,
+                ));
+
                 liveness_event_list.update().unwrap();
             }
             LivenessEvents::DeregisteredSequencer(deregister_sequencer) => {
@@ -182,7 +206,24 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
                     LivenessEventList::default,
                 )
                 .unwrap();
-                liveness_event_list.push(sequencer_address);
+                liveness_event_list
+                    .push(LivenessEventType::DeregisteredSequencer(sequencer_address));
+                liveness_event_list.update().unwrap();
+            }
+
+            LivenessEvents::AddedRollup(added_rollup) => {
+                let cluster_id = added_rollup.clusterId;
+                let rollup_id = added_rollup.rollupId.to_string();
+
+                let platform_block_height = log.block_number.unwrap();
+
+                let mut liveness_event_list = LivenessEventList::get_mut_or(
+                    &cluster_id,
+                    platform_block_height,
+                    LivenessEventList::default,
+                )
+                .unwrap();
+                liveness_event_list.push(LivenessEventType::AddedRollup(cluster_id, rollup_id));
                 liveness_event_list.update().unwrap();
             }
             _others => {}
@@ -273,11 +314,34 @@ async fn update_cluster(
 
     for event in liveness_event_list.iter() {
         match event {
-            LivenessEventType::RegisteredSequencer((sequencer_index, sequencer_rpc_info)) => {
+            LivenessEventType::RegisteredSequencer(sequencer_index, sequencer_rpc_info) => {
                 cluster.register_sequencer(*sequencer_index, sequencer_rpc_info.clone());
             }
             LivenessEventType::DeregisteredSequencer(sequencer_address) => {
                 cluster.deregister_sequencer(sequencer_address);
+            }
+            LivenessEventType::AddedRollup(cluster_id, rollup_id) => {
+                let rollup_info = liveness_client
+                    .publisher()
+                    .get_rollup_info(&cluster_id, &rollup_id, previous_block_height)
+                    .await
+                    .unwrap();
+
+                let validation_service_provider = ValidationServiceProvider::from_str(
+                    &rollup_info.validationInfo.serviceProvider,
+                )
+                .unwrap();
+
+                update_or_create_rollup(
+                    liveness_client.platform(),
+                    liveness_client.service_provider(),
+                    validation_service_provider,
+                    &cluster_id,
+                    &rollup_info,
+                )
+                .unwrap();
+
+                cluster.add_rollup(rollup_id);
             }
         }
     }
@@ -355,7 +419,7 @@ async fn fetch_and_update_rollups(
     liveness_client: &LivenessClient,
     cluster_id: &str,
     platform_block_height: u64,
-) -> Vec<String> {
+) -> BTreeSet<String> {
     let rollup_info_list = liveness_client
         .publisher()
         .get_rollup_info_list(cluster_id, platform_block_height)
