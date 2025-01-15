@@ -15,10 +15,10 @@ impl FromStr for ValidationServiceProvider {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "eigen_layer" | "EigenLayer" => Ok(Self::EigenLayer),
-            "symbiotic" | "Symbiotic" => Ok(Self::Symbiotic),
-            _ => Err(Error::UnsupportedValidationServiceProvider),
+        match s.to_lowercase().as_str() {
+            "eigen_layer" | "eigenlayer" => Ok(Self::EigenLayer),
+            "symbiotic" => Ok(Self::Symbiotic),
+            _ => Ok(Self::Symbiotic), // Using default value // TODO: error handling
         }
     }
 }
