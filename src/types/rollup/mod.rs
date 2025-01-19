@@ -2,11 +2,31 @@ mod rollup_metadata;
 mod rollup_type;
 mod rollup_validation_info;
 
+use std::collections::{btree_set, BTreeSet};
+
 pub use rollup_metadata::*;
 pub use rollup_type::*;
 pub use rollup_validation_info::*;
 
 use super::prelude::*;
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key())]
+pub struct RollupIdList(BTreeSet<String>);
+
+impl RollupIdList {
+    pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
+        self.0.insert(cluster_id.as_ref().into());
+    }
+
+    pub fn remove(&mut self, cluster_id: impl AsRef<str>) {
+        self.0.remove(cluster_id.as_ref());
+    }
+
+    pub fn iter(&self) -> btree_set::Iter<'_, String> {
+        self.0.iter()
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(rollup_id: &str))]
