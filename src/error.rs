@@ -2,6 +2,7 @@ use crate::logger::LoggerError;
 
 #[derive(Debug)]
 pub enum Error {
+    KvStoreError(radius_sdk::kvstore::KvStoreError),
     Syscall(std::io::Error),
     Config(crate::types::ConfigError),
     Logger(LoggerError),
