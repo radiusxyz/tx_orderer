@@ -10,44 +10,25 @@ pub use rollup_validation_info::*;
 
 use super::prelude::*;
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
-#[kvstore(key())]
-pub struct RollupIdList(BTreeSet<String>);
-
-impl RollupIdList {
-    pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
-        self.0.insert(cluster_id.as_ref().into());
-    }
-
-    pub fn remove(&mut self, cluster_id: impl AsRef<str>) {
-        self.0.remove(cluster_id.as_ref());
-    }
-
-    pub fn iter(&self) -> btree_set::Iter<'_, String> {
-        self.0.iter()
-    }
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(rollup_id: &str))]
 pub struct Rollup {
+    pub cluster_id: String,
+    pub platform: Platform,
+    pub service_provider: ServiceProvider,
+
     pub rollup_id: String,
     pub rollup_type: RollupType,
     pub encrypted_transaction_type: EncryptedTransactionType,
+    pub order_commitment_type: OrderCommitmentType,
 
     #[serde(serialize_with = "serialize_address")]
     pub owner: Address,
 
     pub validation_info: RollupValidationInfo,
-    pub order_commitment_type: OrderCommitmentType,
 
     #[serde(serialize_with = "serialize_address_list")]
     pub executor_address_list: Vec<Address>,
-
-    pub cluster_id: String,
-
-    pub platform: Platform,
-    pub service_provider: ServiceProvider,
 }
 
 impl Rollup {
@@ -83,5 +64,23 @@ impl Rollup {
 
     pub fn set_executor_address_list(&mut self, executor_address_list: Vec<Address>) {
         self.executor_address_list = executor_address_list;
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key())]
+pub struct RollupIdList(BTreeSet<String>);
+
+impl RollupIdList {
+    pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
+        self.0.insert(cluster_id.as_ref().into());
+    }
+
+    pub fn remove(&mut self, cluster_id: impl AsRef<str>) {
+        self.0.remove(cluster_id.as_ref());
+    }
+
+    pub fn iter(&self) -> btree_set::Iter<'_, String> {
+        self.0.iter()
     }
 }

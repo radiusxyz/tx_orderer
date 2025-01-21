@@ -10,19 +10,19 @@ pub struct RollupValidationInfo {
     pub validation_service_provider: ValidationServiceProvider,
 
     #[serde(serialize_with = "serialize_address")]
-    pub validation_service_manager: Address,
+    pub validation_service_manager_address: Address,
 }
 
 impl RollupValidationInfo {
     pub fn new(
         platform: Platform,
         validation_service_provider: ValidationServiceProvider,
-        validation_service_manager: Address,
+        validation_service_manager_address: Address,
     ) -> Self {
         Self {
             platform,
             validation_service_provider,
-            validation_service_manager,
+            validation_service_manager_address,
         }
     }
 }
