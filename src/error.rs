@@ -32,6 +32,10 @@ pub enum Error {
     UnsupportedValidationServiceProvider,
     UnsupportedRollupType,
     UnsupportedOrderCommitmentType,
+    InvalidURL(reqwest::Error),
+    HealthCheck(reqwest::Error),
+    NotExistRollupMetadata,
+    MutexError,
 }
 
 unsafe impl Send for Error {}
