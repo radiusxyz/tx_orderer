@@ -17,8 +17,8 @@ impl RpcParameter<AppState> for GetRollupMetadata {
         "get_rollup_metadata"
     }
 
-    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        let rollup_metadata = RollupMetadata::get(&self.rollup_id)?;
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
+        let rollup_metadata = context.get_rollup_metadata(&self.rollup_id).await?;
 
         Ok(GetRollupMetadataResponse { rollup_metadata })
     }
