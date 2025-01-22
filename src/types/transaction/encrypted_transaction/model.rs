@@ -7,7 +7,7 @@ impl EncryptedTransactionModel {
     pub const ID: &'static str = stringify!(EncryptedTransactionModel);
 
     pub fn put_with_transaction_hash(
-        rollup_id: &String,
+        rollup_id: &str,
         transaction_hash: &RawTransactionHash,
         encrypted_transaction: &EncryptedTransaction,
     ) -> Result<(), KvStoreError> {
@@ -17,7 +17,7 @@ impl EncryptedTransactionModel {
     }
 
     pub fn put(
-        rollup_id: &String,
+        rollup_id: &str,
         rollup_block_height: u64,
         transaction_order: u64,
         encrypted_transaction: &EncryptedTransaction,
@@ -28,8 +28,8 @@ impl EncryptedTransactionModel {
     }
 
     pub fn get_with_transaction_hash(
-        rollup_id: &String,
-        transaction_hash: &String,
+        rollup_id: &str,
+        transaction_hash: &str,
     ) -> Result<EncryptedTransaction, KvStoreError> {
         let key = &(Self::ID, rollup_id, transaction_hash);
 
@@ -37,7 +37,7 @@ impl EncryptedTransactionModel {
     }
 
     pub fn get(
-        rollup_id: &String,
+        rollup_id: &str,
         block_height: u64,
         transaction_order: u64,
     ) -> Result<EncryptedTransaction, KvStoreError> {
@@ -47,7 +47,7 @@ impl EncryptedTransactionModel {
     }
 
     pub fn get_mut(
-        rollup_id: &String,
+        rollup_id: &str,
         block_height: u64,
         transaction_order: u64,
     ) -> Result<Lock<'static, EncryptedTransaction>, KvStoreError> {

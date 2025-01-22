@@ -41,9 +41,9 @@ impl SeederClient {
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
-        cluster_id: &String,
-        external_rpc_url: &String,
-        cluster_rpc_url: &String,
+        cluster_id: &str,
+        external_rpc_url: &str,
+        cluster_rpc_url: &str,
         signer: &PrivateKeySigner,
     ) -> Result<(), SeederError> {
         let message = RegisterSequencerMessage {
@@ -81,7 +81,7 @@ impl SeederClient {
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
-        cluster_id: &String,
+        cluster_id: &str,
         signer: &PrivateKeySigner,
     ) -> Result<(), SeederError> {
         let message = DeregisterSequencerMessage {

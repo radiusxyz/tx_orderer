@@ -4,7 +4,7 @@ pub mod internal;
 pub(crate) mod prelude {
     pub use radius_sdk::{
         json_rpc::{
-            client::{Id, RpcClient},
+            client::Id,
             server::{RpcError, RpcParameter},
         },
         signature::{Address, Signature},
