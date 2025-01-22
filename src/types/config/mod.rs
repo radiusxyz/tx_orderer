@@ -33,6 +33,44 @@ pub struct Config {
     pub is_using_zkp: bool,
 }
 
+/// Provides a default implementation for the `Config` struct.
+///
+/// This implementation is intended for testing and development purposes.
+/// It initializes the configuration with preset values, including paths, RPC
+/// URLs, and other parameters. These values are not suitable for production use
+/// and should be explicitly overridden in a real-world deployment.
+///
+/// - `path`: Default directory for storing data.
+/// - `external_rpc_url`: External RPC server address for external
+///   communication.
+/// - `internal_rpc_url`: Internal RPC server address for internal
+///   communication.
+/// - `cluster_rpc_url`: Address for cluster-related operations.
+/// - `seeder_rpc_url`: Seeder service RPC address.
+/// - `distributed_key_generation_rpc_url`: RPC address for distributed key
+///   generation service.
+/// - `signing_key`: A placeholder signing key for development.
+/// - `is_using_zkp`: Boolean flag indicating whether Zero-Knowledge Proofs
+///   (ZKP) are enabled.
+///
+/// Note: For production use, ensure these values are set explicitly in the
+/// configuration file or environment variables to meet security and functional
+/// requirements.
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            path: PathBuf::from("./data"),
+            external_rpc_url: "http://127.0.0.1:3000".to_string(),
+            internal_rpc_url: "http://127.0.0.1:4000".to_string(),
+            cluster_rpc_url: "http://127.0.0.1:5000".to_string(),
+            seeder_rpc_url: "http://127.0.0.1:6000".to_string(),
+            distributed_key_generation_rpc_url: "http://127.0.0.1:7100".to_string(),
+            signing_key: DEFAULT_SIGNING_KEY.to_string(),
+            is_using_zkp: true,
+        }
+    }
+}
+
 impl Config {
     pub fn load(config_option: &mut ConfigOption) -> Result<Self, ConfigError> {
         let config_path = match config_option.path.as_mut() {
