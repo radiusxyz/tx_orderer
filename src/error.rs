@@ -2,6 +2,7 @@ use crate::logger::LoggerError;
 
 #[derive(Debug)]
 pub enum Error {
+    KvStoreError(radius_sdk::kvstore::KvStoreError),
     Syscall(std::io::Error),
     Config(crate::types::ConfigError),
     Logger(LoggerError),
@@ -23,6 +24,7 @@ pub enum Error {
     EmptyLeaderClusterRpcUrl,
     InvalidPlatformBlockHeight,
     ClusterNotFound,
+    SignerNotFound,
     ExecutorAddressNotFound,
     PlainDataDoesNotExist,
     UnsupportedEncryptedMempool,
@@ -31,6 +33,16 @@ pub enum Error {
     UnsupportedValidationServiceProvider,
     UnsupportedRollupType,
     UnsupportedOrderCommitmentType,
+    InvalidURL(reqwest::Error),
+    HealthCheck(reqwest::Error),
+    NotExistRollupMetadata,
+    MutexError,
+    NoEndpointsAvailable,
+
+    Decryption,
+    Deserialize,
+
+    Convert,
 }
 
 unsafe impl Send for Error {}

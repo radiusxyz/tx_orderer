@@ -10,7 +10,7 @@ pub struct GetCluster {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterResponse {
-    pub cluster_info: Cluster,
+    pub cluster: Cluster,
 }
 
 impl RpcParameter<AppState> for GetCluster {
@@ -45,14 +45,16 @@ impl RpcParameter<AppState> for GetCluster {
                         block_height
                     };
 
-                let cluster_info = Cluster::get(
-                    self.platform,
-                    self.service_provider,
-                    &self.cluster_id,
-                    platform_block_height,
-                )?;
+                let cluster = context
+                    .get_cluster(
+                        self.platform,
+                        self.service_provider,
+                        &self.cluster_id,
+                        platform_block_height,
+                    )
+                    .await?;
 
-                Ok(GetClusterResponse { cluster_info })
+                Ok(GetClusterResponse { cluster })
             }
             SequencingInfoPayload::Local(_) => {
                 unimplemented!("Local liveness is unimplemented.");

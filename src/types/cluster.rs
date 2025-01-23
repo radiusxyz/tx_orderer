@@ -4,34 +4,17 @@ use std::collections::{
 };
 
 use super::prelude::*;
-use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error};
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
-#[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
-pub struct ClusterIdList(BTreeSet<String>);
-
-impl ClusterIdList {
-    pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
-        self.0.insert(cluster_id.as_ref().into());
-    }
-
-    pub fn remove(&mut self, cluster_id: impl AsRef<str>) {
-        self.0.remove(cluster_id.as_ref());
-    }
-
-    pub fn iter(&self) -> btree_set::Iter<'_, String> {
-        self.0.iter()
-    }
-}
+use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error, state::AppState};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
-    pub sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
-    pub rollup_id_list: BTreeSet<String>,
-
     #[serde(serialize_with = "serialize_address")]
-    pub address: Address,
+    pub sequencer_address: Address,
+
+    pub rollup_id_list: BTreeSet<String>,
+    pub sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
+
     pub block_margin: u64,
 }
 
@@ -39,18 +22,19 @@ impl Cluster {
     pub fn new(
         sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
         rollup_id_list: BTreeSet<String>,
-        address: Address,
+        sequencer_address: Address,
         block_margin: u64,
     ) -> Self {
         Self {
             sequencer_rpc_infos,
             rollup_id_list,
-            address,
+            sequencer_address,
             block_margin,
         }
     }
 
-    pub fn put_and_update_with_margin(
+    pub async fn put_and_update_with_margin(
+        context: AppState,
         cluster: &Cluster,
         platform: Platform,
         service_provider: ServiceProvider,
@@ -75,6 +59,25 @@ impl Cluster {
             block_height_for_remove,
         )?;
 
+        let _ = context
+            .add_cluster(
+                platform,
+                service_provider,
+                cluster_id,
+                platform_block_height,
+                cluster.clone(),
+            )
+            .await;
+
+        let _ = context
+            .delete_cluster(
+                platform,
+                service_provider,
+                cluster_id,
+                block_height_for_remove,
+            )
+            .await;
+
         Ok(())
     }
 
@@ -82,7 +85,7 @@ impl Cluster {
         self.sequencer_rpc_infos
             .values()
             .filter_map(|sequencer_rpc_info| {
-                if sequencer_rpc_info.address != self.address {
+                if sequencer_rpc_info.address != self.sequencer_address {
                     if sequencer_rpc_info.cluster_rpc_url.is_none() {
                         return None;
                     }
@@ -99,7 +102,7 @@ impl Cluster {
         self.sequencer_rpc_infos
             .values()
             .filter_map(|sequencer_rpc_info| {
-                if sequencer_rpc_info.address != self.address {
+                if sequencer_rpc_info.address != self.sequencer_address {
                     if sequencer_rpc_info.external_rpc_url.is_none() {
                         return None;
                     }
@@ -190,7 +193,29 @@ impl Cluster {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
-#[kvstore(key(cluster_id: &String, platform_block_height: u64))]
+#[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
+pub struct ClusterIdList(BTreeSet<String>);
+
+impl ClusterIdList {
+    pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
+        self.0.insert(cluster_id.as_ref().into());
+    }
+
+    pub fn remove(&mut self, cluster_id: impl AsRef<str>) {
+        self.0.remove(cluster_id.as_ref());
+    }
+
+    pub fn iter(&self) -> btree_set::Iter<'_, String> {
+        self.0.iter()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Model)]
+#[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str))]
+pub struct LatestClusterBlockHeight(u64);
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key(cluster_id: &str, platform_block_height: u64))]
 pub struct LivenessEventList(Vec<LivenessEventType>);
 
 impl LivenessEventList {

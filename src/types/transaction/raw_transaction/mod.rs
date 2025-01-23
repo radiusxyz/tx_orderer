@@ -63,6 +63,12 @@ pub enum RawTransaction {
     EthBundle(EthRawBundleTransaction),
 }
 
+impl Default for RawTransaction {
+    fn default() -> Self {
+        RawTransaction::Eth(EthRawTransaction::default())
+    }
+}
+
 impl From<EthRawTransaction> for RawTransaction {
     fn from(raw_transaction: EthRawTransaction) -> Self {
         RawTransaction::Eth(raw_transaction)

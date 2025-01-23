@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 pub use single_order_commitment::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(rollup_id: &String, rollup_block_height: u64, transaction_order: u64))]
+#[kvstore(key(rollup_id: &str, rollup_block_height: u64, transaction_order: u64))]
 #[serde(rename_all = "snake_case")]
 #[serde(untagged)]
 pub enum OrderCommitment {

@@ -31,6 +31,14 @@ pub enum EncryptedTransaction {
 }
 
 impl EncryptedTransaction {
+    pub fn try_into_skde_transaction(self) -> Result<SkdeEncryptedTransaction, Error> {
+        match self {
+            EncryptedTransaction::Skde(skde_transaction) => Ok(skde_transaction),
+        }
+    }
+}
+
+impl EncryptedTransaction {
     pub fn raw_transaction_hash(&self) -> RawTransactionHash {
         match self {
             Self::Skde(skde_encrypted_transaction) => {

@@ -17,8 +17,8 @@ impl RpcParameter<AppState> for GetRollup {
         "get_rollup"
     }
 
-    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        let rollup = Rollup::get(&self.rollup_id)?;
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
+        let rollup = context.get_rollup(&self.rollup_id).await?;
 
         Ok(GetRollupResponse { rollup })
     }

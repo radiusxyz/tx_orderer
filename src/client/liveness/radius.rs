@@ -60,7 +60,9 @@ impl LivenessClient {
     pub fn seeder(&self) -> &SeederClient {
         &self.inner.seeder
     }
+}
 
+impl LivenessClient {
     pub fn new(
         platform: Platform,
         service_provider: ServiceProvider,
@@ -122,15 +124,41 @@ impl LivenessClient {
                     ClusterIdList::get_or(platform, service_provider, ClusterIdList::default)
                         .unwrap();
 
-                let platform_block_height = liveness_client
+                let current_block_height = liveness_client
                     .publisher()
                     .get_block_number()
                     .await
                     .unwrap();
 
-                for cluster_id in cluster_id_list.iter() {
-                    initialize_new_cluster(&liveness_client, cluster_id, platform_block_height)
+                let block_margin: u64 = liveness_client
+                    .publisher()
+                    .get_block_margin()
+                    .await
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
+
+                for platform_block_height in
+                    (current_block_height - block_margin)..current_block_height
+                {
+                    for cluster_id in cluster_id_list.iter() {
+                        tracing::info!(
+                            "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?}..",
+                            platform,
+                            service_provider,
+                            cluster_id,
+                            platform_block_height
+                        );
+
+                        initialize_new_cluster(
+                            context.clone(),
+                            &liveness_client,
+                            cluster_id,
+                            platform_block_height,
+                            block_margin,
+                        )
                         .await;
+                    }
                 }
 
                 context
@@ -145,7 +173,7 @@ impl LivenessClient {
                 );
                 liveness_client
                     .subscriber()
-                    .initialize_event_handler(callback, liveness_client.clone())
+                    .initialize_event_handler(callback, (context, liveness_client.clone()))
                     .await
                     .unwrap();
             }
@@ -165,16 +193,17 @@ impl LivenessClient {
     }
 }
 
-async fn callback(events: Events, liveness_client: LivenessClient) {
+async fn callback(events: Events, context: (AppState, LivenessClient)) {
     match events {
-        Events::Block(block) => on_new_block(block, liveness_client).await,
+        Events::Block(block) => on_new_block(context.0, block, context.1).await,
         Events::LivenessEvents(liveness_event, log) => match liveness_event {
             LivenessEvents::RegisteredSequencer(register_sequencer) => {
                 let cluster_id = register_sequencer.clusterId;
                 let platform_block_height = log.block_number.unwrap();
                 let sequencer_index: usize = register_sequencer.index.try_into().unwrap();
                 let sequencer_address = register_sequencer.sequencer.to_string();
-                let sequencer_rpc_info = liveness_client
+                let sequencer_rpc_info = context
+                    .1
                     .seeder()
                     .get_sequencer_rpc_url(sequencer_address.to_string())
                     .await
@@ -231,7 +260,7 @@ async fn callback(events: Events, liveness_client: LivenessClient) {
     }
 }
 
-async fn on_new_block(block: Header, liveness_client: LivenessClient) {
+async fn on_new_block(context: AppState, block: Header, liveness_client: LivenessClient) {
     let platform_block_height = block.number;
     let previous_block_height = platform_block_height.wrapping_sub(1);
 
@@ -243,8 +272,13 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
     .unwrap();
 
     for cluster_id in cluster_id_list.iter() {
-        if let Ok(cluster) =
-            update_cluster(&liveness_client, cluster_id, previous_block_height).await
+        if let Ok(cluster) = update_cluster(
+            context.clone(),
+            &liveness_client,
+            cluster_id,
+            previous_block_height,
+        )
+        .await
         {
             cluster
                 .put(
@@ -254,15 +288,41 @@ async fn on_new_block(block: Header, liveness_client: LivenessClient) {
                     platform_block_height,
                 )
                 .unwrap();
+
+            let _ = context
+                .add_cluster(
+                    liveness_client.platform(),
+                    liveness_client.service_provider(),
+                    cluster_id,
+                    previous_block_height,
+                    cluster.clone(),
+                )
+                .await;
         } else {
-            initialize_new_cluster(&liveness_client, cluster_id, platform_block_height).await;
+            let block_margin: u64 = liveness_client
+                .publisher()
+                .get_block_margin()
+                .await
+                .unwrap()
+                .try_into()
+                .unwrap();
+
+            initialize_new_cluster(
+                context.clone(),
+                &liveness_client,
+                cluster_id,
+                platform_block_height,
+                block_margin,
+            )
+            .await;
         }
     }
 }
 
 async fn update_cluster(
+    context: AppState,
     liveness_client: &LivenessClient,
-    cluster_id: &String,
+    cluster_id: &str,
     previous_block_height: u64,
 ) -> Result<Cluster, Error> {
     let mut cluster = Cluster::get(
@@ -333,57 +393,121 @@ async fn update_cluster(
                 .unwrap();
 
                 update_or_create_rollup(
+                    context.clone(),
                     liveness_client.platform(),
                     liveness_client.service_provider(),
                     validation_service_provider,
                     &cluster_id,
                     &rollup_info,
                 )
+                .await
                 .unwrap();
 
                 cluster.add_rollup(rollup_id);
             }
         }
     }
+
     Ok(cluster)
 }
 
 async fn initialize_new_cluster(
+    context: AppState,
     liveness_client: &LivenessClient,
     cluster_id: &str,
     platform_block_height: u64,
+    block_margin: u64,
 ) {
-    let sequencer_rpc_infos =
-        fetch_sequencer_rpc_infos(liveness_client, cluster_id, platform_block_height).await;
-    let rollup_id_list =
-        fetch_and_update_rollups(liveness_client, cluster_id, platform_block_height).await;
-
-    let block_margin = liveness_client
-        .publisher()
-        .get_block_margin()
-        .await
-        .unwrap();
-
-    let sequencer_address = address_from_str(
-        liveness_client.platform(),
-        liveness_client.publisher().address().to_string(),
-    );
-
-    let cluster = Cluster::new(
-        sequencer_rpc_infos,
-        rollup_id_list,
-        sequencer_address,
-        block_margin.try_into().unwrap(),
-    );
-
-    Cluster::put_and_update_with_margin(
-        &cluster,
+    match Cluster::get(
         liveness_client.platform(),
         liveness_client.service_provider(),
         cluster_id,
         platform_block_height,
-    )
-    .unwrap();
+    ) {
+        Ok(cluster) => {
+            let _ = context.add_cluster(
+                liveness_client.platform(),
+                liveness_client.service_provider(),
+                cluster_id,
+                platform_block_height,
+                cluster,
+            );
+            return;
+        }
+        Err(_) => {
+            let sequencer_rpc_infos =
+                fetch_sequencer_rpc_infos(liveness_client, cluster_id, platform_block_height).await;
+            let rollup_id_list = initialize_rollups(
+                context.clone(),
+                liveness_client,
+                cluster_id,
+                platform_block_height,
+            )
+            .await;
+
+            let sequencer_address = address_from_str(
+                liveness_client.platform(),
+                liveness_client.publisher().address().to_string(),
+            );
+
+            let cluster = Cluster::new(
+                sequencer_rpc_infos,
+                rollup_id_list,
+                sequencer_address,
+                block_margin,
+            );
+
+            Cluster::put_and_update_with_margin(
+                context,
+                &cluster,
+                liveness_client.platform(),
+                liveness_client.service_provider(),
+                cluster_id,
+                platform_block_height,
+            )
+            .await
+            .unwrap();
+        }
+    }
+
+    // let liveness_client = liveness_client.clone();
+    // let context = context.clone();
+    // let cluster_id = cluster_id.to_owned();
+    // tokio::spawn(async move {
+    //     let mut cluster = context
+    //         .get_cluster(
+    //             liveness_client.platform(),
+    //             liveness_client.service_provider(),
+    //             &cluster_id,
+    //         )
+    //         .await
+    //         .unwrap();
+
+    //     let mut sequencer_address_list = Vec::new();
+
+    //     for (index, rpc_info) in cluster.sequencer_rpc_infos.iter() {
+    //         if rpc_info.external_rpc_url.is_none() {
+    //             continue;
+    //         }
+    //         match
+    // health_check(&rpc_info.external_rpc_url.as_ref().unwrap()).await {
+    //             Ok(_) => {}
+    //             Err(_) => {
+    //
+    // sequencer_address_list.push(rpc_info.address.as_hex_string());
+    //             }
+    //         }
+    //     }
+
+    //     let sequencer_rpc_info_list = liveness_client
+    //         .seeder()
+    //         .get_sequencer_rpc_url_list(sequencer_address_list)
+    //         .await
+    //         .unwrap()
+    //         .sequencer_rpc_url_list;
+
+    //     for sequencer_rpc_info in sequencer_rpc_info_list.iter() {}
+    // });
 }
 
 async fn fetch_sequencer_rpc_infos(
@@ -415,69 +539,77 @@ async fn fetch_sequencer_rpc_infos(
         .collect()
 }
 
-async fn fetch_and_update_rollups(
+async fn initialize_rollups(
+    context: AppState,
     liveness_client: &LivenessClient,
     cluster_id: &str,
     platform_block_height: u64,
 ) -> BTreeSet<String> {
-    let rollup_info_list = liveness_client
+    let rollup_list = liveness_client
         .publisher()
         .get_rollup_info_list(cluster_id, platform_block_height)
         .await
         .unwrap();
 
-    for rollup_info in rollup_info_list.iter() {
+    for rollup in rollup_list.iter() {
+        tracing::info!("Initializing the rollup - rollup id: {:?}..", rollup.id,);
         let validation_service_provider =
-            ValidationServiceProvider::from_str(&rollup_info.validationInfo.serviceProvider)
-                .unwrap();
+            ValidationServiceProvider::from_str(&rollup.validationInfo.serviceProvider).unwrap();
 
         update_or_create_rollup(
+            context.clone(),
             liveness_client.platform(),
             liveness_client.service_provider(),
             validation_service_provider,
             cluster_id,
-            rollup_info,
+            rollup,
         )
+        .await
         .unwrap();
     }
 
-    rollup_info_list
-        .iter()
-        .map(|rollup| rollup.id.clone())
-        .collect()
+    rollup_list.iter().map(|rollup| rollup.id.clone()).collect()
 }
 
-fn update_or_create_rollup(
+async fn update_or_create_rollup(
+    context: AppState,
     platform: Platform,
     service_provider: ServiceProvider,
     validation_service_provider: ValidationServiceProvider,
     cluster_id: &str,
     rollup_info: &RollupInfo,
 ) -> Result<(), Error> {
-    match Rollup::get_mut(&rollup_info.id) {
+    let (rollup, rollup_metadata) = match Rollup::get_mut(&rollup_info.id) {
         Ok(mut rollup) => {
-            let executor_addresses = rollup_info
+            let executor_address_list = rollup_info
                 .executors
                 .iter()
                 .map(|addr| address_from_str(platform, addr.to_string()))
                 .collect();
-            rollup.set_executor_address_list(executor_addresses);
+            rollup.set_executor_address_list(executor_address_list);
+            let rollup_clone = rollup.clone();
             rollup.update().map_err(Error::Database)?;
+
+            let rollup_metadata = RollupMetadata::get(&rollup_info.id).map_err(Error::Database)?;
+
+            (rollup_clone, rollup_metadata)
         }
         Err(_) => {
+            let validation_service_manager_address = address_from_str(
+                platform,
+                rollup_info
+                    .validationInfo
+                    .validationServiceManager
+                    .to_string(),
+            );
+
             let validation_info = RollupValidationInfo::new(
                 platform,
                 validation_service_provider,
-                address_from_str(
-                    platform,
-                    rollup_info
-                        .validationInfo
-                        .validationServiceManager
-                        .to_string(),
-                ),
+                validation_service_manager_address,
             );
 
-            let executor_addresses: Vec<Address> = rollup_info
+            let executor_address_list = rollup_info
                 .executors
                 .iter()
                 .map(|addr| address_from_str(platform, addr.to_string()))
@@ -490,15 +622,38 @@ fn update_or_create_rollup(
                 address_from_str(platform, rollup_info.owner.to_string()),
                 validation_info,
                 OrderCommitmentType::from_str(&rollup_info.orderCommitmentType).unwrap(),
-                executor_addresses,
+                executor_address_list,
                 cluster_id.to_owned(),
                 platform,
                 service_provider,
             );
 
+            let mut rollup_id_list =
+                RollupIdList::get_mut_or(RollupIdList::default).map_err(Error::KvStoreError)?;
+            rollup_id_list.insert(&rollup.rollup_id);
+            rollup_id_list.update().map_err(Error::KvStoreError)?;
+
+            let mut rollup_metadata = RollupMetadata::default();
+            rollup_metadata.cluster_id = cluster_id.to_owned();
+
+            rollup_metadata
+                .put(&rollup.rollup_id)
+                .map_err(Error::Database)?;
+
             Rollup::put(&rollup, &rollup.rollup_id).map_err(Error::Database)?;
+
+            (rollup, rollup_metadata)
         }
-    }
+    };
+
+    context
+        .add_rollup_metadata(&rollup.rollup_id, rollup_metadata)
+        .await
+        .unwrap();
+    context
+        .add_rollup(&rollup.rollup_id, rollup.clone())
+        .await
+        .unwrap();
 
     Ok(())
 }
