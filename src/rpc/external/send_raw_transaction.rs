@@ -101,7 +101,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 .leader_sequencer_rpc_info
                 .external_rpc_url
                 .clone()
-                .unwrap();
+                .ok_or(Error::EmptyLeaderClusterRpcUrl)?;
             drop(rollup_metadata);
 
             match context
