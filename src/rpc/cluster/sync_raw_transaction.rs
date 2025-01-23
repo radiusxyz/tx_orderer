@@ -23,24 +23,26 @@ impl RpcParameter<AppState> for SyncRawTransaction {
         "sync_raw_transaction"
     }
 
-    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        tracing::info!(
-            "Sync raw transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}",
-            self.message.rollup_id,
-            self.message.rollup_block_height,
-            self.message.transaction_order,
-            self.message.order_commitment,
-        );
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
+        // tracing::info!(
+        //     "Sync raw transaction - rollup id: {:?}, rollup block height: {:?},
+        // transaction order: {:?}, order commitment: {:?}",     self.message.
+        // rollup_id,     self.message.rollup_block_height,
+        //     self.message.transaction_order,
+        //     self.message.order_commitment,
+        // );
 
-        let rollup = Rollup::get(&self.message.rollup_id)?;
-        let mut rollup_metadata = RollupMetadata::get_mut(&self.message.rollup_id)?;
+        let rollup = context.get_rollup(&self.message.rollup_id).await?;
+        let rollup_metadata = context.get_rollup_metadata(&self.message.rollup_id).await?;
 
-        let cluster = Cluster::get(
-            rollup.platform,
-            rollup.service_provider,
-            &rollup.cluster_id,
-            rollup_metadata.platform_block_height,
-        )?;
+        let cluster = context
+            .get_cluster(
+                rollup.platform,
+                rollup.service_provider,
+                &rollup.cluster_id,
+                rollup_metadata.platform_block_height,
+            )
+            .await?;
 
         // Verify the leader signature
         let leader_address = cluster.get_leader_address(self.message.rollup_block_height)?;
@@ -53,11 +55,12 @@ impl RpcParameter<AppState> for SyncRawTransaction {
         }
 
         if self.message.transaction_order == rollup_metadata.transaction_order {
-            rollup_metadata
+            let mut locked_rollup_metadata = context
+                .get_mut_rollup_metadata(&self.message.rollup_id)
+                .await?;
+            locked_rollup_metadata
                 .add_transaction_hash(self.message.raw_transaction.raw_transaction_hash().as_ref());
-            rollup_metadata.update()?;
-        } else {
-            drop(rollup_metadata);
+            drop(locked_rollup_metadata);
         }
 
         let transaction_hash = self.message.raw_transaction.raw_transaction_hash();

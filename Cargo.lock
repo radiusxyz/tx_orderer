@@ -91,9 +91,9 @@ dependencies = [
 
 [[package]]
 name = "alloy-chains"
-version = "0.1.55"
+version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e39f295f876b61a1222d937e1dd31f965e4a1acc3bba98e448dd7e84b1a4566"
+checksum = "a725039ef382d1b6b4e2ebcb15b1efff6cde9af48c47a1bdce6fb67b9456c34b"
 dependencies = [
  "alloy-primitives",
  "num_enum",
@@ -338,7 +338,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "auto_impl",
- "dashmap",
+ "dashmap 6.1.0",
  "futures",
  "futures-utils-wasm",
  "lru",
@@ -376,9 +376,9 @@ dependencies = [
 
 [[package]]
 name = "alloy-rlp"
-version = "0.3.10"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f542548a609dca89fcd72b3b9f355928cf844d4363c5eed9c5273a3dd225e097"
+checksum = "3d6c1d995bff8d011f7cd6c81820d51825e6e06d6db73914c1630ecf544d83d6"
 dependencies = [
  "alloy-rlp-derive",
  "arrayvec",
@@ -387,9 +387,9 @@ dependencies = [
 
 [[package]]
 name = "alloy-rlp-derive"
-version = "0.3.10"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a833d97bf8a5f0f878daf2c8451fff7de7f9de38baa5a45d936ec718d81255a"
+checksum = "a40e1ef334153322fd878d07e86af7a529bcb86b2439525920a88eba87bcf943"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1231,9 +1231,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.9"
+version = "1.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8293772165d9345bdaaa39b45b2109591e63fe5e6fbc23c6ff930a048aa310b"
+checksum = "13208fcbb66eaeffe09b99fffbe1af420f00a7b35aa99ad683dfc1aa76145229"
 dependencies = [
  "jobserver",
  "libc",
@@ -1360,7 +1360,7 @@ checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 [[package]]
 name = "context"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "crossbeam-epoch",
 ]
@@ -1486,6 +1486,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
+]
+
+[[package]]
+name = "dashmap"
+version = "5.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
+dependencies = [
+ "cfg-if",
+ "hashbrown 0.14.5",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -2648,7 +2661,7 @@ dependencies = [
 [[package]]
 name = "json-rpc-client"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "futures",
  "reqwest",
@@ -2659,7 +2672,7 @@ dependencies = [
 [[package]]
 name = "json-rpc-server"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "http 1.2.0",
  "hyper 0.14.32",
@@ -2668,6 +2681,7 @@ dependencies = [
  "serde_json",
  "tower 0.4.13",
  "tower-http",
+ "trait-variant",
  "url",
 ]
 
@@ -2785,7 +2799,7 @@ dependencies = [
 [[package]]
 name = "kvstore"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "kvstore-macros",
  "rocksdb",
@@ -2797,7 +2811,7 @@ dependencies = [
 [[package]]
 name = "kvstore-macros"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2897,7 +2911,7 @@ checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
 [[package]]
 name = "liveness-radius"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "alloy",
  "futures",
@@ -3659,7 +3673,7 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 [[package]]
 name = "radius-sdk"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "context",
  "json-rpc-client",
@@ -4171,11 +4185,13 @@ dependencies = [
  "chrono",
  "clap",
  "const-hex",
+ "dashmap 5.5.3",
  "ethers-core",
  "local-ip-address",
  "pyroscope",
  "pyroscope_pprofrs",
  "radius-sdk",
+ "reqwest",
  "serde",
  "serde_json",
  "sha3 0.10.8",
@@ -4208,9 +4224,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.135"
+version = "1.0.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b0d7ba2887406110130a978386c4e1befb98c674b4fba677954e4db976630d9"
+checksum = "336a0c23cf42a38d9eaa7cd22c7040d04e1228a19a933890805ffd00a16437d2"
 dependencies = [
  "itoa",
  "memchr",
@@ -4320,7 +4336,7 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "bincode",
  "const-hex",
@@ -4947,6 +4963,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "trait-variant"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70977707304198400eb4835a78f6a9f928bf41bba420deb8fdb175cd965d77a7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.96",
+]
+
+[[package]]
 name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5073,7 +5100,7 @@ dependencies = [
 [[package]]
 name = "validation-eigenlayer"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "alloy",
  "chrono",
@@ -5084,7 +5111,7 @@ dependencies = [
 [[package]]
 name = "validation-symbiotic"
 version = "0.1.0"
-source = "git+https://github.com/radiusxyz/radius-sdk-rs?tag=v0.1#baab432f2f1181e907964957a53c9bac68649b85"
+source = "git+https://github.com/radiusxyz/radius-sdk-rs?rev=65ad32e0a79240329f52951c46f5dcf4da1ee7e3#65ad32e0a79240329f52951c46f5dcf4da1ee7e3"
 dependencies = [
  "alloy",
  "chrono",
@@ -5094,9 +5121,9 @@ dependencies = [
 
 [[package]]
 name = "valuable"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
+checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "vcpkg"

@@ -21,32 +21,31 @@ impl RpcParameter<AppState> for SendRawTransaction {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        tracing::info!(
-            "Send raw transaction: rollup_id: {:?}, raw_transaction: {:?}",
-            self.rollup_id,
-            self.raw_transaction
-        );
+        // tracing::info!(
+        //     "Send raw transaction: rollup_id: {:?}, raw_transaction: {:?}",
+        //     self.rollup_id,
+        //     self.raw_transaction
+        // );
 
-        let rollup = Rollup::get(&self.rollup_id)?;
+        let rollup = context.get_rollup(&self.rollup_id).await?;
+        let rollup_metadata = context.get_rollup_metadata(&self.rollup_id).await?;
+        let cluster = context
+            .get_cluster(
+                rollup.platform,
+                rollup.service_provider,
+                &rollup.cluster_id,
+                rollup_metadata.platform_block_height,
+            )
+            .await?;
 
-        // 2. Check is leader
-        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
-        let platform = rollup.platform;
-        let service_provider = rollup.service_provider;
-        let cluster_id = &rollup_metadata.cluster_id;
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
-        let cluster = Cluster::get(
-            platform,
-            service_provider,
-            cluster_id,
-            rollup_metadata.platform_block_height,
-        )?;
-
         if rollup_metadata.is_leader {
-            let (transaction_order, pre_merkle_path) = rollup_metadata
+            let mut locked_rollup_metadata =
+                context.get_mut_rollup_metadata(&self.rollup_id).await?;
+            let (transaction_order, pre_merkle_path) = locked_rollup_metadata
                 .add_transaction_hash(self.raw_transaction.raw_transaction_hash().as_ref());
-            rollup_metadata.update()?;
+            drop(locked_rollup_metadata);
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
@@ -79,7 +78,6 @@ impl RpcParameter<AppState> for SendRawTransaction {
 
             order_commitment.put(&self.rollup_id, rollup_block_height, transaction_order)?;
 
-            // Sync Transaction
             sync_raw_transaction(
                 cluster,
                 context.clone(),
@@ -92,14 +90,14 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 true,
             );
 
-            tracing::info!(
-                "SendRawTransaction: order_commitment: {:?} / rollup_block_height: {:?} / transaction_order: {:?}",
-                order_commitment,
-                rollup_block_height,
-                transaction_order
-            );
-
-            Ok(order_commitment)
+            match rollup.order_commitment_type {
+                OrderCommitmentType::TransactionHash => Ok(OrderCommitment::Single(
+                    SingleOrderCommitment::TransactionHash(TransactionHashOrderCommitment::new(
+                        transaction_hash.as_string(),
+                    )),
+                )),
+                OrderCommitmentType::Sign => Ok(order_commitment),
+            }
         } else {
             let leader_external_rpc_url = rollup_metadata
                 .leader_sequencer_rpc_info
@@ -108,8 +106,8 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 .unwrap();
             drop(rollup_metadata);
 
-            let rpc_client = RpcClient::new()?;
-            match rpc_client
+            match context
+                .rpc_client()
                 .request(
                     leader_external_rpc_url,
                     SendRawTransaction::method(),
@@ -164,8 +162,8 @@ pub fn sync_raw_transaction(
                 .unwrap();
             let rpc_self = SyncRawTransaction { message, signature };
 
-            let rpc_client = RpcClient::new().unwrap();
-            rpc_client
+            context
+                .rpc_client()
                 .multicast(
                     follower_rpc_url_list,
                     SyncRawTransaction::method(),

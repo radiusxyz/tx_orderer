@@ -20,37 +20,34 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        let rollup = Rollup::get(&self.rollup_id)?;
-
-        tracing::info!(
-            "Send encrypted transaction - rollup id: {:?}, encrypted transaction: {:?}",
-            self.rollup_id,
-            self.encrypted_transaction
-        );
+        let rollup = context.get_rollup(&self.rollup_id).await?;
 
         // 1. Check supported encrypted transaction
         check_supported_encrypted_transaction(&rollup, &self.encrypted_transaction)?;
 
         // 2. Check is leader
-        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
+        let rollup_metadata = context.get_rollup_metadata(&self.rollup_id).await?;
 
         let platform = rollup.platform;
         let service_provider = rollup.service_provider;
         let cluster_id = &rollup_metadata.cluster_id;
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
-        let cluster = Cluster::get(
-            platform,
-            service_provider,
-            cluster_id,
-            rollup_metadata.platform_block_height,
-        )?;
+        let cluster = context
+            .get_cluster(
+                platform,
+                service_provider,
+                cluster_id,
+                rollup_metadata.platform_block_height,
+            )
+            .await?;
 
         if rollup_metadata.is_leader {
-            let (transaction_order, pre_merkle_path) = rollup_metadata
+            let mut locked_rollup_metadata =
+                context.get_mut_rollup_metadata(&self.rollup_id).await?;
+            let (transaction_order, pre_merkle_path) = locked_rollup_metadata
                 .add_transaction_hash(self.encrypted_transaction.raw_transaction_hash().as_ref());
-
-            rollup_metadata.update()?;
+            drop(locked_rollup_metadata);
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
@@ -102,8 +99,8 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
                 .unwrap();
             drop(rollup_metadata);
 
-            let rpc_client = RpcClient::new()?;
-            match rpc_client
+            match context
+                .rpc_client()
                 .request(
                     leader_external_rpc_url,
                     SendEncryptedTransaction::method(),
@@ -173,8 +170,8 @@ pub fn sync_encrypted_transaction(
                 .unwrap();
             let rpc_self = SyncEncryptedTransaction { message, signature };
 
-            let rpc_client = RpcClient::new().unwrap();
-            rpc_client
+            context
+                .rpc_client()
                 .multicast(
                     follower_cluster_rpc_url_list,
                     SyncEncryptedTransaction::method(),

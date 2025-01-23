@@ -3,6 +3,12 @@ use crate::types::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EthRawTransaction(pub String);
 
+impl Default for EthRawTransaction {
+    fn default() -> Self {
+        Self("".to_string())
+    }
+}
+
 impl From<String> for EthRawTransaction {
     fn from(value: String) -> Self {
         Self(value)

@@ -24,6 +24,7 @@ pub enum Error {
     EmptyLeaderClusterRpcUrl,
     InvalidPlatformBlockHeight,
     ClusterNotFound,
+    SignerNotFound,
     ExecutorAddressNotFound,
     PlainDataDoesNotExist,
     UnsupportedEncryptedMempool,
@@ -36,6 +37,12 @@ pub enum Error {
     HealthCheck(reqwest::Error),
     NotExistRollupMetadata,
     MutexError,
+    NoEndpointsAvailable,
+
+    Decryption,
+    Deserialize,
+
+    Convert,
 }
 
 unsafe impl Send for Error {}
