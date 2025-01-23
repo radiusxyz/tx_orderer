@@ -103,24 +103,43 @@ impl FinalizeBlock {
             .get_mut_rollup_metadata(&self.finalize_block_message.rollup_id)
             .await
         {
-            transaction_count = locked_rollup_metadata.transaction_order;
+            transaction_count = locked_rollup_metadata.transaction_order; // 2156
 
-            self.update_rollup_metadata(
-                &mut locked_rollup_metadata,
-                next_rollup_block_height,
-                is_leader,
-                cluster,
-            )?;
+            locked_rollup_metadata.rollup_block_height = next_rollup_block_height;
+            locked_rollup_metadata.platform_block_height =
+                self.finalize_block_message.platform_block_height;
+            locked_rollup_metadata.is_leader = is_leader;
+
+            if let Some(sequencer_rpc_info) = cluster
+                .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
+            {
+                locked_rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
+            } else {
+                tracing::error!("Sequencer RPC info not found");
+                return Err(Error::SignerNotFound)?;
+            }
+
+            locked_rollup_metadata.new_merkle_tree();
         } else {
             let mut rollup_metadata = RollupMetadata::default();
 
             rollup_metadata.cluster_id = rollup.cluster_id.to_string();
-            self.update_rollup_metadata(
-                &mut rollup_metadata,
-                next_rollup_block_height,
-                is_leader,
-                cluster,
-            )?;
+
+            rollup_metadata.rollup_block_height = next_rollup_block_height;
+            rollup_metadata.platform_block_height =
+                self.finalize_block_message.platform_block_height;
+            rollup_metadata.is_leader = is_leader;
+
+            if let Some(sequencer_rpc_info) = cluster
+                .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
+            {
+                rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
+            } else {
+                tracing::error!("Sequencer RPC info not found");
+                return Err(Error::SignerNotFound)?;
+            }
+
+            rollup_metadata.new_merkle_tree();
 
             rollup_metadata.put(&self.finalize_block_message.rollup_id)?;
             context
@@ -129,29 +148,5 @@ impl FinalizeBlock {
         }
 
         Ok(transaction_count)
-    }
-
-    fn update_rollup_metadata(
-        &self,
-        rollup_metadata: &mut RollupMetadata,
-        next_rollup_block_height: u64,
-        is_leader: bool,
-        cluster: &Cluster,
-    ) -> Result<(), RpcError> {
-        rollup_metadata.rollup_block_height = next_rollup_block_height;
-        rollup_metadata.platform_block_height = self.finalize_block_message.platform_block_height;
-        rollup_metadata.is_leader = is_leader;
-
-        if let Some(sequencer_rpc_info) =
-            cluster.get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
-        {
-            rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
-        } else {
-            tracing::error!("Sequencer RPC info not found");
-            return Err(Error::SignerNotFound)?;
-        }
-
-        rollup_metadata.new_merkle_tree();
-        Ok(())
     }
 }
