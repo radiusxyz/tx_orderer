@@ -26,7 +26,7 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
         check_supported_encrypted_transaction(&rollup, &self.encrypted_transaction)?;
 
         // 2. Check is leader
-        let rollup_metadata = context.get_rollup_metadata(&self.rollup_id).await?;
+        let mut rollup_metadata = context.get_mut_rollup_metadata(&self.rollup_id).await?;
 
         let platform = rollup.platform;
         let service_provider = rollup.service_provider;
@@ -43,11 +43,9 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
             .await?;
 
         if rollup_metadata.is_leader {
-            let mut locked_rollup_metadata =
-                context.get_mut_rollup_metadata(&self.rollup_id).await?;
-            let (transaction_order, pre_merkle_path) = locked_rollup_metadata
+            let (transaction_order, pre_merkle_path) = rollup_metadata
                 .add_transaction_hash(self.encrypted_transaction.raw_transaction_hash().as_ref());
-            drop(locked_rollup_metadata);
+            drop(rollup_metadata);
 
             let order_commitment = issue_order_commitment(
                 context.clone(),

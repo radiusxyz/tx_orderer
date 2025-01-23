@@ -28,7 +28,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
         // );
 
         let rollup = context.get_rollup(&self.rollup_id).await?;
-        let rollup_metadata = context.get_rollup_metadata(&self.rollup_id).await?;
+        let mut rollup_metadata = context.get_mut_rollup_metadata(&self.rollup_id).await?;
         let cluster = context
             .get_cluster(
                 rollup.platform,
@@ -41,11 +41,9 @@ impl RpcParameter<AppState> for SendRawTransaction {
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
         if rollup_metadata.is_leader {
-            let mut locked_rollup_metadata =
-                context.get_mut_rollup_metadata(&self.rollup_id).await?;
-            let (transaction_order, pre_merkle_path) = locked_rollup_metadata
+            let (transaction_order, pre_merkle_path) = rollup_metadata
                 .add_transaction_hash(self.raw_transaction.raw_transaction_hash().as_ref());
-            drop(locked_rollup_metadata);
+            drop(rollup_metadata);
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
