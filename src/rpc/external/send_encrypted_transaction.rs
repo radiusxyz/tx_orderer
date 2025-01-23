@@ -27,17 +27,13 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
 
         // 2. Check is leader
         let mut rollup_metadata = context.get_mut_rollup_metadata(&self.rollup_id).await?;
-
-        let platform = rollup.platform;
-        let service_provider = rollup.service_provider;
-        let cluster_id = &rollup_metadata.cluster_id;
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
         let cluster = context
             .get_cluster(
-                platform,
-                service_provider,
-                cluster_id,
+                rollup.platform,
+                rollup.service_provider,
+                &rollup_metadata.cluster_id,
                 rollup_metadata.platform_block_height,
             )
             .await?;
