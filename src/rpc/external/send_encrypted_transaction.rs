@@ -26,28 +26,22 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
         check_supported_encrypted_transaction(&rollup, &self.encrypted_transaction)?;
 
         // 2. Check is leader
-        let rollup_metadata = context.get_rollup_metadata(&self.rollup_id).await?;
-
-        let platform = rollup.platform;
-        let service_provider = rollup.service_provider;
-        let cluster_id = &rollup_metadata.cluster_id;
+        let mut rollup_metadata = context.get_mut_rollup_metadata(&self.rollup_id).await?;
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
         let cluster = context
             .get_cluster(
-                platform,
-                service_provider,
-                cluster_id,
+                rollup.platform,
+                rollup.service_provider,
+                &rollup_metadata.cluster_id,
                 rollup_metadata.platform_block_height,
             )
             .await?;
 
         if rollup_metadata.is_leader {
-            let mut locked_rollup_metadata =
-                context.get_mut_rollup_metadata(&self.rollup_id).await?;
-            let (transaction_order, pre_merkle_path) = locked_rollup_metadata
+            let (transaction_order, pre_merkle_path) = rollup_metadata
                 .add_transaction_hash(self.encrypted_transaction.raw_transaction_hash().as_ref());
-            drop(locked_rollup_metadata);
+            drop(rollup_metadata);
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
@@ -96,7 +90,7 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
                 .leader_sequencer_rpc_info
                 .external_rpc_url
                 .clone()
-                .unwrap();
+                .ok_or(Error::EmptyLeaderClusterRpcUrl)?;
             drop(rollup_metadata);
 
             match context
