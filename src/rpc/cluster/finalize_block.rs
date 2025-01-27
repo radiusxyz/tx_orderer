@@ -4,7 +4,10 @@ use ethers_core::types::{Signature as EthSignature, H256};
 use radius_sdk::{signature::ChainType, validation::symbiotic::types::Keccak256};
 use tracing::{info, warn};
 
-use crate::{rpc::prelude::*, task::build_block};
+use crate::{
+    rpc::prelude::{liveness::radius::initialize_new_cluster, *},
+    task::build_block,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlock {
@@ -38,7 +41,8 @@ pub struct SignMessage {
 
 impl FinalizeBlock {
     pub fn get_executor_address(&self, chain_type: ChainType) -> Result<Address, RpcError> {
-        let sign_message = SignMessage {
+        // Serialize the sign message into JSON bytes
+        let message_bytes = serde_json::to_vec(&SignMessage {
             rollup_id: self.finalize_block_message.rollup_id.clone(),
             executor_address: self.finalize_block_message.executor_address.as_hex_string(),
             platform_block_height: self.finalize_block_message.platform_block_height,
@@ -51,28 +55,31 @@ impl FinalizeBlock {
                 .finalize_block_message
                 .next_block_creator_address
                 .as_hex_string(),
+        })
+        .map_err(|e| {
+            Error::Internal(format!("Failed to serialize sign message: {:?}", e).into())
+        })?;
+
+        // Hash the serialized message using Keccak256
+        let hash = {
+            let mut hasher = Keccak256::new();
+            hasher.update(message_bytes);
+            let output = hasher.finalize();
+            H256::from_slice(&output.as_slice())
         };
 
-        let message_bytes = serde_json::to_vec(&sign_message).unwrap();
+        // Recover the signer address from the signature and hash
+        let recovered_address = EthSignature::from_str(&self.signature.as_hex_string())
+            .map_err(|e| Error::Internal(format!("Invalid signature format: {:?}", e).into()))?
+            .recover(hash)
+            .map_err(|e| Error::Internal(format!("Failed to recover address: {:?}", e).into()))?;
 
-        let mut hasher = Keccak256::new();
-        hasher.update(message_bytes);
-        let output = hasher.finalize();
-        let output: [u8; 32] = output
-            .as_slice()
-            .try_into()
-            .expect("Output must be exactly 32 bytes");
-
-        let hash = H256(output);
-
-        let signature = EthSignature::from_str(&self.signature.as_hex_string())?;
-
-        let recovered_address = signature.recover(hash)?;
-        let recovered_address = format!("0x{:x}", recovered_address);
-
-        let signer_address = Address::from_str(chain_type, &recovered_address)?;
-
-        Ok(signer_address)
+        // Format the recovered address into a string and convert to Address type
+        Ok(
+            Address::from_str(chain_type, &format!("0x{:x}", recovered_address)).map_err(|e| {
+                Error::Internal(format!("Invalid recovered address: {:?}", e).into())
+            })?,
+        )
     }
 }
 
@@ -117,8 +124,58 @@ impl RpcParameter<AppState> for FinalizeBlock {
                 &rollup.cluster_id,
                 self.finalize_block_message.platform_block_height,
             )
-            .await
-            .map_err(|_| Error::ClusterNotFound)?;
+            .await;
+
+        let cluster = if let Err(_) = cluster {
+            let liveness_client = context
+                .get_liveness_client::<liveness::radius::LivenessClient>(
+                    rollup.platform,
+                    rollup.service_provider,
+                )
+                .await?;
+
+            let current_block_height = liveness_client
+                .publisher()
+                .get_block_number()
+                .await
+                .map_err(|_| Error::ClusterNotFound)?;
+
+            let block_margin: u64 = liveness_client
+                .publisher()
+                .get_block_margin()
+                .await
+                .map_err(|_| Error::ClusterNotFound)?
+                .try_into()
+                .map_err(|_| Error::ClusterNotFound)?;
+
+            if self.finalize_block_message.platform_block_height + block_margin
+                < current_block_height
+            {
+                return Err(Error::ClusterNotFound.into());
+            }
+
+            // Initialize new cluster if it doesn't exist
+            initialize_new_cluster(
+                context.clone(),
+                &liveness_client,
+                &rollup.cluster_id,
+                current_block_height,
+                block_margin,
+            )
+            .await;
+
+            // Try to fetch the cluster again after initialization
+            context
+                .get_cluster(
+                    rollup.platform,
+                    rollup.service_provider,
+                    &rollup.cluster_id,
+                    self.finalize_block_message.platform_block_height,
+                )
+                .await?
+        } else {
+            cluster?
+        };
 
         let transaction_count = self
             .finalize_block(context.clone(), &cluster, &rollup)

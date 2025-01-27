@@ -411,7 +411,7 @@ async fn update_cluster(
     Ok(cluster)
 }
 
-async fn initialize_new_cluster(
+pub async fn initialize_new_cluster(
     context: AppState,
     liveness_client: &LivenessClient,
     cluster_id: &str,
