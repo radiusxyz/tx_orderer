@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use ethers_core::types::{Signature as EthSignature, H256};
-use radius_sdk::validation::symbiotic::types::Keccak256;
-use tracing::info;
+use radius_sdk::{signature::ChainType, validation::symbiotic::types::Keccak256};
+use tracing::{info, warn};
 
 use crate::{rpc::prelude::*, task::build_block};
 
@@ -37,7 +37,7 @@ pub struct SignMessage {
 }
 
 impl FinalizeBlock {
-    pub fn verify_signature(&self) -> Result<(), RpcError> {
+    pub fn get_executor_address(&self, chain_type: ChainType) -> Result<Address, RpcError> {
         let sign_message = SignMessage {
             rollup_id: self.finalize_block_message.rollup_id.clone(),
             executor_address: self.finalize_block_message.executor_address.as_hex_string(),
@@ -70,17 +70,9 @@ impl FinalizeBlock {
         let recovered_address = signature.recover(hash)?;
         let recovered_address = format!("0x{:x}", recovered_address);
 
-        if recovered_address.to_lowercase()
-            != self
-                .finalize_block_message
-                .executor_address
-                .as_hex_string()
-                .to_lowercase()
-        {
-            return Err(Error::InvalidSignature)?;
-        }
+        let signer_address = Address::from_str(chain_type, &recovered_address)?;
 
-        Ok(())
+        Ok(signer_address)
     }
 }
 
@@ -104,15 +96,19 @@ impl RpcParameter<AppState> for FinalizeBlock {
             .get_rollup(&self.finalize_block_message.rollup_id)
             .await?;
 
+        let signer_address = self.get_executor_address(rollup.platform.into())?;
+
         rollup
             .executor_address_list
             .iter()
-            .find(|&executor_address| {
-                self.finalize_block_message.executor_address == *executor_address
-            })
-            .ok_or(Error::ExecutorAddressNotFound)?;
-
-        self.verify_signature()?;
+            .find(|&executor_address| signer_address == *executor_address)
+            .ok_or_else(|| {
+                warn!(
+                    "Executor address not found: {:?}",
+                    signer_address.as_hex_string()
+                );
+                Error::ExecutorAddressNotFound
+            })?;
 
         let cluster = context
             .get_cluster(
