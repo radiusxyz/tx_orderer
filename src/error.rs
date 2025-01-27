@@ -43,6 +43,7 @@ pub enum Error {
     Deserialize,
 
     Convert,
+    InvalidSignature,
 }
 
 unsafe impl Send for Error {}

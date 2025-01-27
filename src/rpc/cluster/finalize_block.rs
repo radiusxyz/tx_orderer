@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use ethers_core::types::{Signature as EthSignature, H256};
 use radius_sdk::validation::symbiotic::types::Keccak256;
 use tracing::info;
 
@@ -33,6 +36,54 @@ pub struct SignMessage {
     pub next_block_creator_address: String,
 }
 
+impl FinalizeBlock {
+    pub fn verify_signature(&self) -> Result<(), RpcError> {
+        let sign_message = SignMessage {
+            rollup_id: self.finalize_block_message.rollup_id.clone(),
+            executor_address: self.finalize_block_message.executor_address.as_hex_string(),
+            platform_block_height: self.finalize_block_message.platform_block_height,
+            rollup_block_height: self.finalize_block_message.rollup_block_height,
+            block_creator_address: self
+                .finalize_block_message
+                .block_creator_address
+                .as_hex_string(),
+            next_block_creator_address: self
+                .finalize_block_message
+                .next_block_creator_address
+                .as_hex_string(),
+        };
+
+        let message_bytes = serde_json::to_vec(&sign_message).unwrap();
+
+        let mut hasher = Keccak256::new();
+        hasher.update(message_bytes);
+        let output = hasher.finalize();
+        let output: [u8; 32] = output
+            .as_slice()
+            .try_into()
+            .expect("Output must be exactly 32 bytes");
+
+        let hash = H256(output);
+
+        let signature = EthSignature::from_str(&self.signature.as_hex_string())?;
+
+        let recovered_address = signature.recover(hash)?;
+        let recovered_address = format!("0x{:x}", recovered_address);
+
+        if recovered_address.to_lowercase()
+            != self
+                .finalize_block_message
+                .executor_address
+                .as_hex_string()
+                .to_lowercase()
+        {
+            return Err(Error::InvalidSignature)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl RpcParameter<AppState> for FinalizeBlock {
     type Response = ();
 
@@ -53,57 +104,15 @@ impl RpcParameter<AppState> for FinalizeBlock {
             .get_rollup(&self.finalize_block_message.rollup_id)
             .await?;
 
-        // TODO validate the executor address
+        rollup
+            .executor_address_list
+            .iter()
+            .find(|&executor_address| {
+                self.finalize_block_message.executor_address == *executor_address
+            })
+            .ok_or(Error::ExecutorAddressNotFound)?;
 
-        // rollup
-        //     .executor_address_list
-        //     .iter()
-        //     .find(|&executor_address| {
-        //         self.finalize_block_message.executor_address == *executor_address
-        //     })
-        //     .ok_or(Error::ExecutorAddressNotFound)?;
-
-        // println!(
-        //     "self.finalize_block_message - : {:?}",
-        //     self.finalize_block_message
-        // );
-
-        // let sign_message = SignMessage {
-        //     rollup_id: self.finalize_block_message.rollup_id.clone(),
-        //     executor_address:
-        // self.finalize_block_message.executor_address.as_hex_string(),
-        //     platform_block_height: self.finalize_block_message.platform_block_height,
-        //     rollup_block_height: self.finalize_block_message.rollup_block_height,
-        //     block_creator_address: self
-        //         .finalize_block_message
-        //         .block_creator_address
-        //         .as_hex_string(),
-        //     next_block_creator_address: self
-        //         .finalize_block_message
-        //         .next_block_creator_address
-        //         .as_hex_string(),
-        // };
-
-        // let serialized = serde_json::to_vec(&sign_message).unwrap();
-
-        // let mut hasher = Keccak256::new();
-        // hasher.update(serialized);
-        // let output = hasher.finalize();
-        // let hash = output.to_vec();
-
-        // // Verify the message.
-        // match self.signature.verify_message(
-        //     rollup.platform.into(),
-        //     &hash,
-        //     self.finalize_block_message.executor_address.clone(),
-        // ) {
-        //     Ok(_) => {
-        //         println!("Signature verified")
-        //     }
-        //     Err(_) => {
-        //         println!("Signature not verified");
-        //     }
-        // }
+        self.verify_signature()?;
 
         let cluster = context
             .get_cluster(
