@@ -15,7 +15,7 @@ pub async fn submit_block_commitment(
     block_commitment: &BlockCommitment,
 ) {
     let block_commitment = block_commitment.as_bytes().unwrap();
-    if (rollup_block_height % 201600) + 1 == 0 {
+    if (rollup_block_height % 201600) == 0 {
         tracing::info!(
             "Submit block commitment - rollup_id: {:?}, rollup_block_height: {:?}, block_commitment: {:?}",
             rollup.rollup_id,
