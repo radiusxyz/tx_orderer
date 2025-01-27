@@ -29,8 +29,6 @@ impl RpcParameter<AppState> for SyncBlock {
             self.transaction_count,
         );
 
-        // TODO: verify
-
         let rollup = context
             .get_rollup(&self.finalize_block_message.rollup_id)
             .await?;

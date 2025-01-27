@@ -39,7 +39,6 @@ impl RpcParameter<AppState> for AddSequencingInfo {
                 );
             }
             SequencingInfoPayload::Local(_payload) => {
-                // liveness::local::LivenessClient::new()?;
                 todo!("Implement 'LivenessClient' for local sequencing.");
             }
         }

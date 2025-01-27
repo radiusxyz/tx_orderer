@@ -1,4 +1,5 @@
 mod skde_block_builder;
+mod validation;
 
 use radius_sdk::{
     json_rpc::{
@@ -8,6 +9,7 @@ use radius_sdk::{
     signature::Signature,
 };
 use skde_block_builder::*;
+use validation::*;
 
 use crate::{
     rpc::{
@@ -59,13 +61,37 @@ pub fn build_block(
             EncryptedTransactionType::NotSupport => unimplemented!(),
         };
 
+        let rollup: Rollup = context
+            .get_rollup(&finalize_block_message.rollup_id)
+            .await
+            .unwrap();
+
+        let validation_platform = rollup.validation_info.platform.clone();
+        let validation_service_provider =
+            rollup.validation_info.validation_service_provider.clone();
+        let validation_info =
+            ValidationInfo::get(validation_platform, validation_service_provider).unwrap();
+        let block_commitment = block.block_commitment;
+        let rollup_block_height = finalize_block_message.rollup_block_height;
+
         let _ = sync_block(
-            context,
+            context.clone(),
             cluster,
             finalize_block_message,
             rollup_signature,
             transaction_count,
             block.signature,
+        )
+        .await;
+
+        submit_block_commitment(
+            context.clone(),
+            &rollup,
+            validation_platform,
+            validation_service_provider,
+            validation_info,
+            rollup_block_height,
+            &block_commitment,
         )
         .await;
     });
@@ -284,6 +310,7 @@ async fn fetch_raw_transaction_info(
             "No external RPC URLs available for fetching raw transactions. Rollup ID: {}, Block Height: {}, Order: {}",
             rollup_id, rollup_block_height, transaction_order
         );
+
         return Err(RpcClientError::Response("NoEndpointsAvailable".to_string()));
     }
 

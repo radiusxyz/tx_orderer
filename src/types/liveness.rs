@@ -18,7 +18,7 @@ impl FromStr for ValidationServiceProvider {
         match s.to_lowercase().as_str() {
             "eigen_layer" | "eigenlayer" => Ok(Self::EigenLayer),
             "symbiotic" => Ok(Self::Symbiotic),
-            _ => Ok(Self::Symbiotic), // Using default value // TODO: error handling
+            _ => Ok(Self::Symbiotic),
         }
     }
 }

@@ -1,3 +1,4 @@
+use radius_sdk::validation::symbiotic::types::Keccak256;
 use tracing::info;
 
 use crate::{rpc::prelude::*, task::build_block};
@@ -20,6 +21,18 @@ pub struct FinalizeBlockMessage {
     pub next_block_creator_address: Address,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SignMessage {
+    pub rollup_id: String,
+    pub executor_address: String,
+
+    pub platform_block_height: u64,
+    pub rollup_block_height: u64,
+
+    pub block_creator_address: String,
+    pub next_block_creator_address: String,
+}
+
 impl RpcParameter<AppState> for FinalizeBlock {
     type Response = ();
 
@@ -35,27 +48,62 @@ impl RpcParameter<AppState> for FinalizeBlock {
         self.finalize_block_message.platform_block_height,
         self.finalize_block_message.rollup_block_height,);
 
-        // Verify the message.
-        // self.signature.verify_message(
-        //     rollup.platform.into(),
-        //     &self.message,
-        //     self.message.executor_address.clone(),
-        // )?;
-
         // Check the executor address
         let rollup = context
             .get_rollup(&self.finalize_block_message.rollup_id)
             .await?;
 
-        // TODO: remove this comment /
-        // In a rush to test, I couldn't add the executor address to the smart contract,
-        // so I temporarily commented it out.
-        // rollup
-        //     .executor_address_list()
-        //     .iter()
-        //     .find(|&executor_address| self.message.executor_address ==
+        // TODO validate the executor address
 
-        // *executor_address)     .ok_or(Error::ExecutorAddressNotFound)?;
+        // rollup
+        //     .executor_address_list
+        //     .iter()
+        //     .find(|&executor_address| {
+        //         self.finalize_block_message.executor_address == *executor_address
+        //     })
+        //     .ok_or(Error::ExecutorAddressNotFound)?;
+
+        // println!(
+        //     "self.finalize_block_message - : {:?}",
+        //     self.finalize_block_message
+        // );
+
+        // let sign_message = SignMessage {
+        //     rollup_id: self.finalize_block_message.rollup_id.clone(),
+        //     executor_address:
+        // self.finalize_block_message.executor_address.as_hex_string(),
+        //     platform_block_height: self.finalize_block_message.platform_block_height,
+        //     rollup_block_height: self.finalize_block_message.rollup_block_height,
+        //     block_creator_address: self
+        //         .finalize_block_message
+        //         .block_creator_address
+        //         .as_hex_string(),
+        //     next_block_creator_address: self
+        //         .finalize_block_message
+        //         .next_block_creator_address
+        //         .as_hex_string(),
+        // };
+
+        // let serialized = serde_json::to_vec(&sign_message).unwrap();
+
+        // let mut hasher = Keccak256::new();
+        // hasher.update(serialized);
+        // let output = hasher.finalize();
+        // let hash = output.to_vec();
+
+        // // Verify the message.
+        // match self.signature.verify_message(
+        //     rollup.platform.into(),
+        //     &hash,
+        //     self.finalize_block_message.executor_address.clone(),
+        // ) {
+        //     Ok(_) => {
+        //         println!("Signature verified")
+        //     }
+        //     Err(_) => {
+        //         println!("Signature not verified");
+        //     }
+        // }
 
         let cluster = context
             .get_cluster(

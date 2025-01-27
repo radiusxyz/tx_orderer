@@ -17,7 +17,6 @@ impl From<String> for EthRawTransaction {
 
 impl EthRawTransaction {
     pub fn raw_transaction_hash(&self) -> RawTransactionHash {
-        // TODO: decode_rlp_transaction
         let decoded_transaction = decode_rlp_transaction(&self.0).unwrap();
 
         let transaction_hash = const_hex::encode_prefixed(decoded_transaction.hash);
