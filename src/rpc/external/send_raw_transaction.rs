@@ -43,6 +43,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
         if rollup_metadata.is_leader {
             let (transaction_order, pre_merkle_path) = rollup_metadata
                 .add_transaction_hash(self.raw_transaction.raw_transaction_hash().as_ref());
+            rollup_metadata.put(&self.rollup_id)?;
             drop(rollup_metadata);
 
             let order_commitment = issue_order_commitment(
