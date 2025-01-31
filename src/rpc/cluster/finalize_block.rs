@@ -230,6 +230,8 @@ impl FinalizeBlock {
             }
 
             locked_rollup_metadata.new_merkle_tree();
+
+            locked_rollup_metadata.put(&self.finalize_block_message.rollup_id)?;
         } else {
             let mut rollup_metadata = RollupMetadata::default();
 
