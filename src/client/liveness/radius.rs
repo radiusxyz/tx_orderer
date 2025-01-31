@@ -109,7 +109,7 @@ impl LivenessClient {
             async move {
                 let signing_key = &context.config().signing_key;
                 let signer = PrivateKeySigner::from_str(platform.into(), signing_key).unwrap();
-                context.add_signer(platform, signer).await.unwrap();
+                context.add_signer(platform, signer.clone()).await.unwrap();
 
                 let liveness_client = Self::new(
                     platform,
@@ -123,6 +123,22 @@ impl LivenessClient {
                 let cluster_id_list =
                     ClusterIdList::get_or(platform, service_provider, ClusterIdList::default)
                         .unwrap();
+
+                // Renew IP address.
+                if let Some(cluster_id) = cluster_id_list.iter().last() {
+                    liveness_client
+                        .seeder()
+                        .register_sequencer(
+                            platform,
+                            service_provider,
+                            cluster_id,
+                            &context.config().external_rpc_url,
+                            &context.config().cluster_rpc_url,
+                            &signer,
+                        )
+                        .await
+                        .unwrap();
+                }
 
                 let current_block_height = liveness_client
                     .publisher()
@@ -472,45 +488,6 @@ pub async fn initialize_new_cluster(
             .unwrap();
         }
     }
-
-    // let liveness_client = liveness_client.clone();
-    // let context = context.clone();
-    // let cluster_id = cluster_id.to_owned();
-    // tokio::spawn(async move {
-    //     let mut cluster = context
-    //         .get_cluster(
-    //             liveness_client.platform(),
-    //             liveness_client.service_provider(),
-    //             &cluster_id,
-    //         )
-    //         .await
-    //         .unwrap();
-
-    //     let mut sequencer_address_list = Vec::new();
-
-    //     for (index, rpc_info) in cluster.sequencer_rpc_infos.iter() {
-    //         if rpc_info.external_rpc_url.is_none() {
-    //             continue;
-    //         }
-    //         match
-    // health_check(&rpc_info.external_rpc_url.as_ref().unwrap()).await {
-    //             Ok(_) => {}
-    //             Err(_) => {
-    //
-    // sequencer_address_list.push(rpc_info.address.as_hex_string());
-    //             }
-    //         }
-    //     }
-
-    //     let sequencer_rpc_info_list = liveness_client
-    //         .seeder()
-    //         .get_sequencer_rpc_url_list(sequencer_address_list)
-    //         .await
-    //         .unwrap()
-    //         .sequencer_rpc_url_list;
-
-    //     for sequencer_rpc_info in sequencer_rpc_info_list.iter() {}
-    // });
 }
 
 async fn fetch_sequencer_rpc_infos(

@@ -13,7 +13,6 @@ use sequencer::{
     },
     error::{self, Error},
     logger::{Logger, PanicLog},
-    // profiler::Profiler,
     rpc::{cluster, external, internal},
     state::AppState,
     types::*,
