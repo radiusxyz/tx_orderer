@@ -289,15 +289,16 @@ async fn on_new_block(context: AppState, block: Header, liveness_client: Livenes
                 )
                 .unwrap();
 
-            let _ = context
+            context
                 .add_cluster(
                     liveness_client.platform(),
                     liveness_client.service_provider(),
                     cluster_id,
                     previous_block_height,
-                    cluster.clone(),
+                    cluster,
                 )
-                .await;
+                .await
+                .unwrap();
         } else {
             let block_margin: u64 = liveness_client
                 .publisher()
@@ -425,14 +426,16 @@ pub async fn initialize_new_cluster(
         platform_block_height,
     ) {
         Ok(cluster) => {
-            let _ = context.add_cluster(
-                liveness_client.platform(),
-                liveness_client.service_provider(),
-                cluster_id,
-                platform_block_height,
-                cluster,
-            );
-            return;
+            context
+                .add_cluster(
+                    liveness_client.platform(),
+                    liveness_client.service_provider(),
+                    cluster_id,
+                    platform_block_height,
+                    cluster,
+                )
+                .await
+                .unwrap();
         }
         Err(_) => {
             let sequencer_rpc_infos =
