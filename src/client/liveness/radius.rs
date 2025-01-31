@@ -418,57 +418,38 @@ pub async fn initialize_new_cluster(
     platform_block_height: u64,
     block_margin: u64,
 ) {
-    match Cluster::get(
+    let sequencer_rpc_infos =
+        fetch_sequencer_rpc_infos(liveness_client, cluster_id, platform_block_height).await;
+    let rollup_id_list = initialize_rollups(
+        context.clone(),
+        liveness_client,
+        cluster_id,
+        platform_block_height,
+    )
+    .await;
+
+    let sequencer_address = address_from_str(
+        liveness_client.platform(),
+        liveness_client.publisher().address().to_string(),
+    );
+
+    let cluster = Cluster::new(
+        sequencer_rpc_infos,
+        rollup_id_list,
+        sequencer_address,
+        block_margin,
+    );
+
+    Cluster::put_and_update_with_margin(
+        context,
+        &cluster,
         liveness_client.platform(),
         liveness_client.service_provider(),
         cluster_id,
         platform_block_height,
-    ) {
-        Ok(cluster) => {
-            let _ = context.add_cluster(
-                liveness_client.platform(),
-                liveness_client.service_provider(),
-                cluster_id,
-                platform_block_height,
-                cluster,
-            );
-            return;
-        }
-        Err(_) => {
-            let sequencer_rpc_infos =
-                fetch_sequencer_rpc_infos(liveness_client, cluster_id, platform_block_height).await;
-            let rollup_id_list = initialize_rollups(
-                context.clone(),
-                liveness_client,
-                cluster_id,
-                platform_block_height,
-            )
-            .await;
-
-            let sequencer_address = address_from_str(
-                liveness_client.platform(),
-                liveness_client.publisher().address().to_string(),
-            );
-
-            let cluster = Cluster::new(
-                sequencer_rpc_infos,
-                rollup_id_list,
-                sequencer_address,
-                block_margin,
-            );
-
-            Cluster::put_and_update_with_margin(
-                context,
-                &cluster,
-                liveness_client.platform(),
-                liveness_client.service_provider(),
-                cluster_id,
-                platform_block_height,
-            )
-            .await
-            .unwrap();
-        }
-    }
+    )
+    .await
+    .unwrap();
 
     // let liveness_client = liveness_client.clone();
     // let context = context.clone();
