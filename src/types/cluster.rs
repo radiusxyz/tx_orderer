@@ -59,7 +59,7 @@ impl Cluster {
             block_height_for_remove,
         )?;
 
-        let _ = context
+        context
             .add_cluster(
                 platform,
                 service_provider,
@@ -67,16 +67,18 @@ impl Cluster {
                 platform_block_height,
                 cluster.clone(),
             )
-            .await;
+            .await
+            .unwrap();
 
-        let _ = context
+        context
             .delete_cluster(
                 platform,
                 service_provider,
                 cluster_id,
                 block_height_for_remove,
             )
-            .await;
+            .await
+            .unwrap();
 
         Ok(())
     }
