@@ -20,6 +20,7 @@ pub enum Error {
     Seeder(crate::client::liveness::seeder::SeederError),
     Profiler(crate::profiler::ProfilerError),
 
+    InitializeNewCluster(Box<dyn std::error::Error>),
     EmptyLeader,
     EmptyLeaderClusterRpcUrl,
     InvalidPlatformBlockHeight,

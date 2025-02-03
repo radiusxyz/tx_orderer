@@ -332,7 +332,7 @@ async fn update_or_create_rollup(
     validation_service_provider: ValidationServiceProvider,
     cluster_id: &str,
     rollup_info: &RollupInfo,
-) -> Result<(), Error> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let (rollup, rollup_metadata) = match Rollup::get_mut(&rollup_info.id) {
         Ok(mut rollup) => {
             let executor_address_list = rollup_info
@@ -342,9 +342,9 @@ async fn update_or_create_rollup(
                 .collect();
             rollup.set_executor_address_list(executor_address_list);
             let rollup_clone = rollup.clone();
-            rollup.update().map_err(Error::Database)?;
+            rollup.update()?;
 
-            let rollup_metadata = RollupMetadata::get(&rollup_info.id).map_err(Error::Database)?;
+            let rollup_metadata = RollupMetadata::get(&rollup_info.id)?;
 
             (rollup_clone, rollup_metadata)
         }
@@ -382,19 +382,15 @@ async fn update_or_create_rollup(
                 service_provider,
             );
 
-            let mut rollup_id_list =
-                RollupIdList::get_mut_or(RollupIdList::default).map_err(Error::KvStoreError)?;
+            let mut rollup_id_list = RollupIdList::get_mut_or(RollupIdList::default)?;
             rollup_id_list.insert(&rollup.rollup_id);
-            rollup_id_list.update().map_err(Error::KvStoreError)?;
+            rollup_id_list.update()?;
 
             let mut rollup_metadata = RollupMetadata::default();
             rollup_metadata.cluster_id = cluster_id.to_owned();
+            rollup_metadata.put(&rollup.rollup_id)?;
 
-            rollup_metadata
-                .put(&rollup.rollup_id)
-                .map_err(Error::Database)?;
-
-            Rollup::put(&rollup, &rollup.rollup_id).map_err(Error::Database)?;
+            Rollup::put(&rollup, &rollup.rollup_id)?;
 
             (rollup, rollup_metadata)
         }

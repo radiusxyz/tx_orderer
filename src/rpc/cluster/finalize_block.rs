@@ -157,12 +157,13 @@ impl RpcParameter<AppState> for FinalizeBlock {
             // Initialize new cluster if it doesn't exist
             initialize_new_cluster(
                 context.clone(),
-                &liveness_client,
+                liveness_client,
                 &rollup.cluster_id,
                 current_block_height,
                 block_margin,
             )
-            .await;
+            .await
+            .map_err(Error::InitializeNewCluster)?;
 
             // Try to fetch the cluster again after initialization
             context
