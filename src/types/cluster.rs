@@ -214,6 +214,16 @@ impl ClusterIdList {
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str))]
 pub struct LatestClusterBlockHeight(u64);
 
+impl LatestClusterBlockHeight {
+    pub fn get_block_height(&self) -> u64 {
+        self.0
+    }
+
+    pub fn set_block_height(&mut self, block_height: u64) {
+        self.0 = block_height;
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key(cluster_id: &str, platform_block_height: u64))]
 pub struct LivenessEventList(Vec<LivenessEventType>);

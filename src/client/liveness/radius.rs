@@ -236,35 +236,45 @@ pub async fn initialize_new_cluster(
     platform_block_height: u64,
     block_margin: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let sequencer_rpc_infos =
-        get_sequencer_rpc_infos(&liveness_client, cluster_id, platform_block_height).await?;
-
-    let rollup_id_list = get_rollup_id_list(
-        context.clone(),
-        &liveness_client,
-        cluster_id,
-        platform_block_height,
-    )
-    .await?;
-
-    let sequencer_address = context
-        .get_signer(liveness_client.platform())
-        .await?
-        .address()
-        .clone();
-
-    let cluster = Cluster::new(
-        sequencer_rpc_infos,
-        rollup_id_list,
-        sequencer_address,
-        block_margin.try_into().unwrap(),
-    );
-    cluster.put(
+    let mut latest_cluster_block_height = LatestClusterBlockHeight::get_mut(
         liveness_client.platform(),
         liveness_client.service_provider(),
         cluster_id,
-        platform_block_height,
     )?;
+
+    let block_diff = platform_block_height - latest_cluster_block_height.get_block_height();
+    if block_diff >= 2 {
+        for block_height in 1..block_diff {
+            let sequencer_rpc_infos =
+                get_sequencer_rpc_infos(&liveness_client, cluster_id, block_height).await?;
+
+            let rollup_id_list =
+                get_rollup_id_list(context.clone(), &liveness_client, cluster_id, block_height)
+                    .await?;
+
+            let sequencer_address = context
+                .get_signer(liveness_client.platform())
+                .await?
+                .address()
+                .clone();
+
+            let cluster = Cluster::new(
+                sequencer_rpc_infos,
+                rollup_id_list,
+                sequencer_address,
+                block_margin.try_into().unwrap(),
+            );
+            cluster.put(
+                liveness_client.platform(),
+                liveness_client.service_provider(),
+                cluster_id,
+                block_height,
+            )?;
+        }
+    }
+
+    latest_cluster_block_height.set_block_height(platform_block_height);
+    latest_cluster_block_height.update()?;
 
     Ok(())
 }
