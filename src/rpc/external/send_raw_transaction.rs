@@ -38,7 +38,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
         if rollup_metadata.is_leader {
-            let transaction_order = rollup_metadata.transaction_order + 1;
+            let transaction_order = rollup_metadata.transaction_order;
             let transaction_hash = self.raw_transaction.raw_transaction_hash();
 
             RawTransactionModel::put_with_transaction_hash(
@@ -56,11 +56,12 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 true,
             )?;
 
-            rollup_metadata.transaction_order += 1;
-            rollup_metadata.update()?;
-
             let merkle_tree = context.merkle_tree_manager().get(&self.rollup_id).await?;
             let (_, pre_merkle_path) = merkle_tree.add_data(transaction_hash.as_ref()).await;
+
+            rollup_metadata.transaction_order += 1;
+            rollup_metadata.update()?;
+            drop(merkle_tree);
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
