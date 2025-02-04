@@ -23,7 +23,7 @@ impl RpcParameter<AppState> for SyncRawTransaction {
         "sync_raw_transaction"
     }
 
-    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         // tracing::info!(
         //     "Sync raw transaction - rollup id: {:?}, rollup block height: {:?},
         // transaction order: {:?}, order commitment: {:?}",     self.message.
@@ -78,12 +78,6 @@ impl RpcParameter<AppState> for SyncRawTransaction {
 
         rollup_metadata.transaction_order += 1;
         rollup_metadata.update()?;
-
-        let merkle_tree = context
-            .merkle_tree_manager()
-            .get(&self.message.rollup_id)
-            .await?;
-        merkle_tree.add_data(transaction_hash.as_ref()).await;
 
         Ok(())
     }
