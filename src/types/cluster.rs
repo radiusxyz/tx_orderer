@@ -4,7 +4,7 @@ use std::collections::{
 };
 
 use super::prelude::*;
-use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error, state::AppState};
+use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
@@ -34,7 +34,6 @@ impl Cluster {
     }
 
     pub async fn put_and_update_with_margin(
-        context: AppState,
         cluster: &Cluster,
         platform: Platform,
         service_provider: ServiceProvider,
@@ -58,25 +57,6 @@ impl Cluster {
             cluster_id,
             block_height_for_remove,
         )?;
-
-        let _ = context
-            .add_cluster(
-                platform,
-                service_provider,
-                cluster_id,
-                platform_block_height,
-                cluster.clone(),
-            )
-            .await;
-
-        let _ = context
-            .delete_cluster(
-                platform,
-                service_provider,
-                cluster_id,
-                block_height_for_remove,
-            )
-            .await;
 
         Ok(())
     }

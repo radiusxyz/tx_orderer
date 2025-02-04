@@ -45,14 +45,12 @@ impl RpcParameter<AppState> for GetCluster {
                         block_height
                     };
 
-                let cluster = context
-                    .get_cluster(
-                        self.platform,
-                        self.service_provider,
-                        &self.cluster_id,
-                        platform_block_height,
-                    )
-                    .await?;
+                let cluster = Cluster::get(
+                    self.platform,
+                    self.service_provider,
+                    &self.cluster_id,
+                    platform_block_height,
+                )?;
 
                 Ok(GetClusterResponse { cluster })
             }
