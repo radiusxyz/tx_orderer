@@ -13,7 +13,7 @@ use sequencer::{
     },
     error::{self, Error},
     logger::{Logger, PanicLog},
-    // profiler::Profiler,
+    merkle_tree_manager::MerkleTreeManager,
     rpc::{cluster, external, internal},
     state::AppState,
     types::*,
@@ -101,6 +101,7 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
         .await?
         .skde_params;
 
+    let merkle_tree_manager = MerkleTreeManager::init().await;
     let app_state: AppState = AppState::new(
         config,
         seeder_client,
@@ -110,14 +111,10 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
         CachedKvStore::default(),
         skde_params,
         profiler,
-        CachedKvStore::default(),
-        CachedKvStore::default(),
-        CachedKvStore::default(),
         RpcClient::new().unwrap(),
+        merkle_tree_manager,
     );
 
-    initialize_rollups(app_state.clone()).await?;
-    initialize_rollup_metadatas(app_state.clone()).await?;
     initialize_clients(app_state.clone()).await?;
     initialize_rpc_servers(app_state).await?;
 
@@ -203,32 +200,6 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
                 );
             }
         }
-    }
-
-    Ok(())
-}
-
-async fn initialize_rollup_metadatas(app_state: AppState) -> Result<(), Error> {
-    let rollup_id_list = RollupIdList::get_or(RollupIdList::default).map_err(Error::Database)?;
-
-    for rollup_id in rollup_id_list.iter() {
-        let rollup_metadata = RollupMetadata::get(rollup_id).map_err(Error::Database)?;
-
-        app_state
-            .add_rollup_metadata(&rollup_id, rollup_metadata)
-            .await?;
-    }
-
-    Ok(())
-}
-
-async fn initialize_rollups(app_state: AppState) -> Result<(), Error> {
-    let rollup_id_list = RollupIdList::get_or(RollupIdList::default).map_err(Error::Database)?;
-
-    for rollup_id in rollup_id_list.iter() {
-        let rollup = Rollup::get(rollup_id).map_err(Error::Database)?;
-
-        app_state.add_rollup(&rollup_id, rollup).await?;
     }
 
     Ok(())

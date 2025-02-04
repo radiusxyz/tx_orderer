@@ -78,7 +78,7 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
             .merkle_tree_manager()
             .get(&self.message.rollup_id)
             .await?;
-        merkle_tree.add_data(transaction_hash.as_ref());
+        merkle_tree.add_data(transaction_hash.as_ref()).await;
 
         Ok(())
     }
