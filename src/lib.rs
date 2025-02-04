@@ -7,4 +7,5 @@ pub mod state;
 pub mod task;
 pub mod types;
 pub extern crate skde;
+pub mod merkle_tree_manager;
 pub mod util;
