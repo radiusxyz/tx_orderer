@@ -114,63 +114,66 @@ impl RpcParameter<AppState> for FinalizeBlock {
                 Error::ExecutorAddressNotFound
             })?;
 
-        let cluster = Cluster::get(
+        let cluster = match Cluster::get(
             rollup.platform,
             rollup.service_provider,
             &rollup.cluster_id,
             self.finalize_block_message.platform_block_height,
-        );
+        ) {
+            Ok(cluster) => cluster,
+            Err(error) => {
+                if error.is_none_type() {
+                    let liveness_client = context
+                        .get_liveness_client::<liveness::radius::LivenessClient>(
+                            rollup.platform,
+                            rollup.service_provider,
+                        )
+                        .await?;
 
-        let cluster = if let Err(_) = cluster {
-            let liveness_client = context
-                .get_liveness_client::<liveness::radius::LivenessClient>(
-                    rollup.platform,
-                    rollup.service_provider,
-                )
-                .await?;
+                    let current_block_height = liveness_client
+                        .publisher()
+                        .get_block_number()
+                        .await
+                        .map_err(|_| Error::ClusterNotFound)?;
 
-            let current_block_height = liveness_client
-                .publisher()
-                .get_block_number()
-                .await
-                .map_err(|_| Error::ClusterNotFound)?;
+                    let block_margin: u64 = liveness_client
+                        .publisher()
+                        .get_block_margin()
+                        .await
+                        .map_err(|_| Error::ClusterNotFound)?
+                        .try_into()
+                        .map_err(|_| Error::ClusterNotFound)?;
 
-            let block_margin: u64 = liveness_client
-                .publisher()
-                .get_block_margin()
-                .await
-                .map_err(|_| Error::ClusterNotFound)?
-                .try_into()
-                .map_err(|_| Error::ClusterNotFound)?;
+                    if self.finalize_block_message.platform_block_height + block_margin
+                        < current_block_height
+                    {
+                        return Err(Error::ClusterNotFound.into());
+                    }
 
-            if self.finalize_block_message.platform_block_height + block_margin
-                < current_block_height
-            {
-                return Err(Error::ClusterNotFound.into());
+                    // Initialize new cluster if it doesn't exist
+                    initialize_new_cluster(
+                        context.clone(),
+                        liveness_client,
+                        &rollup.cluster_id,
+                        current_block_height,
+                        block_margin,
+                    )
+                    .await
+                    .map_err(Error::InitializeNewCluster)?;
+
+                    // Try to fetch the cluster again after initialization
+                    let cluster = Cluster::get(
+                        rollup.platform,
+                        rollup.service_provider,
+                        &rollup.cluster_id,
+                        self.finalize_block_message.platform_block_height,
+                    )?;
+
+                    cluster
+                } else {
+                    return Err(error.into());
+                }
             }
-
-            // Initialize new cluster if it doesn't exist
-            initialize_new_cluster(
-                context.clone(),
-                liveness_client,
-                &rollup.cluster_id,
-                current_block_height,
-                block_margin,
-            )
-            .await
-            .map_err(Error::InitializeNewCluster)?;
-
-            // Try to fetch the cluster again after initialization
-            let cluster = Cluster::get(
-                rollup.platform,
-                rollup.service_provider,
-                &rollup.cluster_id,
-                self.finalize_block_message.platform_block_height,
-            )?;
-
-            cluster
-        } else {
-            cluster?
         };
 
         let transaction_count = self
