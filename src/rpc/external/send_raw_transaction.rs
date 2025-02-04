@@ -27,36 +27,18 @@ impl RpcParameter<AppState> for SendRawTransaction {
         //     self.raw_transaction
         // );
 
-        let rollup = context.get_rollup(&self.rollup_id).await?;
-        let mut rollup_metadata = context.get_mut_rollup_metadata(&self.rollup_id).await?;
-        let cluster = context
-            .get_cluster(
-                rollup.platform,
-                rollup.service_provider,
-                &rollup.cluster_id,
-                rollup_metadata.platform_block_height,
-            )
-            .await?;
-
+        let rollup = Rollup::get(&self.rollup_id)?;
+        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
+        let cluster = Cluster::get(
+            rollup.platform,
+            rollup.service_provider,
+            &rollup.cluster_id,
+            rollup_metadata.platform_block_height,
+        )?;
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
         if rollup_metadata.is_leader {
-            let (transaction_order, pre_merkle_path) = rollup_metadata
-                .add_transaction_hash(self.raw_transaction.raw_transaction_hash().as_ref());
-            drop(rollup_metadata);
-
-            let order_commitment = issue_order_commitment(
-                context.clone(),
-                rollup.platform,
-                self.rollup_id.clone(),
-                rollup.order_commitment_type,
-                self.raw_transaction.raw_transaction_hash(),
-                rollup_block_height,
-                transaction_order,
-                pre_merkle_path,
-            )
-            .await?;
-
+            let transaction_order = rollup_metadata.transaction_order + 1;
             let transaction_hash = self.raw_transaction.raw_transaction_hash();
 
             RawTransactionModel::put_with_transaction_hash(
@@ -73,6 +55,24 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 self.raw_transaction.clone(),
                 true,
             )?;
+
+            rollup_metadata.transaction_order += 1;
+            rollup_metadata.update()?;
+
+            let merkle_tree = context.merkle_tree_manager().get(&self.rollup_id).await?;
+            let (_, pre_merkle_path) = merkle_tree.add_data(transaction_hash.as_ref()).await;
+
+            let order_commitment = issue_order_commitment(
+                context.clone(),
+                rollup.platform,
+                self.rollup_id.clone(),
+                rollup.order_commitment_type,
+                transaction_hash.clone(),
+                rollup_block_height,
+                transaction_order,
+                pre_merkle_path,
+            )
+            .await?;
 
             order_commitment.put(&self.rollup_id, rollup_block_height, transaction_order)?;
 
