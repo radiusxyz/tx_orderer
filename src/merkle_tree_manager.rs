@@ -35,7 +35,7 @@ impl MerkleTreeManager {
             if let Some(rollup_metadata) = RollupMetadata::get(rollup_id).ok() {
                 let transaction_order = rollup_metadata.transaction_order;
                 if transaction_order > 0 {
-                    for index in 1..rollup_metadata.transaction_order {
+                    for index in 0..rollup_metadata.transaction_order {
                         let (raw_transaction, _) = RawTransactionModel::get(
                             rollup_id,
                             rollup_metadata.rollup_block_height,
