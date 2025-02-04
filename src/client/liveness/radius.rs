@@ -249,8 +249,7 @@ pub async fn initialize_new_cluster(
                 get_sequencer_rpc_infos(&liveness_client, cluster_id, block_height).await?;
 
             let rollup_id_list =
-                get_rollup_id_list(context.clone(), &liveness_client, cluster_id, block_height)
-                    .await?;
+                get_rollup_id_list(&liveness_client, cluster_id, block_height).await?;
 
             let sequencer_address = context
                 .get_signer(liveness_client.platform())
@@ -306,7 +305,6 @@ async fn get_sequencer_rpc_infos(
 }
 
 async fn get_rollup_id_list(
-    context: AppState,
     liveness_client: &LivenessClient,
     cluster_id: &str,
     platform_block_height: u64,
@@ -322,7 +320,6 @@ async fn get_rollup_id_list(
             ValidationServiceProvider::from_str(&rollup.validationInfo.serviceProvider).unwrap();
 
         update_or_create_rollup(
-            context.clone(),
             liveness_client.platform(),
             liveness_client.service_provider(),
             validation_service_provider,
@@ -336,14 +333,13 @@ async fn get_rollup_id_list(
 }
 
 async fn update_or_create_rollup(
-    context: AppState,
     platform: Platform,
     service_provider: ServiceProvider,
     validation_service_provider: ValidationServiceProvider,
     cluster_id: &str,
     rollup_info: &RollupInfo,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (rollup, rollup_metadata) = match Rollup::get_mut(&rollup_info.id) {
+    match Rollup::get_mut(&rollup_info.id) {
         Ok(mut rollup) => {
             let executor_address_list = rollup_info
                 .executors
@@ -351,71 +347,61 @@ async fn update_or_create_rollup(
                 .map(|addr| address_from_str(platform, addr.to_string()))
                 .collect();
             rollup.set_executor_address_list(executor_address_list);
-            let rollup_clone = rollup.clone();
             rollup.update()?;
 
-            let rollup_metadata = RollupMetadata::get(&rollup_info.id)?;
-
-            (rollup_clone, rollup_metadata)
+            Ok(())
         }
-        Err(_) => {
-            let validation_service_manager_address = address_from_str(
-                platform,
-                rollup_info
-                    .validationInfo
-                    .validationServiceManager
-                    .to_string(),
-            );
+        Err(error) => {
+            if error.is_none_type() {
+                let validation_service_manager_address = address_from_str(
+                    platform,
+                    rollup_info
+                        .validationInfo
+                        .validationServiceManager
+                        .to_string(),
+                );
 
-            let validation_info = RollupValidationInfo::new(
-                platform,
-                validation_service_provider,
-                validation_service_manager_address,
-            );
+                let validation_info = RollupValidationInfo::new(
+                    platform,
+                    validation_service_provider,
+                    validation_service_manager_address,
+                );
 
-            let executor_address_list = rollup_info
-                .executors
-                .iter()
-                .map(|addr| address_from_str(platform, addr.to_string()))
-                .collect();
+                let executor_address_list = rollup_info
+                    .executors
+                    .iter()
+                    .map(|addr| address_from_str(platform, addr.to_string()))
+                    .collect();
 
-            let rollup = Rollup::new(
-                rollup_info.id.clone(),
-                RollupType::from_str(&rollup_info.rollupType).unwrap(),
-                EncryptedTransactionType::Skde,
-                address_from_str(platform, rollup_info.owner.to_string()),
-                validation_info,
-                OrderCommitmentType::from_str(&rollup_info.orderCommitmentType).unwrap(),
-                executor_address_list,
-                cluster_id.to_owned(),
-                platform,
-                service_provider,
-            );
+                let rollup = Rollup::new(
+                    rollup_info.id.clone(),
+                    RollupType::from_str(&rollup_info.rollupType).unwrap(),
+                    EncryptedTransactionType::Skde,
+                    address_from_str(platform, rollup_info.owner.to_string()),
+                    validation_info,
+                    OrderCommitmentType::from_str(&rollup_info.orderCommitmentType).unwrap(),
+                    executor_address_list,
+                    cluster_id.to_owned(),
+                    platform,
+                    service_provider,
+                );
 
-            let mut rollup_id_list = RollupIdList::get_mut_or(RollupIdList::default)?;
-            rollup_id_list.insert(&rollup.rollup_id);
-            rollup_id_list.update()?;
+                let mut rollup_id_list = RollupIdList::get_mut_or(RollupIdList::default)?;
+                rollup_id_list.insert(&rollup.rollup_id);
+                rollup_id_list.update()?;
 
-            let mut rollup_metadata = RollupMetadata::default();
-            rollup_metadata.cluster_id = cluster_id.to_owned();
-            rollup_metadata.put(&rollup.rollup_id)?;
+                let mut rollup_metadata = RollupMetadata::default();
+                rollup_metadata.cluster_id = cluster_id.to_owned();
+                rollup_metadata.put(&rollup.rollup_id)?;
 
-            Rollup::put(&rollup, &rollup.rollup_id)?;
+                rollup.put(&rollup.rollup_id)?;
 
-            (rollup, rollup_metadata)
+                Ok(())
+            } else {
+                return Err(error.into());
+            }
         }
-    };
-
-    context
-        .add_rollup_metadata(&rollup.rollup_id, rollup_metadata)
-        .await
-        .unwrap();
-    context
-        .add_rollup(&rollup.rollup_id, rollup.clone())
-        .await
-        .unwrap();
-
-    Ok(())
+    }
 }
 
 fn address_from_str(platform: Platform, address: String) -> Address {
