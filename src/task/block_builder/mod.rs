@@ -61,10 +61,7 @@ pub fn build_block(
             EncryptedTransactionType::NotSupport => unimplemented!(),
         };
 
-        let rollup: Rollup = context
-            .get_rollup(&finalize_block_message.rollup_id)
-            .await
-            .unwrap();
+        let rollup = Rollup::get(&finalize_block_message.rollup_id).unwrap();
 
         let validation_platform = rollup.validation_info.platform.clone();
         let validation_service_provider =

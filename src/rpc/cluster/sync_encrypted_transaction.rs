@@ -22,7 +22,7 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
         "sync_encrypted_transaction"
     }
 
-    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         tracing::info!(
             "Sync encrypted transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}",
             self.message.rollup_id,
@@ -31,20 +31,11 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
             self.message.order_commitment,
         );
 
-        let rollup = context.get_rollup(&self.message.rollup_id).await?;
-
-        let rollup_metadata = context.get_rollup_metadata(&self.message.rollup_id).await?;
-        let cluster = context
-            .get_cluster(
-                rollup.platform,
-                rollup.service_provider,
-                &rollup.cluster_id,
-                rollup_metadata.platform_block_height,
-            )
-            .await?;
+        let rollup = Rollup::get(&self.message.rollup_id)?;
+        let mut rollup_metadata = RollupMetadata::get_mut(&self.message.rollup_id)?;
 
         // Verify the leader signature
-        let leader_address = cluster.get_leader_address(self.message.rollup_block_height)?;
+        let leader_address = &rollup_metadata.leader_sequencer_rpc_info.address;
         self.signature
             .verify_message(rollup.platform.into(), &self.message, leader_address)?;
 
@@ -54,12 +45,6 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
         }
 
         let transaction_hash = self.message.encrypted_transaction.raw_transaction_hash();
-
-        let mut locked_rollup_metadata = context
-            .get_mut_rollup_metadata(&self.message.rollup_id)
-            .await?;
-        locked_rollup_metadata.add_transaction_hash(transaction_hash.as_ref());
-        drop(locked_rollup_metadata);
 
         EncryptedTransactionModel::put_with_transaction_hash(
             &self.message.rollup_id,
@@ -79,6 +64,9 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
             self.message.rollup_block_height,
             self.message.transaction_order,
         )?;
+
+        rollup_metadata.transaction_order += 1;
+        rollup_metadata.update()?;
 
         Ok(())
     }

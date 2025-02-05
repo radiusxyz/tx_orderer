@@ -20,41 +20,23 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        let rollup = context.get_rollup(&self.rollup_id).await?;
+        let rollup = Rollup::get(&self.rollup_id)?;
 
         // 1. Check supported encrypted transaction
         check_supported_encrypted_transaction(&rollup, &self.encrypted_transaction)?;
 
         // 2. Check is leader
-        let mut rollup_metadata = context.get_mut_rollup_metadata(&self.rollup_id).await?;
+        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
+        let cluster = Cluster::get(
+            rollup.platform,
+            rollup.service_provider,
+            &rollup.cluster_id,
+            rollup_metadata.platform_block_height,
+        )?;
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
-        let cluster = context
-            .get_cluster(
-                rollup.platform,
-                rollup.service_provider,
-                &rollup_metadata.cluster_id,
-                rollup_metadata.platform_block_height,
-            )
-            .await?;
-
         if rollup_metadata.is_leader {
-            let (transaction_order, pre_merkle_path) = rollup_metadata
-                .add_transaction_hash(self.encrypted_transaction.raw_transaction_hash().as_ref());
-            drop(rollup_metadata);
-
-            let order_commitment = issue_order_commitment(
-                context.clone(),
-                rollup.platform,
-                self.rollup_id.clone(),
-                rollup.order_commitment_type,
-                self.encrypted_transaction.raw_transaction_hash(),
-                rollup_block_height,
-                transaction_order,
-                pre_merkle_path.clone(),
-            )
-            .await?;
-
+            let transaction_order = rollup_metadata.transaction_order;
             let transaction_hash = self.encrypted_transaction.raw_transaction_hash();
 
             EncryptedTransactionModel::put_with_transaction_hash(
@@ -70,6 +52,24 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
                 &self.encrypted_transaction,
             )?;
 
+            let merkle_tree = context.merkle_tree_manager().get(&self.rollup_id).await?;
+            let (_, pre_merkle_path) = merkle_tree.add_data(transaction_hash.as_ref()).await;
+
+            rollup_metadata.transaction_order += 1;
+            rollup_metadata.update()?;
+            drop(merkle_tree);
+
+            let order_commitment = issue_order_commitment(
+                context.clone(),
+                rollup.platform,
+                self.rollup_id.clone(),
+                rollup.order_commitment_type,
+                transaction_hash,
+                rollup_block_height,
+                transaction_order,
+                pre_merkle_path,
+            )
+            .await?;
             order_commitment.put(&self.rollup_id, rollup_block_height, transaction_order)?;
 
             // Sync Transaction
@@ -145,10 +145,9 @@ pub fn sync_encrypted_transaction(
     order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {
-        let follower_cluster_rpc_url_list: Vec<String> =
-            cluster.get_follower_cluster_rpc_url_list(rollup_block_height);
+        let other_cluster_rpc_url_list: Vec<String> = cluster.get_others_cluster_rpc_url_list();
 
-        if !follower_cluster_rpc_url_list.is_empty() {
+        if !other_cluster_rpc_url_list.is_empty() {
             let message = SyncEncryptedTransactionMessage {
                 rollup_id,
                 rollup_block_height,
@@ -167,7 +166,7 @@ pub fn sync_encrypted_transaction(
             context
                 .rpc_client()
                 .multicast(
-                    follower_cluster_rpc_url_list,
+                    other_cluster_rpc_url_list,
                     SyncEncryptedTransaction::method(),
                     &rpc_self,
                     Id::Null,

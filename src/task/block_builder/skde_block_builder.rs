@@ -23,7 +23,7 @@ pub async fn skde_build_block(
 ) -> Result<Block, Error> {
     let distributed_key_generation_client = context.distributed_key_generation_client().clone();
 
-    let rollup: Rollup = context.get_rollup(&rollup_id).await.unwrap();
+    let rollup = Rollup::get(&rollup_id).unwrap();
 
     let skde_params = distributed_key_generation_client
         .get_skde_params()
@@ -31,7 +31,7 @@ pub async fn skde_build_block(
         .unwrap()
         .skde_params;
 
-    let mut merkle_tree = MerkleTree::new();
+    let merkle_tree = MerkleTree::new();
     let mut decryption_keys: HashMap<u64, String> = HashMap::new();
 
     let mut encrypted_transaction_list =
@@ -119,15 +119,17 @@ pub async fn skde_build_block(
             }
         }
 
-        merkle_tree.add_data(
-            final_raw_transaction_list[i]
-                .raw_transaction_hash()
-                .as_ref(),
-        );
+        merkle_tree
+            .add_data(
+                final_raw_transaction_list[i]
+                    .raw_transaction_hash()
+                    .as_ref(),
+            )
+            .await;
     }
 
-    merkle_tree.finalize_tree();
-    let block_commitment = merkle_tree.get_merkle_root();
+    merkle_tree.finalize_tree().await;
+    let block_commitment = merkle_tree.get_merkle_root().await;
 
     let signature = if signature.is_some() {
         signature.unwrap()

@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use ethers_core::types::{Signature as EthSignature, H256};
 use radius_sdk::{signature::ChainType, validation::symbiotic::types::Keccak256};
-use tracing::{info, warn};
 
 use crate::{
     rpc::prelude::{liveness::radius::initialize_new_cluster, *},
@@ -91,7 +90,7 @@ impl RpcParameter<AppState> for FinalizeBlock {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        info!("finalize block - executor address: {:?} / block creator (sequencer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
+        tracing::info!("finalize block - executor address: {:?} / block creator (sequencer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
         self.finalize_block_message.executor_address.as_hex_string(),
         self.finalize_block_message.block_creator_address.as_hex_string(),
         self.finalize_block_message.rollup_id,
@@ -99,10 +98,7 @@ impl RpcParameter<AppState> for FinalizeBlock {
         self.finalize_block_message.rollup_block_height,);
 
         // Check the executor address
-        let rollup = context
-            .get_rollup(&self.finalize_block_message.rollup_id)
-            .await?;
-
+        let rollup = Rollup::get(&self.finalize_block_message.rollup_id)?;
         let signer_address = self.get_executor_address(rollup.platform.into())?;
 
         rollup
@@ -110,71 +106,73 @@ impl RpcParameter<AppState> for FinalizeBlock {
             .iter()
             .find(|&executor_address| signer_address == *executor_address)
             .ok_or_else(|| {
-                warn!(
+                tracing::warn!(
                     "Executor address not found: {:?}",
                     signer_address.as_hex_string()
                 );
                 Error::ExecutorAddressNotFound
             })?;
 
-        let cluster = context
-            .get_cluster(
-                rollup.platform,
-                rollup.service_provider,
-                &rollup.cluster_id,
-                self.finalize_block_message.platform_block_height,
-            )
-            .await;
+        let cluster = match Cluster::get(
+            rollup.platform,
+            rollup.service_provider,
+            &rollup.cluster_id,
+            self.finalize_block_message.platform_block_height,
+        ) {
+            Ok(cluster) => cluster,
+            Err(error) => {
+                if error.is_none_type() {
+                    let liveness_client = context
+                        .get_liveness_client::<liveness::radius::LivenessClient>(
+                            rollup.platform,
+                            rollup.service_provider,
+                        )
+                        .await?;
 
-        let cluster = if let Err(_) = cluster {
-            let liveness_client = context
-                .get_liveness_client::<liveness::radius::LivenessClient>(
-                    rollup.platform,
-                    rollup.service_provider,
-                )
-                .await?;
+                    let current_block_height = liveness_client
+                        .publisher()
+                        .get_block_number()
+                        .await
+                        .map_err(|_| Error::ClusterNotFound)?;
 
-            let current_block_height = liveness_client
-                .publisher()
-                .get_block_number()
-                .await
-                .map_err(|_| Error::ClusterNotFound)?;
+                    let block_margin: u64 = liveness_client
+                        .publisher()
+                        .get_block_margin()
+                        .await
+                        .map_err(|_| Error::ClusterNotFound)?
+                        .try_into()
+                        .map_err(|_| Error::ClusterNotFound)?;
 
-            let block_margin: u64 = liveness_client
-                .publisher()
-                .get_block_margin()
-                .await
-                .map_err(|_| Error::ClusterNotFound)?
-                .try_into()
-                .map_err(|_| Error::ClusterNotFound)?;
+                    if self.finalize_block_message.platform_block_height + block_margin
+                        < current_block_height
+                    {
+                        return Err(Error::ClusterNotFound.into());
+                    }
 
-            if self.finalize_block_message.platform_block_height + block_margin
-                < current_block_height
-            {
-                return Err(Error::ClusterNotFound.into());
+                    // Initialize new cluster if it doesn't exist
+                    initialize_new_cluster(
+                        context.clone(),
+                        liveness_client,
+                        &rollup.cluster_id,
+                        current_block_height,
+                        block_margin,
+                    )
+                    .await
+                    .map_err(Error::InitializeNewCluster)?;
+
+                    // Try to fetch the cluster again after initialization
+                    let cluster = Cluster::get(
+                        rollup.platform,
+                        rollup.service_provider,
+                        &rollup.cluster_id,
+                        self.finalize_block_message.platform_block_height,
+                    )?;
+
+                    cluster
+                } else {
+                    return Err(error.into());
+                }
             }
-
-            // Initialize new cluster if it doesn't exist
-            initialize_new_cluster(
-                context.clone(),
-                &liveness_client,
-                &rollup.cluster_id,
-                current_block_height,
-                block_margin,
-            )
-            .await;
-
-            // Try to fetch the cluster again after initialization
-            context
-                .get_cluster(
-                    rollup.platform,
-                    rollup.service_provider,
-                    &rollup.cluster_id,
-                    self.finalize_block_message.platform_block_height,
-                )
-                .await?
-        } else {
-            cluster?
         };
 
         let transaction_count = self
@@ -209,52 +207,59 @@ impl FinalizeBlock {
 
         let mut transaction_count = 0;
 
-        if let Ok(mut locked_rollup_metadata) = context
-            .get_mut_rollup_metadata(&self.finalize_block_message.rollup_id)
-            .await
-        {
-            transaction_count = locked_rollup_metadata.transaction_order; // 2156
+        match RollupMetadata::get_mut(&self.finalize_block_message.rollup_id) {
+            Ok(mut rollup_metadata) => {
+                transaction_count = rollup_metadata.transaction_order; // 2156
 
-            locked_rollup_metadata.rollup_block_height = next_rollup_block_height;
-            locked_rollup_metadata.platform_block_height =
-                self.finalize_block_message.platform_block_height;
-            locked_rollup_metadata.is_leader = is_leader;
+                rollup_metadata.rollup_block_height = next_rollup_block_height;
+                rollup_metadata.transaction_order = 0;
+                rollup_metadata.platform_block_height =
+                    self.finalize_block_message.platform_block_height;
+                rollup_metadata.is_leader = is_leader;
 
-            if let Some(sequencer_rpc_info) = cluster
-                .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
-            {
-                locked_rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
-            } else {
-                tracing::error!("Sequencer RPC info not found");
-                return Err(Error::SignerNotFound)?;
+                if let Some(sequencer_rpc_info) = cluster
+                    .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
+                {
+                    rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
+                } else {
+                    tracing::error!("Sequencer RPC info not found");
+                    return Err(Error::SequencerInfoNotFound)?;
+                }
+
+                context
+                    .merkle_tree_manager()
+                    .insert(&self.finalize_block_message.rollup_id, MerkleTree::new())
+                    .await;
+                rollup_metadata.update()?;
             }
+            Err(error) => {
+                if error.is_none_type() {
+                    let mut rollup_metadata = RollupMetadata::default();
 
-            locked_rollup_metadata.new_merkle_tree();
-        } else {
-            let mut rollup_metadata = RollupMetadata::default();
+                    rollup_metadata.cluster_id = rollup.cluster_id.clone();
+                    rollup_metadata.rollup_block_height = next_rollup_block_height;
+                    rollup_metadata.platform_block_height =
+                        self.finalize_block_message.platform_block_height;
+                    rollup_metadata.is_leader = is_leader;
 
-            rollup_metadata.cluster_id = rollup.cluster_id.to_string();
+                    if let Some(sequencer_rpc_info) = cluster.get_sequencer_rpc_info(
+                        &self.finalize_block_message.next_block_creator_address,
+                    ) {
+                        rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
+                    } else {
+                        tracing::error!("Sequencer RPC info not found");
+                        return Err(Error::SequencerInfoNotFound)?;
+                    }
 
-            rollup_metadata.rollup_block_height = next_rollup_block_height;
-            rollup_metadata.platform_block_height =
-                self.finalize_block_message.platform_block_height;
-            rollup_metadata.is_leader = is_leader;
-
-            if let Some(sequencer_rpc_info) = cluster
-                .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
-            {
-                rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
-            } else {
-                tracing::error!("Sequencer RPC info not found");
-                return Err(Error::SignerNotFound)?;
+                    context
+                        .merkle_tree_manager()
+                        .insert(&self.finalize_block_message.rollup_id, MerkleTree::new())
+                        .await;
+                    rollup_metadata.put(&self.finalize_block_message.rollup_id)?;
+                } else {
+                    return Err(error.into());
+                }
             }
-
-            rollup_metadata.new_merkle_tree();
-
-            rollup_metadata.put(&self.finalize_block_message.rollup_id)?;
-            context
-                .add_rollup_metadata(&self.finalize_block_message.rollup_id, rollup_metadata)
-                .await?;
         }
 
         Ok(transaction_count)
