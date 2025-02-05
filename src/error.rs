@@ -27,6 +27,7 @@ pub enum Error {
     InvalidPlatformBlockHeight,
     ClusterNotFound,
     SignerNotFound,
+    SequencerInfoNotFound,
     ExecutorAddressNotFound,
     PlainDataDoesNotExist,
     UnsupportedEncryptedMempool,
