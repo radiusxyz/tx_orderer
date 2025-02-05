@@ -4,7 +4,7 @@ use std::collections::{
 };
 
 use super::prelude::*;
-use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error};
+use crate::client::liveness::seeder::SequencerRpcInfo;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
@@ -95,60 +95,11 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_follower_cluster_rpc_url_list(&self, rollup_block_height: u64) -> Vec<String> {
-        let leader_index = self.get_leader_index(rollup_block_height);
-
-        self.sequencer_rpc_infos
-            .iter()
-            .filter_map(|(index, sequencer_rpc_info)| {
-                if *index == leader_index {
-                    None
-                } else {
-                    if sequencer_rpc_info.cluster_rpc_url.is_none() {
-                        return None;
-                    }
-                    Some(sequencer_rpc_info.cluster_rpc_url.to_owned().unwrap())
-                }
-            })
-            .collect()
-    }
-
-    pub fn get_leader_cluster_rpc_url(&self, rollup_block_height: u64) -> Result<String, Error> {
-        let leader_index = self.get_leader_index(rollup_block_height);
-
-        self.sequencer_rpc_infos
-            .get(&leader_index)
-            .and_then(|sequencer_rpc_info| sequencer_rpc_info.cluster_rpc_url.clone())
-            .ok_or(Error::EmptyLeaderClusterRpcUrl)
-    }
-
-    pub fn get_leader_external_rpc_url(&self, rollup_block_height: u64) -> Result<String, Error> {
-        let leader_index = self.get_leader_index(rollup_block_height);
-
-        self.sequencer_rpc_infos
-            .get(&leader_index)
-            .and_then(|sequencer_rpc_info| sequencer_rpc_info.external_rpc_url.clone())
-            .ok_or(Error::EmptyLeaderClusterRpcUrl)
-    }
-
-    pub fn get_leader_address(&self, rollup_block_height: u64) -> Result<Address, Error> {
-        let leader_index = self.get_leader_index(rollup_block_height);
-
-        self.sequencer_rpc_infos
-            .get(&leader_index)
-            .map(|sequencer_rpc_info| sequencer_rpc_info.address.clone())
-            .ok_or(Error::EmptyLeader)
-    }
-
     pub fn get_sequencer_rpc_info(&self, address: &Address) -> Option<SequencerRpcInfo> {
         self.sequencer_rpc_infos
             .iter()
             .find(|(_index, sequencer_rpc_info)| sequencer_rpc_info.address == address)
             .map(|(_index, sequencer_rpc_info)| sequencer_rpc_info.clone())
-    }
-
-    pub fn get_leader_index(&self, rollup_block_height: u64) -> usize {
-        rollup_block_height as usize % self.sequencer_rpc_infos.len()
     }
 
     pub fn register_sequencer(&mut self, index: usize, sequencer_rpc_info: SequencerRpcInfo) {
@@ -190,7 +141,7 @@ impl ClusterIdList {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Model)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str))]
 pub struct LatestClusterBlockHeight(u64);
 
