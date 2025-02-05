@@ -282,6 +282,7 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<JoinHandle<
         .register_rpc_method::<external::GetRollup>()?
         .register_rpc_method::<external::GetRollupMetadata>()?
         .register_rpc_method::<external::GetBlock>()?
+        .register_rpc_method::<external::GetBlockHeight>()?
         .init(external_rpc_url)
         .await?;
 
