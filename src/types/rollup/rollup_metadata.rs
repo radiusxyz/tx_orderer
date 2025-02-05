@@ -12,4 +12,6 @@ pub struct RollupMetadata {
     pub platform_block_height: u64,
     pub is_leader: bool,
     pub leader_sequencer_rpc_info: SequencerRpcInfo,
+    pub max_gas_limit: u64,
+    pub current_gas: u64,
 }
