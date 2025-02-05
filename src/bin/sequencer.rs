@@ -223,6 +223,7 @@ async fn initialize_internal_rpc_server(context: AppState) -> Result<(), Error> 
         .register_rpc_method::<internal::GetClusterIdList>()?
         .register_rpc_method::<internal::GetSequencingInfos>()?
         .register_rpc_method::<internal::GetSequencingInfo>()?
+        .register_rpc_method::<internal::SetMaxGasLimit>()?
         .init(internal_rpc_url.clone())
         .await?;
 
@@ -244,6 +245,7 @@ async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
         .register_rpc_method::<cluster::SyncRawTransaction>()?
         .register_rpc_method::<cluster::FinalizeBlock>()?
         .register_rpc_method::<cluster::SyncBlock>()?
+        .register_rpc_method::<cluster::SyncMaxGasLimit>()?
         .register_rpc_method::<external::GetRawTransactionList>()?
         .init(cluster_rpc_url.clone())
         .await?;
