@@ -18,12 +18,11 @@ use sequencer::{
     state::AppState,
     types::*,
 };
-pub use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use tokio::task::JoinHandle;
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 #[command(author, version, about, long_about = None)]
-#[command(propagate_version = true)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -40,13 +39,13 @@ pub enum Commands {
     /// Initializes a node
     Init {
         #[clap(flatten)]
-        config_path: Box<ConfigPath>,
+        config_path: ConfigPath,
     },
 
     /// Starts the node
     Start {
         #[clap(flatten)]
-        config_option: Box<ConfigOption>,
+        config_option: ConfigOption,
     },
 }
 
@@ -57,16 +56,14 @@ async fn main() -> Result<(), Error> {
         tracing::error!("{:?}", panic_log);
     }));
 
-    let mut cli = Cli::init();
+    let cli = Cli::init();
     match cli.command {
-        Commands::Init { ref config_path } => {
+        Commands::Init { config_path } => {
             tracing_subscriber::fmt().init();
-            ConfigPath::init(config_path)?
+            ConfigPath::init(&config_path)?
         }
-        Commands::Start {
-            ref mut config_option,
-        } => {
-            start_sequencer(config_option).await?;
+        Commands::Start { mut config_option } => {
+            start_sequencer(&mut config_option).await?;
         }
     }
 
@@ -127,7 +124,6 @@ fn set_resource_limits() -> Result<(), Error> {
     Ok(())
 }
 
-#[allow(dead_code)]
 fn initialize_logger(config: &Config) -> Result<(), Error> {
     Logger::new(config.log_path())
         .map_err(error::Error::Logger)?
@@ -235,9 +231,7 @@ async fn initialize_internal_rpc_server(context: AppState) -> Result<(), Error> 
         internal_rpc_url
     );
 
-    tokio::spawn(async move {
-        internal_rpc_server.stopped().await;
-    });
+    tokio::spawn(internal_rpc_server.stopped());
 
     Ok(())
 }
@@ -245,23 +239,21 @@ async fn initialize_internal_rpc_server(context: AppState) -> Result<(), Error> 
 async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
     let cluster_rpc_url = anywhere(&context.config().cluster_port()?);
 
-    tracing::info!(
-        "Successfully started the cluster RPC server: {}",
-        cluster_rpc_url
-    );
-
-    let sequencer_rpc_server = RpcServer::new(context)
+    let cluster_rpc_server = RpcServer::new(context)
         .register_rpc_method::<cluster::SyncEncryptedTransaction>()?
         .register_rpc_method::<cluster::SyncRawTransaction>()?
         .register_rpc_method::<cluster::FinalizeBlock>()?
         .register_rpc_method::<cluster::SyncBlock>()?
         .register_rpc_method::<external::GetRawTransactionList>()?
-        .init(cluster_rpc_url)
+        .init(cluster_rpc_url.clone())
         .await?;
 
-    tokio::spawn(async move {
-        sequencer_rpc_server.stopped().await;
-    });
+    tracing::info!(
+        "Successfully started the cluster RPC server: {}",
+        cluster_rpc_url
+    );
+
+    tokio::spawn(cluster_rpc_server.stopped());
 
     Ok(())
 }
@@ -284,6 +276,7 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<JoinHandle<
         .register_rpc_method::<external::GetOrderCommitment>()?
         .register_rpc_method::<external::SendRawTransaction>()?
         .register_rpc_method::<external::GetRawTransactionList>()?
+        .register_rpc_method::<external::GetEncryptedTransactionList>()?
         .register_rpc_method::<external::GetRollup>()?
         .register_rpc_method::<external::GetRollupMetadata>()?
         .register_rpc_method::<external::GetBlock>()?
