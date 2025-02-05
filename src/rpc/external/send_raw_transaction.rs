@@ -27,6 +27,8 @@ impl RpcParameter<AppState> for SendRawTransaction {
         //     self.raw_transaction
         // );
 
+        let transaction_gas_limit = self.raw_transaction.get_transaction_gas_limit()?;
+
         let rollup = Rollup::get(&self.rollup_id)?;
         let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
         let cluster = Cluster::get(
@@ -46,6 +48,13 @@ impl RpcParameter<AppState> for SendRawTransaction {
         if rollup_metadata.is_leader {
             let transaction_order = rollup_metadata.transaction_order;
             let transaction_hash = self.raw_transaction.raw_transaction_hash();
+
+            if rollup_metadata.max_gas_limit != 0
+                && rollup_metadata.current_gas + transaction_gas_limit
+                    > rollup_metadata.max_gas_limit
+            {
+                return Err(Error::ExceedMaxGasLimit)?;
+            }
 
             RawTransactionModel::put_with_transaction_hash(
                 &self.rollup_id,
@@ -72,6 +81,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 rollup_metadata.transaction_order
             );
 
+            rollup_metadata.current_gas += transaction_gas_limit;
             rollup_metadata.transaction_order += 1;
             rollup_metadata.update()?;
             drop(merkle_tree);

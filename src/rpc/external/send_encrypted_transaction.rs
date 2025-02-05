@@ -25,6 +25,8 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
         // 1. Check supported encrypted transaction
         check_supported_encrypted_transaction(&rollup, &self.encrypted_transaction)?;
 
+        let transaction_gas_limit = self.encrypted_transaction.get_transaction_gas_limit()?;
+
         // 2. Check is leader
         let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
         let cluster = Cluster::get(
@@ -38,6 +40,13 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
         if rollup_metadata.is_leader {
             let transaction_order = rollup_metadata.transaction_order;
             let transaction_hash = self.encrypted_transaction.raw_transaction_hash();
+
+            if rollup_metadata.max_gas_limit != 0
+                && rollup_metadata.current_gas + transaction_gas_limit
+                    > rollup_metadata.max_gas_limit
+            {
+                return Err(Error::ExceedMaxGasLimit)?;
+            }
 
             EncryptedTransactionModel::put_with_transaction_hash(
                 &self.rollup_id,
@@ -55,6 +64,7 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
             let merkle_tree = context.merkle_tree_manager().get(&self.rollup_id).await?;
             let (_, pre_merkle_path) = merkle_tree.add_data(transaction_hash.as_ref()).await;
 
+            rollup_metadata.current_gas += transaction_gas_limit;
             rollup_metadata.transaction_order += 1;
             rollup_metadata.update()?;
             drop(merkle_tree);

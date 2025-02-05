@@ -1,4 +1,7 @@
-use crate::types::prelude::{Deserialize, Serialize};
+use crate::{
+    error::Error,
+    types::prelude::{Deserialize, Serialize},
+};
 
 mod eth_bundle_transaction;
 mod eth_transaction;
@@ -86,6 +89,13 @@ impl RawTransaction {
         match self {
             RawTransaction::Eth(eth) => eth.raw_transaction_hash(),
             RawTransaction::EthBundle(eth_bundle) => eth_bundle.raw_transaction_hash(),
+        }
+    }
+
+    pub fn get_transaction_gas_limit(&self) -> Result<u64, Error> {
+        match self {
+            RawTransaction::Eth(eth) => Ok(eth.rollup_transaction()?.gas.as_u64()),
+            RawTransaction::EthBundle(_eth_bundle) => todo!("eth_bundle max_gas_limit"),
         }
     }
 }

@@ -47,6 +47,8 @@ pub enum Error {
 
     Convert,
     InvalidSignature,
+    InvalidTransaction,
+    ExceedMaxGasLimit,
 }
 
 unsafe impl Send for Error {}
