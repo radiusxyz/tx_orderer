@@ -33,6 +33,12 @@ impl MerkleTreeManager {
             let merkle_tree = MerkleTree::new();
 
             if let Some(rollup_metadata) = RollupMetadata::get(rollup_id).ok() {
+                tracing::debug!(
+                    "Building merkle tree for rollup: {:?} / transaction_order: {:?}",
+                    rollup_id,
+                    rollup_metadata.transaction_order
+                );
+
                 for index in 0..rollup_metadata.transaction_order {
                     let (raw_transaction, _) = RawTransactionModel::get(
                         rollup_id,

@@ -37,6 +37,12 @@ impl RpcParameter<AppState> for SendRawTransaction {
         )?;
         let rollup_block_height = rollup_metadata.rollup_block_height;
 
+        tracing::debug!(
+            "Send raw transaction: rollup_id: {:?}, rollup_metadata: {:?}",
+            self.rollup_id,
+            rollup_metadata.clone()
+        );
+
         if rollup_metadata.is_leader {
             let transaction_order = rollup_metadata.transaction_order;
             let transaction_hash = self.raw_transaction.raw_transaction_hash();
@@ -58,6 +64,13 @@ impl RpcParameter<AppState> for SendRawTransaction {
 
             let merkle_tree = context.merkle_tree_manager().get(&self.rollup_id).await?;
             let (_, pre_merkle_path) = merkle_tree.add_data(transaction_hash.as_ref()).await;
+
+            tracing::debug!(
+                "Send raw transaction: rollup_id: {:?}, transaction_order: {:?} / rollup_metadata.transaction_order: {:?}",
+                self.rollup_id,
+                transaction_order,
+                rollup_metadata.transaction_order
+            );
 
             rollup_metadata.transaction_order += 1;
             rollup_metadata.update()?;
@@ -87,6 +100,12 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 self.raw_transaction.clone(),
                 order_commitment.clone(),
                 true,
+            );
+
+            tracing::debug!(
+                "Send raw transaction: rollup_id: {:?}, order_commitment: {:?}",
+                self.rollup_id,
+                order_commitment.clone()
             );
 
             match rollup.order_commitment_type {
@@ -141,10 +160,9 @@ pub fn sync_raw_transaction(
     is_direct_sent: bool,
 ) {
     tokio::spawn(async move {
-        let follower_rpc_url_list: Vec<String> =
-            cluster.get_follower_cluster_rpc_url_list(rollup_block_height);
+        let other_cluster_rpc_url_list: Vec<String> = cluster.get_others_cluster_rpc_url_list();
 
-        if !follower_rpc_url_list.is_empty() {
+        if !other_cluster_rpc_url_list.is_empty() {
             let message = SyncRawTransactionMessage {
                 rollup_id,
                 rollup_block_height,
@@ -164,7 +182,7 @@ pub fn sync_raw_transaction(
             context
                 .rpc_client()
                 .multicast(
-                    follower_rpc_url_list,
+                    other_cluster_rpc_url_list,
                     SyncRawTransaction::method(),
                     &rpc_self,
                     Id::Null,
