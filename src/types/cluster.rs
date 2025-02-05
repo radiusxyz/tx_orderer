@@ -61,6 +61,13 @@ impl Cluster {
         Ok(())
     }
 
+    pub fn get_sequencer_address_list(&self) -> Vec<Address> {
+        self.sequencer_rpc_infos
+            .values()
+            .map(|sequencer_rpc_info| sequencer_rpc_info.address.clone())
+            .collect()
+    }
+
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
         self.sequencer_rpc_infos
             .values()
