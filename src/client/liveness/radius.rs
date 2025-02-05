@@ -138,28 +138,16 @@ impl LivenessClient {
                 )
                 .unwrap();
 
-                for platform_block_height in
-                    (current_block_height - block_margin)..current_block_height
-                {
-                    for cluster_id in cluster_id_list.iter() {
-                        tracing::info!(
-                            "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?}..",
-                            liveness_client.platform(),
-                            liveness_client.service_provider(),
-                            cluster_id,
-                            platform_block_height
-                        );
-
-                        initialize_new_cluster(
-                            context.clone(),
-                            liveness_client.clone(),
-                            cluster_id,
-                            platform_block_height,
-                            block_margin,
-                        )
-                        .await
-                        .unwrap();
-                    }
+                for cluster_id in cluster_id_list.iter() {
+                    initialize_new_cluster(
+                        context.clone(),
+                        liveness_client.clone(),
+                        cluster_id,
+                        current_block_height,
+                        block_margin,
+                    )
+                    .await
+                    .unwrap();
                 }
 
                 context
@@ -194,11 +182,15 @@ impl LivenessClient {
     }
 }
 
-async fn callback(events: Events, context: (AppState, LivenessClient)) {
+async fn callback(events: Events, (app_state, liveness_client): (AppState, LivenessClient)) {
     match events {
         Events::Block(block) => {
-            let app_state = context.0;
-            let liveness_client = context.1;
+            tracing::debug!(
+                "Received a new block - platform: {:?} / service provider: {:?} / block number: {:?}..",
+                liveness_client.platform(),
+                liveness_client.service_provider(),
+                block.number
+            );
 
             let cluster_id_list = ClusterIdList::get_or(
                 liveness_client.platform(),
@@ -236,15 +228,35 @@ pub async fn initialize_new_cluster(
     platform_block_height: u64,
     block_margin: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut latest_cluster_block_height = LatestClusterBlockHeight::get_mut(
+    tracing::debug!(
+        "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?}..",
         liveness_client.platform(),
         liveness_client.service_provider(),
         cluster_id,
+        platform_block_height
+    );
+
+    let mut latest_cluster_block_height = LatestClusterBlockHeight::get_mut_or(
+        liveness_client.platform(),
+        liveness_client.service_provider(),
+        cluster_id,
+        LatestClusterBlockHeight::default,
     )?;
 
     let block_diff = platform_block_height - latest_cluster_block_height.get_block_height();
-    if block_diff >= 2 {
-        for block_height in 1..block_diff {
+    let block_diff = std::cmp::min(block_diff, block_margin);
+
+    if block_diff >= 1 {
+        for offset in 0..block_diff {
+            let block_height = platform_block_height - offset;
+            tracing::debug!(
+                "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?}..",
+                liveness_client.platform(),
+                liveness_client.service_provider(),
+                cluster_id,
+                block_height
+            );
+
             let sequencer_rpc_infos =
                 get_sequencer_rpc_infos(&liveness_client, cluster_id, block_height).await?;
 
@@ -315,7 +327,6 @@ async fn get_rollup_id_list(
         .await?;
 
     for rollup in rollup_list.iter() {
-        tracing::info!("Initializing the rollup - rollup id: {:?}..", rollup.id,);
         let validation_service_provider =
             ValidationServiceProvider::from_str(&rollup.validationInfo.serviceProvider).unwrap();
 

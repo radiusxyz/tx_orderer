@@ -45,12 +45,19 @@ impl RpcParameter<AppState> for SyncBlock {
         match RollupMetadata::get_mut(&self.finalize_block_message.rollup_id) {
             Ok(mut rollup_metadata) => {
                 rollup_metadata.rollup_block_height = next_rollup_block_height;
-                rollup_metadata.is_leader = is_leader;
-                rollup_metadata.leader_sequencer_rpc_info = cluster
-                    .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
-                    .unwrap();
+                rollup_metadata.transaction_order = 0;
                 rollup_metadata.platform_block_height =
                     self.finalize_block_message.platform_block_height;
+                rollup_metadata.is_leader = is_leader;
+
+                if let Some(sequencer_rpc_info) = cluster
+                    .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
+                {
+                    rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
+                } else {
+                    tracing::error!("Sequencer RPC info not found");
+                    return Err(Error::SequencerInfoNotFound)?;
+                }
 
                 context
                     .merkle_tree_manager()
@@ -63,14 +70,18 @@ impl RpcParameter<AppState> for SyncBlock {
                     let mut rollup_metadata = RollupMetadata::default();
                     rollup_metadata.cluster_id = rollup.cluster_id;
                     rollup_metadata.rollup_block_height = next_rollup_block_height;
-                    rollup_metadata.is_leader = is_leader;
-                    rollup_metadata.leader_sequencer_rpc_info = cluster
-                        .get_sequencer_rpc_info(
-                            &self.finalize_block_message.next_block_creator_address,
-                        )
-                        .unwrap();
                     rollup_metadata.platform_block_height =
                         self.finalize_block_message.platform_block_height;
+                    rollup_metadata.is_leader = is_leader;
+
+                    if let Some(sequencer_rpc_info) = cluster.get_sequencer_rpc_info(
+                        &self.finalize_block_message.next_block_creator_address,
+                    ) {
+                        rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
+                    } else {
+                        tracing::error!("Sequencer RPC info not found");
+                        return Err(Error::SequencerInfoNotFound)?;
+                    }
 
                     context
                         .merkle_tree_manager()

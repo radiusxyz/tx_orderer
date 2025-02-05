@@ -145,10 +145,9 @@ pub fn sync_encrypted_transaction(
     order_commitment: OrderCommitment,
 ) {
     tokio::spawn(async move {
-        let follower_cluster_rpc_url_list: Vec<String> =
-            cluster.get_follower_cluster_rpc_url_list(rollup_block_height);
+        let other_cluster_rpc_url_list: Vec<String> = cluster.get_others_cluster_rpc_url_list();
 
-        if !follower_cluster_rpc_url_list.is_empty() {
+        if !other_cluster_rpc_url_list.is_empty() {
             let message = SyncEncryptedTransactionMessage {
                 rollup_id,
                 rollup_block_height,
@@ -167,7 +166,7 @@ pub fn sync_encrypted_transaction(
             context
                 .rpc_client()
                 .multicast(
-                    follower_cluster_rpc_url_list,
+                    other_cluster_rpc_url_list,
                     SyncEncryptedTransaction::method(),
                     &rpc_self,
                     Id::Null,

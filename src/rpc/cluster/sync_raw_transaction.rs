@@ -24,27 +24,26 @@ impl RpcParameter<AppState> for SyncRawTransaction {
     }
 
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        // tracing::info!(
-        //     "Sync raw transaction - rollup id: {:?}, rollup block height: {:?},
-        // transaction order: {:?}, order commitment: {:?}",     self.message.
-        // rollup_id,     self.message.rollup_block_height,
-        //     self.message.transaction_order,
-        //     self.message.order_commitment,
-        // );
+        tracing::debug!(
+            "Sync raw transaction - rollup id: {:?}, rollup block height: {:?},
+        transaction order: {:?}, order commitment: {:?}",
+            self.message.rollup_id,
+            self.message.rollup_block_height,
+            self.message.transaction_order,
+            self.message.order_commitment,
+        );
 
         let rollup = Rollup::get(&self.message.rollup_id)?;
         let mut rollup_metadata = RollupMetadata::get_mut(&self.message.rollup_id)?;
-        let cluster = Cluster::get(
-            rollup.platform,
-            rollup.service_provider,
-            &rollup.cluster_id,
-            rollup_metadata.platform_block_height,
-        )?;
 
         // Verify the leader signature
-        let leader_address = cluster.get_leader_address(self.message.rollup_block_height)?;
+        let leader_address = &rollup_metadata.leader_sequencer_rpc_info.address;
         self.signature
-            .verify_message(rollup.platform.into(), &self.message, leader_address)?;
+            .verify_message(rollup.platform.into(), &self.message, leader_address)
+            .map_err(|error| {
+                tracing::error!("Failed to verify the leader signature: {:?}", error);
+                Error::InvalidSignature
+            })?;
 
         // Check the rollup block height
         if self.message.rollup_block_height != rollup_metadata.rollup_block_height {

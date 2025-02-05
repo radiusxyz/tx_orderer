@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use ethers_core::types::{Signature as EthSignature, H256};
 use radius_sdk::{signature::ChainType, validation::symbiotic::types::Keccak256};
-use tracing::{info, warn};
 
 use crate::{
     rpc::prelude::{liveness::radius::initialize_new_cluster, *},
@@ -91,7 +90,7 @@ impl RpcParameter<AppState> for FinalizeBlock {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        info!("finalize block - executor address: {:?} / block creator (sequencer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
+        tracing::info!("finalize block - executor address: {:?} / block creator (sequencer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
         self.finalize_block_message.executor_address.as_hex_string(),
         self.finalize_block_message.block_creator_address.as_hex_string(),
         self.finalize_block_message.rollup_id,
@@ -107,7 +106,7 @@ impl RpcParameter<AppState> for FinalizeBlock {
             .iter()
             .find(|&executor_address| signer_address == *executor_address)
             .ok_or_else(|| {
-                warn!(
+                tracing::warn!(
                     "Executor address not found: {:?}",
                     signer_address.as_hex_string()
                 );
@@ -213,6 +212,7 @@ impl FinalizeBlock {
                 transaction_count = rollup_metadata.transaction_order; // 2156
 
                 rollup_metadata.rollup_block_height = next_rollup_block_height;
+                rollup_metadata.transaction_order = 0;
                 rollup_metadata.platform_block_height =
                     self.finalize_block_message.platform_block_height;
                 rollup_metadata.is_leader = is_leader;
@@ -223,7 +223,7 @@ impl FinalizeBlock {
                     rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
                 } else {
                     tracing::error!("Sequencer RPC info not found");
-                    return Err(Error::SignerNotFound)?;
+                    return Err(Error::SequencerInfoNotFound)?;
                 }
 
                 context
@@ -236,7 +236,7 @@ impl FinalizeBlock {
                 if error.is_none_type() {
                     let mut rollup_metadata = RollupMetadata::default();
 
-                    rollup_metadata.cluster_id = rollup.cluster_id.to_string();
+                    rollup_metadata.cluster_id = rollup.cluster_id.clone();
                     rollup_metadata.rollup_block_height = next_rollup_block_height;
                     rollup_metadata.platform_block_height =
                         self.finalize_block_message.platform_block_height;
@@ -248,7 +248,7 @@ impl FinalizeBlock {
                         rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
                     } else {
                         tracing::error!("Sequencer RPC info not found");
-                        return Err(Error::SignerNotFound)?;
+                        return Err(Error::SequencerInfoNotFound)?;
                     }
 
                     context
