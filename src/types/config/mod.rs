@@ -7,7 +7,7 @@ pub use config_option::*;
 pub use config_path::*;
 use serde::{Deserialize, Serialize};
 
-pub const DEFAULT_HOME_PATH: &str = ".radius";
+pub const DEFAULT_DATA_PATH: &str = ".radius";
 pub const DATABASE_DIR_NAME: &str = "database";
 pub const LOG_DIR_NAME: &str = "logs";
 
