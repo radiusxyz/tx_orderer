@@ -216,6 +216,8 @@ impl FinalizeBlock {
                 rollup_metadata.platform_block_height =
                     self.finalize_block_message.platform_block_height;
                 rollup_metadata.is_leader = is_leader;
+                rollup_metadata.max_gas_limit = rollup.max_gas_limit;
+                rollup_metadata.current_gas = 0;
 
                 if let Some(sequencer_rpc_info) = cluster
                     .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
@@ -241,6 +243,8 @@ impl FinalizeBlock {
                     rollup_metadata.platform_block_height =
                         self.finalize_block_message.platform_block_height;
                     rollup_metadata.is_leader = is_leader;
+                    rollup_metadata.max_gas_limit = rollup.max_gas_limit;
+                    rollup_metadata.current_gas = 0;
 
                     if let Some(sequencer_rpc_info) = cluster.get_sequencer_rpc_info(
                         &self.finalize_block_message.next_block_creator_address,

@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use futures::future::try_join_all;
 use radius_sdk::{
     json_rpc::{client::RpcClient, server::RpcServer},
     kvstore::{CachedKvStore, KvStoreBuilder},
@@ -12,14 +13,14 @@ use sequencer::{
         validation,
     },
     error::{self, Error},
-    logger::{Logger, PanicLog},
+    logger::PanicLog,
     merkle_tree_manager::MerkleTreeManager,
     rpc::{cluster, external, internal},
     state::AppState,
     types::*,
+    util::initialize_logger,
 };
 use serde::{Deserialize, Serialize};
-use tokio::task::JoinHandle;
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 #[command(author, version, about, long_about = None)]
@@ -41,7 +42,6 @@ pub enum Commands {
         #[clap(flatten)]
         config_path: ConfigPath,
     },
-
     /// Starts the node
     Start {
         #[clap(flatten)]
@@ -60,7 +60,23 @@ async fn main() -> Result<(), Error> {
     match cli.command {
         Commands::Init { config_path } => {
             tracing_subscriber::fmt().init();
-            ConfigPath::init(&config_path)?
+            ConfigPath::init(&config_path)?;
+
+            let database_path = config_path.as_ref().join(DATABASE_DIR_NAME);
+            // Initialize the database
+            let kv_store = KvStoreBuilder::default()
+                .set_default_lock_timeout(5000)
+                .set_txn_lock_timeout(5000)
+                .build(database_path.clone())
+                .map_err(error::Error::Database)?;
+            kv_store.init();
+            tracing::info!("Database initialized at {:?}", database_path);
+
+            let mut version = Version::default();
+
+            version.code_version = CURRENT_CODE_VERSION.to_string();
+            version.database_version = REQURIED_DATABASE_VERSION.to_string();
+            version.put().map_err(error::Error::Database)?;
         }
         Commands::Start { mut config_option } => {
             start_sequencer(&mut config_option).await?;
@@ -81,24 +97,40 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
     let profiler = None;
 
     // Initialize the database
-    KvStoreBuilder::default()
+    let kv_store = KvStoreBuilder::default()
         .set_default_lock_timeout(5000)
         .set_txn_lock_timeout(5000)
         .build(config.database_path())
-        .map_err(error::Error::Database)?
-        .init();
-
+        .map_err(error::Error::Database)?;
+    kv_store.init();
     tracing::info!("Database initialized at {:?}", config.database_path());
 
-    let seeder_client = initialize_seeder_client(&config)?;
-    let distributed_key_generation_client = initialize_dkg_client(&config)?;
+    let mut version = Version::get_mut_or(Version::default).map_err(error::Error::Database)?;
 
+    if version.database_version != REQURIED_DATABASE_VERSION {
+        tracing::error!(
+            "Database version mismatch: expected {:?}, found {:?}",
+            REQURIED_DATABASE_VERSION,
+            version.database_version
+        );
+        return Err(error::Error::DatabaseVersionMismatch);
+    }
+
+    version.code_version = CURRENT_CODE_VERSION.to_string();
+    version.update().map_err(error::Error::Database)?;
+    tracing::info!("Update code version {:?}", CURRENT_CODE_VERSION);
+
+    let (seeder_client, distributed_key_generation_client) =
+        tokio::try_join!(async { initialize_seeder_client(&config) }, async {
+            initialize_dkg_client(&config)
+        })?;
     let skde_params = distributed_key_generation_client
         .get_skde_params()
         .await?
         .skde_params;
 
     let merkle_tree_manager = MerkleTreeManager::init().await;
+    let rpc_client = RpcClient::new().map_err(error::Error::RpcClient)?;
     let app_state: AppState = AppState::new(
         config,
         seeder_client,
@@ -108,12 +140,22 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
         CachedKvStore::default(),
         skde_params,
         profiler,
-        RpcClient::new().unwrap(),
+        rpc_client,
         merkle_tree_manager,
     );
 
     initialize_clients(app_state.clone()).await?;
-    initialize_rpc_servers(app_state).await?;
+
+    let internal_handle = tokio::spawn(initialize_internal_rpc_server(app_state.clone()));
+    let cluster_handle = tokio::spawn(initialize_cluster_rpc_server(app_state.clone()));
+    let external_handle = tokio::spawn(initialize_external_rpc_server(app_state.clone()));
+
+    let handles = vec![internal_handle, cluster_handle, external_handle];
+    let results = try_join_all(handles).await;
+    if let Err(e) = results {
+        tracing::error!("One of the RPC servers terminated unexpectedly: {:?}", e);
+        return Err(error::Error::RpcServerTerminated);
+    }
 
     Ok(())
 }
@@ -121,14 +163,6 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
 fn set_resource_limits() -> Result<(), Error> {
     let rlimit = get_resource_limit(ResourceType::RLIMIT_NOFILE)?;
     set_resource_limit(ResourceType::RLIMIT_NOFILE, rlimit.hard_limit)?;
-    Ok(())
-}
-
-fn initialize_logger(config: &Config) -> Result<(), Error> {
-    Logger::new(config.log_path())
-        .map_err(error::Error::Logger)?
-        .init();
-    tracing::info!("Logger initialized.");
     Ok(())
 }
 
@@ -166,6 +200,11 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
                 );
             }
             SequencingInfoPayload::Local(_payload) => {
+                tracing::warn!(
+                    "Local LivenessClient not implemented for platform {:?} and service provider {:?}",
+                    platform,
+                    service_provider
+                );
                 todo!("Implement 'LivenessClient' for local sequencing.");
             }
         }
@@ -177,7 +216,6 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
 
     for (platform, provider) in validation_service_providers.iter() {
         let validation_info = ValidationInfo::get(*platform, *provider).map_err(Error::Database)?;
-
         match validation_info {
             ValidationInfo::EigenLayer(info) => {
                 validation::eigenlayer::ValidationClient::initialize(
@@ -201,20 +239,9 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
     Ok(())
 }
 
-async fn initialize_rpc_servers(app_state: AppState) -> Result<(), Error> {
-    initialize_internal_rpc_server(app_state.clone()).await?;
-    initialize_cluster_rpc_server(app_state.clone()).await?;
-    initialize_external_rpc_server(app_state)
-        .await?
-        .await
-        .unwrap();
-    Ok(())
-}
-
 async fn initialize_internal_rpc_server(context: AppState) -> Result<(), Error> {
     let internal_rpc_url = context.config().internal_rpc_url.to_string();
 
-    // Initialize the internal RPC server.
     let internal_rpc_server = RpcServer::new(context.clone())
         .register_rpc_method::<internal::AddSequencingInfo>()?
         .register_rpc_method::<internal::AddValidationInfo>()?
@@ -232,8 +259,7 @@ async fn initialize_internal_rpc_server(context: AppState) -> Result<(), Error> 
         internal_rpc_url
     );
 
-    tokio::spawn(internal_rpc_server.stopped());
-
+    internal_rpc_server.stopped().await;
     Ok(())
 }
 
@@ -255,12 +281,11 @@ async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
         cluster_rpc_url
     );
 
-    tokio::spawn(cluster_rpc_server.stopped());
-
+    cluster_rpc_server.stopped().await;
     Ok(())
 }
 
-async fn initialize_external_rpc_server(context: AppState) -> Result<JoinHandle<()>, Error> {
+async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> {
     let external_rpc_url = anywhere(&context.config().external_port()?);
 
     tracing::info!(
@@ -268,7 +293,6 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<JoinHandle<
         external_rpc_url
     );
 
-    // Initialize the external RPC server.
     let external_rpc_server = RpcServer::new(context)
         .register_rpc_method::<external::SendEncryptedTransaction>()?
         .register_rpc_method::<external::GetEncryptedTransactionWithTransactionHash>()?
@@ -283,14 +307,12 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<JoinHandle<
         .register_rpc_method::<external::GetRollupMetadata>()?
         .register_rpc_method::<external::GetBlock>()?
         .register_rpc_method::<external::GetBlockHeight>()?
+        .register_rpc_method::<external::GetVersion>()?
         .init(external_rpc_url)
         .await?;
 
-    let server_handle = tokio::spawn(async move {
-        external_rpc_server.stopped().await;
-    });
-
-    Ok(server_handle)
+    external_rpc_server.stopped().await;
+    Ok(())
 }
 
 pub fn anywhere(port: &str) -> String {
