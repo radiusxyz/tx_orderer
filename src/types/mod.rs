@@ -8,6 +8,7 @@ mod platform;
 mod rollup;
 mod transaction;
 mod validation;
+mod version;
 
 pub use block::*;
 pub use cluster::*;
@@ -21,6 +22,7 @@ pub use rollup::*;
 use serde::ser::SerializeSeq;
 pub use transaction::*;
 pub use validation::*;
+pub use version::*;
 
 pub(crate) mod prelude {
     pub use radius_sdk::{

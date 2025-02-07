@@ -31,6 +31,11 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
             self.message.order_commitment,
         );
 
+        let transaction_gas_limit = self
+            .message
+            .encrypted_transaction
+            .get_transaction_gas_limit()?;
+
         let rollup = Rollup::get(&self.message.rollup_id)?;
         let mut rollup_metadata = RollupMetadata::get_mut(&self.message.rollup_id)?;
 
@@ -65,6 +70,7 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
             self.message.transaction_order,
         )?;
 
+        rollup_metadata.current_gas += transaction_gas_limit;
         rollup_metadata.transaction_order += 1;
         rollup_metadata.update()?;
 

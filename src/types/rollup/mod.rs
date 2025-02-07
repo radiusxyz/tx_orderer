@@ -29,6 +29,8 @@ pub struct Rollup {
 
     #[serde(serialize_with = "serialize_address_list")]
     pub executor_address_list: Vec<Address>,
+
+    pub max_gas_limit: u64,
 }
 
 impl Rollup {
@@ -59,6 +61,7 @@ impl Rollup {
             cluster_id,
             platform,
             service_provider,
+            max_gas_limit: 0,
         }
     }
 

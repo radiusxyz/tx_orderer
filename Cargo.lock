@@ -4187,6 +4187,7 @@ dependencies = [
  "const-hex",
  "dashmap 5.5.3",
  "ethers-core",
+ "futures",
  "local-ip-address",
  "pyroscope",
  "pyroscope_pprofrs",

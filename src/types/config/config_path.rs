@@ -32,7 +32,7 @@ impl AsRef<Path> for ConfigPath {
 impl Default for ConfigPath {
     fn default() -> Self {
         let path = PathBuf::from(env::var("HOME").unwrap())
-            .join(super::DEFAULT_HOME_PATH)
+            .join(super::DEFAULT_DATA_PATH)
             .to_str()
             .unwrap()
             .to_string();

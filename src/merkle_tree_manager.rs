@@ -40,15 +40,27 @@ impl MerkleTreeManager {
                 );
 
                 for index in 0..rollup_metadata.transaction_order {
-                    let (raw_transaction, _) = RawTransactionModel::get(
+                    let get_raw_transaction_result = RawTransactionModel::get(
                         rollup_id,
                         rollup_metadata.rollup_block_height,
                         index,
-                    )
-                    .unwrap();
-                    merkle_tree
-                        .add_data(raw_transaction.raw_transaction_hash().as_ref())
-                        .await;
+                    );
+
+                    let raw_transaction_hash = match get_raw_transaction_result {
+                        Ok((raw_transaction, _)) => raw_transaction.raw_transaction_hash(),
+                        Err(_) => {
+                            let encrypted_transaction = EncryptedTransactionModel::get(
+                                rollup_id,
+                                rollup_metadata.rollup_block_height,
+                                index,
+                            )
+                            .unwrap();
+
+                            encrypted_transaction.raw_transaction_hash()
+                        }
+                    };
+
+                    merkle_tree.add_data(raw_transaction_hash.as_ref()).await;
                 }
             }
 

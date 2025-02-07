@@ -8,6 +8,7 @@ pub enum Error {
     Logger(LoggerError),
     Database(radius_sdk::kvstore::KvStoreError),
     RpcServer(radius_sdk::json_rpc::server::RpcServerError),
+    RpcClient(radius_sdk::json_rpc::client::RpcClientError),
     Internal(Box<dyn std::error::Error>),
     Signature(radius_sdk::signature::SignatureError),
     SerializeEthRawTransaction(serde_json::Error),
@@ -47,6 +48,10 @@ pub enum Error {
 
     Convert,
     InvalidSignature,
+    InvalidTransaction,
+    ExceedMaxGasLimit,
+    RpcServerTerminated,
+    DatabaseVersionMismatch,
 }
 
 unsafe impl Send for Error {}
@@ -74,6 +79,12 @@ impl From<crate::logger::LoggerError> for Error {
 impl From<radius_sdk::json_rpc::server::RpcServerError> for Error {
     fn from(value: radius_sdk::json_rpc::server::RpcServerError) -> Self {
         Self::RpcServer(value)
+    }
+}
+
+impl From<radius_sdk::json_rpc::client::RpcClientError> for Error {
+    fn from(value: radius_sdk::json_rpc::client::RpcClientError) -> Self {
+        Self::RpcClient(value)
     }
 }
 

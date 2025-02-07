@@ -37,6 +37,10 @@ impl EthTransactionData {
     pub fn update_plain_data(&mut self, plain_data: EthPlainData) {
         self.plain_data = Some(plain_data);
     }
+
+    pub fn get_transaction_gas_limit(&self) -> Result<u64, Error> {
+        Ok(self.open_data.gas_limit.as_u64())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

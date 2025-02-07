@@ -11,6 +11,7 @@ pub struct GetCluster {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterResponse {
     pub cluster: Cluster,
+    pub latest_cluster_block_height: u64,
 }
 
 impl RpcParameter<AppState> for GetCluster {
@@ -20,43 +21,29 @@ impl RpcParameter<AppState> for GetCluster {
         "get_cluster"
     }
 
-    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        let liveness_client_info =
-            SequencingInfoPayload::get(self.platform, self.service_provider)?;
-        match liveness_client_info {
-            SequencingInfoPayload::Ethereum(_) => {
-                let liveness_client = context
-                    .get_liveness_client::<liveness::radius::LivenessClient>(
-                        self.platform,
-                        self.service_provider,
-                    )
-                    .await?;
+    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
+        let platform_block_height = if self.platform_block_height.is_none() {
+            LatestClusterBlockHeight::get_or(
+                self.platform,
+                self.service_provider,
+                &self.cluster_id,
+                LatestClusterBlockHeight::default,
+            )?
+            .get_block_height()
+        } else {
+            self.platform_block_height.unwrap()
+        };
 
-                let platform_block_height =
-                    if let Some(platform_block_height) = self.platform_block_height {
-                        platform_block_height
-                    } else {
-                        let block_height = liveness_client
-                            .publisher()
-                            .get_block_number()
-                            .await
-                            .map_err(|error| Error::Internal(error.into()))?;
+        let cluster = Cluster::get(
+            self.platform,
+            self.service_provider,
+            &self.cluster_id,
+            platform_block_height,
+        )?;
 
-                        block_height - 1
-                    };
-
-                let cluster = Cluster::get(
-                    self.platform,
-                    self.service_provider,
-                    &self.cluster_id,
-                    platform_block_height,
-                )?;
-
-                Ok(GetClusterResponse { cluster })
-            }
-            SequencingInfoPayload::Local(_) => {
-                unimplemented!("Local liveness is unimplemented.");
-            }
-        }
+        Ok(GetClusterResponse {
+            cluster,
+            latest_cluster_block_height: platform_block_height,
+        })
     }
 }

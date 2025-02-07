@@ -49,6 +49,16 @@ impl EncryptedTransaction {
         }
     }
 
+    pub fn get_transaction_gas_limit(&self) -> Result<u64, Error> {
+        match self {
+            Self::Skde(skde_encrypted_transaction) => {
+                return skde_encrypted_transaction
+                    .transaction_data
+                    .get_transaction_gas_limit();
+            }
+        }
+    }
+
     pub fn update_transaction_data(&mut self, transaction_data: TransactionData) {
         match self {
             Self::Skde(skde) => {
@@ -108,6 +118,13 @@ impl From<EthBundleTransactionData> for TransactionData {
 }
 
 impl TransactionData {
+    pub fn get_transaction_gas_limit(&self) -> Result<u64, Error> {
+        match self {
+            Self::Eth(data) => data.get_transaction_gas_limit(),
+            Self::EthBundle(_data) => todo!("eth_bundle max_gas_limit"),
+        }
+    }
+
     pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {
         match self {
             Self::Eth(data) => data.convert_to_rollup_transaction(),
