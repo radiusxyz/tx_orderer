@@ -117,8 +117,9 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
     }
 
     version.code_version = CURRENT_CODE_VERSION.to_string();
+    tracing::info!("Current code version {:?}", version.code_version);
+    tracing::info!("Current database version {:?}", version.database_version);
     version.update().map_err(error::Error::Database)?;
-    tracing::info!("Update code version {:?}", CURRENT_CODE_VERSION);
 
     let (seeder_client, distributed_key_generation_client) =
         tokio::try_join!(async { initialize_seeder_client(&config) }, async {

@@ -173,7 +173,7 @@ impl LivenessClient {
 }
 
 async fn callback(events: Events, (app_state, liveness_client): (AppState, LivenessClient)) {
-    tracing::info!(
+    tracing::debug!(
         "Received a new event - platform: {:?} / service provider: {:?}..",
         liveness_client.platform(),
         liveness_client.service_provider()
@@ -181,7 +181,7 @@ async fn callback(events: Events, (app_state, liveness_client): (AppState, Liven
 
     match events {
         Events::Block(block) => {
-            tracing::info!(
+            tracing::debug!(
                 "Received a new block - platform: {:?} / service provider: {:?} / block number: {:?}..",
                 liveness_client.platform(),
                 liveness_client.service_provider(),
