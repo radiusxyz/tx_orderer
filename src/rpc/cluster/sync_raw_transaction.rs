@@ -77,7 +77,9 @@ impl RpcParameter<AppState> for SyncRawTransaction {
         }
 
         rollup_metadata.current_gas += transaction_gas_limit;
-        rollup_metadata.transaction_order += 1;
+        if rollup_metadata.transaction_order < self.message.transaction_order {
+            rollup_metadata.transaction_order = self.message.transaction_order;
+        }
         rollup_metadata.update()?;
 
         Ok(())

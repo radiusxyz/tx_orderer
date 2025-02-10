@@ -2,10 +2,7 @@ mod skde_block_builder;
 mod validation;
 
 use radius_sdk::{
-    json_rpc::{
-        client::{Id, RpcClientError},
-        server::RpcParameter,
-    },
+    json_rpc::{client::Id, server::RpcParameter},
     signature::Signature,
 };
 use skde_block_builder::*;
