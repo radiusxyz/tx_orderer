@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use radius_sdk::signature::{Address, Signature};
 use skde::delay_encryption::{decrypt, SkdeParams};
 
-use super::{
-    fetch_encrypted_transaction, fetch_raw_transaction_info, get_encrypted_transaction_list,
-    get_raw_transaction_info_list,
-};
+use super::{get_encrypted_transaction_list, get_raw_transaction_info_list};
 use crate::{
-    client::liveness::distributed_key_generation::DistributedKeyGenerationClient, error::Error,
-    state::AppState, types::*,
+    client::liveness::distributed_key_generation::DistributedKeyGenerationClient,
+    error::Error,
+    state::AppState,
+    types::*,
+    util::{fetch_encrypted_transaction, fetch_raw_transaction_info},
 };
 
 pub async fn skde_build_block(
@@ -73,7 +73,7 @@ pub async fn skde_build_block(
                     final_raw_transaction_list[i] = raw_transaction;
                 } else {
                     let (raw_transaction, is_direct_sent_result) = fetch_raw_transaction_info(
-                        context.clone(),
+                        context.rpc_client(),
                         &cluster,
                         &rollup_id,
                         rollup_block_height,
@@ -86,7 +86,7 @@ pub async fn skde_build_block(
 
                     if is_direct_sent_result == false {
                         let encrypted_transaction = fetch_encrypted_transaction(
-                            context.clone(),
+                            context.rpc_client(),
                             &cluster,
                             &rollup_id,
                             rollup_block_height,

@@ -1,8 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
+use radius_sdk::json_rpc::client::RpcClient;
 use tokio::sync::Mutex;
 
-use crate::{error::Error, types::*};
+use crate::{error::Error, types::*, util::fetch_raw_transaction_info};
 
 pub struct MerkleTreeManager {
     inner: Arc<Mutex<HashMap<String, MerkleTree>>>,
@@ -25,7 +26,7 @@ impl Default for MerkleTreeManager {
 }
 
 impl MerkleTreeManager {
-    pub async fn init() -> Self {
+    pub async fn init(rpc_client: &RpcClient) -> Self {
         let merkle_tree_manager = Self::default();
 
         let rollup_id_list = RollupIdList::get_or(RollupIdList::default).unwrap();
@@ -33,11 +34,28 @@ impl MerkleTreeManager {
             let merkle_tree = MerkleTree::new();
 
             if let Some(rollup_metadata) = RollupMetadata::get(rollup_id).ok() {
-                tracing::debug!(
-                    "Building merkle tree for rollup: {:?} / transaction_order: {:?}",
+                tracing::info!(
+                    "Building merkle tree for rollup - rollup_id: {:?} / rollup_block_height: {:?} / transaction_order: {:?}",
                     rollup_id,
+                    rollup_metadata.rollup_block_height,
                     rollup_metadata.transaction_order
                 );
+                let rollup = Rollup::get(rollup_id).unwrap();
+                let latest_cluster_block_height = LatestClusterBlockHeight::get_or(
+                    rollup.platform,
+                    rollup.service_provider,
+                    &rollup.cluster_id,
+                    LatestClusterBlockHeight::default,
+                )
+                .unwrap();
+
+                let cluster = Cluster::get(
+                    rollup.platform,
+                    rollup.service_provider,
+                    &rollup.cluster_id,
+                    latest_cluster_block_height.get_block_height(),
+                )
+                .unwrap();
 
                 for index in 0..rollup_metadata.transaction_order {
                     let get_raw_transaction_result = RawTransactionModel::get(
@@ -49,14 +67,44 @@ impl MerkleTreeManager {
                     let raw_transaction_hash = match get_raw_transaction_result {
                         Ok((raw_transaction, _)) => raw_transaction.raw_transaction_hash(),
                         Err(_) => {
-                            let encrypted_transaction = EncryptedTransactionModel::get(
+                            tracing::warn!(
+                                "Failed to get raw transaction - rollup_id: {:?} / rollup_block_height: {:?} / index: {:?}",
                                 rollup_id,
+                                rollup_metadata.rollup_block_height,
+                                index
+                            );
+
+                            let raw_transaction_hash = match fetch_raw_transaction_info(
+                                rpc_client,
+                                &cluster,
+                                &rollup_id,
                                 rollup_metadata.rollup_block_height,
                                 index,
                             )
-                            .unwrap();
+                            .await
+                            {
+                                Ok((raw_transaction, _)) => raw_transaction.raw_transaction_hash(),
+                                Err(error) => {
+                                    tracing::warn!(
+                                        "Failed to fetch raw transaction - rollup_id: {:?} / rollup_block_height: {:?} / index: {:?} / error: {:?}",
+                                        rollup_id,
+                                        rollup_metadata.rollup_block_height,
+                                        index,
+                                        error
+                                    );
 
-                            encrypted_transaction.raw_transaction_hash()
+                                    let encrypted_transaction = EncryptedTransactionModel::get(
+                                        rollup_id,
+                                        rollup_metadata.rollup_block_height,
+                                        index,
+                                    )
+                                    .unwrap();
+
+                                    encrypted_transaction.raw_transaction_hash()
+                                }
+                            };
+
+                            raw_transaction_hash
                         }
                     };
 
