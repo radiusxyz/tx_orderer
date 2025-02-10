@@ -4,7 +4,14 @@ use std::collections::{
 };
 
 use super::prelude::*;
-use crate::client::liveness::seeder::SequencerRpcInfo;
+use crate::{
+    client::liveness::{
+        radius::{initialize_new_cluster, LivenessClient},
+        seeder::SequencerRpcInfo,
+    },
+    error::Error,
+    state::AppState,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
@@ -127,6 +134,49 @@ impl Cluster {
 
     pub fn add_rollup(&mut self, rollup_id: &str) {
         self.rollup_id_list.insert(rollup_id.to_owned());
+    }
+}
+
+impl Cluster {
+    pub async fn sync_cluster(
+        context: AppState,
+        cluster_id: &str,
+        liveness_client: &LivenessClient,
+        platform_block_height: u64,
+    ) -> Result<Cluster, Error> {
+        let block_margin: u64 = liveness_client
+            .publisher()
+            .get_block_margin()
+            .await
+            .expect("Failed to get block margin")
+            .try_into()
+            .expect("Failed to convert block margin");
+
+        initialize_new_cluster(
+            context,
+            liveness_client,
+            cluster_id,
+            platform_block_height,
+            block_margin,
+        )
+        .await
+        .unwrap();
+
+        Cluster::get(
+            liveness_client.platform(),
+            liveness_client.service_provider(),
+            cluster_id,
+            platform_block_height,
+        ).map_err(|e| {
+            tracing::error!(
+                "Failed to retrieve cluster - cluster_id: {:?} / platform_block_height: {:?} / error: {:?}",
+                cluster_id,
+                platform_block_height,
+                e
+            );
+
+            Error::ClusterNotFound
+        })
     }
 }
 

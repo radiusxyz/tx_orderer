@@ -3,10 +3,7 @@ use std::str::FromStr;
 use ethers_core::types::{Signature as EthSignature, H256};
 use radius_sdk::{signature::ChainType, validation::symbiotic::types::Keccak256};
 
-use crate::{
-    rpc::prelude::{liveness::radius::initialize_new_cluster, *},
-    task::build_block,
-};
+use crate::{rpc::prelude::*, task::build_block};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlock {
@@ -113,68 +110,36 @@ impl RpcParameter<AppState> for FinalizeBlock {
                 Error::ExecutorAddressNotFound
             })?;
 
-        let cluster = match Cluster::get(
+        let cluster = Cluster::get(
             rollup.platform,
             rollup.service_provider,
             &rollup.cluster_id,
             self.finalize_block_message.platform_block_height,
-        ) {
-            Ok(cluster) => cluster,
-            Err(error) => {
-                if error.is_none_type() {
-                    let liveness_client = context
-                        .get_liveness_client::<liveness::radius::LivenessClient>(
-                            rollup.platform,
-                            rollup.service_provider,
-                        )
-                        .await?;
+        );
 
-                    let current_block_height = liveness_client
-                        .publisher()
-                        .get_block_number()
-                        .await
-                        .map_err(|_| Error::ClusterNotFound)?;
+        let cluster = if cluster.is_err() {
+            tracing::warn!("Failed to retrieve cluster - cluster_id: {:?} / platform_block_height: {:?} / error: {:?}", 
+            &rollup.cluster_id,
+            self.finalize_block_message.platform_block_height,
+            cluster.err());
 
-                    let block_margin: u64 = liveness_client
-                        .publisher()
-                        .get_block_margin()
-                        .await
-                        .map_err(|_| Error::ClusterNotFound)?
-                        .try_into()
-                        .map_err(|_| Error::ClusterNotFound)?;
+            let liveness_client: liveness::radius::LivenessClient = context
+                .get_liveness_client::<liveness::radius::LivenessClient>(
+                    rollup.platform,
+                    rollup.service_provider,
+                )
+                .await?;
 
-                    if self.finalize_block_message.platform_block_height + block_margin
-                        < current_block_height
-                    {
-                        return Err(Error::ClusterNotFound.into());
-                    }
-
-                    // Initialize new cluster if it doesn't exist
-                    initialize_new_cluster(
-                        context.clone(),
-                        liveness_client,
-                        &rollup.cluster_id,
-                        current_block_height,
-                        block_margin,
-                    )
-                    .await
-                    .map_err(Error::InitializeNewCluster)?;
-
-                    // Try to fetch the cluster again after initialization
-                    let cluster = Cluster::get(
-                        rollup.platform,
-                        rollup.service_provider,
-                        &rollup.cluster_id,
-                        self.finalize_block_message.platform_block_height,
-                    )?;
-
-                    cluster
-                } else {
-                    return Err(error.into());
-                }
-            }
+            Cluster::sync_cluster(
+                context.clone(),
+                &rollup.cluster_id,
+                &liveness_client,
+                self.finalize_block_message.platform_block_height,
+            )
+            .await?
+        } else {
+            cluster.unwrap()
         };
-
         let transaction_count = self
             .finalize_block(context.clone(), &cluster, &rollup)
             .await?;

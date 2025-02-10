@@ -64,7 +64,6 @@ impl MerkleTreeManager {
                 }
             }
 
-            println!("{:?}", merkle_tree.get_merkle_root().await);
             merkle_tree_manager.insert(rollup_id, merkle_tree).await;
         }
 

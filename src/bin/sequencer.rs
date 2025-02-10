@@ -24,19 +24,19 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 #[command(author, version, about, long_about = None)]
-pub struct Cli {
+struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    command: Commands,
 }
 
 impl Cli {
-    pub fn init() -> Self {
+    fn init() -> Self {
         Cli::parse()
     }
 }
 
 #[derive(Subcommand, Debug, Deserialize, Serialize)]
-pub enum Commands {
+enum Commands {
     /// Initializes a node
     Init {
         #[clap(flatten)]

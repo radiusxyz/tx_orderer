@@ -32,30 +32,8 @@ struct LivenessClientInner {
 impl Clone for LivenessClient {
     fn clone(&self) -> Self {
         Self {
-            inner: self.inner.clone(),
+            inner: Arc::clone(&self.inner),
         }
-    }
-}
-
-impl LivenessClient {
-    pub fn platform(&self) -> Platform {
-        self.inner.platform
-    }
-
-    pub fn service_provider(&self) -> ServiceProvider {
-        self.inner.service_provider
-    }
-
-    pub fn publisher(&self) -> &Publisher {
-        &self.inner.publisher
-    }
-
-    pub fn subscriber(&self) -> &Subscriber {
-        &self.inner.subscriber
-    }
-
-    pub fn seeder(&self) -> &SeederClient {
-        &self.inner.seeder
     }
 }
 
@@ -80,16 +58,14 @@ impl LivenessClient {
         )
         .map_err(|error| Error::LivenessClient(error.into()))?;
 
-        let inner = LivenessClientInner {
-            platform,
-            service_provider,
-            publisher,
-            subscriber,
-            seeder,
-        };
-
         Ok(Self {
-            inner: Arc::new(inner),
+            inner: Arc::new(LivenessClientInner {
+                platform,
+                service_provider,
+                publisher,
+                subscriber,
+                seeder,
+            }),
         })
     }
 
@@ -100,48 +76,53 @@ impl LivenessClient {
         liveness_info: LivenessRadius,
     ) {
         let handle = tokio::spawn({
-            let context = context.clone();
-            let liveness_info = liveness_info.clone();
+            let context_clone = context.clone();
+            let liveness_info_clone = liveness_info.clone();
 
             async move {
-                let signing_key = &context.config().signing_key;
-                let signer = PrivateKeySigner::from_str(platform.into(), signing_key).unwrap();
-                context.add_signer(platform, signer).await.unwrap();
+                let signing_key = &context_clone.config().signing_key;
+                let signer = PrivateKeySigner::from_str(platform.into(), signing_key)
+                    .expect("Invalid signing key");
+
+                context_clone
+                    .add_signer(platform, signer)
+                    .await
+                    .expect("Failed to add signer");
 
                 let liveness_client = Self::new(
                     platform,
                     service_provider,
-                    liveness_info,
+                    liveness_info_clone,
                     signing_key,
-                    context.seeder_client().clone(),
+                    context_clone.seeder_client().clone(),
                 )
-                .unwrap();
+                .expect("Failed to create liveness client");
 
                 let current_block_height = liveness_client
                     .publisher()
                     .get_block_number()
                     .await
-                    .unwrap();
+                    .expect("Failed to get block number");
 
                 let block_margin: u64 = liveness_client
                     .publisher()
                     .get_block_margin()
                     .await
-                    .unwrap()
+                    .expect("Failed to get block margin")
                     .try_into()
-                    .unwrap();
+                    .expect("Failed to convert block margin");
 
                 let cluster_id_list = ClusterIdList::get_or(
                     liveness_client.platform(),
                     liveness_client.service_provider(),
                     ClusterIdList::default,
                 )
-                .unwrap();
+                .expect("Failed to get cluster id list");
 
                 for cluster_id in cluster_id_list.iter() {
                     initialize_new_cluster(
-                        context.clone(),
-                        liveness_client.clone(),
+                        context_clone.clone(),
+                        &liveness_client,
                         cluster_id,
                         current_block_height,
                         block_margin,
@@ -150,21 +131,30 @@ impl LivenessClient {
                     .unwrap();
                 }
 
-                context
+                context_clone
                     .add_liveness_client(platform, service_provider, liveness_client.clone())
                     .await
-                    .unwrap();
+                    .expect("Failed to add liveness client");
 
                 tracing::info!(
                     "Initializing the liveness event listener for {:?}, {:?}..",
                     platform,
                     service_provider
                 );
-                liveness_client
+
+                let result = liveness_client
                     .subscriber()
-                    .initialize_event_handler(callback, (context, liveness_client.clone()))
-                    .await
-                    .unwrap();
+                    .initialize_event_handler(callback, (context_clone, liveness_client.clone()))
+                    .await;
+
+                if let Err(error) = result {
+                    tracing::error!(
+                        "Failed to initialize the liveness event listener for {:?}, {:?} - {:?}",
+                        platform,
+                        service_provider,
+                        error
+                    );
+                }
             }
         });
 
@@ -183,9 +173,15 @@ impl LivenessClient {
 }
 
 async fn callback(events: Events, (app_state, liveness_client): (AppState, LivenessClient)) {
+    tracing::info!(
+        "Received a new event - platform: {:?} / service provider: {:?}..",
+        liveness_client.platform(),
+        liveness_client.service_provider()
+    );
+
     match events {
         Events::Block(block) => {
-            tracing::debug!(
+            tracing::info!(
                 "Received a new block - platform: {:?} / service provider: {:?} / block number: {:?}..",
                 liveness_client.platform(),
                 liveness_client.service_provider(),
@@ -197,24 +193,26 @@ async fn callback(events: Events, (app_state, liveness_client): (AppState, Liven
                 liveness_client.service_provider(),
                 ClusterIdList::default,
             )
-            .unwrap();
+            .expect("Failed to get cluster id list");
 
             let block_margin = liveness_client
                 .publisher()
                 .get_block_margin()
                 .await
-                .unwrap();
+                .expect("Failed to get block margin")
+                .try_into()
+                .expect("Failed to convert block margin");
 
             for cluster_id in cluster_id_list.iter() {
                 initialize_new_cluster(
                     app_state.clone(),
-                    liveness_client.clone(),
+                    &liveness_client,
                     cluster_id,
                     block.number,
-                    block_margin.try_into().unwrap(),
+                    block_margin,
                 )
                 .await
-                .unwrap()
+                .expect("Failed to initialize new cluster");
             }
         }
         _others => {}
@@ -223,7 +221,7 @@ async fn callback(events: Events, (app_state, liveness_client): (AppState, Liven
 
 pub async fn initialize_new_cluster(
     context: AppState,
-    liveness_client: LivenessClient,
+    liveness_client: &LivenessClient,
     cluster_id: &str,
     platform_block_height: u64,
     block_margin: u64,
@@ -246,8 +244,9 @@ pub async fn initialize_new_cluster(
     let block_diff = platform_block_height - latest_cluster_block_height.get_block_height();
     let block_diff = std::cmp::min(block_diff, block_margin);
 
-    if block_diff >= 1 {
-        for offset in 0..block_diff {
+    for offset in 0..block_diff {
+        let mut retries = 5;
+        while retries > 0 {
             let block_height = platform_block_height - offset;
             tracing::debug!(
                 "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?}..",
@@ -256,36 +255,72 @@ pub async fn initialize_new_cluster(
                 cluster_id,
                 block_height
             );
+            match get_sequencer_rpc_infos(&liveness_client, cluster_id, block_height).await {
+                Ok(sequencer_rpc_infos) => {
+                    let rollup_id_list =
+                        get_rollup_id_list(&liveness_client, cluster_id, block_height).await?;
 
-            let sequencer_rpc_infos =
-                get_sequencer_rpc_infos(&liveness_client, cluster_id, block_height).await?;
+                    let sequencer_address = context
+                        .get_signer(liveness_client.platform())
+                        .await?
+                        .address()
+                        .clone();
 
-            let rollup_id_list =
-                get_rollup_id_list(&liveness_client, cluster_id, block_height).await?;
+                    let cluster = Cluster::new(
+                        sequencer_rpc_infos,
+                        rollup_id_list,
+                        sequencer_address,
+                        block_margin,
+                    );
+                    cluster.put(
+                        liveness_client.platform(),
+                        liveness_client.service_provider(),
+                        cluster_id,
+                        block_height,
+                    )?;
 
-            let sequencer_address = context
-                .get_signer(liveness_client.platform())
-                .await?
-                .address()
-                .clone();
+                    tracing::debug!(
+                        "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?} - Done",
+                        liveness_client.platform(),
+                        liveness_client.service_provider(),
+                        cluster_id,
+                        block_height
+                    );
 
-            let cluster = Cluster::new(
-                sequencer_rpc_infos,
-                rollup_id_list,
-                sequencer_address,
-                block_margin.try_into().unwrap(),
-            );
-            cluster.put(
-                liveness_client.platform(),
-                liveness_client.service_provider(),
-                cluster_id,
-                block_height,
-            )?;
+                    break;
+                }
+                Err(e) => {
+                    retries -= 1;
+                    tracing::warn!(
+                        "Failed to fetch sequencer RPC infos for cluster: {}, height: {}, error: {:?} (remaining retries: {})",
+                        cluster_id,
+                        block_height,
+                        e,
+                        retries
+                    );
+
+                    if retries == 0 {
+                        return Err(e.into());
+                    }
+
+                    sleep(Duration::from_secs(1)).await;
+                }
+            }
         }
+
+        sleep(Duration::from_millis(500)).await;
     }
 
     latest_cluster_block_height.set_block_height(platform_block_height);
     latest_cluster_block_height.update()?;
+
+    tracing::debug!(
+        "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?} - Done",
+        liveness_client.platform(),
+        liveness_client.service_provider(),
+        cluster_id,
+        platform_block_height
+    );
 
     Ok(())
 }
@@ -294,24 +329,44 @@ async fn get_sequencer_rpc_infos(
     liveness_client: &LivenessClient,
     cluster_id: &str,
     platform_block_height: u64,
-) -> Result<BTreeMap<usize, SequencerRpcInfo>, Box<dyn std::error::Error>> {
-    let sequencer_address_list: Vec<String> = liveness_client
+) -> Result<BTreeMap<usize, SequencerRpcInfo>, Error> {
+    let sequencer_address_list = liveness_client
         .publisher()
         .get_sequencer_list(cluster_id, platform_block_height)
-        .await?
-        .iter()
-        .map(|address| address.to_string())
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to fetch sequencer list for cluster: {}, height: {}. Error: {:?}",
+                cluster_id,
+                platform_block_height,
+                e
+            );
+            e
+        })
+        .map_err(|e| Error::LivenessClient(e.into()))?
+        .into_iter()
+        .map(|a| a.to_string())
         .collect();
 
-    let sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo> = liveness_client
+    let sequencer_rpc_url_list = liveness_client
         .seeder()
         .get_sequencer_rpc_url_list(sequencer_address_list)
-        .await?
-        .sequencer_rpc_url_list
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                "Failed to fetch sequencer RPC URLs for cluster: {}, height: {}. Error: {:?}",
+                cluster_id,
+                platform_block_height,
+                e
+            );
+            e
+        })?
+        .sequencer_rpc_url_list;
+
+    let sequencer_rpc_infos = sequencer_rpc_url_list
         .into_iter()
         .enumerate()
-        .map(|(index, rpc_info)| (index, rpc_info))
-        .collect();
+        .collect::<BTreeMap<usize, SequencerRpcInfo>>();
 
     Ok(sequencer_rpc_infos)
 }
@@ -327,8 +382,13 @@ async fn get_rollup_id_list(
         .await?;
 
     for rollup in rollup_list.iter() {
-        let validation_service_provider =
-            ValidationServiceProvider::from_str(&rollup.validationInfo.serviceProvider).unwrap();
+        let validation_service_provider = ValidationServiceProvider::from_str(
+            &rollup.validationInfo.serviceProvider,
+        )
+        .expect(&format!(
+            "Unsupported validation service provider: {:?}",
+            &rollup.validationInfo.serviceProvider
+        ));
 
         update_or_create_rollup(
             liveness_client.platform(),
@@ -372,7 +432,7 @@ async fn update_or_create_rollup(
                         .to_string(),
                 );
 
-                let validation_info = RollupValidationInfo::new(
+                let rollup_validation_info = RollupValidationInfo::new(
                     platform,
                     validation_service_provider,
                     validation_service_manager_address,
@@ -384,13 +444,26 @@ async fn update_or_create_rollup(
                     .map(|addr| address_from_str(platform, addr.to_string()))
                     .collect();
 
+                let rollup_type = RollupType::from_str(&rollup_info.rollupType).expect(&format!(
+                    "Unsupported rollup type: {:?}",
+                    &rollup_info.rollupType
+                ));
+
+                let order_commitment_type = OrderCommitmentType::from_str(
+                    &rollup_info.orderCommitmentType,
+                )
+                .expect(&format!(
+                    "Unsupported order commitment type: {:?}",
+                    &rollup_info.orderCommitmentType
+                ));
+
                 let rollup = Rollup::new(
                     rollup_info.id.clone(),
-                    RollupType::from_str(&rollup_info.rollupType).unwrap(),
+                    rollup_type,
                     EncryptedTransactionType::Skde,
                     address_from_str(platform, rollup_info.owner.to_string()),
-                    validation_info,
-                    OrderCommitmentType::from_str(&rollup_info.orderCommitmentType).unwrap(),
+                    rollup_validation_info,
+                    order_commitment_type,
                     executor_address_list,
                     cluster_id.to_owned(),
                     platform,
@@ -416,5 +489,27 @@ async fn update_or_create_rollup(
 }
 
 fn address_from_str(platform: Platform, address: String) -> Address {
-    Address::from_str(platform.into(), &address).unwrap()
+    Address::from_str(platform.into(), &address).expect("Invalid address")
+}
+
+impl LivenessClient {
+    pub fn platform(&self) -> Platform {
+        self.inner.platform
+    }
+
+    pub fn service_provider(&self) -> ServiceProvider {
+        self.inner.service_provider
+    }
+
+    pub fn publisher(&self) -> &Publisher {
+        &self.inner.publisher
+    }
+
+    pub fn subscriber(&self) -> &Subscriber {
+        &self.inner.subscriber
+    }
+
+    pub fn seeder(&self) -> &SeederClient {
+        &self.inner.seeder
+    }
 }

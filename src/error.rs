@@ -27,6 +27,7 @@ pub enum Error {
     EmptyLeaderClusterRpcUrl,
     InvalidPlatformBlockHeight,
     ClusterNotFound,
+    RollupNotFound,
     SignerNotFound,
     SequencerInfoNotFound,
     ExecutorAddressNotFound,
@@ -52,6 +53,7 @@ pub enum Error {
     ExceedMaxGasLimit,
     RpcServerTerminated,
     DatabaseVersionMismatch,
+    Parse,
 }
 
 unsafe impl Send for Error {}

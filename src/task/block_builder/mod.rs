@@ -146,7 +146,7 @@ pub fn follow_block(
 
     signature: Signature,
 ) {
-    tracing::info!(
+    tracing::debug!(
         "Follow building block - rollup id: {:?}, block number: {:?}, transaction count: {:?}",
         finalize_block_message.rollup_id,
         finalize_block_message.rollup_block_height,

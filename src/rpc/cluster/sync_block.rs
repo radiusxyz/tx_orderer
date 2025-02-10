@@ -20,7 +20,7 @@ impl RpcParameter<AppState> for SyncBlock {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        tracing::info!(
+        tracing::debug!(
             "sync block - executor address: {:?}, rollup_id: {:?}, platform block height: {:?}, rollup block height: {:?}, transaction count: {:?}",
             self.finalize_block_message.executor_address.as_hex_string(),
             self.finalize_block_message.rollup_id,
@@ -29,18 +29,59 @@ impl RpcParameter<AppState> for SyncBlock {
             self.transaction_count,
         );
 
-        let rollup = Rollup::get(&self.finalize_block_message.rollup_id)?;
+        let rollup = Rollup::get(&self.finalize_block_message.rollup_id).map_err(|e| {
+            tracing::error!("Failed to retrieve rollup: {:?}", e);
+            Error::RollupNotFound
+        })?;
+
         let cluster = Cluster::get(
             rollup.platform,
             rollup.service_provider,
             &rollup.cluster_id,
             self.finalize_block_message.platform_block_height,
-        )?;
+        );
+
+        let cluster = if cluster.is_err() {
+            tracing::warn!("Failed to retrieve cluster - cluster_id: {:?} / platform_block_height: {:?} / error: {:?}", 
+            &rollup.cluster_id,
+            self.finalize_block_message.platform_block_height,
+            cluster.err());
+
+            let liveness_client: liveness::radius::LivenessClient = context
+                .get_liveness_client::<liveness::radius::LivenessClient>(
+                    rollup.platform,
+                    rollup.service_provider,
+                )
+                .await?;
+
+            Cluster::sync_cluster(
+                context.clone(),
+                &rollup.cluster_id,
+                &liveness_client,
+                self.finalize_block_message.platform_block_height,
+            )
+            .await?
+        } else {
+            cluster.unwrap()
+        };
 
         let next_rollup_block_height = self.finalize_block_message.rollup_block_height + 1;
-        let signer = context.get_signer(rollup.platform).await.unwrap();
+        let signer = context.get_signer(rollup.platform).await.map_err(|_| {
+            tracing::error!("Signer not found for platform {:?}", rollup.platform);
+            Error::SignerNotFound
+        })?;
         let sequencer_address = signer.address().clone();
         let is_leader = sequencer_address == self.finalize_block_message.next_block_creator_address;
+
+        let leader_sequencer_rpc_info = cluster
+            .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
+            .ok_or_else(|| {
+                tracing::error!(
+                    "Sequencer RPC info not found for address {:?}",
+                    self.finalize_block_message.next_block_creator_address
+                );
+                Error::SequencerInfoNotFound
+            })?;
 
         match RollupMetadata::get_mut(&self.finalize_block_message.rollup_id) {
             Ok(mut rollup_metadata) => {
@@ -51,15 +92,7 @@ impl RpcParameter<AppState> for SyncBlock {
                 rollup_metadata.is_leader = is_leader;
                 rollup_metadata.max_gas_limit = rollup.max_gas_limit;
                 rollup_metadata.current_gas = 0;
-
-                if let Some(sequencer_rpc_info) = cluster
-                    .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
-                {
-                    rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
-                } else {
-                    tracing::error!("Sequencer RPC info not found");
-                    return Err(Error::SequencerInfoNotFound)?;
-                }
+                rollup_metadata.leader_sequencer_rpc_info = leader_sequencer_rpc_info;
 
                 context
                     .merkle_tree_manager()
@@ -69,23 +102,17 @@ impl RpcParameter<AppState> for SyncBlock {
             }
             Err(error) => {
                 if error.is_none_type() {
-                    let mut rollup_metadata = RollupMetadata::default();
-                    rollup_metadata.cluster_id = rollup.cluster_id;
-                    rollup_metadata.rollup_block_height = next_rollup_block_height;
-                    rollup_metadata.platform_block_height =
-                        self.finalize_block_message.platform_block_height;
-                    rollup_metadata.is_leader = is_leader;
-                    rollup_metadata.max_gas_limit = rollup.max_gas_limit;
-                    rollup_metadata.current_gas = 0;
-
-                    if let Some(sequencer_rpc_info) = cluster.get_sequencer_rpc_info(
-                        &self.finalize_block_message.next_block_creator_address,
-                    ) {
-                        rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
-                    } else {
-                        tracing::error!("Sequencer RPC info not found");
-                        return Err(Error::SequencerInfoNotFound)?;
-                    }
+                    tracing::warn!("Rollup metadata not found");
+                    let rollup_metadata = RollupMetadata {
+                        rollup_block_height: next_rollup_block_height,
+                        transaction_order: 0,
+                        cluster_id: rollup.cluster_id,
+                        platform_block_height: self.finalize_block_message.platform_block_height,
+                        is_leader,
+                        leader_sequencer_rpc_info,
+                        max_gas_limit: rollup.max_gas_limit,
+                        current_gas: 0,
+                    };
 
                     context
                         .merkle_tree_manager()
@@ -93,6 +120,7 @@ impl RpcParameter<AppState> for SyncBlock {
                         .await;
                     rollup_metadata.put(&self.finalize_block_message.rollup_id)?;
                 } else {
+                    tracing::error!("Failed to retrieve rollup metadata: {:?}", error);
                     return Err(error.into());
                 }
             }

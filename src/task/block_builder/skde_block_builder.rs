@@ -149,6 +149,12 @@ pub async fn skde_build_block(
 
     Block::put(&block, &rollup_id, rollup_block_height).unwrap();
 
+    tracing::info!(
+        "Block built - block_height: {:?} / transaction_count: {:?}",
+        block.block_height,
+        block.raw_transaction_list.len()
+    );
+
     Ok(block)
 }
 

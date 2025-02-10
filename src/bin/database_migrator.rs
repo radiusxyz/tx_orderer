@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 #[command(author, about, long_about = None)]
-pub struct Cli {
+struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    command: Commands,
 }
 
 impl Cli {
@@ -35,7 +35,7 @@ struct ConfigOption {
 
 #[derive(Subcommand, Debug, Deserialize, Serialize)]
 
-pub enum Commands {
+enum Commands {
     /// Starts the node
     Migrate {
         #[clap(flatten)]
