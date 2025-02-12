@@ -7,9 +7,9 @@ use radius_sdk::{
 };
 use sequencer::{
     client::{
-        liveness_service_manager::{
-            self, distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient,
-        },
+        distributed_key_generation::DistributedKeyGenerationClient,
+        liveness_service_manager::{self},
+        seeder::SeederClient,
         validation_service_manager,
     },
     error::{self, Error},
@@ -193,7 +193,7 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
 
         match sequencing_info_payload {
             SequencingInfoPayload::Ethereum(liveness_info) => {
-                liveness_service_manager::radius::LivenessClient::initialize(
+                liveness_service_manager::radius::LivenessServiceManagerClient::initialize(
                     app_state.clone(),
                     *platform,
                     *service_provider,
@@ -202,11 +202,11 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
             }
             SequencingInfoPayload::Local(_payload) => {
                 tracing::warn!(
-                    "Local LivenessClient not implemented for platform {:?} and service provider {:?}",
+                    "Local LivenessServiceManagerClient not implemented for platform {:?} and service provider {:?}",
                     platform,
                     service_provider
                 );
-                todo!("Implement 'LivenessClient' for local sequencing.");
+                todo!("Implement 'LivenessServiceManagerClient' for local sequencing.");
             }
         }
     }
@@ -219,7 +219,7 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
         let validation_info = ValidationInfo::get(*platform, *provider).map_err(Error::Database)?;
         match validation_info {
             ValidationInfo::EigenLayer(info) => {
-                validation_service_manager::eigenlayer::ValidationClient::initialize(
+                validation_service_manager::eigenlayer::ValidationServiceManagerClient::initialize(
                     app_state.clone(),
                     *platform,
                     *provider,
@@ -227,7 +227,7 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
                 );
             }
             ValidationInfo::Symbiotic(info) => {
-                validation_service_manager::symbiotic::ValidationClient::initialize(
+                validation_service_manager::symbiotic::ValidationServiceManagerClient::initialize(
                     app_state.clone(),
                     *platform,
                     *provider,

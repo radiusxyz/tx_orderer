@@ -22,7 +22,7 @@ impl RpcParameter<AppState> for AddSequencingInfo {
             self.payload
         );
 
-        // Save `LivenessClient` metadata.
+        // Save `LivenessServiceManagerClient` metadata.
         let mut sequencing_info_list = SequencingInfoList::get_mut_or(SequencingInfoList::default)?;
         sequencing_info_list.insert(self.platform, self.service_provider);
         sequencing_info_list.update()?;
@@ -31,7 +31,7 @@ impl RpcParameter<AppState> for AddSequencingInfo {
 
         match &self.payload {
             SequencingInfoPayload::Ethereum(payload) => {
-                liveness_service_manager::radius::LivenessClient::initialize(
+                liveness_service_manager::radius::LivenessServiceManagerClient::initialize(
                     context.clone(),
                     self.platform,
                     self.service_provider,
@@ -39,7 +39,7 @@ impl RpcParameter<AppState> for AddSequencingInfo {
                 );
             }
             SequencingInfoPayload::Local(_payload) => {
-                todo!("Implement 'LivenessClient' for local sequencing.");
+                todo!("Implement 'LivenessServiceManagerClient' for local sequencing.");
             }
         }
 

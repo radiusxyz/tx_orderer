@@ -13,7 +13,7 @@ pub async fn initialize(
         .await
         .expect("Failed to add signer");
 
-    let liveness_client = Arc::new(
+    let liveness_service_manager_client = Arc::new(
         Self::new(
             platform,
             service_provider,
@@ -24,13 +24,13 @@ pub async fn initialize(
         .expect("Failed to create liveness client"),
     );
 
-    let current_block_height = liveness_client
+    let current_block_height = liveness_service_manager_client
         .publisher()
         .get_block_number()
         .await
         .expect("Failed to get block number");
 
-    let block_margin: u64 = liveness_client
+    let block_margin: u64 = liveness_service_manager_client
         .publisher()
         .get_block_margin()
         .await
@@ -39,8 +39,8 @@ pub async fn initialize(
         .expect("Failed to convert block margin");
 
     let cluster_id_list = ClusterIdList::get_or(
-        liveness_client.platform(),
-        liveness_client.service_provider(),
+        liveness_service_manager_client.platform(),
+        liveness_service_manager_client.service_provider(),
         ClusterIdList::default,
     )
     .expect("Failed to get cluster id list");
@@ -48,7 +48,7 @@ pub async fn initialize(
     for cluster_id in cluster_id_list.iter() {
         if let Err(e) = initialize_new_cluster(
             context.clone(),
-            &liveness_client,
+            &liveness_service_manager_client,
             cluster_id,
             current_block_height,
             block_margin,
@@ -64,12 +64,12 @@ pub async fn initialize(
     }
 
     context
-        .add_liveness_client(platform, service_provider, liveness_client.clone())
+        .add_liveness_service_manager_client(platform, service_provider, liveness_service_manager_client.clone())
         .await
         .expect("Failed to add liveness client");
 
     let event_listener_context = context.clone();
-    let event_listener_client = liveness_client.clone();
+    let event_listener_client = liveness_service_manager_client.clone();
 
     let handle = tokio::spawn(async move {
         tracing::info!(

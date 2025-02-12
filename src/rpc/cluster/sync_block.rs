@@ -47,8 +47,8 @@ impl RpcParameter<AppState> for SyncBlock {
             self.finalize_block_message.platform_block_height,
             cluster.err());
 
-            let liveness_client: liveness_service_manager::radius::LivenessClient = context
-                .get_liveness_client::<liveness_service_manager::radius::LivenessClient>(
+            let liveness_service_manager_client: liveness_service_manager::radius::LivenessServiceManagerClient = context
+                .get_liveness_service_manager_client::<liveness_service_manager::radius::LivenessServiceManagerClient>(
                     rollup.platform,
                     rollup.service_provider,
                 )
@@ -57,7 +57,7 @@ impl RpcParameter<AppState> for SyncBlock {
             Cluster::sync_cluster(
                 context.clone(),
                 &rollup.cluster_id,
-                &liveness_client,
+                &liveness_service_manager_client,
                 self.finalize_block_message.platform_block_height,
             )
             .await?

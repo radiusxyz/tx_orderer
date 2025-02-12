@@ -12,13 +12,13 @@ pub enum Error {
     Internal(Box<dyn std::error::Error>),
     Signature(radius_sdk::signature::SignatureError),
     SerializeEthRawTransaction(serde_json::Error),
-    LivenessClient(Box<dyn std::error::Error>),
-    ValidationClient(Box<dyn std::error::Error>),
+    LivenessServiceManagerClient(Box<dyn std::error::Error>),
+    ValidationServiceManagerClient(Box<dyn std::error::Error>),
     CachedKvStore(radius_sdk::kvstore::CachedKvStoreError),
     DistributedKeyGeneration(
-        crate::client::liveness_service_manager::distributed_key_generation::DistributedKeyGenerationClientError,
+        crate::client::distributed_key_generation::DistributedKeyGenerationClientError,
     ),
-    Seeder(crate::client::liveness_service_manager::seeder::SeederError),
+    Seeder(crate::client::seeder::SeederError),
     Profiler(crate::profiler::ProfilerError),
 
     MerkleTreeDoesNotExist(String),
@@ -90,18 +90,18 @@ impl From<radius_sdk::json_rpc::client::RpcClientError> for Error {
     }
 }
 
-impl From<crate::client::liveness_service_manager::distributed_key_generation::DistributedKeyGenerationClientError>
+impl From<crate::client::distributed_key_generation::DistributedKeyGenerationClientError>
     for Error
 {
     fn from(
-        value: crate::client::liveness_service_manager::distributed_key_generation::DistributedKeyGenerationClientError,
+        value: crate::client::distributed_key_generation::DistributedKeyGenerationClientError,
     ) -> Self {
         Self::DistributedKeyGeneration(value)
     }
 }
 
-impl From<crate::client::liveness_service_manager::seeder::SeederError> for Error {
-    fn from(value: crate::client::liveness_service_manager::seeder::SeederError) -> Self {
+impl From<crate::client::seeder::SeederError> for Error {
+    fn from(value: crate::client::seeder::SeederError) -> Self {
         Self::Seeder(value)
     }
 }

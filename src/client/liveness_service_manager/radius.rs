@@ -14,16 +14,18 @@ use radius_sdk::{
 };
 use tokio::time::{sleep, Duration};
 
-use super::seeder::SequencerRpcInfo;
 use crate::{
-    client::liveness_service_manager::seeder::SeederClient, error::Error, state::AppState, types::*,
+    client::seeder::{SeederClient, SequencerRpcInfo},
+    error::Error,
+    state::AppState,
+    types::*,
 };
 
-pub struct LivenessClient {
-    inner: Arc<LivenessClientInner>,
+pub struct LivenessServiceManagerClient {
+    inner: Arc<LivenessServiceManagerClientInner>,
 }
 
-struct LivenessClientInner {
+struct LivenessServiceManagerClientInner {
     platform: Platform,
     service_provider: ServiceProvider,
     publisher: Publisher,
@@ -31,7 +33,7 @@ struct LivenessClientInner {
     seeder: SeederClient,
 }
 
-impl Clone for LivenessClient {
+impl Clone for LivenessServiceManagerClient {
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
@@ -39,7 +41,7 @@ impl Clone for LivenessClient {
     }
 }
 
-impl LivenessClient {
+impl LivenessServiceManagerClient {
     pub fn new(
         platform: Platform,
         service_provider: ServiceProvider,
@@ -52,16 +54,16 @@ impl LivenessClient {
             signing_key,
             &liveness_info.contract_address,
         )
-        .map_err(|error| Error::LivenessClient(error.into()))?;
+        .map_err(|error| Error::LivenessServiceManagerClient(error.into()))?;
 
         let subscriber = Subscriber::new(
             liveness_info.liveness_websocket_url,
             liveness_info.contract_address,
         )
-        .map_err(|error| Error::LivenessClient(error.into()))?;
+        .map_err(|error| Error::LivenessServiceManagerClient(error.into()))?;
 
         Ok(Self {
-            inner: Arc::new(LivenessClientInner {
+            inner: Arc::new(LivenessServiceManagerClientInner {
                 platform,
                 service_provider,
                 publisher,
@@ -91,7 +93,7 @@ impl LivenessClient {
                     .await
                     .expect("Failed to add signer");
 
-                let liveness_client = Self::new(
+                let liveness_service_manager_client = Self::new(
                     platform,
                     service_provider,
                     liveness_info_clone,
@@ -100,13 +102,13 @@ impl LivenessClient {
                 )
                 .expect("Failed to create liveness client");
 
-                let current_block_height = liveness_client
+                let current_block_height = liveness_service_manager_client
                     .publisher()
                     .get_block_number()
                     .await
                     .expect("Failed to get block number");
 
-                let block_margin: u64 = liveness_client
+                let block_margin: u64 = liveness_service_manager_client
                     .publisher()
                     .get_block_margin()
                     .await
@@ -115,8 +117,8 @@ impl LivenessClient {
                     .expect("Failed to convert block margin");
 
                 let cluster_id_list = ClusterIdList::get_or(
-                    liveness_client.platform(),
-                    liveness_client.service_provider(),
+                    liveness_service_manager_client.platform(),
+                    liveness_service_manager_client.service_provider(),
                     ClusterIdList::default,
                 )
                 .expect("Failed to get cluster id list");
@@ -124,7 +126,7 @@ impl LivenessClient {
                 for cluster_id in cluster_id_list.iter() {
                     initialize_new_cluster(
                         context_clone.clone(),
-                        &liveness_client,
+                        &liveness_service_manager_client,
                         cluster_id,
                         current_block_height,
                         block_margin,
@@ -134,7 +136,11 @@ impl LivenessClient {
                 }
 
                 context_clone
-                    .add_liveness_client(platform, service_provider, liveness_client.clone())
+                    .add_liveness_service_manager_client(
+                        platform,
+                        service_provider,
+                        liveness_service_manager_client.clone(),
+                    )
                     .await
                     .expect("Failed to add liveness client");
 
@@ -144,9 +150,12 @@ impl LivenessClient {
                     service_provider
                 );
 
-                let result = liveness_client
+                let result = liveness_service_manager_client
                     .subscriber()
-                    .initialize_event_handler(callback, (context_clone, liveness_client.clone()))
+                    .initialize_event_handler(
+                        callback,
+                        (context_clone, liveness_service_manager_client.clone()),
+                    )
                     .await;
 
                 if let Err(error) = result {
@@ -174,30 +183,33 @@ impl LivenessClient {
     }
 }
 
-async fn callback(events: Events, (app_state, liveness_client): (AppState, LivenessClient)) {
+async fn callback(
+    events: Events,
+    (app_state, liveness_service_manager_client): (AppState, LivenessServiceManagerClient),
+) {
     tracing::debug!(
         "Received a new event - platform: {:?} / service provider: {:?}..",
-        liveness_client.platform(),
-        liveness_client.service_provider()
+        liveness_service_manager_client.platform(),
+        liveness_service_manager_client.service_provider()
     );
 
     match events {
         Events::Block(block) => {
             tracing::debug!(
                 "Received a new block - platform: {:?} / service provider: {:?} / block number: {:?}..",
-                liveness_client.platform(),
-                liveness_client.service_provider(),
+                liveness_service_manager_client.platform(),
+                liveness_service_manager_client.service_provider(),
                 block.number
             );
 
             let cluster_id_list = ClusterIdList::get_or(
-                liveness_client.platform(),
-                liveness_client.service_provider(),
+                liveness_service_manager_client.platform(),
+                liveness_service_manager_client.service_provider(),
                 ClusterIdList::default,
             )
             .expect("Failed to get cluster id list");
 
-            let block_margin = liveness_client
+            let block_margin = liveness_service_manager_client
                 .publisher()
                 .get_block_margin()
                 .await
@@ -208,7 +220,7 @@ async fn callback(events: Events, (app_state, liveness_client): (AppState, Liven
             for cluster_id in cluster_id_list.iter() {
                 initialize_new_cluster(
                     app_state.clone(),
-                    &liveness_client,
+                    &liveness_service_manager_client,
                     cluster_id,
                     block.number,
                     block_margin,
@@ -223,22 +235,22 @@ async fn callback(events: Events, (app_state, liveness_client): (AppState, Liven
 
 pub async fn initialize_new_cluster(
     context: AppState,
-    liveness_client: &LivenessClient,
+    liveness_service_manager_client: &LivenessServiceManagerClient,
     cluster_id: &str,
     platform_block_height: u64,
     block_margin: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     tracing::debug!(
         "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?}..",
-        liveness_client.platform(),
-        liveness_client.service_provider(),
+        liveness_service_manager_client.platform(),
+        liveness_service_manager_client.service_provider(),
         cluster_id,
         platform_block_height
     );
 
     let mut latest_cluster_block_height = LatestClusterBlockHeight::get_mut_or(
-        liveness_client.platform(),
-        liveness_client.service_provider(),
+        liveness_service_manager_client.platform(),
+        liveness_service_manager_client.service_provider(),
         cluster_id,
         LatestClusterBlockHeight::default,
     )?;
@@ -252,18 +264,28 @@ pub async fn initialize_new_cluster(
             let block_height = platform_block_height - offset;
             tracing::debug!(
                 "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?}..",
-                liveness_client.platform(),
-                liveness_client.service_provider(),
+                liveness_service_manager_client.platform(),
+                liveness_service_manager_client.service_provider(),
                 cluster_id,
                 block_height
             );
-            match get_sequencer_rpc_infos(&liveness_client, cluster_id, block_height).await {
+            match get_sequencer_rpc_infos(
+                &liveness_service_manager_client,
+                cluster_id,
+                block_height,
+            )
+            .await
+            {
                 Ok(sequencer_rpc_infos) => {
-                    let rollup_id_list =
-                        get_rollup_id_list(&liveness_client, cluster_id, block_height).await?;
+                    let rollup_id_list = get_rollup_id_list(
+                        &liveness_service_manager_client,
+                        cluster_id,
+                        block_height,
+                    )
+                    .await?;
 
                     let sequencer_address = context
-                        .get_signer(liveness_client.platform())
+                        .get_signer(liveness_service_manager_client.platform())
                         .await?
                         .address()
                         .clone();
@@ -275,16 +297,16 @@ pub async fn initialize_new_cluster(
                         block_margin,
                     );
                     cluster.put(
-                        liveness_client.platform(),
-                        liveness_client.service_provider(),
+                        liveness_service_manager_client.platform(),
+                        liveness_service_manager_client.service_provider(),
                         cluster_id,
                         block_height,
                     )?;
 
                     tracing::debug!(
                         "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?} - Done",
-                        liveness_client.platform(),
-                        liveness_client.service_provider(),
+                        liveness_service_manager_client.platform(),
+                        liveness_service_manager_client.service_provider(),
                         cluster_id,
                         block_height
                     );
@@ -318,8 +340,8 @@ pub async fn initialize_new_cluster(
 
     tracing::debug!(
         "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?} - Done",
-        liveness_client.platform(),
-        liveness_client.service_provider(),
+        liveness_service_manager_client.platform(),
+        liveness_service_manager_client.service_provider(),
         cluster_id,
         platform_block_height
     );
@@ -328,11 +350,11 @@ pub async fn initialize_new_cluster(
 }
 
 async fn get_sequencer_rpc_infos(
-    liveness_client: &LivenessClient,
+    liveness_service_manager_client: &LivenessServiceManagerClient,
     cluster_id: &str,
     platform_block_height: u64,
 ) -> Result<BTreeMap<usize, SequencerRpcInfo>, Error> {
-    let sequencer_address_list = liveness_client
+    let sequencer_address_list = liveness_service_manager_client
         .publisher()
         .get_sequencer_list(cluster_id, platform_block_height)
         .await
@@ -345,12 +367,12 @@ async fn get_sequencer_rpc_infos(
             );
             e
         })
-        .map_err(|e| Error::LivenessClient(e.into()))?
+        .map_err(|e| Error::LivenessServiceManagerClient(e.into()))?
         .into_iter()
         .map(|a| a.to_string())
         .collect();
 
-    let sequencer_rpc_url_list = liveness_client
+    let sequencer_rpc_url_list = liveness_service_manager_client
         .seeder()
         .get_sequencer_rpc_url_list(sequencer_address_list)
         .await
@@ -374,11 +396,11 @@ async fn get_sequencer_rpc_infos(
 }
 
 async fn get_rollup_id_list(
-    liveness_client: &LivenessClient,
+    liveness_service_manager_client: &LivenessServiceManagerClient,
     cluster_id: &str,
     platform_block_height: u64,
 ) -> Result<BTreeSet<String>, Box<dyn std::error::Error>> {
-    let rollup_list = liveness_client
+    let rollup_list = liveness_service_manager_client
         .publisher()
         .get_rollup_info_list(cluster_id, platform_block_height)
         .await?;
@@ -393,8 +415,8 @@ async fn get_rollup_id_list(
         ));
 
         update_or_create_rollup(
-            liveness_client.platform(),
-            liveness_client.service_provider(),
+            liveness_service_manager_client.platform(),
+            liveness_service_manager_client.service_provider(),
             validation_service_provider,
             cluster_id,
             rollup,
@@ -494,7 +516,7 @@ fn address_from_str(platform: Platform, address: String) -> Address {
     Address::from_str(platform.into(), &address).expect("Invalid address")
 }
 
-impl LivenessClient {
+impl LivenessServiceManagerClient {
     pub fn platform(&self) -> Platform {
         self.inner.platform
     }

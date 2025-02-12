@@ -22,7 +22,7 @@ impl RpcParameter<AppState> for AddValidationInfo {
             self.validation_info
         );
 
-        // Save `ValidationClient` metadata.
+        // Save `ValidationServiceManagerClient` metadata.
         let mut validation_service_providers =
             ValidationServiceProviders::get_mut_or(ValidationServiceProviders::default)?;
         validation_service_providers.insert(
@@ -38,7 +38,7 @@ impl RpcParameter<AppState> for AddValidationInfo {
         )?;
 
         // Initialize the validation client
-        Self::initialize_validation_client(
+        Self::initialize_validation_service_manager_client(
             context,
             self.platform,
             self.validation_service_provider,
@@ -50,7 +50,7 @@ impl RpcParameter<AppState> for AddValidationInfo {
 }
 
 impl AddValidationInfo {
-    fn initialize_validation_client(
+    fn initialize_validation_service_manager_client(
         context: AppState,
         platform: Platform,
         provider: ValidationServiceProvider,
@@ -58,7 +58,7 @@ impl AddValidationInfo {
     ) -> Result<(), RpcError> {
         match validation_info {
             ValidationInfo::EigenLayer(payload) => {
-                validation_service_manager::eigenlayer::ValidationClient::initialize(
+                validation_service_manager::eigenlayer::ValidationServiceManagerClient::initialize(
                     context.clone(),
                     platform,
                     provider,
@@ -66,7 +66,7 @@ impl AddValidationInfo {
                 );
             }
             ValidationInfo::Symbiotic(payload) => {
-                validation_service_manager::symbiotic::ValidationClient::initialize(
+                validation_service_manager::symbiotic::ValidationServiceManagerClient::initialize(
                     context.clone(),
                     platform,
                     provider,

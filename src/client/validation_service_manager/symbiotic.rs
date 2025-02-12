@@ -7,18 +7,18 @@ use tokio::time::{sleep, Duration};
 
 use crate::{error::Error, state::AppState, types::*};
 
-pub struct ValidationClient {
-    inner: Arc<ValidationClientInner>,
+pub struct ValidationServiceManagerClient {
+    inner: Arc<ValidationServiceManagerClientInner>,
 }
 
-struct ValidationClientInner {
+struct ValidationServiceManagerClientInner {
     platform: Platform,
     validation_service_provider: ValidationServiceProvider,
     publisher: Publisher,
     subscriber: Subscriber,
 }
 
-impl Clone for ValidationClient {
+impl Clone for ValidationServiceManagerClient {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -26,7 +26,7 @@ impl Clone for ValidationClient {
     }
 }
 
-impl ValidationClient {
+impl ValidationServiceManagerClient {
     pub fn platform(&self) -> Platform {
         self.inner.platform
     }
@@ -56,15 +56,15 @@ impl ValidationClient {
                 .validation_contract_address
                 .clone(),
         )
-        .map_err(|error| Error::ValidationClient(error.into()))?;
+        .map_err(|error| Error::ValidationServiceManagerClient(error.into()))?;
 
         let subscriber = Subscriber::new(
             symbiotic_validation_info.validation_websocket_url,
             symbiotic_validation_info.validation_contract_address,
         )
-        .map_err(|error| Error::ValidationClient(error.into()))?;
+        .map_err(|error| Error::ValidationServiceManagerClient(error.into()))?;
 
-        let inner = ValidationClientInner {
+        let inner = ValidationServiceManagerClientInner {
             platform,
             validation_service_provider,
             publisher,
@@ -87,7 +87,7 @@ impl ValidationClient {
             let validation_info = symbiotic_validation_info.clone();
 
             async move {
-                let validation_client = Self::new(
+                let validation_service_manager_client = Self::new(
                     platform,
                     validation_service_provider,
                     validation_info,
@@ -96,10 +96,10 @@ impl ValidationClient {
                 .unwrap();
 
                 context
-                    .add_validation_client(
+                    .add_validation_service_manager_client(
                         platform,
                         validation_service_provider,
-                        validation_client.clone(),
+                        validation_service_manager_client.clone(),
                     )
                     .await
                     .unwrap();
@@ -109,9 +109,9 @@ impl ValidationClient {
                     platform,
                     validation_service_provider
                 );
-                validation_client
+                validation_service_manager_client
                     .subscriber()
-                    .initialize_event_handler(callback, validation_client.clone())
+                    .initialize_event_handler(callback, validation_service_manager_client.clone())
                     .await
                     .unwrap();
             }
@@ -132,7 +132,10 @@ impl ValidationClient {
     }
 }
 
-async fn callback(event: ValidationServiceManager::NewTaskCreated, context: ValidationClient) {
+async fn callback(
+    event: ValidationServiceManager::NewTaskCreated,
+    context: ValidationServiceManagerClient,
+) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
         let block = Block::get(&rollup.rollup_id, event.blockNumber.try_into().unwrap()).unwrap();

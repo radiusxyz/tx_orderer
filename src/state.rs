@@ -8,9 +8,7 @@ use radius_sdk::{
 use skde::delay_encryption::SkdeParams;
 
 use crate::{
-    client::liveness_service_manager::{
-        distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient,
-    },
+    client::{distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient},
     merkle_tree_manager::MerkleTreeManager,
     profiler::Profiler,
     types::*,
@@ -24,8 +22,8 @@ struct AppStateInner {
     config: Config,
     seeder_client: SeederClient,
     distributed_key_generation_client: DistributedKeyGenerationClient,
-    liveness_clients: CachedKvStore,
-    validation_clients: CachedKvStore,
+    liveness_service_manager_clients: CachedKvStore,
+    validation_service_manager_clients: CachedKvStore,
     signers: CachedKvStore,
     skde_params: SkdeParams,
     profiler: Option<Profiler>,
@@ -48,8 +46,8 @@ impl AppState {
         seeder_client: SeederClient,
         distributed_key_generation_client: DistributedKeyGenerationClient,
         signers: CachedKvStore,
-        liveness_clients: CachedKvStore,
-        validation_clients: CachedKvStore,
+        liveness_service_manager_clients: CachedKvStore,
+        validation_service_manager_clients: CachedKvStore,
         skde_params: SkdeParams,
         profiler: Option<Profiler>,
         rpc_client: RpcClient,
@@ -60,8 +58,8 @@ impl AppState {
             seeder_client,
             distributed_key_generation_client,
             signers,
-            liveness_clients,
-            validation_clients,
+            liveness_service_manager_clients,
+            validation_service_manager_clients,
             skde_params,
             profiler,
             rpc_client,
@@ -104,11 +102,11 @@ impl AppState {
 
 /// Validation client functions
 impl AppState {
-    pub async fn add_validation_client<T>(
+    pub async fn add_validation_service_manager_client<T>(
         &self,
         platform: Platform,
         validation_service_provider: ValidationServiceProvider,
-        validation_client: T,
+        validation_service_manager_client: T,
     ) -> Result<(), CachedKvStoreError>
     where
         T: Clone + Any + Send + 'static,
@@ -116,12 +114,12 @@ impl AppState {
         let key = &(platform, validation_service_provider);
 
         self.inner
-            .validation_clients
-            .put(key, validation_client)
+            .validation_service_manager_clients
+            .put(key, validation_service_manager_client)
             .await
     }
 
-    pub async fn get_validation_client<T>(
+    pub async fn get_validation_service_manager_client<T>(
         &self,
         platform: Platform,
         validation_service_provider: ValidationServiceProvider,
@@ -131,27 +129,30 @@ impl AppState {
     {
         let key = &(platform, validation_service_provider);
 
-        self.inner.validation_clients.get(key).await
+        self.inner.validation_service_manager_clients.get(key).await
     }
 }
 
 /// Liveness client functions
 impl AppState {
-    pub async fn add_liveness_client<T>(
+    pub async fn add_liveness_service_manager_client<T>(
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
-        liveness_client: T,
+        liveness_service_manager_client: T,
     ) -> Result<(), CachedKvStoreError>
     where
         T: Clone + Any + Send + 'static,
     {
         let key = &(platform, service_provider);
 
-        self.inner.liveness_clients.put(key, liveness_client).await
+        self.inner
+            .liveness_service_manager_clients
+            .put(key, liveness_service_manager_client)
+            .await
     }
 
-    pub async fn get_liveness_client<T>(
+    pub async fn get_liveness_service_manager_client<T>(
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
@@ -161,7 +162,7 @@ impl AppState {
     {
         let key = &(platform, service_provider);
 
-        self.inner.liveness_clients.get(key).await
+        self.inner.liveness_service_manager_clients.get(key).await
     }
 }
 

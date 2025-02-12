@@ -26,13 +26,13 @@ pub async fn submit_block_commitment(
         match validation_info {
             // TODO: we have to manage the nonce for the register block commitment.
             ValidationInfo::EigenLayer(_) => {
-                let validation_client: validation_service_manager::eigenlayer::ValidationClient =
+                let validation_service_manager_client: validation_service_manager::eigenlayer::ValidationServiceManagerClient =
                     context
-                        .get_validation_client(validation_platform, validation_service_provider)
+                        .get_validation_service_manager_client(validation_platform, validation_service_provider)
                         .await
                         .unwrap();
 
-                validation_client
+                validation_service_manager_client
                     .publisher()
                     .register_block_commitment(
                         &rollup.cluster_id,
@@ -44,14 +44,14 @@ pub async fn submit_block_commitment(
                     .unwrap();
             }
             ValidationInfo::Symbiotic(_) => {
-                let validation_client: validation_service_manager::symbiotic::ValidationClient =
+                let validation_service_manager_client: validation_service_manager::symbiotic::ValidationServiceManagerClient =
                     context
-                        .get_validation_client(validation_platform, validation_service_provider)
+                        .get_validation_service_manager_client(validation_platform, validation_service_provider)
                         .await
                         .unwrap();
 
                 for _ in 0..10 {
-                    match validation_client
+                    match validation_service_manager_client
                         .publisher()
                         .register_block_commitment(
                             &rollup.cluster_id,

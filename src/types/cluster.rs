@@ -5,8 +5,8 @@ use std::collections::{
 
 use super::prelude::*;
 use crate::{
-    client::liveness_service_manager::{
-        radius::{initialize_new_cluster, LivenessClient},
+    client::{
+        liveness_service_manager::radius::{initialize_new_cluster, LivenessServiceManagerClient},
         seeder::SequencerRpcInfo,
     },
     error::Error,
@@ -141,10 +141,10 @@ impl Cluster {
     pub async fn sync_cluster(
         context: AppState,
         cluster_id: &str,
-        liveness_client: &LivenessClient,
+        liveness_service_manager_client: &LivenessServiceManagerClient,
         platform_block_height: u64,
     ) -> Result<Cluster, Error> {
-        let block_margin: u64 = liveness_client
+        let block_margin: u64 = liveness_service_manager_client
             .publisher()
             .get_block_margin()
             .await
@@ -154,7 +154,7 @@ impl Cluster {
 
         initialize_new_cluster(
             context,
-            liveness_client,
+            liveness_service_manager_client,
             cluster_id,
             platform_block_height,
             block_margin,
@@ -163,8 +163,8 @@ impl Cluster {
         .unwrap();
 
         Cluster::get(
-            liveness_client.platform(),
-            liveness_client.service_provider(),
+            liveness_service_manager_client.platform(),
+            liveness_service_manager_client.service_provider(),
             cluster_id,
             platform_block_height,
         ).map_err(|e| {
