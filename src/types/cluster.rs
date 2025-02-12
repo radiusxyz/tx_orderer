@@ -5,7 +5,7 @@ use std::collections::{
 
 use super::prelude::*;
 use crate::{
-    client::liveness::{
+    client::liveness_service_manager::{
         radius::{initialize_new_cluster, LivenessClient},
         seeder::SequencerRpcInfo,
     },

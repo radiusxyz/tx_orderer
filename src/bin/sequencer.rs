@@ -7,10 +7,10 @@ use radius_sdk::{
 };
 use sequencer::{
     client::{
-        liveness::{
+        liveness_service_manager::{
             self, distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient,
         },
-        validation,
+        validation_service_manager,
     },
     error::{self, Error},
     logger::PanicLog,
@@ -193,7 +193,7 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
 
         match sequencing_info_payload {
             SequencingInfoPayload::Ethereum(liveness_info) => {
-                liveness::radius::LivenessClient::initialize(
+                liveness_service_manager::radius::LivenessClient::initialize(
                     app_state.clone(),
                     *platform,
                     *service_provider,
@@ -219,7 +219,7 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
         let validation_info = ValidationInfo::get(*platform, *provider).map_err(Error::Database)?;
         match validation_info {
             ValidationInfo::EigenLayer(info) => {
-                validation::eigenlayer::ValidationClient::initialize(
+                validation_service_manager::eigenlayer::ValidationClient::initialize(
                     app_state.clone(),
                     *platform,
                     *provider,
@@ -227,7 +227,7 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
                 );
             }
             ValidationInfo::Symbiotic(info) => {
-                validation::symbiotic::ValidationClient::initialize(
+                validation_service_manager::symbiotic::ValidationClient::initialize(
                     app_state.clone(),
                     *platform,
                     *provider,

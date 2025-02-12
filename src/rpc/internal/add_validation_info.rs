@@ -58,7 +58,7 @@ impl AddValidationInfo {
     ) -> Result<(), RpcError> {
         match validation_info {
             ValidationInfo::EigenLayer(payload) => {
-                validation::eigenlayer::ValidationClient::initialize(
+                validation_service_manager::eigenlayer::ValidationClient::initialize(
                     context.clone(),
                     platform,
                     provider,
@@ -66,7 +66,7 @@ impl AddValidationInfo {
                 );
             }
             ValidationInfo::Symbiotic(payload) => {
-                validation::symbiotic::ValidationClient::initialize(
+                validation_service_manager::symbiotic::ValidationClient::initialize(
                     context.clone(),
                     platform,
                     provider,

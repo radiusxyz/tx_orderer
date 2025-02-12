@@ -8,7 +8,7 @@ use radius_sdk::{
 use skde::delay_encryption::SkdeParams;
 
 use crate::{
-    client::liveness::{
+    client::liveness_service_manager::{
         distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient,
     },
     merkle_tree_manager::MerkleTreeManager,

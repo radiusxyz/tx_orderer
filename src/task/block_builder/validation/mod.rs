@@ -3,7 +3,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 use super::{BlockCommitment, Platform, Rollup, ValidationInfo, ValidationServiceProvider};
-use crate::{client::validation, state::AppState};
+use crate::{client::validation_service_manager, state::AppState};
 
 pub async fn submit_block_commitment(
     context: AppState,
@@ -26,10 +26,11 @@ pub async fn submit_block_commitment(
         match validation_info {
             // TODO: we have to manage the nonce for the register block commitment.
             ValidationInfo::EigenLayer(_) => {
-                let validation_client: validation::eigenlayer::ValidationClient = context
-                    .get_validation_client(validation_platform, validation_service_provider)
-                    .await
-                    .unwrap();
+                let validation_client: validation_service_manager::eigenlayer::ValidationClient =
+                    context
+                        .get_validation_client(validation_platform, validation_service_provider)
+                        .await
+                        .unwrap();
 
                 validation_client
                     .publisher()
@@ -43,10 +44,11 @@ pub async fn submit_block_commitment(
                     .unwrap();
             }
             ValidationInfo::Symbiotic(_) => {
-                let validation_client: validation::symbiotic::ValidationClient = context
-                    .get_validation_client(validation_platform, validation_service_provider)
-                    .await
-                    .unwrap();
+                let validation_client: validation_service_manager::symbiotic::ValidationClient =
+                    context
+                        .get_validation_client(validation_platform, validation_service_provider)
+                        .await
+                        .unwrap();
 
                 for _ in 0..10 {
                     match validation_client

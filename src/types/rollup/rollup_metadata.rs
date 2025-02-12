@@ -1,7 +1,7 @@
 use radius_sdk::kvstore::Model;
 use serde::{Deserialize, Serialize};
 
-use crate::client::liveness::seeder::SequencerRpcInfo;
+use crate::client::liveness_service_manager::seeder::SequencerRpcInfo;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key(rollup_id: &str))]

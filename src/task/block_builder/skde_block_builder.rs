@@ -5,7 +5,7 @@ use skde::delay_encryption::{decrypt, SkdeParams};
 
 use super::{get_encrypted_transaction_list, get_raw_transaction_info_list};
 use crate::{
-    client::liveness::distributed_key_generation::DistributedKeyGenerationClient,
+    client::liveness_service_manager::distributed_key_generation::DistributedKeyGenerationClient,
     error::Error,
     state::AppState,
     types::*,

@@ -31,7 +31,7 @@ impl RpcParameter<AppState> for AddSequencingInfo {
 
         match &self.payload {
             SequencingInfoPayload::Ethereum(payload) => {
-                liveness::radius::LivenessClient::initialize(
+                liveness_service_manager::radius::LivenessClient::initialize(
                     context.clone(),
                     self.platform,
                     self.service_provider,

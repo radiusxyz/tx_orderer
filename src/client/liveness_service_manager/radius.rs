@@ -15,7 +15,9 @@ use radius_sdk::{
 use tokio::time::{sleep, Duration};
 
 use super::seeder::SequencerRpcInfo;
-use crate::{client::liveness::seeder::SeederClient, error::Error, state::AppState, types::*};
+use crate::{
+    client::liveness_service_manager::seeder::SeederClient, error::Error, state::AppState, types::*,
+};
 
 pub struct LivenessClient {
     inner: Arc<LivenessClientInner>,

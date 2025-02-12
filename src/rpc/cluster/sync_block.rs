@@ -47,8 +47,8 @@ impl RpcParameter<AppState> for SyncBlock {
             self.finalize_block_message.platform_block_height,
             cluster.err());
 
-            let liveness_client: liveness::radius::LivenessClient = context
-                .get_liveness_client::<liveness::radius::LivenessClient>(
+            let liveness_client: liveness_service_manager::radius::LivenessClient = context
+                .get_liveness_client::<liveness_service_manager::radius::LivenessClient>(
                     rollup.platform,
                     rollup.service_provider,
                 )

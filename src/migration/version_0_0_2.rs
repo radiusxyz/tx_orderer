@@ -1,7 +1,7 @@
 use radius_sdk::{kvstore::KvStore, signature::Address};
 use serde::{Deserialize, Serialize};
 
-use crate::{client::liveness::seeder::SequencerRpcInfo, error::Error, types::*};
+use crate::{client::liveness_service_manager::seeder::SequencerRpcInfo, error::Error, types::*};
 
 const PREVIOUS_DATABASE_VERSION: &'static str = "v0.0.1";
 const CURRENT_DATABASE_VERSION: &'static str = "v0.0.2";
