@@ -198,7 +198,8 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
                     *platform,
                     *service_provider,
                     liveness_info,
-                );
+                )
+                .await?;
             }
             SequencingInfoPayload::Local(_payload) => {
                 tracing::warn!(

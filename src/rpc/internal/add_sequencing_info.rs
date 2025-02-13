@@ -36,7 +36,8 @@ impl RpcParameter<AppState> for AddSequencingInfo {
                     self.platform,
                     self.service_provider,
                     payload.clone(),
-                );
+                )
+                .await?;
             }
             SequencingInfoPayload::Local(_payload) => {
                 todo!("Implement 'LivenessServiceManagerClient' for local sequencing.");
