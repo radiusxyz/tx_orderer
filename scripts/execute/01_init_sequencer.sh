@@ -18,5 +18,7 @@ sed -i.temp "s|distributed_key_generation_rpc_url = \"http://127.0.0.1:7100\"|di
 
 sed -i.temp "s|seeder_rpc_url = \"http://127.0.0.1:6000\"|seeder_rpc_url = \"$SEEDER_RPC_URL\"|g" $CONFIG_FILE_PATH
 
+sed -i.temp "s|reward_manager_rpc_url = \"http://127.0.0.1:6100\"|reward_manager_rpc_url = \"$REWARD_MANAGER_RPC_URL\"|g" $CONFIG_FILE_PATH
+
 rm $CONFIG_FILE_PATH.temp
 rm $PRIVATE_KEY_PATH.temp

@@ -8,7 +8,7 @@ use radius_sdk::{
 use sequencer::{
     client::{
         distributed_key_generation::DistributedKeyGenerationClient, liveness_service_manager,
-        seeder::SeederClient, validation_service_manager,
+        reward_manager::RewardManagerClient, seeder::SeederClient, validation_service_manager,
     },
     error::{self, Error},
     logger::PanicLog,
@@ -110,10 +110,11 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
 
     version.update().map_err(error::Error::Database)?;
 
-    let (seeder_client, distributed_key_generation_client) =
-        tokio::try_join!(async { initialize_seeder_client(&config) }, async {
-            initialize_dkg_client(&config)
-        })?;
+    let (seeder_client, distributed_key_generation_client, reward_manager_client) = tokio::try_join!(
+        async { initialize_seeder_client(&config) },
+        async { initialize_dkg_client(&config) },
+        async { initialize_reward_manager_client(&config) }
+    )?;
     let skde_params = distributed_key_generation_client
         .get_skde_params()
         .await?
@@ -124,6 +125,7 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
     let app_state: AppState = AppState::new(
         config,
         seeder_client,
+        reward_manager_client,
         distributed_key_generation_client,
         CachedKvStore::default(),
         CachedKvStore::default(),
@@ -170,6 +172,15 @@ fn initialize_dkg_client(config: &Config) -> Result<DistributedKeyGenerationClie
         config.distributed_key_generation_rpc_url
     );
     Ok(dkg_client)
+}
+
+fn initialize_reward_manager_client(config: &Config) -> Result<RewardManagerClient, Error> {
+    let reward_manager_client = RewardManagerClient::new(&config.reward_manager_rpc_url)?;
+    tracing::info!(
+        "Distributed Key Generation client initialized: {:?}",
+        config.distributed_key_generation_rpc_url
+    );
+    Ok(reward_manager_client)
 }
 
 async fn initialize_clients(app_state: AppState) -> Result<(), Error> {

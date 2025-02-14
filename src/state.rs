@@ -8,7 +8,10 @@ use radius_sdk::{
 use skde::delay_encryption::SkdeParams;
 
 use crate::{
-    client::{distributed_key_generation::DistributedKeyGenerationClient, seeder::SeederClient},
+    client::{
+        distributed_key_generation::DistributedKeyGenerationClient,
+        reward_manager::RewardManagerClient, seeder::SeederClient,
+    },
     merkle_tree_manager::MerkleTreeManager,
     profiler::Profiler,
     types::*,
@@ -21,6 +24,7 @@ pub struct AppState {
 struct AppStateInner {
     config: Config,
     seeder_client: SeederClient,
+    reward_manager_client: RewardManagerClient,
     distributed_key_generation_client: DistributedKeyGenerationClient,
     liveness_service_manager_clients: CachedKvStore,
     validation_service_manager_clients: CachedKvStore,
@@ -44,6 +48,7 @@ impl AppState {
     pub fn new(
         config: Config,
         seeder_client: SeederClient,
+        reward_manager_client: RewardManagerClient,
         distributed_key_generation_client: DistributedKeyGenerationClient,
         signers: CachedKvStore,
         liveness_service_manager_clients: CachedKvStore,
@@ -56,6 +61,7 @@ impl AppState {
         let inner = AppStateInner {
             config,
             seeder_client,
+            reward_manager_client,
             distributed_key_generation_client,
             signers,
             liveness_service_manager_clients,
@@ -77,6 +83,10 @@ impl AppState {
 
     pub fn seeder_client(&self) -> &SeederClient {
         &self.inner.seeder_client
+    }
+
+    pub fn reward_manager_client(&self) -> &RewardManagerClient {
+        &self.inner.reward_manager_client
     }
 
     pub fn distributed_key_generation_client(&self) -> &DistributedKeyGenerationClient {

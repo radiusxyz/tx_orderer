@@ -35,4 +35,6 @@ DISTRIBUTED_KEY_GENERATOR_RPC_URL="http://127.0.0.1:7100" # Please change this d
 # Seeder
 SEEDER_RPC_URL="http://127.0.0.1:6000" # Please change this seeder (external) rpc url.
 
+# Reward Manager
+REWARD_MANAGER_RPC_URL="http://127.0.0.1:6100" # Please change this reward manager (external) rpc url.
 

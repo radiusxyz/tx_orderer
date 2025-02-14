@@ -9,6 +9,7 @@ const DEFAULT_EXTERNAL_RPC_URL: &str = "http://127.0.0.1:3000";
 const DEFAULT_INTERNAL_RPC_URL: &str = "http://127.0.0.1:4000";
 const DEFAULT_CLUSTER_RPC_URL: &str = "http://127.0.0.1:5000";
 const DEFAULT_SEEDER_RPC_URL: &str = "http://127.0.0.1:6000";
+const DEFAULT_REWARD_MANAGER_RPC_URL: &str = "http://127.0.0.1:6100";
 const DEFAULT_DISTRIBUTED_KEY_GENERATION_RPC_URL: &str = "http://127.0.0.1:7100";
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
@@ -33,6 +34,10 @@ pub struct ConfigOption {
     #[clap(long = "seeder-rpc-url")]
     pub seeder_rpc_url: Option<String>,
 
+    #[doc = "Set the reward manager rpc url"]
+    #[clap(long = "reward-manager-rpc-url")]
+    pub reward_manager_rpc_url: Option<String>,
+
     #[doc = "Set the distributed key generation rpc url"]
     #[clap(long = "distributed-key-generation-rpc-url")]
     pub distributed_key_generation_rpc_url: Option<String>,
@@ -52,6 +57,7 @@ impl Default for ConfigOption {
             cluster_rpc_url: Some(DEFAULT_CLUSTER_RPC_URL.into()),
 
             seeder_rpc_url: Some(DEFAULT_SEEDER_RPC_URL.into()),
+            reward_manager_rpc_url: Some(DEFAULT_REWARD_MANAGER_RPC_URL.into()),
             distributed_key_generation_rpc_url: Some(
                 DEFAULT_DISTRIBUTED_KEY_GENERATION_RPC_URL.into(),
             ),
@@ -76,6 +82,13 @@ impl ConfigOption {
 
         set_toml_comment(&mut toml_string, "Set seeder rpc url");
         set_toml_name_value(&mut toml_string, "seeder_rpc_url", &self.seeder_rpc_url);
+
+        set_toml_comment(&mut toml_string, "Set reward manager rpc url");
+        set_toml_name_value(
+            &mut toml_string,
+            "reward_manager_rpc_url",
+            &self.reward_manager_rpc_url,
+        );
 
         set_toml_comment(&mut toml_string, "Set distributed key generation rpc url");
         set_toml_name_value(
@@ -109,6 +122,11 @@ impl ConfigOption {
 
         if other.seeder_rpc_url.is_some() {
             self.seeder_rpc_url.clone_from(&other.seeder_rpc_url)
+        }
+
+        if other.reward_manager_rpc_url.is_some() {
+            self.reward_manager_rpc_url
+                .clone_from(&other.reward_manager_rpc_url);
         }
 
         if other.distributed_key_generation_rpc_url.is_some() {

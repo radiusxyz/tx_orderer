@@ -25,6 +25,7 @@ pub struct Config {
     pub cluster_rpc_url: String,
 
     pub seeder_rpc_url: String,
+    pub reward_manager_rpc_url: String,
 
     pub distributed_key_generation_rpc_url: String,
 
@@ -47,6 +48,7 @@ pub struct Config {
 ///   communication.
 /// - `cluster_rpc_url`: Address for cluster-related operations.
 /// - `seeder_rpc_url`: Seeder service RPC address.
+/// - `reward_manager_rpc_url`: RPC address for reward manager service.
 /// - `distributed_key_generation_rpc_url`: RPC address for distributed key
 ///   generation service.
 /// - `signing_key`: A placeholder signing key for development.
@@ -64,6 +66,7 @@ impl Default for Config {
             internal_rpc_url: "http://127.0.0.1:4000".to_string(),
             cluster_rpc_url: "http://127.0.0.1:5000".to_string(),
             seeder_rpc_url: "http://127.0.0.1:6000".to_string(),
+            reward_manager_rpc_url: "http://127.0.0.1:6100".to_string(),
             distributed_key_generation_rpc_url: "http://127.0.0.1:7100".to_string(),
             signing_key: DEFAULT_SIGNING_KEY.to_string(),
             is_using_zkp: true,
@@ -103,6 +106,7 @@ impl Config {
             internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
             cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
             seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
+            reward_manager_rpc_url: merged_config_option.reward_manager_rpc_url.unwrap(),
             distributed_key_generation_rpc_url: merged_config_option
                 .distributed_key_generation_rpc_url
                 .unwrap(),
