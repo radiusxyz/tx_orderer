@@ -7,10 +7,8 @@ use radius_sdk::{
 };
 use sequencer::{
     client::{
-        distributed_key_generation::DistributedKeyGenerationClient,
-        liveness_service_manager::{self},
-        seeder::SeederClient,
-        validation_service_manager,
+        distributed_key_generation::DistributedKeyGenerationClient, liveness_service_manager,
+        seeder::SeederClient, validation_service_manager,
     },
     error::{self, Error},
     logger::PanicLog,
@@ -27,12 +25,6 @@ use serde::{Deserialize, Serialize};
 struct Cli {
     #[command(subcommand)]
     command: Commands,
-}
-
-impl Cli {
-    fn init() -> Self {
-        Cli::parse()
-    }
 }
 
 #[derive(Subcommand, Debug, Deserialize, Serialize)]
@@ -52,18 +44,16 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     std::panic::set_hook(Box::new(|panic_info| {
-        let panic_log: PanicLog = panic_info.into();
-        tracing::error!("{:?}", panic_log);
+        tracing::error!("{:?}", PanicLog::from(panic_info));
     }));
 
-    let cli = Cli::init();
+    let cli = Cli::parse();
     match cli.command {
         Commands::Init { config_path } => {
             tracing_subscriber::fmt().init();
             ConfigPath::init(&config_path)?;
 
             let database_path = config_path.as_ref().join(DATABASE_DIR_NAME);
-            // Initialize the database
             let kv_store = KvStoreBuilder::default()
                 .set_default_lock_timeout(5000)
                 .set_txn_lock_timeout(5000)
@@ -73,14 +63,11 @@ async fn main() -> Result<(), Error> {
             tracing::info!("Database initialized at {:?}", database_path);
 
             let mut version = Version::default();
-
             version.code_version = CURRENT_CODE_VERSION.to_string();
             version.database_version = REQURIED_DATABASE_VERSION.to_string();
             version.put().map_err(error::Error::Database)?;
         }
-        Commands::Start { mut config_option } => {
-            start_sequencer(&mut config_option).await?;
-        }
+        Commands::Start { mut config_option } => start_sequencer(&mut config_option).await?,
     }
 
     Ok(())
@@ -117,8 +104,10 @@ async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> 
     }
 
     version.code_version = CURRENT_CODE_VERSION.to_string();
+
     tracing::info!("Current code version {:?}", version.code_version);
     tracing::info!("Current database version {:?}", version.database_version);
+
     version.update().map_err(error::Error::Database)?;
 
     let (seeder_client, distributed_key_generation_client) =
