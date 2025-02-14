@@ -34,7 +34,7 @@ pub fn build_block(
     );
 
     tokio::spawn(async move {
-        let leader_sequencer_address = finalize_block_message.next_block_creator_address.clone();
+        let leader_tx_orderer_address = finalize_block_message.next_block_creator_address.clone();
 
         let block = match encrypted_transaction_type {
             EncryptedTransactionType::Pvde => unimplemented!(),
@@ -44,7 +44,7 @@ pub fn build_block(
                 finalize_block_message.rollup_id.clone(),
                 finalize_block_message.rollup_block_height.clone(),
                 transaction_count,
-                leader_sequencer_address,
+                leader_tx_orderer_address,
                 None,
             )
             .await
@@ -91,13 +91,13 @@ pub async fn sync_block(
     finalize_block_message: FinalizeBlockMessage,
     rollup_signature: Signature,
     transaction_count: u64,
-    leader_sequencer_signature: Signature,
+    leader_tx_orderer_signature: Signature,
 ) {
     let parameter = SyncBlock {
         finalize_block_message,
         rollup_signature,
         transaction_count,
-        leader_sequencer_signature,
+        leader_tx_orderer_signature,
     };
 
     let others_cluster_rpc_url_list = cluster.get_others_cluster_rpc_url_list();

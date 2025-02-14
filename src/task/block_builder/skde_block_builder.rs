@@ -18,7 +18,7 @@ pub async fn skde_build_block(
     rollup_id: String,
     rollup_block_height: u64,
     transaction_count: u64,
-    leader_sequencer_address: Address,
+    leader_tx_orderer_address: Address,
     signature: Option<Signature>,
 ) -> Result<Block, Error> {
     let distributed_key_generation_client = context.distributed_key_generation_client().clone();
@@ -144,7 +144,7 @@ pub async fn skde_build_block(
         final_raw_transaction_list,
         signature,
         BlockCommitment::from(block_commitment),
-        leader_sequencer_address,
+        leader_tx_orderer_address,
     );
 
     Block::put(&block, &rollup_id, rollup_block_height).unwrap();

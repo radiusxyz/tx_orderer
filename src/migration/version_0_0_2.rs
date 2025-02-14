@@ -1,7 +1,7 @@
 use radius_sdk::{kvstore::KvStore, signature::Address};
 use serde::{Deserialize, Serialize};
 
-use crate::{client::seeder::SequencerRpcInfo, error::Error, types::*};
+use crate::{client::seeder::TxOrdererRpcInfo, error::Error, types::*};
 
 const PREVIOUS_DATABASE_VERSION: &'static str = "v0.0.1";
 const CURRENT_DATABASE_VERSION: &'static str = "v0.0.2";
@@ -13,7 +13,7 @@ pub struct OldRollupMetadata {
     pub cluster_id: String,
     pub platform_block_height: u64,
     pub is_leader: bool,
-    pub leader_sequencer_rpc_info: SequencerRpcInfo,
+    pub leader_tx_orderer_rpc_info: TxOrdererRpcInfo,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -120,7 +120,7 @@ fn migrate_rollup_metadata(kv_store: &KvStore, rollup_id: &str) -> Result<(), Er
             cluster_id: old_metadata.cluster_id,
             platform_block_height: old_metadata.platform_block_height,
             is_leader: old_metadata.is_leader,
-            leader_sequencer_rpc_info: old_metadata.leader_sequencer_rpc_info,
+            leader_tx_orderer_rpc_info: old_metadata.leader_tx_orderer_rpc_info,
             max_gas_limit: 0,
             current_gas: 0,
         };

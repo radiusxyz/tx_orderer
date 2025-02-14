@@ -65,7 +65,7 @@ impl ConfigOption {
     pub fn get_toml_string(&self) -> String {
         let mut toml_string = String::new();
 
-        set_toml_comment(&mut toml_string, "Set sequencer rpc url");
+        set_toml_comment(&mut toml_string, "Set tx_orderer rpc url");
         set_toml_name_value(&mut toml_string, "external_rpc_url", &self.external_rpc_url);
 
         set_toml_comment(&mut toml_string, "Set internal rpc url");

@@ -48,8 +48,8 @@ impl Profiler {
     /// # Examples
     ///
     /// ```rust
-    /// // Initialize the profiler server at "http://127.0.0.1:4040" for the "sequencer" with sampling rate of 100 Hertz.
-    /// let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
+    /// // Initialize the profiler server at "http://127.0.0.1:4040" for the "tx_orderer" with sampling rate of 100 Hertz.
+    /// let profiler = Profiler::init("http://127.0.0.1:4040", "tx_orderer", 100)?;
     /// ```
     pub fn init(
         server_url: &str,

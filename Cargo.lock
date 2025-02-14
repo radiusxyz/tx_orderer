@@ -4179,31 +4179,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
-name = "sequencer"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "clap",
- "const-hex",
- "dashmap 5.5.3",
- "ethers-core",
- "futures",
- "local-ip-address",
- "pyroscope",
- "pyroscope_pprofrs",
- "radius-sdk",
- "reqwest",
- "serde",
- "serde_json",
- "sha3 0.10.8",
- "skde",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "serde"
 version = "1.0.217"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4998,6 +4973,31 @@ dependencies = [
  "sha1",
  "thiserror 1.0.69",
  "utf-8",
+]
+
+[[package]]
+name = "tx_orderer"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "clap",
+ "const-hex",
+ "dashmap 5.5.3",
+ "ethers-core",
+ "futures",
+ "local-ip-address",
+ "pyroscope",
+ "pyroscope_pprofrs",
+ "radius-sdk",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha3 0.10.8",
+ "skde",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

@@ -34,13 +34,13 @@ impl RpcParameter<AppState> for SyncMaxGasLimit {
             &locked_rollup.cluster_id,
             rollup_metadata.platform_block_height,
         )?;
-        let sequencer_address_list = cluster.get_sequencer_address_list();
+        let tx_orderer_address_list = cluster.get_tx_orderer_address_list();
 
         let chain_type = locked_rollup.platform.into();
-        for sequencer_address in sequencer_address_list {
+        for tx_orderer_address in tx_orderer_address_list {
             let verify_result =
                 self.signature
-                    .verify_message(chain_type, &self.message, sequencer_address);
+                    .verify_message(chain_type, &self.message, tx_orderer_address);
 
             if verify_result.is_ok() {
                 locked_rollup.max_gas_limit = self.message.max_gas_limit;

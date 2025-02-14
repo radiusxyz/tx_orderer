@@ -29,7 +29,7 @@ pub enum Error {
     ClusterNotFound,
     RollupNotFound,
     SignerNotFound,
-    SequencerInfoNotFound,
+    TxOrdererInfoNotFound,
     ExecutorAddressNotFound,
     PlainDataDoesNotExist,
     UnsupportedEncryptedMempool,

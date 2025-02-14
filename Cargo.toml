@@ -1,11 +1,11 @@
 [package]
-name = "sequencer"
+name = "tx_orderer"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "sequencer"
-path = "src/bin/sequencer.rs"
+name = "tx_orderer"
+path = "src/bin/tx_orderer.rs"
 
 [[bin]]
 name = "database_migrator"

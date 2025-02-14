@@ -12,7 +12,7 @@ use crate::types::{
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 pub struct ConfigPath {
-    #[doc = "Set the sequencer configuration path"]
+    #[doc = "Set the tx_orderer configuration path"]
     #[clap(long = "path", default_value_t = Self::default().to_string())]
     pub path: String,
 }

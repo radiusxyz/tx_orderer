@@ -1,5 +1,5 @@
 #!/bin/bash
-SEQUENCER_INTERNAL_RPC_URL="http://10.178.0.4:4000"
+TX_ORDERER_INTERNAL_RPC_URL="http://10.178.0.4:4000"
 
 ################################# Sequencing (liveness) Contract ####################
 LIVENESS_PLATFORM="ethereum" # Option: [ethereum]

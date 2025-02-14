@@ -97,7 +97,7 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
             Ok(order_commitment)
         } else {
             let leader_external_rpc_url = rollup_metadata
-                .leader_sequencer_rpc_info
+                .leader_tx_orderer_rpc_info
                 .external_rpc_url
                 .clone()
                 .ok_or(Error::EmptyLeaderClusterRpcUrl)?;
