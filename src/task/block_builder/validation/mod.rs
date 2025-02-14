@@ -23,6 +23,12 @@ pub async fn submit_block_commitment(
             block_commitment
         );
 
+        let (vault_address_list, operator_merkle_root_list, total_staker_reward_list) = context
+            .reward_manager_client()
+            .distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
+            .await
+            .unwrap();
+
         match validation_info {
             // TODO: we have to manage the nonce for the register block commitment.
             ValidationInfo::EigenLayer(_) => {
@@ -39,6 +45,9 @@ pub async fn submit_block_commitment(
                         &rollup.rollup_id,
                         rollup_block_height,
                         &block_commitment,
+                        // vault_addresses
+                        // merkle_roots
+                        // staker_rewards
                     )
                     .await
                     .unwrap();

@@ -5,7 +5,7 @@ use radius_sdk::validation::symbiotic::{
 };
 use tokio::time::{sleep, Duration};
 
-use crate::{error::Error, state::AppState, types::*};
+use crate::{client::reward_manager, error::Error, state::AppState, types::*};
 
 pub struct ValidationServiceManagerClient {
     inner: Arc<ValidationServiceManagerClientInner>,
@@ -111,7 +111,13 @@ impl ValidationServiceManagerClient {
                 );
                 validation_service_manager_client
                     .subscriber()
-                    .initialize_event_handler(callback, validation_service_manager_client.clone())
+                    .initialize_event_handler(
+                        callback,
+                        (
+                            context.reward_manager_client(),
+                            validation_service_manager_client.clone(),
+                        ),
+                    )
                     .await
                     .unwrap();
             }
@@ -134,7 +140,10 @@ impl ValidationServiceManagerClient {
 
 async fn callback(
     event: ValidationServiceManager::NewTaskCreated,
-    context: ValidationServiceManagerClient,
+    (reward_manager_client, context): (
+        &reward_manager::RewardManagerClient,
+        ValidationServiceManagerClient,
+    ),
 ) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
@@ -143,6 +152,12 @@ async fn callback(
         tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment);
 
         if block.block_creator_address != context.publisher().address() {
+            let (vault_address_list, operator_merkle_root_list, total_staker_reward_list) =
+                reward_manager_client
+                    .distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
+                    .await
+                    .unwrap();
+
             for _ in 0..10 {
                 match context
                     .publisher()

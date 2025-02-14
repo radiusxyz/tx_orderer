@@ -18,6 +18,7 @@ pub enum Error {
     DistributedKeyGeneration(
         crate::client::distributed_key_generation::DistributedKeyGenerationClientError,
     ),
+    RewardManager(crate::client::reward_manager::RewardManagerError),
     Seeder(crate::client::seeder::SeederError),
     Profiler(crate::profiler::ProfilerError),
 
@@ -97,6 +98,12 @@ impl From<crate::client::distributed_key_generation::DistributedKeyGenerationCli
         value: crate::client::distributed_key_generation::DistributedKeyGenerationClientError,
     ) -> Self {
         Self::DistributedKeyGeneration(value)
+    }
+}
+
+impl From<crate::client::reward_manager::RewardManagerError> for Error {
+    fn from(value: crate::client::reward_manager::RewardManagerError) -> Self {
+        Self::RewardManager(value)
     }
 }
 

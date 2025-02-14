@@ -96,19 +96,19 @@ impl RpcParameter<AppState> for FinalizeBlock {
 
         // Check the executor address
         let rollup = Rollup::get(&self.finalize_block_message.rollup_id)?;
-        let signer_address = self.get_executor_address(rollup.platform.into())?;
+        // let signer_address = self.get_executor_address(rollup.platform.into())?;
 
-        rollup
-            .executor_address_list
-            .iter()
-            .find(|&executor_address| signer_address == *executor_address)
-            .ok_or_else(|| {
-                tracing::warn!(
-                    "Executor address not found: {:?}",
-                    signer_address.as_hex_string()
-                );
-                Error::ExecutorAddressNotFound
-            })?;
+        // rollup
+        //     .executor_address_list
+        //     .iter()
+        //     .find(|&executor_address| signer_address == *executor_address)
+        //     .ok_or_else(|| {
+        //         tracing::warn!(
+        //             "Executor address not found: {:?}",
+        //             signer_address.as_hex_string()
+        //         );
+        //         Error::ExecutorAddressNotFound
+        //     })?;
 
         let cluster = Cluster::get(
             rollup.platform,

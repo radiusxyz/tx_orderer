@@ -19,7 +19,7 @@ pub use order_commitment::*;
 pub use platform::*;
 use radius_sdk::signature::Address;
 pub use rollup::*;
-use serde::ser::SerializeSeq;
+use serde::{ser::SerializeSeq, Deserialize, Deserializer};
 pub use transaction::*;
 pub use validation::*;
 pub use version::*;
@@ -50,6 +50,72 @@ where
         seq.serialize_element(&address.as_hex_string())?;
     }
     seq.end()
+}
+
+pub fn deserialize_u64_from_string<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
+
+    match value {
+        serde_json::Value::Number(num) => Ok(num.as_u64().unwrap()),
+        serde_json::Value::String(s) => Ok(s.parse::<u64>().unwrap()),
+        _ => unimplemented!("unsupported value type"),
+    }
+}
+
+pub fn serialize_hash<S>(hash: &[u8; 32], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&const_hex::encode_prefixed(hash))
+}
+
+pub fn deserialize_hash<'de, D>(deserializer: D) -> Result<[u8; 32], D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
+
+    match value {
+        serde_json::Value::Array(arr) => {
+            let bytes: Vec<u8> = arr
+                .into_iter()
+                .filter_map(|v| v.as_u64().map(|n| n as u8))
+                .collect();
+            if bytes.len() != 32 {
+                return Err(serde::de::Error::custom(format!(
+                    "expected 32 bytes, got {} bytes",
+                    bytes.len()
+                )));
+            }
+            let mut array = [0u8; 32];
+            array.copy_from_slice(&bytes);
+            Ok(array)
+        }
+
+        serde_json::Value::String(s) => {
+            if let Some(stripped) = s.strip_prefix("0x") {
+                let decoded = const_hex::decode(stripped).unwrap();
+                if decoded.len() != 32 {
+                    return Err(serde::de::Error::custom(format!(
+                        "expected 32 bytes, got {} bytes",
+                        decoded.len()
+                    )));
+                }
+                let mut array = [0u8; 32];
+                array.copy_from_slice(&decoded);
+                Ok(array)
+            } else {
+                Err(serde::de::Error::custom(format!(
+                    "hex string with 0x prefix",
+                )))
+            }
+        }
+
+        _ => unimplemented!("unsupported value type"),
+    }
 }
 
 pub fn serialize_merkle_path<S>(paths: &[[u8; 32]], serializer: S) -> Result<S::Ok, S::Error>
