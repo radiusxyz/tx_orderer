@@ -72,7 +72,7 @@ pub async fn skde_build_block(
 
                     final_raw_transaction_list[i] = raw_transaction;
                 } else {
-                    let (raw_transaction, is_direct_sent_result) = fetch_raw_transaction_info(
+                    match fetch_encrypted_transaction(
                         context.rpc_client(),
                         &cluster,
                         &rollup_id,
@@ -80,32 +80,44 @@ pub async fn skde_build_block(
                         i as u64,
                     )
                     .await
-                    .unwrap();
+                    {
+                        Ok(encrypted_transaction) => {
+                            encrypted_transaction_list[i] = Some(encrypted_transaction.clone());
 
-                    final_raw_transaction_list[i] = raw_transaction;
+                            let _ = EncryptedTransactionModel::put(
+                                &rollup_id,
+                                rollup_block_height,
+                                i as u64,
+                                &encrypted_transaction,
+                            );
 
-                    if is_direct_sent_result == false {
-                        let encrypted_transaction = fetch_encrypted_transaction(
-                            context.rpc_client(),
-                            &cluster,
-                            &rollup_id,
-                            rollup_block_height,
-                            i as u64,
-                        )
-                        .await
-                        .unwrap();
+                            let (raw_transaction, _plain_data) = decrypt_skde_transaction(
+                                &encrypted_transaction.try_into_skde_transaction().unwrap(),
+                                distributed_key_generation_client.clone(),
+                                &mut decryption_keys,
+                                &skde_params,
+                            )
+                            .await
+                            .unwrap();
 
-                        encrypted_transaction_list[i] = Some(encrypted_transaction.clone());
-
-                        let _ = EncryptedTransactionModel::put(
-                            &rollup_id,
-                            rollup_block_height,
-                            i as u64,
-                            &encrypted_transaction,
-                        );
+                            final_raw_transaction_list[i] = raw_transaction;
+                            is_direct_sent = false;
+                        }
+                        Err(_) => {
+                            let (raw_transaction, is_direct_sent_result) =
+                                fetch_raw_transaction_info(
+                                    context.rpc_client(),
+                                    &cluster,
+                                    &rollup_id,
+                                    rollup_block_height,
+                                    i as u64,
+                                )
+                                .await
+                                .unwrap();
+                            final_raw_transaction_list[i] = raw_transaction;
+                            is_direct_sent = is_direct_sent_result;
+                        }
                     }
-
-                    is_direct_sent = is_direct_sent_result;
                 }
 
                 let _ = RawTransactionModel::put(
