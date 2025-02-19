@@ -259,7 +259,7 @@ pub async fn initialize_new_cluster(
         platform_block_height
     );
 
-    let mut latest_cluster_block_height = LatestClusterBlockHeight::get_mut_or(
+    let mut latest_cluster_block_height = LatestClusterBlockHeight::get_or(
         liveness_service_manager_client.platform(),
         liveness_service_manager_client.service_provider(),
         cluster_id,
@@ -346,8 +346,16 @@ pub async fn initialize_new_cluster(
         sleep(Duration::from_millis(500)).await;
     }
 
+    if block_diff == 0 {
+        return Ok(());
+    }
+
     latest_cluster_block_height.set_block_height(platform_block_height);
-    latest_cluster_block_height.update()?;
+    latest_cluster_block_height.put(
+        liveness_service_manager_client.platform(),
+        liveness_service_manager_client.service_provider(),
+        cluster_id,
+    )?;
 
     tracing::debug!(
         "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?} - Done",
