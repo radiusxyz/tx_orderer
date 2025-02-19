@@ -22,6 +22,7 @@ update_env_file() {
 
   source "$env_file"
   if ! grep -q '^reward_manager_rpc_url =' "$CONFIG_FILE_PATH"; then
-    echo -e "\nreward_manager_rpc_url = \"http://127.0.0.1:6100\"" >> "$CONFIG_FILE_PATH"
+    echo -e "\n# Set the reward manager rpc url" >> "$CONFIG_FILE_PATH"
+    echo -e "reward_manager_rpc_url = \"http://127.0.0.1:6100\"" >> "$CONFIG_FILE_PATH"
   fi
 }
