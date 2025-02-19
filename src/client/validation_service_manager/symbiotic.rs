@@ -152,7 +152,8 @@ async fn callback(
         tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment);
 
         if block.block_creator_address != context.publisher().address() {
-            let (vault_address_list, operator_merkle_root_list, total_staker_reward_list) =
+            // TODO:
+            let (_vault_address_list, _operator_merkle_root_list, _total_staker_reward_list) =
                 reward_manager_client
                     .distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
                     .await

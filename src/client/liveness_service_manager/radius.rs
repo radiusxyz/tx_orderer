@@ -8,7 +8,7 @@ use radius_sdk::{
     liveness::radius::{
         publisher::Publisher,
         subscriber::Subscriber,
-        types::{Events, ILivenessServiceManager::Rollup as RollupInfo},
+        types::{Events, ILivenessRadius::Rollup as RollupInfo},
     },
     signature::{Address, PrivateKeySigner},
 };
@@ -375,7 +375,7 @@ async fn get_tx_orderer_rpc_infos(
 ) -> Result<BTreeMap<usize, TxOrdererRpcInfo>, Error> {
     let tx_orderer_address_list = liveness_service_manager_client
         .publisher()
-        .get_tx_orderer_list(cluster_id, platform_block_height)
+        .get_sequencer_list(cluster_id, platform_block_height)
         .await
         .map_err(|e| {
             tracing::error!(

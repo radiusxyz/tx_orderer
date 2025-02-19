@@ -23,7 +23,8 @@ pub async fn submit_block_commitment(
             block_commitment
         );
 
-        let (vault_address_list, operator_merkle_root_list, total_staker_reward_list) = context
+        // TODO:
+        let (_vault_address_list, _operator_merkle_root_list, _total_staker_reward_list) = context
             .reward_manager_client()
             .distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
             .await
