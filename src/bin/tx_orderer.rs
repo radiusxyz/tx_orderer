@@ -5,7 +5,8 @@ use radius_sdk::{
     kvstore::{CachedKvStore, KvStoreBuilder},
     util::{get_resource_limit, set_resource_limit, ResourceType},
 };
-use sequencer::{
+use serde::{Deserialize, Serialize};
+use tx_orderer::{
     client::{
         distributed_key_generation::DistributedKeyGenerationClient, liveness_service_manager,
         reward_manager::RewardManagerClient, seeder::SeederClient, validation_service_manager,
@@ -18,7 +19,6 @@ use sequencer::{
     types::*,
     util::initialize_logger,
 };
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 #[command(author, version, about, long_about = None)]
@@ -67,20 +67,20 @@ async fn main() -> Result<(), Error> {
             version.database_version = REQURIED_DATABASE_VERSION.to_string();
             version.put().map_err(error::Error::Database)?;
         }
-        Commands::Start { mut config_option } => start_sequencer(&mut config_option).await?,
+        Commands::Start { mut config_option } => start_tx_orderer(&mut config_option).await?,
     }
 
     Ok(())
 }
 
-async fn start_sequencer(config_option: &mut ConfigOption) -> Result<(), Error> {
+async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error> {
     set_resource_limits()?;
 
     let config = Config::load(config_option)?;
     initialize_logger(&config)?;
 
     // Initialize the profiler.
-    // let profiler = Profiler::init("http://127.0.0.1:4040", "sequencer", 100)?;
+    // let profiler = Profiler::init("http://127.0.0.1:4040", "tx_orderer", 100)?;
     let profiler = None;
 
     // Initialize the database
@@ -291,7 +291,7 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> 
     let external_rpc_url = anywhere(&context.config().external_port()?);
 
     tracing::info!(
-        "Successfully started the sequencer external RPC server: {}",
+        "Successfully started the tx_orderer external RPC server: {}",
         external_rpc_url
     );
 

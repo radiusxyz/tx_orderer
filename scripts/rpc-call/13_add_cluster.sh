@@ -4,7 +4,7 @@ source $SCRIPT_PATH/env.sh
 
 echo "add_cluster"
 
-curl --location $SEQUENCER_INTERNAL_RPC_URL \
+curl --location $TX_ORDERER_INTERNAL_RPC_URL \
 --header 'Content-Type: application/json' \
 --data '{
   "jsonrpc": "2.0",

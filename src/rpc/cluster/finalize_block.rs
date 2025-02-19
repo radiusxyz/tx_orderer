@@ -87,7 +87,7 @@ impl RpcParameter<AppState> for FinalizeBlock {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        tracing::info!("finalize block - executor address: {:?} / block creator (sequencer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
+        tracing::info!("finalize block - executor address: {:?} / block creator (tx_orderer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
         self.finalize_block_message.executor_address.as_hex_string(),
         self.finalize_block_message.block_creator_address.as_hex_string(),
         self.finalize_block_message.rollup_id,
@@ -167,8 +167,9 @@ impl FinalizeBlock {
         let next_rollup_block_height = self.finalize_block_message.rollup_block_height + 1;
 
         let signer = context.get_signer(rollup.platform).await?;
-        let sequencer_address = signer.address().clone();
-        let is_leader = sequencer_address == self.finalize_block_message.next_block_creator_address;
+        let tx_orderer_address = signer.address().clone();
+        let is_leader =
+            tx_orderer_address == self.finalize_block_message.next_block_creator_address;
 
         let mut transaction_count = 0;
 
@@ -184,13 +185,13 @@ impl FinalizeBlock {
                 rollup_metadata.max_gas_limit = rollup.max_gas_limit;
                 rollup_metadata.current_gas = 0;
 
-                if let Some(sequencer_rpc_info) = cluster
-                    .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
-                {
-                    rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
+                if let Some(tx_orderer_rpc_info) = cluster.get_tx_orderer_rpc_info(
+                    &self.finalize_block_message.next_block_creator_address,
+                ) {
+                    rollup_metadata.leader_tx_orderer_rpc_info = tx_orderer_rpc_info;
                 } else {
-                    tracing::error!("Sequencer RPC info not found");
-                    return Err(Error::SequencerInfoNotFound)?;
+                    tracing::error!("TxOrderer RPC info not found");
+                    return Err(Error::TxOrdererInfoNotFound)?;
                 }
 
                 context
@@ -211,13 +212,13 @@ impl FinalizeBlock {
                     rollup_metadata.max_gas_limit = rollup.max_gas_limit;
                     rollup_metadata.current_gas = 0;
 
-                    if let Some(sequencer_rpc_info) = cluster.get_sequencer_rpc_info(
+                    if let Some(tx_orderer_rpc_info) = cluster.get_tx_orderer_rpc_info(
                         &self.finalize_block_message.next_block_creator_address,
                     ) {
-                        rollup_metadata.leader_sequencer_rpc_info = sequencer_rpc_info;
+                        rollup_metadata.leader_tx_orderer_rpc_info = tx_orderer_rpc_info;
                     } else {
-                        tracing::error!("Sequencer RPC info not found");
-                        return Err(Error::SequencerInfoNotFound)?;
+                        tracing::error!("TxOrderer RPC info not found");
+                        return Err(Error::TxOrdererInfoNotFound)?;
                     }
 
                     context

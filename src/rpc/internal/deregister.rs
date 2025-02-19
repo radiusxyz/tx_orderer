@@ -31,7 +31,7 @@ impl RpcParameter<AppState> for Deregister {
                 let signer = PrivateKeySigner::from_str(self.platform.into(), signing_key)?;
 
                 seeder_client
-                    .deregister_sequencer(
+                    .deregister_tx_orderer(
                         self.platform,
                         self.service_provider,
                         &self.cluster_id,

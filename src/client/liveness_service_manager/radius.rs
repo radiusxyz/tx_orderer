@@ -8,14 +8,14 @@ use radius_sdk::{
     liveness::radius::{
         publisher::Publisher,
         subscriber::Subscriber,
-        types::{Events, ILivenessRadius::Rollup as RollupInfo},
+        types::{Events, ILivenessServiceManager::Rollup as RollupInfo},
     },
     signature::{Address, PrivateKeySigner},
 };
 use tokio::time::{sleep, Duration};
 
 use crate::{
-    client::seeder::{SeederClient, SequencerRpcInfo},
+    client::seeder::{SeederClient, TxOrdererRpcInfo},
     error::Error,
     state::AppState,
     types::*,
@@ -259,7 +259,7 @@ pub async fn initialize_new_cluster(
         platform_block_height
     );
 
-    let mut latest_cluster_block_height = LatestClusterBlockHeight::get_mut_or(
+    let mut latest_cluster_block_height = LatestClusterBlockHeight::get_or(
         liveness_service_manager_client.platform(),
         liveness_service_manager_client.service_provider(),
         cluster_id,
@@ -280,14 +280,14 @@ pub async fn initialize_new_cluster(
                 cluster_id,
                 block_height
             );
-            match get_sequencer_rpc_infos(
+            match get_tx_orderer_rpc_infos(
                 &liveness_service_manager_client,
                 cluster_id,
                 block_height,
             )
             .await
             {
-                Ok(sequencer_rpc_infos) => {
+                Ok(tx_orderer_rpc_infos) => {
                     let rollup_id_list = get_rollup_id_list(
                         &liveness_service_manager_client,
                         cluster_id,
@@ -295,16 +295,16 @@ pub async fn initialize_new_cluster(
                     )
                     .await?;
 
-                    let sequencer_address = context
+                    let tx_orderer_address = context
                         .get_signer(liveness_service_manager_client.platform())
                         .await?
                         .address()
                         .clone();
 
                     let cluster = Cluster::new(
-                        sequencer_rpc_infos,
+                        tx_orderer_rpc_infos,
                         rollup_id_list,
-                        sequencer_address,
+                        tx_orderer_address,
                         block_margin,
                     );
                     cluster.put(
@@ -327,7 +327,7 @@ pub async fn initialize_new_cluster(
                 Err(e) => {
                     retries -= 1;
                     tracing::warn!(
-                        "Failed to fetch sequencer RPC infos for cluster: {}, height: {}, error: {:?} (remaining retries: {})",
+                        "Failed to fetch tx_orderer RPC infos for cluster: {}, height: {}, error: {:?} (remaining retries: {})",
                         cluster_id,
                         block_height,
                         e,
@@ -346,8 +346,16 @@ pub async fn initialize_new_cluster(
         sleep(Duration::from_millis(500)).await;
     }
 
+    if block_diff == 0 {
+        return Ok(());
+    }
+
     latest_cluster_block_height.set_block_height(platform_block_height);
-    latest_cluster_block_height.update()?;
+    latest_cluster_block_height.put(
+        liveness_service_manager_client.platform(),
+        liveness_service_manager_client.service_provider(),
+        cluster_id,
+    )?;
 
     tracing::debug!(
         "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?} - Done",
@@ -360,18 +368,18 @@ pub async fn initialize_new_cluster(
     Ok(())
 }
 
-async fn get_sequencer_rpc_infos(
+async fn get_tx_orderer_rpc_infos(
     liveness_service_manager_client: &LivenessServiceManagerClient,
     cluster_id: &str,
     platform_block_height: u64,
-) -> Result<BTreeMap<usize, SequencerRpcInfo>, Error> {
-    let sequencer_address_list = liveness_service_manager_client
+) -> Result<BTreeMap<usize, TxOrdererRpcInfo>, Error> {
+    let tx_orderer_address_list = liveness_service_manager_client
         .publisher()
-        .get_sequencer_list(cluster_id, platform_block_height)
+        .get_tx_orderer_list(cluster_id, platform_block_height)
         .await
         .map_err(|e| {
             tracing::error!(
-                "Failed to fetch sequencer list for cluster: {}, height: {}. Error: {:?}",
+                "Failed to fetch tx_orderer list for cluster: {}, height: {}. Error: {:?}",
                 cluster_id,
                 platform_block_height,
                 e
@@ -382,27 +390,27 @@ async fn get_sequencer_rpc_infos(
         .map(|a| a.to_string())
         .collect();
 
-    let sequencer_rpc_url_list = liveness_service_manager_client
+    let tx_orderer_rpc_url_list = liveness_service_manager_client
         .seeder()
-        .get_sequencer_rpc_url_list(sequencer_address_list)
+        .get_tx_orderer_rpc_url_list(tx_orderer_address_list)
         .await
         .map_err(|e| {
             tracing::error!(
-                "Failed to fetch sequencer RPC URLs for cluster: {}, height: {}. Error: {:?}",
+                "Failed to fetch tx_orderer RPC URLs for cluster: {}, height: {}. Error: {:?}",
                 cluster_id,
                 platform_block_height,
                 e
             );
             e
         })?
-        .sequencer_rpc_url_list;
+        .tx_orderer_rpc_url_list;
 
-    let sequencer_rpc_infos = sequencer_rpc_url_list
+    let tx_orderer_rpc_infos = tx_orderer_rpc_url_list
         .into_iter()
         .enumerate()
-        .collect::<BTreeMap<usize, SequencerRpcInfo>>();
+        .collect::<BTreeMap<usize, TxOrdererRpcInfo>>();
 
-    Ok(sequencer_rpc_infos)
+    Ok(tx_orderer_rpc_infos)
 }
 
 async fn get_rollup_id_list(

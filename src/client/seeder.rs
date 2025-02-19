@@ -37,7 +37,7 @@ impl SeederClient {
         })
     }
 
-    pub async fn register_sequencer(
+    pub async fn register_tx_orderer(
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
@@ -46,7 +46,7 @@ impl SeederClient {
         cluster_rpc_url: &str,
         signer: &PrivateKeySigner,
     ) -> Result<(), SeederError> {
-        let message = RegisterSequencerMessage {
+        let message = RegisterTxOrdererMessage {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
@@ -57,10 +57,10 @@ impl SeederClient {
         let signature = signer
             .sign_message(&message)
             .map_err(SeederError::SignMessage)?;
-        let parameter = RegisterSequencer { message, signature };
+        let parameter = RegisterTxOrderer { message, signature };
 
         tracing::info!(
-            "Register sequencer to seeder - address: {:?}, rpc_url: {:?}",
+            "Register tx_orderer to seeder - address: {:?}, rpc_url: {:?}",
             signer.address().as_hex_string(),
             (external_rpc_url, cluster_rpc_url),
         );
@@ -69,7 +69,7 @@ impl SeederClient {
             .rpc_client
             .request(
                 &self.inner.rpc_url,
-                RegisterSequencer::METHOD_NAME,
+                RegisterTxOrderer::METHOD_NAME,
                 &parameter,
                 Id::Null,
             )
@@ -77,14 +77,14 @@ impl SeederClient {
             .map_err(SeederError::Register)
     }
 
-    pub async fn deregister_sequencer(
+    pub async fn deregister_tx_orderer(
         &self,
         platform: Platform,
         service_provider: ServiceProvider,
         cluster_id: &str,
         signer: &PrivateKeySigner,
     ) -> Result<(), SeederError> {
-        let message = DeregisterSequencerMessage {
+        let message = DeregisterTxOrdererMessage {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
@@ -93,13 +93,13 @@ impl SeederClient {
         let signature = signer
             .sign_message(&message)
             .map_err(SeederError::SignMessage)?;
-        let parameter = DeregisterSequencer { message, signature };
+        let parameter = DeregisterTxOrderer { message, signature };
 
         self.inner
             .rpc_client
             .request(
                 &self.inner.rpc_url,
-                DeregisterSequencer::METHOD_NAME,
+                DeregisterTxOrderer::METHOD_NAME,
                 &parameter,
                 Id::Null,
             )
@@ -107,59 +107,59 @@ impl SeederClient {
             .map_err(SeederError::Deregister)
     }
 
-    pub async fn get_sequencer_rpc_url_list(
+    pub async fn get_tx_orderer_rpc_url_list(
         &self,
-        sequencer_address_list: Vec<String>,
-    ) -> Result<GetSequencerRpcUrlListResponse, SeederError> {
-        let parameter = GetSequencerRpcUrlList {
-            sequencer_address_list,
+        tx_orderer_address_list: Vec<String>,
+    ) -> Result<GetTxOrdererRpcUrlListResponse, SeederError> {
+        let parameter = GetTxOrdererRpcUrlList {
+            tx_orderer_address_list,
         };
 
         self.inner
             .rpc_client
             .request(
                 &self.inner.rpc_url,
-                GetSequencerRpcUrlList::METHOD_NAME,
+                GetTxOrdererRpcUrlList::METHOD_NAME,
                 &parameter,
                 Id::Null,
             )
             .await
-            .map_err(SeederError::GetSequencerRpcUrlList)
+            .map_err(SeederError::GetTxOrdererRpcUrlList)
     }
 
-    pub async fn get_sequencer_rpc_url(
+    pub async fn get_tx_orderer_rpc_url(
         &self,
-        sequencer_address: String,
-    ) -> Result<GetSequencerRpcUrlResponse, SeederError> {
-        let parameter = GetSequencerRpcUrl {
-            address: sequencer_address,
+        tx_orderer_address: String,
+    ) -> Result<GetTxOrdererRpcUrlResponse, SeederError> {
+        let parameter = GetTxOrdererRpcUrl {
+            address: tx_orderer_address,
         };
 
         self.inner
             .rpc_client
             .request(
                 &self.inner.rpc_url,
-                GetSequencerRpcUrl::METHOD_NAME,
+                GetTxOrdererRpcUrl::METHOD_NAME,
                 &parameter,
                 Id::Null,
             )
             .await
-            .map_err(SeederError::GetSequencerRpcUrl)
+            .map_err(SeederError::GetTxOrdererRpcUrl)
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RegisterSequencer {
-    pub message: RegisterSequencerMessage,
+pub struct RegisterTxOrderer {
+    pub message: RegisterTxOrdererMessage,
     pub signature: Signature,
 }
 
-impl RegisterSequencer {
-    pub const METHOD_NAME: &'static str = "register_sequencer";
+impl RegisterTxOrderer {
+    pub const METHOD_NAME: &'static str = "register_tx_orderer";
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RegisterSequencerMessage {
+pub struct RegisterTxOrdererMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
@@ -169,17 +169,17 @@ pub struct RegisterSequencerMessage {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct DeregisterSequencer {
-    pub message: DeregisterSequencerMessage,
+pub struct DeregisterTxOrderer {
+    pub message: DeregisterTxOrdererMessage,
     pub signature: Signature,
 }
 
-impl DeregisterSequencer {
-    pub const METHOD_NAME: &'static str = "deregister_sequencer";
+impl DeregisterTxOrderer {
+    pub const METHOD_NAME: &'static str = "deregister_tx_orderer";
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DeregisterSequencerMessage {
+pub struct DeregisterTxOrdererMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
@@ -189,16 +189,16 @@ pub struct DeregisterSequencerMessage {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetSequencerRpcUrlList {
-    pub sequencer_address_list: Vec<String>,
+pub struct GetTxOrdererRpcUrlList {
+    pub tx_orderer_address_list: Vec<String>,
 }
 
-impl GetSequencerRpcUrlList {
-    pub const METHOD_NAME: &'static str = "get_sequencer_rpc_url_list";
+impl GetTxOrdererRpcUrlList {
+    pub const METHOD_NAME: &'static str = "get_tx_orderer_rpc_url_list";
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SequencerRpcInfo {
+pub struct TxOrdererRpcInfo {
     #[serde(serialize_with = "serialize_address")]
     pub address: Address,
 
@@ -206,7 +206,7 @@ pub struct SequencerRpcInfo {
     pub cluster_rpc_url: Option<String>,
 }
 
-impl Default for SequencerRpcInfo {
+impl Default for TxOrdererRpcInfo {
     fn default() -> Self {
         Self {
             address: Address::from_slice(ChainType::Ethereum, &[0u8; 20]).unwrap(),
@@ -217,22 +217,22 @@ impl Default for SequencerRpcInfo {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetSequencerRpcUrlListResponse {
-    pub sequencer_rpc_url_list: Vec<SequencerRpcInfo>,
+pub struct GetTxOrdererRpcUrlListResponse {
+    pub tx_orderer_rpc_url_list: Vec<TxOrdererRpcInfo>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetSequencerRpcUrl {
+pub struct GetTxOrdererRpcUrl {
     address: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetSequencerRpcUrlResponse {
-    pub sequencer_rpc_url: SequencerRpcInfo,
+pub struct GetTxOrdererRpcUrlResponse {
+    pub tx_orderer_rpc_url: TxOrdererRpcInfo,
 }
 
-impl GetSequencerRpcUrl {
-    pub const METHOD_NAME: &'static str = "get_sequencer_rpc_url";
+impl GetTxOrdererRpcUrl {
+    pub const METHOD_NAME: &'static str = "get_tx_orderer_rpc_url";
 }
 
 #[derive(Debug)]
@@ -240,8 +240,8 @@ pub enum SeederError {
     Initialize(radius_sdk::json_rpc::client::RpcClientError),
     Register(radius_sdk::json_rpc::client::RpcClientError),
     Deregister(radius_sdk::json_rpc::client::RpcClientError),
-    GetSequencerRpcUrlList(radius_sdk::json_rpc::client::RpcClientError),
-    GetSequencerRpcUrl(radius_sdk::json_rpc::client::RpcClientError),
+    GetTxOrdererRpcUrlList(radius_sdk::json_rpc::client::RpcClientError),
+    GetTxOrdererRpcUrl(radius_sdk::json_rpc::client::RpcClientError),
     SignMessage(radius_sdk::signature::SignatureError),
 }
 

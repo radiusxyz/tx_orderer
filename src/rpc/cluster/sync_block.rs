@@ -9,7 +9,7 @@ pub struct SyncBlock {
     pub rollup_signature: Signature,
 
     pub transaction_count: u64,
-    pub leader_sequencer_signature: Signature,
+    pub leader_tx_orderer_signature: Signature,
 }
 
 impl RpcParameter<AppState> for SyncBlock {
@@ -70,17 +70,18 @@ impl RpcParameter<AppState> for SyncBlock {
             tracing::error!("Signer not found for platform {:?}", rollup.platform);
             Error::SignerNotFound
         })?;
-        let sequencer_address = signer.address().clone();
-        let is_leader = sequencer_address == self.finalize_block_message.next_block_creator_address;
+        let tx_orderer_address = signer.address().clone();
+        let is_leader =
+            tx_orderer_address == self.finalize_block_message.next_block_creator_address;
 
-        let leader_sequencer_rpc_info = cluster
-            .get_sequencer_rpc_info(&self.finalize_block_message.next_block_creator_address)
+        let leader_tx_orderer_rpc_info = cluster
+            .get_tx_orderer_rpc_info(&self.finalize_block_message.next_block_creator_address)
             .ok_or_else(|| {
                 tracing::error!(
-                    "Sequencer RPC info not found for address {:?}",
+                    "TxOrderer RPC info not found for address {:?}",
                     self.finalize_block_message.next_block_creator_address
                 );
-                Error::SequencerInfoNotFound
+                Error::TxOrdererInfoNotFound
             })?;
 
         match RollupMetadata::get_mut(&self.finalize_block_message.rollup_id) {
@@ -92,7 +93,7 @@ impl RpcParameter<AppState> for SyncBlock {
                 rollup_metadata.is_leader = is_leader;
                 rollup_metadata.max_gas_limit = rollup.max_gas_limit;
                 rollup_metadata.current_gas = 0;
-                rollup_metadata.leader_sequencer_rpc_info = leader_sequencer_rpc_info;
+                rollup_metadata.leader_tx_orderer_rpc_info = leader_tx_orderer_rpc_info;
 
                 context
                     .merkle_tree_manager()
@@ -109,7 +110,7 @@ impl RpcParameter<AppState> for SyncBlock {
                         cluster_id: rollup.cluster_id,
                         platform_block_height: self.finalize_block_message.platform_block_height,
                         is_leader,
-                        leader_sequencer_rpc_info,
+                        leader_tx_orderer_rpc_info,
                         max_gas_limit: rollup.max_gas_limit,
                         current_gas: 0,
                     };
@@ -132,7 +133,7 @@ impl RpcParameter<AppState> for SyncBlock {
             self.finalize_block_message,
             rollup.encrypted_transaction_type,
             self.transaction_count,
-            self.leader_sequencer_signature,
+            self.leader_tx_orderer_signature,
         );
 
         Ok(())

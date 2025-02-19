@@ -2,10 +2,10 @@ use std::{env, path::PathBuf};
 
 use clap::{Parser, Subcommand};
 use radius_sdk::kvstore::KvStoreBuilder;
-use sequencer::{
+use serde::{Deserialize, Serialize};
+use tx_orderer::{
     error::Error, logger::PanicLog, migration::version_0_0_2::migrate_rollup_data, types::*,
 };
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Parser, Serialize)]
 #[command(author, about, long_about = None)]

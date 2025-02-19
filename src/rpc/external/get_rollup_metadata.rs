@@ -20,6 +20,12 @@ impl RpcParameter<AppState> for GetRollupMetadata {
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let rollup_metadata = RollupMetadata::get(&self.rollup_id)?;
 
+        tracing::info!(
+            "Get rollup metadata: rollup_id: {:?}, rollup_metadata: {:?}",
+            self.rollup_id,
+            rollup_metadata.clone()
+        );
+
         Ok(GetRollupMetadataResponse { rollup_metadata })
     }
 }

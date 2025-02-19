@@ -7,7 +7,7 @@ use super::prelude::*;
 use crate::{
     client::{
         liveness_service_manager::radius::{initialize_new_cluster, LivenessServiceManagerClient},
-        seeder::SequencerRpcInfo,
+        seeder::TxOrdererRpcInfo,
     },
     error::Error,
     state::AppState,
@@ -17,25 +17,25 @@ use crate::{
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
     #[serde(serialize_with = "serialize_address")]
-    pub sequencer_address: Address,
+    pub tx_orderer_address: Address,
 
     pub rollup_id_list: BTreeSet<String>,
-    pub sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
+    pub tx_orderer_rpc_infos: BTreeMap<usize, TxOrdererRpcInfo>,
 
     pub block_margin: u64,
 }
 
 impl Cluster {
     pub fn new(
-        sequencer_rpc_infos: BTreeMap<usize, SequencerRpcInfo>,
+        tx_orderer_rpc_infos: BTreeMap<usize, TxOrdererRpcInfo>,
         rollup_id_list: BTreeSet<String>,
-        sequencer_address: Address,
+        tx_orderer_address: Address,
         block_margin: u64,
     ) -> Self {
         Self {
-            sequencer_rpc_infos,
+            tx_orderer_rpc_infos,
             rollup_id_list,
-            sequencer_address,
+            tx_orderer_address,
             block_margin,
         }
     }
@@ -68,23 +68,23 @@ impl Cluster {
         Ok(())
     }
 
-    pub fn get_sequencer_address_list(&self) -> Vec<Address> {
-        self.sequencer_rpc_infos
+    pub fn get_tx_orderer_address_list(&self) -> Vec<Address> {
+        self.tx_orderer_rpc_infos
             .values()
-            .map(|sequencer_rpc_info| sequencer_rpc_info.address.clone())
+            .map(|tx_orderer_rpc_info| tx_orderer_rpc_info.address.clone())
             .collect()
     }
 
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
-        self.sequencer_rpc_infos
+        self.tx_orderer_rpc_infos
             .values()
-            .filter_map(|sequencer_rpc_info| {
-                if sequencer_rpc_info.address != self.sequencer_address {
-                    if sequencer_rpc_info.cluster_rpc_url.is_none() {
+            .filter_map(|tx_orderer_rpc_info| {
+                if tx_orderer_rpc_info.address != self.tx_orderer_address {
+                    if tx_orderer_rpc_info.cluster_rpc_url.is_none() {
                         return None;
                     }
 
-                    Some(sequencer_rpc_info.cluster_rpc_url.to_owned().unwrap())
+                    Some(tx_orderer_rpc_info.cluster_rpc_url.to_owned().unwrap())
                 } else {
                     None
                 }
@@ -93,15 +93,15 @@ impl Cluster {
     }
 
     pub fn get_others_external_rpc_url_list(&self) -> Vec<String> {
-        self.sequencer_rpc_infos
+        self.tx_orderer_rpc_infos
             .values()
-            .filter_map(|sequencer_rpc_info| {
-                if sequencer_rpc_info.address != self.sequencer_address {
-                    if sequencer_rpc_info.external_rpc_url.is_none() {
+            .filter_map(|tx_orderer_rpc_info| {
+                if tx_orderer_rpc_info.address != self.tx_orderer_address {
+                    if tx_orderer_rpc_info.external_rpc_url.is_none() {
                         return None;
                     }
 
-                    Some(sequencer_rpc_info.external_rpc_url.to_owned().unwrap())
+                    Some(tx_orderer_rpc_info.external_rpc_url.to_owned().unwrap())
                 } else {
                     None
                 }
@@ -109,26 +109,26 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_sequencer_rpc_info(&self, address: &Address) -> Option<SequencerRpcInfo> {
-        self.sequencer_rpc_infos
+    pub fn get_tx_orderer_rpc_info(&self, address: &Address) -> Option<TxOrdererRpcInfo> {
+        self.tx_orderer_rpc_infos
             .iter()
-            .find(|(_index, sequencer_rpc_info)| sequencer_rpc_info.address == address)
-            .map(|(_index, sequencer_rpc_info)| sequencer_rpc_info.clone())
+            .find(|(_index, tx_orderer_rpc_info)| tx_orderer_rpc_info.address == address)
+            .map(|(_index, tx_orderer_rpc_info)| tx_orderer_rpc_info.clone())
     }
 
-    pub fn register_sequencer(&mut self, index: usize, sequencer_rpc_info: SequencerRpcInfo) {
-        self.sequencer_rpc_infos.insert(index, sequencer_rpc_info);
+    pub fn register_tx_orderer(&mut self, index: usize, tx_orderer_rpc_info: TxOrdererRpcInfo) {
+        self.tx_orderer_rpc_infos.insert(index, tx_orderer_rpc_info);
     }
 
-    pub fn deregister_sequencer(&mut self, sequencer_address: &str) {
-        let sequencer_index = self
-            .sequencer_rpc_infos
+    pub fn deregister_tx_orderer(&mut self, tx_orderer_address: &str) {
+        let tx_orderer_index = self
+            .tx_orderer_rpc_infos
             .iter()
-            .find(|(_index, sequencer_rpc_info)| sequencer_rpc_info.address == sequencer_address)
-            .map(|(index, _sequencer)| *index);
+            .find(|(_index, tx_orderer_rpc_info)| tx_orderer_rpc_info.address == tx_orderer_address)
+            .map(|(index, _tx_orderer)| *index);
 
-        if let Some(sequencer_index) = sequencer_index {
-            self.sequencer_rpc_infos.remove(&sequencer_index);
+        if let Some(tx_orderer_index) = tx_orderer_index {
+            self.tx_orderer_rpc_infos.remove(&tx_orderer_index);
         }
     }
 
@@ -228,7 +228,7 @@ impl LivenessEventList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum LivenessEventType {
-    RegisteredSequencer(usize, SequencerRpcInfo),
-    DeregisteredSequencer(String),
+    RegisteredTxOrderer(usize, TxOrdererRpcInfo),
+    DeregisteredTxOrderer(String),
     AddedRollup(String, String),
 }
