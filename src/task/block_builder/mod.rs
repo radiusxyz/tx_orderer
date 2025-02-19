@@ -97,7 +97,7 @@ pub async fn sync_block(
         finalize_block_message,
         rollup_signature,
         transaction_count,
-        leader_tx_orderer_signature,
+        leader_sequencer_signature: leader_tx_orderer_signature,
     };
 
     let others_cluster_rpc_url_list = cluster.get_others_cluster_rpc_url_list();

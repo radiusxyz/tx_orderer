@@ -112,7 +112,7 @@ impl SeederClient {
         tx_orderer_address_list: Vec<String>,
     ) -> Result<GetTxOrdererRpcUrlListResponse, SeederError> {
         let parameter = GetTxOrdererRpcUrlList {
-            tx_orderer_address_list,
+            sequencer_address_list: tx_orderer_address_list,
         };
 
         self.inner
@@ -155,7 +155,7 @@ pub struct RegisterTxOrderer {
 }
 
 impl RegisterTxOrderer {
-    pub const METHOD_NAME: &'static str = "register_tx_orderer";
+    pub const METHOD_NAME: &'static str = "register_sequencer";
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -175,7 +175,7 @@ pub struct DeregisterTxOrderer {
 }
 
 impl DeregisterTxOrderer {
-    pub const METHOD_NAME: &'static str = "deregister_tx_orderer";
+    pub const METHOD_NAME: &'static str = "deregister_sequencer";
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -190,11 +190,11 @@ pub struct DeregisterTxOrdererMessage {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetTxOrdererRpcUrlList {
-    pub tx_orderer_address_list: Vec<String>,
+    pub sequencer_address_list: Vec<String>,
 }
 
 impl GetTxOrdererRpcUrlList {
-    pub const METHOD_NAME: &'static str = "get_tx_orderer_rpc_url_list";
+    pub const METHOD_NAME: &'static str = "get_sequencer_rpc_url_list";
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -218,7 +218,7 @@ impl Default for TxOrdererRpcInfo {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetTxOrdererRpcUrlListResponse {
-    pub tx_orderer_rpc_url_list: Vec<TxOrdererRpcInfo>,
+    pub sequencer_rpc_url_list: Vec<TxOrdererRpcInfo>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -228,11 +228,11 @@ pub struct GetTxOrdererRpcUrl {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetTxOrdererRpcUrlResponse {
-    pub tx_orderer_rpc_url: TxOrdererRpcInfo,
+    pub sequencer_rpc_url: TxOrdererRpcInfo,
 }
 
 impl GetTxOrdererRpcUrl {
-    pub const METHOD_NAME: &'static str = "get_tx_orderer_rpc_url";
+    pub const METHOD_NAME: &'static str = "get_sequencer_rpc_url";
 }
 
 #[derive(Debug)]

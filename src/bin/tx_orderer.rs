@@ -177,8 +177,8 @@ fn initialize_dkg_client(config: &Config) -> Result<DistributedKeyGenerationClie
 fn initialize_reward_manager_client(config: &Config) -> Result<RewardManagerClient, Error> {
     let reward_manager_client = RewardManagerClient::new(&config.reward_manager_rpc_url)?;
     tracing::info!(
-        "Distributed Key Generation client initialized: {:?}",
-        config.distributed_key_generation_rpc_url
+        "Distributed Reward Manager client initialized: {:?}",
+        config.reward_manager_rpc_url
     );
     Ok(reward_manager_client)
 }

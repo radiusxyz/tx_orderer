@@ -9,7 +9,7 @@ pub struct SyncBlock {
     pub rollup_signature: Signature,
 
     pub transaction_count: u64,
-    pub leader_tx_orderer_signature: Signature,
+    pub leader_sequencer_signature: Signature,
 }
 
 impl RpcParameter<AppState> for SyncBlock {
@@ -20,7 +20,7 @@ impl RpcParameter<AppState> for SyncBlock {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        tracing::debug!(
+        tracing::info!(
             "sync block - executor address: {:?}, rollup_id: {:?}, platform block height: {:?}, rollup block height: {:?}, transaction count: {:?}",
             self.finalize_block_message.executor_address.as_hex_string(),
             self.finalize_block_message.rollup_id,
@@ -133,7 +133,7 @@ impl RpcParameter<AppState> for SyncBlock {
             self.finalize_block_message,
             rollup.encrypted_transaction_type,
             self.transaction_count,
-            self.leader_tx_orderer_signature,
+            self.leader_sequencer_signature,
         );
 
         Ok(())
