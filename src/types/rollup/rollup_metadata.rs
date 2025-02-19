@@ -11,6 +11,8 @@ pub struct RollupMetadata {
     pub cluster_id: String,
     pub platform_block_height: u64,
     pub is_leader: bool,
+
+    #[serde(alias = "leader_sequencer_rpc_info")]
     pub leader_tx_orderer_rpc_info: TxOrdererRpcInfo,
     pub max_gas_limit: u64,
     pub current_gas: u64,

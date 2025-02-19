@@ -9,7 +9,9 @@ pub struct SyncBlock {
     pub rollup_signature: Signature,
 
     pub transaction_count: u64,
-    pub leader_sequencer_signature: Signature,
+
+    #[serde(alias = "leader_sequencer_signature")]
+    pub leader_tx_orderer_signature: Signature,
 }
 
 impl RpcParameter<AppState> for SyncBlock {
@@ -133,7 +135,7 @@ impl RpcParameter<AppState> for SyncBlock {
             self.finalize_block_message,
             rollup.encrypted_transaction_type,
             self.transaction_count,
-            self.leader_sequencer_signature,
+            self.leader_tx_orderer_signature,
         );
 
         Ok(())

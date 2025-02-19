@@ -403,7 +403,7 @@ async fn get_tx_orderer_rpc_infos(
             );
             e
         })?
-        .sequencer_rpc_url_list;
+        .tx_orderer_rpc_url_list;
 
     let tx_orderer_rpc_infos = tx_orderer_rpc_url_list
         .into_iter()

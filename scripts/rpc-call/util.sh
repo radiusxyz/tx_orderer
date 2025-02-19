@@ -11,6 +11,4 @@ update_env_file() {
       -e 's/sequencer/tx_orderer/' \
       -e 's/^SEQUENCER_INTERNAL_RPC_URL=/TX_ORDERER_INTERNAL_RPC_URL=/' \
       "$env_file"
-
-  echo "✅ Environment file updated successfully: $env_file"
 }

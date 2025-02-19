@@ -218,7 +218,8 @@ impl Default for TxOrdererRpcInfo {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetTxOrdererRpcUrlListResponse {
-    pub sequencer_rpc_url_list: Vec<TxOrdererRpcInfo>,
+    #[serde(alias = "sequencer_rpc_url_list")]
+    pub tx_orderer_rpc_url_list: Vec<TxOrdererRpcInfo>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

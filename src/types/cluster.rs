@@ -17,9 +17,12 @@ use crate::{
 #[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
     #[serde(serialize_with = "serialize_address")]
+    #[serde(alias = "sequencer_address")]
     pub tx_orderer_address: Address,
 
     pub rollup_id_list: BTreeSet<String>,
+
+    #[serde(alias = "sequencer_rpc_infos")]
     pub tx_orderer_rpc_infos: BTreeMap<usize, TxOrdererRpcInfo>,
 
     pub block_margin: u64,

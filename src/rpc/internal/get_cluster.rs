@@ -22,6 +22,13 @@ impl RpcParameter<AppState> for GetCluster {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
+        tracing::info!(
+            "Get cluster - platform: {:?}, service provider: {:?}, cluster id: {:?}",
+            self.platform,
+            self.service_provider,
+            self.cluster_id,
+        );
+
         let latest_cluster_block_height = LatestClusterBlockHeight::get_or(
             self.platform,
             self.service_provider,
