@@ -50,6 +50,7 @@ async fn main() -> Result<(), Error> {
     let cli = Cli::parse();
     match cli.command {
         Commands::Init { config_path } => {
+            tracing::info!("Start tx orderer");
             tracing_subscriber::fmt().init();
             ConfigPath::init(&config_path)?;
 

@@ -19,6 +19,4 @@ update_env_file() {
     echo -e "\n\n# Reward Manager" >> "$env_file"
     echo 'REWARD_MANAGER_RPC_URL="http://127.0.0.1:6100" # Please change this reward manager (external) rpc url.' >> "$env_file"
   fi
-
-  echo "✅ Environment file updated successfully: $env_file"
 }
