@@ -4,6 +4,7 @@ source $SCRIPT_PATH/env.sh
 
 echo "add_cluster"
 
+# For previous version
 TX_ORDERER_INTERNAL_RPC_URL=${TX_ORDERER_INTERNAL_RPC_URL:-$SEQUENCER_INTERNAL_RPC_URL}
 
 curl --location $TX_ORDERER_INTERNAL_RPC_URL \
