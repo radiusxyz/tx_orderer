@@ -1,11 +1,13 @@
 #!/bin/bash
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+# For previous version
+source $SCRIPT_PATH/util.sh
+update_env_file $SCRIPT_PATH/env.sh
+
 source $SCRIPT_PATH/env.sh
 
 echo "add_sequencing_info (related to liveness)"
-
-# For previous version
-TX_ORDERER_INTERNAL_RPC_URL=${TX_ORDERER_INTERNAL_RPC_URL:-$SEQUENCER_INTERNAL_RPC_URL}
 
 curl --location $TX_ORDERER_INTERNAL_RPC_URL \
 --header 'Content-Type: application/json' \
