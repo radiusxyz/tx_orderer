@@ -30,7 +30,7 @@ SEQUENCER_CLUSTER_RPC_URL="http://127.0.0.1:5000"  # External IP - Please change
 SEQUENCER_EXTERNAL_RPC_URL="http://127.0.0.1:3000" # External IP - Please change this IP.
 
 # DKG (for ENCRYPTED_TRANSACTION_TYPE=skde)
-DISTRIBUTED_KEY_GENERATOR_RPC_URL="http://127.0.0.1:7100" # Please change this distribured key generator (external) rpc url.
+KEY_GENERATOR_RPC_URL="http://127.0.0.1:7100" # Please change this distribured key generator (external) rpc url.
 
 # Seeder
 SEEDER_RPC_URL="http://127.0.0.1:6000" # Please change this seeder (external) rpc url.
