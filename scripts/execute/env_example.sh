@@ -33,6 +33,6 @@ SEQUENCER_EXTERNAL_RPC_URL="http://127.0.0.1:3000" # External IP - Please change
 KEY_GENERATOR_EXTERNAL_RPC_URL="http://127.0.0.1:7100" # Please change this distribured key generator (external) rpc url.
 
 # Seeder
-SEEDER_RPC_URL="http://127.0.0.1:6000" # Please change this seeder (external) rpc url.
+SEEDER_EXTERNAL_RPC_URL="http://127.0.0.1:6000" # Please change this seeder (external) rpc url.
 
 
