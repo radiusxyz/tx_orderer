@@ -273,7 +273,7 @@ pub async fn initialize_new_cluster(
         let mut retries = 5;
         while retries > 0 {
             let block_height = platform_block_height - offset;
-            tracing::debug!(
+            tracing::info!(
                 "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?}..",
                 liveness_service_manager_client.platform(),
                 liveness_service_manager_client.service_provider(),
