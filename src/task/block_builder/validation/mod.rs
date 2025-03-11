@@ -15,19 +15,13 @@ pub async fn submit_block_commitment(
     block_commitment: &BlockCommitment,
 ) {
     let block_commitment = block_commitment.as_bytes().unwrap();
-    if (rollup_block_height % 201600) == 0 {
+    if (rollup_block_height % 10) == 0 {
         tracing::info!(
             "Submit block commitment - rollup_id: {:?}, rollup_block_height: {:?}, block_commitment: {:?}",
             rollup.rollup_id,
             rollup_block_height,
             block_commitment
         );
-
-        let (vault_address_list, operator_merkle_root_list, total_staker_reward_list) = context
-            .reward_manager_client()
-            .distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
-            .await
-            .unwrap();
 
         match validation_info {
             // TODO: we have to manage the nonce for the register block commitment.
@@ -53,11 +47,28 @@ pub async fn submit_block_commitment(
                     .unwrap();
             }
             ValidationInfo::Symbiotic(_) => {
+                let (
+                    reference_task_index,
+                    vault_address_list,
+                    operator_merkle_root_list,
+                    total_staker_reward_list,
+                    total_operator_reward_list,
+                ) = context
+                    .reward_manager_client()
+                    .get_distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
+                    .await
+                    .unwrap();
+
                 let validation_service_manager_client: validation_service_manager::symbiotic::ValidationServiceManagerClient =
                     context
                         .get_validation_service_manager_client(validation_platform, validation_service_provider)
                         .await
                         .unwrap();
+
+                let vault_address_list = vault_address_list
+                    .iter()
+                    .map(|address| address.as_hex_string())
+                    .collect::<Vec<_>>();
 
                 for _ in 0..10 {
                     match validation_service_manager_client
@@ -67,6 +78,11 @@ pub async fn submit_block_commitment(
                             &rollup.rollup_id,
                             rollup_block_height,
                             &block_commitment,
+                            reference_task_index,
+                            vault_address_list.clone(),
+                            operator_merkle_root_list.clone(),
+                            total_staker_reward_list.clone(),
+                            total_operator_reward_list.clone(),
                         )
                         .await
                         .map_err(|error| error.to_string())

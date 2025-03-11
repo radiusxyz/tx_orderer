@@ -152,11 +152,39 @@ async fn callback(
         tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment);
 
         if block.block_creator_address != context.publisher().address() {
-            let (vault_address_list, operator_merkle_root_list, total_staker_reward_list) =
-                reward_manager_client
-                    .distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
+            let (
+                reward_task_id,
+                vault_address_list,
+                operator_merkle_root_list,
+                total_staker_reward_list,
+                total_operator_reward_list,
+            ) = reward_manager_client
+                .get_distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
+                .await
+                .unwrap();
+
+            let reference_task_index = event.referenceTaskIndex.try_into().unwrap();
+            if operator_merkle_root_list.len() != 0 {
+                let (
+                    check_vault_address_list,
+                    check_operator_merkle_root_list,
+                    check_total_staker_reward_list,
+                    check_total_operator_reward_list,
+                ) = context
+                    .publisher()
+                    .get_distribution_data(&rollup.cluster_id, &rollup.rollup_id, reward_task_id)
                     .await
                     .unwrap();
+
+                if vault_address_list != check_vault_address_list
+                    || operator_merkle_root_list != check_operator_merkle_root_list
+                    || total_staker_reward_list != check_total_staker_reward_list
+                    || total_operator_reward_list != check_total_operator_reward_list
+                {
+                    tracing::warn!("[Symbiotic] Distribution data mismatch..");
+                    return;
+                }
+            }
 
             for _ in 0..10 {
                 match context
@@ -164,7 +192,7 @@ async fn callback(
                     .respond_to_task(
                         &rollup.cluster_id,
                         &rollup.rollup_id,
-                        event.referenceTaskIndex.try_into().unwrap(),
+                        reference_task_index,
                         true,
                     )
                     .await
