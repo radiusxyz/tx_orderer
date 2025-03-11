@@ -1,6 +1,6 @@
 use radius_sdk::signature::PrivateKeySigner;
 
-use crate::rpc::prelude::*;
+use crate::{client::liveness_service_manager::radius::initialize_new_cluster, rpc::prelude::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AddCluster {
@@ -40,6 +40,43 @@ impl RpcParameter<AppState> for AddCluster {
                         &signer,
                     )
                     .await?;
+
+                let liveness_service_manager_client: liveness_service_manager::radius::LivenessServiceManagerClient = context
+                .get_liveness_service_manager_client::<liveness_service_manager::radius::LivenessServiceManagerClient>(
+                    self.platform,
+                    self.service_provider,
+                )
+                .await?;
+
+                let platform_block_height = liveness_service_manager_client
+                    .publisher()
+                    .get_block_number()
+                    .await
+                    .expect("Failed to get block number");
+
+                let block_margin = liveness_service_manager_client
+                    .publisher()
+                    .get_block_margin()
+                    .await
+                    .expect("Failed to get block margin")
+                    .try_into()
+                    .expect("Failed to convert block margin");
+
+                println!(
+                    "stompesi - platform_block_height: {:?}",
+                    platform_block_height
+                );
+                println!("stompesi - block_margin: {:?}", block_margin);
+
+                let _ = initialize_new_cluster(
+                    context,
+                    &liveness_service_manager_client,
+                    &self.cluster_id,
+                    platform_block_height,
+                    block_margin,
+                )
+                .await
+                .expect("Failed to initialize new cluster");
 
                 let mut cluster_id_list = ClusterIdList::get_mut_or(
                     self.platform,
