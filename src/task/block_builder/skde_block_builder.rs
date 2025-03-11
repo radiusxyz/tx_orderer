@@ -104,18 +104,29 @@ pub async fn skde_build_block(
                             is_direct_sent = false;
                         }
                         Err(_) => {
-                            let (raw_transaction, is_direct_sent_result) =
-                                fetch_raw_transaction_info(
-                                    context.rpc_client(),
-                                    &cluster,
-                                    &rollup_id,
-                                    rollup_block_height,
-                                    i as u64,
-                                )
-                                .await
-                                .unwrap();
-                            final_raw_transaction_list[i] = raw_transaction;
-                            is_direct_sent = is_direct_sent_result;
+                            match fetch_raw_transaction_info(
+                                context.rpc_client(),
+                                &cluster,
+                                &rollup_id,
+                                rollup_block_height,
+                                i as u64,
+                            )
+                            .await
+                            {
+                                Ok((raw_transaction, is_direct_sent_result)) => {
+                                    final_raw_transaction_list[i] = raw_transaction;
+                                    is_direct_sent = is_direct_sent_result;
+                                }
+                                Err(error) => {
+                                    tracing::error!(
+                                        "Failed to fetch raw transaction for Rollup ID: {}, Block Height: {}, Order: {}. Error: {:?}",
+                                        rollup_id,
+                                        rollup_block_height,
+                                        i,
+                                        error
+                                    );
+                                }
+                            }
                         }
                     }
                 }

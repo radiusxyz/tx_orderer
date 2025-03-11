@@ -75,7 +75,7 @@ pub async fn fetch_raw_transaction_info(
         .await
     {
         Ok(rpc_response) => {
-            tracing::info!(
+            tracing::debug!(
                 "Successfully fetched raw transaction for Rollup ID: {}, Block Height: {}, Order: {}",
                 parameter.rollup_id, parameter.rollup_block_height, parameter.transaction_order
             );
@@ -142,7 +142,7 @@ pub async fn fetch_encrypted_transaction(
             rpc_response
         })
         .map_err(|error| {
-            tracing::error!(
+            tracing::debug!(
                 rollup_id = %parameter.rollup_id,
                 block_height = parameter.rollup_block_height,
                 transaction_order = parameter.transaction_order,
