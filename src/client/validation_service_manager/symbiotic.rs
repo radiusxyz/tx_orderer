@@ -161,7 +161,7 @@ async fn callback(
             ) = reward_manager_client
                 .get_distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
                 .await
-                .unwrap();
+                .unwrap_or((0, vec![], vec![], vec![], vec![]));
 
             let reference_task_index = event.referenceTaskIndex.try_into().unwrap();
             if operator_merkle_root_list.len() != 0 {
