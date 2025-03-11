@@ -40,9 +40,14 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
         let mut rollup_metadata = RollupMetadata::get_mut(&self.message.rollup_id)?;
 
         // Verify the leader signature
-        let leader_address = &rollup_metadata.leader_tx_orderer_rpc_info.address;
-        self.signature
-            .verify_message(rollup.platform.into(), &self.message, leader_address)?;
+        let leader_tx_orderer_address = &rollup_metadata
+            .leader_tx_orderer_rpc_info
+            .tx_orderer_address;
+        self.signature.verify_message(
+            rollup.platform.into(),
+            &self.message,
+            leader_tx_orderer_address,
+        )?;
 
         // Check the rollup block height
         if self.message.rollup_block_height != rollup_metadata.rollup_block_height {

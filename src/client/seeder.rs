@@ -50,7 +50,7 @@ impl SeederClient {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
-            address: signer.address().to_owned(),
+            tx_orderer_address: signer.address().to_owned(),
             external_rpc_url: external_rpc_url.to_owned(),
             cluster_rpc_url: cluster_rpc_url.to_owned(),
         };
@@ -88,7 +88,7 @@ impl SeederClient {
             platform,
             service_provider,
             cluster_id: cluster_id.to_owned(),
-            address: signer.address().to_owned(),
+            tx_orderer_address: signer.address().to_owned(),
         };
         let signature = signer
             .sign_message(&message)
@@ -107,11 +107,11 @@ impl SeederClient {
             .map_err(SeederError::Deregister)
     }
 
-    pub async fn get_tx_orderer_rpc_url_list(
+    pub async fn get_tx_orderer_rpc_info_list(
         &self,
         tx_orderer_address_list: Vec<String>,
-    ) -> Result<GetTxOrdererRpcUrlListResponse, SeederError> {
-        let parameter = GetTxOrdererRpcUrlList {
+    ) -> Result<GetTxOrdererRpcInfoListResponse, SeederError> {
+        let parameter = GetTxOrdererRpcInfoList {
             tx_orderer_address_list,
         };
 
@@ -119,32 +119,30 @@ impl SeederClient {
             .rpc_client
             .request(
                 &self.inner.rpc_url,
-                GetTxOrdererRpcUrlList::METHOD_NAME,
+                GetTxOrdererRpcInfoList::METHOD_NAME,
                 &parameter,
                 Id::Null,
             )
             .await
-            .map_err(SeederError::GetTxOrdererRpcUrlList)
+            .map_err(SeederError::GetTxOrdererInfoList)
     }
 
-    pub async fn get_tx_orderer_rpc_url(
+    pub async fn get_tx_orderer_rpc_info(
         &self,
         tx_orderer_address: String,
-    ) -> Result<GetTxOrdererRpcUrlResponse, SeederError> {
-        let parameter = GetTxOrdererRpcUrl {
-            address: tx_orderer_address,
-        };
+    ) -> Result<GetTxOrdererRpcInfoResponse, SeederError> {
+        let parameter = GetTxOrdererRpcInfo { tx_orderer_address };
 
         self.inner
             .rpc_client
             .request(
                 &self.inner.rpc_url,
-                GetTxOrdererRpcUrl::METHOD_NAME,
+                GetTxOrdererRpcInfo::METHOD_NAME,
                 &parameter,
                 Id::Null,
             )
             .await
-            .map_err(SeederError::GetTxOrdererRpcUrl)
+            .map_err(SeederError::GetTxOrdererInfo)
     }
 }
 
@@ -163,7 +161,7 @@ pub struct RegisterTxOrdererMessage {
     pub platform: Platform,
     pub service_provider: ServiceProvider,
     pub cluster_id: String,
-    pub address: Address,
+    pub tx_orderer_address: Address,
     pub external_rpc_url: String,
     pub cluster_rpc_url: String,
 }
@@ -185,22 +183,22 @@ pub struct DeregisterTxOrdererMessage {
     pub cluster_id: String,
 
     #[serde(serialize_with = "serialize_address")]
-    pub address: Address,
+    pub tx_orderer_address: Address,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetTxOrdererRpcUrlList {
+pub struct GetTxOrdererRpcInfoList {
     pub tx_orderer_address_list: Vec<String>,
 }
 
-impl GetTxOrdererRpcUrlList {
-    pub const METHOD_NAME: &'static str = "get_tx_orderer_rpc_url_list";
+impl GetTxOrdererRpcInfoList {
+    pub const METHOD_NAME: &'static str = "get_tx_orderer_rpc_info_list";
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TxOrdererRpcInfo {
     #[serde(serialize_with = "serialize_address")]
-    pub address: Address,
+    pub tx_orderer_address: Address,
 
     pub external_rpc_url: Option<String>,
     pub cluster_rpc_url: Option<String>,
@@ -209,7 +207,7 @@ pub struct TxOrdererRpcInfo {
 impl Default for TxOrdererRpcInfo {
     fn default() -> Self {
         Self {
-            address: Address::from_slice(ChainType::Ethereum, &[0u8; 20]).unwrap(),
+            tx_orderer_address: Address::from_slice(ChainType::Ethereum, &[0u8; 20]).unwrap(),
             external_rpc_url: None,
             cluster_rpc_url: None,
         }
@@ -217,22 +215,22 @@ impl Default for TxOrdererRpcInfo {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetTxOrdererRpcUrlListResponse {
-    pub tx_orderer_rpc_url_list: Vec<TxOrdererRpcInfo>,
+pub struct GetTxOrdererRpcInfoListResponse {
+    pub tx_orderer_rpc_info_list: Vec<TxOrdererRpcInfo>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetTxOrdererRpcUrl {
-    address: String,
+pub struct GetTxOrdererRpcInfo {
+    tx_orderer_address: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetTxOrdererRpcUrlResponse {
-    pub tx_orderer_rpc_url: TxOrdererRpcInfo,
+pub struct GetTxOrdererRpcInfoResponse {
+    pub tx_orderer_rpc_info: TxOrdererRpcInfo,
 }
 
-impl GetTxOrdererRpcUrl {
-    pub const METHOD_NAME: &'static str = "get_tx_orderer_rpc_url";
+impl GetTxOrdererRpcInfo {
+    pub const METHOD_NAME: &'static str = "get_tx_orderer_rpc_info";
 }
 
 #[derive(Debug)]
@@ -240,8 +238,8 @@ pub enum SeederError {
     Initialize(radius_sdk::json_rpc::client::RpcClientError),
     Register(radius_sdk::json_rpc::client::RpcClientError),
     Deregister(radius_sdk::json_rpc::client::RpcClientError),
-    GetTxOrdererRpcUrlList(radius_sdk::json_rpc::client::RpcClientError),
-    GetTxOrdererRpcUrl(radius_sdk::json_rpc::client::RpcClientError),
+    GetTxOrdererInfoList(radius_sdk::json_rpc::client::RpcClientError),
+    GetTxOrdererInfo(radius_sdk::json_rpc::client::RpcClientError),
     SignMessage(radius_sdk::signature::SignatureError),
 }
 

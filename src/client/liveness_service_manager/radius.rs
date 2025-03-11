@@ -390,9 +390,9 @@ async fn get_tx_orderer_rpc_infos(
         .map(|a| a.to_string())
         .collect();
 
-    let tx_orderer_rpc_url_list = liveness_service_manager_client
+    let tx_orderer_rpc_info_list = liveness_service_manager_client
         .seeder()
-        .get_tx_orderer_rpc_url_list(tx_orderer_address_list)
+        .get_tx_orderer_rpc_info_list(tx_orderer_address_list)
         .await
         .map_err(|e| {
             tracing::error!(
@@ -403,9 +403,9 @@ async fn get_tx_orderer_rpc_infos(
             );
             e
         })?
-        .tx_orderer_rpc_url_list;
+        .tx_orderer_rpc_info_list;
 
-    let tx_orderer_rpc_infos = tx_orderer_rpc_url_list
+    let tx_orderer_rpc_infos = tx_orderer_rpc_info_list
         .into_iter()
         .enumerate()
         .collect::<BTreeMap<usize, TxOrdererRpcInfo>>();

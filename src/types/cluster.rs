@@ -71,7 +71,7 @@ impl Cluster {
     pub fn get_tx_orderer_address_list(&self) -> Vec<Address> {
         self.tx_orderer_rpc_infos
             .values()
-            .map(|tx_orderer_rpc_info| tx_orderer_rpc_info.address.clone())
+            .map(|tx_orderer_rpc_info| tx_orderer_rpc_info.tx_orderer_address.clone())
             .collect()
     }
 
@@ -79,7 +79,7 @@ impl Cluster {
         self.tx_orderer_rpc_infos
             .values()
             .filter_map(|tx_orderer_rpc_info| {
-                if tx_orderer_rpc_info.address != self.tx_orderer_address {
+                if tx_orderer_rpc_info.tx_orderer_address != self.tx_orderer_address {
                     if tx_orderer_rpc_info.cluster_rpc_url.is_none() {
                         return None;
                     }
@@ -96,7 +96,7 @@ impl Cluster {
         self.tx_orderer_rpc_infos
             .values()
             .filter_map(|tx_orderer_rpc_info| {
-                if tx_orderer_rpc_info.address != self.tx_orderer_address {
+                if tx_orderer_rpc_info.tx_orderer_address != self.tx_orderer_address {
                     if tx_orderer_rpc_info.external_rpc_url.is_none() {
                         return None;
                     }
@@ -109,10 +109,15 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_tx_orderer_rpc_info(&self, address: &Address) -> Option<TxOrdererRpcInfo> {
+    pub fn get_tx_orderer_rpc_info(
+        &self,
+        tx_orderer_address: &Address,
+    ) -> Option<TxOrdererRpcInfo> {
         self.tx_orderer_rpc_infos
             .iter()
-            .find(|(_index, tx_orderer_rpc_info)| tx_orderer_rpc_info.address == address)
+            .find(|(_index, tx_orderer_rpc_info)| {
+                tx_orderer_rpc_info.tx_orderer_address == tx_orderer_address
+            })
             .map(|(_index, tx_orderer_rpc_info)| tx_orderer_rpc_info.clone())
     }
 
@@ -124,7 +129,9 @@ impl Cluster {
         let tx_orderer_index = self
             .tx_orderer_rpc_infos
             .iter()
-            .find(|(_index, tx_orderer_rpc_info)| tx_orderer_rpc_info.address == tx_orderer_address)
+            .find(|(_index, tx_orderer_rpc_info)| {
+                tx_orderer_rpc_info.tx_orderer_address == tx_orderer_address
+            })
             .map(|(index, _tx_orderer)| *index);
 
         if let Some(tx_orderer_index) = tx_orderer_index {

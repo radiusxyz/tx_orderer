@@ -38,9 +38,15 @@ impl RpcParameter<AppState> for SyncRawTransaction {
         let mut rollup_metadata = RollupMetadata::get_mut(&self.message.rollup_id)?;
 
         // Verify the leader signature
-        let leader_address = &rollup_metadata.leader_tx_orderer_rpc_info.address;
+        let leader_tx_orderer_address = &rollup_metadata
+            .leader_tx_orderer_rpc_info
+            .tx_orderer_address;
         self.signature
-            .verify_message(rollup.platform.into(), &self.message, leader_address)
+            .verify_message(
+                rollup.platform.into(),
+                &self.message,
+                leader_tx_orderer_address,
+            )
             .map_err(|error| {
                 tracing::error!("Failed to verify the leader signature: {:?}", error);
                 Error::InvalidSignature
