@@ -9,6 +9,8 @@ use tokio::time::{sleep, Duration};
 
 use crate::{error::Error, state::AppState, types::*};
 
+const LOG_TARGET: &str = "client::validation_service_manager::eigenlayer";
+
 pub struct ValidationServiceManagerClient {
     inner: Arc<ValidationServiceManagerClientInner>,
 }
@@ -97,7 +99,7 @@ impl ValidationServiceManagerClient {
                     validation_info,
                     signing_key,
                 )
-                .unwrap();
+                .expect("Failed to initialize `EigenLayer` validation service manager client");
 
                 context
                     .add_validation_service_manager_client(
@@ -106,10 +108,11 @@ impl ValidationServiceManagerClient {
                         validation_service_manager_client.clone(),
                     )
                     .await
-                    .unwrap();
+                    .expect("Failed to add validation service manager client");
 
                 tracing::info!(
-                    "Initializing EigenLayer validation event listener for {:?}, {:?}..",
+                    target: LOG_TARGET,
+                    "Initializing validation event listener for {:?}, {:?}..",
                     platform,
                     validation_service_provider
                 );
@@ -117,7 +120,7 @@ impl ValidationServiceManagerClient {
                     .subscriber()
                     .initialize_event_handler(callback, validation_service_manager_client.clone())
                     .await
-                    .unwrap();
+                    .expect("Failed to initialize event handler");
             }
         });
 
@@ -139,7 +142,17 @@ impl ValidationServiceManagerClient {
 async fn callback(event: Avs::NewTaskCreated, context: ValidationServiceManagerClient) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = Block::get(&rollup.rollup_id, event.task.blockNumber).unwrap();
+        let block = match Block::get(&rollup.rollup_id, event.task.blockNumber) {
+            Ok(block) => block,
+            Err(err) => {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    "Failed to get block: {:?}",
+                    err
+                );
+                return;
+            }
+        };
 
         if block.block_creator_address != context.publisher().address() {
             let task = IValidationServiceManager::Task {
@@ -150,12 +163,23 @@ async fn callback(event: Avs::NewTaskCreated, context: ValidationServiceManagerC
                 taskCreatedBlock: event.taskCreatedBlock,
             };
 
-            let transaction_hash = context
+            let transaction_hash = match context
                 .publisher()
                 .respond_to_task(task, event.taskIndex, Bytes::from_iter(&[0_u8; 64]))
                 .await
-                .unwrap();
-            tracing::info!("[EigenLayer] respond_to_task: {:?}", transaction_hash);
+            {
+                Ok(hash) => hash,
+                Err(err) => {
+                    tracing::error!("Failed to callback respond to task: {:?}", err);
+                    return;
+                }
+            };
+
+            tracing::info!(
+                target: LOG_TARGET,
+                "callback response: {:?}",
+                transaction_hash
+            );
         }
     }
 }

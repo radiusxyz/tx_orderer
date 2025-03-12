@@ -6,6 +6,8 @@ use crate::{
     types::*,
 };
 
+const LOG_TARGET: &str = "rpc::external::send_encrypted_transaction";
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
     pub rollup_id: String,
@@ -116,6 +118,7 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
                 Ok(response) => Ok(response),
                 Err(error) => {
                     tracing::error!(
+                        target: LOG_TARGET,
                         "Send encrypted transaction - leader external rpc error: {:?}",
                         error
                     );
@@ -154,35 +157,51 @@ pub fn sync_encrypted_transaction(
     encrypted_transaction: EncryptedTransaction,
     order_commitment: OrderCommitment,
 ) {
+    let other_cluster_rpc_url_list = cluster.get_others_cluster_rpc_url_list();
+    if other_cluster_rpc_url_list.is_empty() {
+        return;
+    }
     tokio::spawn(async move {
-        let other_cluster_rpc_url_list: Vec<String> = cluster.get_others_cluster_rpc_url_list();
+        let message = SyncEncryptedTransactionMessage {
+            rollup_id,
+            rollup_block_height,
+            transaction_order,
+            encrypted_transaction,
+            order_commitment,
+        };
+        let signature = match context
+            .get_signer(platform)
+            .await
+            .map_err(|e| tracing::error!("Failed to get signer: {}", e))
+            .and_then(|signer| {
+                signer
+                    .sign_message(&message)
+                    .map_err(|e| tracing::error!("Failed to sign message: {}", e))
+            }) {
+            Ok(signature) => signature,
+            Err(_) => return,
+        };
 
-        if !other_cluster_rpc_url_list.is_empty() {
-            let message = SyncEncryptedTransactionMessage {
-                rollup_id,
-                rollup_block_height,
-                transaction_order,
-                encrypted_transaction,
-                order_commitment,
-            };
-            let signature = context
-                .get_signer(platform)
-                .await
-                .unwrap()
-                .sign_message(&message)
-                .unwrap();
-            let rpc_self = SyncEncryptedTransaction { message, signature };
+        let rpc_self = SyncEncryptedTransaction { message, signature };
 
-            context
-                .rpc_client()
-                .multicast(
-                    other_cluster_rpc_url_list,
-                    SyncEncryptedTransaction::method(),
-                    &rpc_self,
-                    Id::Null,
-                )
-                .await
-                .unwrap();
+        match context
+            .rpc_client()
+            .multicast(
+                other_cluster_rpc_url_list,
+                SyncEncryptedTransaction::method(),
+                &rpc_self,
+                Id::Null,
+            )
+            .await
+        {
+            Ok(_) => (),
+            Err(e) => {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    "Failed to send encrypted transaction: {}",
+                    e
+                );
+            }
         }
     });
 }
@@ -211,7 +230,7 @@ pub async fn issue_order_commitment(
                 block_height: rollup_block_height,
                 transaction_hash: transaction_hash.as_string(),
                 transaction_order,
-                pre_merkle_path: pre_merkle_path,
+                pre_merkle_path,
             };
             let order_commitment = SignOrderCommitment {
                 data: order_commitment_data.clone(),

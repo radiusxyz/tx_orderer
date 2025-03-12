@@ -21,7 +21,6 @@ pub enum Error {
     RewardManager(crate::client::reward_manager::RewardManagerError),
     Seeder(crate::client::seeder::SeederError),
     Profiler(crate::profiler::ProfilerError),
-
     MerkleTreeDoesNotExist(String),
     InitializeNewCluster(Box<dyn std::error::Error>),
     EmptyLeader,
@@ -44,10 +43,8 @@ pub enum Error {
     NotExistRollupMetadata,
     MutexError,
     NoEndpointsAvailable,
-
     Decryption,
     Deserialize,
-
     Convert,
     InvalidSignature,
     InvalidTransaction,
@@ -55,6 +52,7 @@ pub enum Error {
     RpcServerTerminated,
     DatabaseVersionMismatch,
     Parse,
+    GeneralError(String),
 }
 
 unsafe impl Send for Error {}
@@ -66,6 +64,30 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<String> for Error {
+    fn from(value: String) -> Self {
+        Self::GeneralError(value)
+    }
+}
+
+impl From<radius_sdk::kvstore::KvStoreError> for Error {
+    fn from(value: radius_sdk::kvstore::KvStoreError) -> Self {
+        Self::KvStoreError(value)
+    }
+}
+
+impl From<radius_sdk::kvstore::CachedKvStoreError> for Error {
+    fn from(value: radius_sdk::kvstore::CachedKvStoreError) -> Self {
+        Self::CachedKvStore(value)
+    }
+}
+
+impl From<radius_sdk::signature::SignatureError> for Error {
+    fn from(value: radius_sdk::signature::SignatureError) -> Self {
+        Self::Signature(value)
+    }
+}
 
 impl From<crate::types::ConfigError> for Error {
     fn from(value: crate::types::ConfigError) -> Self {
