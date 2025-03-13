@@ -5,6 +5,8 @@ use tokio::sync::Mutex;
 
 use crate::{error::Error, types::*, util::fetch_raw_transaction_info};
 
+const LOG_TARGET: &str = "tx-orderer::merkle-tree-manager";
+
 pub struct MerkleTreeManager {
     inner: Arc<Mutex<HashMap<String, MerkleTree>>>,
 }
@@ -29,26 +31,25 @@ impl MerkleTreeManager {
     pub async fn init(rpc_client: &RpcClient) -> Self {
         let merkle_tree_manager = Self::default();
 
-        let rollup_id_list = RollupIdList::get_or(RollupIdList::default).unwrap();
-        for rollup_id in rollup_id_list.iter() {
+        let rollup_ids = RollupIdList::get().map_or(Default::default(), |ids| ids);
+        for rollup_id in rollup_ids.iter() {
             let merkle_tree = MerkleTree::new();
-
             if let Some(rollup_metadata) = RollupMetadata::get(rollup_id).ok() {
                 if rollup_metadata.transaction_order > 0 {
                     tracing::info!(
+                        target: LOG_TARGET,
                         "Building merkle tree for rollup - rollup_id: {:?} / rollup_block_height: {:?} / transaction_order: {:?}",
                         rollup_id,
                         rollup_metadata.rollup_block_height,
                         rollup_metadata.transaction_order
                     );
                     let rollup = Rollup::get(rollup_id).unwrap();
-                    let latest_cluster_block_height = LatestClusterBlockHeight::get_or(
+                    let latest_cluster_block_height = LatestClusterBlockHeight::get(
                         rollup.platform,
                         rollup.service_provider,
                         &rollup.cluster_id,
-                        LatestClusterBlockHeight::default,
                     )
-                    .unwrap();
+                    .map_or(Default::default(), |lcbh| lcbh);
 
                     let cluster = Cluster::get(
                         rollup.platform,

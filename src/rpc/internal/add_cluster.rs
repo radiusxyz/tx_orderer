@@ -30,7 +30,7 @@ impl RpcParameter<AppState> for AddCluster {
                 let signing_key = &context.config().signing_key;
                 let signer = PrivateKeySigner::from_str(self.platform.into(), signing_key)?;
 
-                seeder_client
+                match seeder_client
                     .register_tx_orderer(
                         self.platform,
                         self.service_provider,
@@ -39,7 +39,16 @@ impl RpcParameter<AppState> for AddCluster {
                         &context.config().cluster_rpc_url,
                         &signer,
                     )
-                    .await?;
+                    .await {
+                        Ok(_) => (),
+                        Err(e) => {
+                            tracing::error!(
+                                "Something wrong with register tx_orderer: {}",
+                                e
+                            );
+                            std::process::exit(1);
+                    }
+                }
 
                 let liveness_service_manager_client: liveness_service_manager::radius::LivenessServiceManagerClient = context
                 .get_liveness_service_manager_client::<liveness_service_manager::radius::LivenessServiceManagerClient>(

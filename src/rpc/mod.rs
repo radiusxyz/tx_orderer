@@ -1,6 +1,7 @@
 pub mod cluster;
 pub mod external;
 pub mod internal;
+pub mod common;
 pub(crate) mod prelude {
     pub use radius_sdk::{
         json_rpc::{

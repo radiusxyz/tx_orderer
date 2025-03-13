@@ -14,7 +14,7 @@ use tx_orderer::{
     error::{self, Error},
     logger::PanicLog,
     merkle_tree_manager::MerkleTreeManager,
-    rpc::{cluster, external, internal},
+    rpc::{cluster, external, internal, common},
     state::AppState,
     types::*,
     util::initialize_logger,
@@ -310,6 +310,7 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> 
         .register_rpc_method::<external::GetBlock>()?
         .register_rpc_method::<external::GetBlockHeight>()?
         .register_rpc_method::<external::GetVersion>()?
+        .register_rpc_method::<common::Health>()?
         .init(external_rpc_url)
         .await?;
 
