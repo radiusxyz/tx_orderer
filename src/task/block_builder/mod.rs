@@ -118,8 +118,10 @@ pub async fn sync_block(
         .await
     {
         Ok(_) => tracing::info!(
-            "Successfully synchronized block to {:?}",
-            others_cluster_rpc_url_list
+            "Successfully synchronized block. - rollup id: {:?}, block number: {:?}, transaction count: {:?}",
+            parameter.finalize_block_message.rollup_id,
+            parameter.finalize_block_message.rollup_block_height,
+            transaction_count          
         ),
         Err(e) => tracing::error!("Failed to synchronize block: {:?}", e),
     }

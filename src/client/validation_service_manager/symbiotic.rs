@@ -186,20 +186,10 @@ async fn callback(
                 operator_merkle_root_list,
                 total_staker_reward_list,
                 total_operator_reward_list,
-            ) = match reward_manager_client
+            ) = reward_manager_client
                 .get_distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
                 .await
-            {
-                Ok(data) => data,
-                Err(err) => {
-                    tracing::error!(
-                        target: LOG_TARGET,
-                        "Error fetching distribution data: {:?}",
-                        err
-                    );
-                    return;
-                }
-            };
+                .unwrap_or((0, vec![], vec![], vec![], vec![]));
 
             let reference_task_index = match event.referenceTaskIndex.try_into() {
                 Ok(index) => index,

@@ -57,7 +57,7 @@ pub async fn submit_block_commitment(
                     .reward_manager_client()
                     .get_distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
                     .await
-                    .unwrap();
+                    .unwrap_or((0, vec![], vec![], vec![], vec![]));
 
                 let validation_service_manager_client: validation_service_manager::symbiotic::ValidationServiceManagerClient =
                     context

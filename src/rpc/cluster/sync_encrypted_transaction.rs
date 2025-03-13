@@ -23,7 +23,7 @@ impl RpcParameter<AppState> for SyncEncryptedTransaction {
     }
 
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        tracing::info!(
+        tracing::debug!(
             "Sync encrypted transaction - rollup id: {:?}, rollup block height: {:?}, transaction order: {:?}, order commitment: {:?}",
             self.message.rollup_id,
             self.message.rollup_block_height,
