@@ -7,6 +7,8 @@ use crate::{
     types::*,
 };
 
+const LOG_TARGET: &str = "rpc::external::send_raw_transaction";
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendRawTransaction {
     pub rollup_id: String,
@@ -113,6 +115,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
             );
 
             tracing::debug!(
+                target: LOG_TARGET,
                 "Send raw transaction: rollup_id: {:?}, order_commitment: {:?}",
                 self.rollup_id,
                 order_commitment.clone()
@@ -169,36 +172,62 @@ pub fn sync_raw_transaction(
     order_commitment: OrderCommitment,
     is_direct_sent: bool,
 ) {
+    let other_cluster_rpc_url_list = cluster.get_others_cluster_rpc_url_list();
+    if other_cluster_rpc_url_list.is_empty() {
+        return;
+    }
     tokio::spawn(async move {
-        let other_cluster_rpc_url_list: Vec<String> = cluster.get_others_cluster_rpc_url_list();
-
-        if !other_cluster_rpc_url_list.is_empty() {
-            let message = SyncRawTransactionMessage {
-                rollup_id,
-                rollup_block_height,
-                transaction_order,
-                raw_transaction,
-                order_commitment: Some(order_commitment),
-                is_direct_sent,
-            };
-            let signature = context
-                .get_signer(platform)
-                .await
-                .unwrap()
-                .sign_message(&message)
-                .unwrap();
-            let rpc_self = SyncRawTransaction { message, signature };
-
-            context
-                .rpc_client()
-                .multicast(
-                    other_cluster_rpc_url_list,
-                    SyncRawTransaction::method(),
-                    &rpc_self,
-                    Id::Null,
+        let message = SyncRawTransactionMessage {
+            rollup_id,
+            rollup_block_height,
+            transaction_order,
+            raw_transaction,
+            order_commitment: Some(order_commitment),
+            is_direct_sent,
+        };
+        let signature = match context
+            .get_signer(platform)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    "Failed to get signer: {}",
+                    e
                 )
-                .await
-                .unwrap();
+            })
+            .and_then(|signer| {
+                signer.sign_message(&message).map_err(|e| {
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        "Failed to sign message: {}",
+                        e
+                    )
+                })
+            }) {
+            Ok(signature) => signature,
+            Err(_) => return,
+        };
+
+        let rpc_self = SyncRawTransaction { message, signature };
+
+        match context
+            .rpc_client()
+            .multicast(
+                other_cluster_rpc_url_list,
+                SyncRawTransaction::method(),
+                &rpc_self,
+                Id::Null,
+            )
+            .await
+        {
+            Ok(_) => (),
+            Err(e) => {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    "Failed to send raw transaction: {}",
+                    e
+                );
+            }
         }
     });
 }

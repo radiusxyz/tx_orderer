@@ -19,16 +19,15 @@ pub async fn skde_build_block(
     rollup_block_height: u64,
     transaction_count: u64,
     leader_tx_orderer_address: Address,
-    signature: Option<Signature>,
+    maybe_signature: Option<Signature>,
 ) -> Result<Block, Error> {
     let distributed_key_generation_client = context.distributed_key_generation_client().clone();
 
-    let rollup = Rollup::get(&rollup_id).unwrap();
+    let rollup = Rollup::get(&rollup_id).map_err(|e| e)?;
 
     let skde_params = distributed_key_generation_client
         .get_skde_params()
-        .await
-        .unwrap()
+        .await?
         .skde_params;
 
     let merkle_tree = MerkleTree::new();
@@ -57,9 +56,15 @@ pub async fn skde_build_block(
                     let skde_encrypted_transaction = encrypted_transaction_list[i]
                         .as_ref()
                         .cloned()
-                        .unwrap()
+                        .ok_or(String::from("Encrypted transaction is None"))?
                         .try_into_skde_transaction()
-                        .unwrap();
+                        .map_err(|e| {
+                            tracing::error!(
+                                "Failed to convert encrypted transaction to SKDE transaction: {}",
+                                e
+                            );
+                            e
+                        })?;
 
                     let (raw_transaction, _plain_data) = decrypt_skde_transaction(
                         &skde_encrypted_transaction,
@@ -67,8 +72,7 @@ pub async fn skde_build_block(
                         &mut decryption_keys,
                         &skde_params,
                     )
-                    .await
-                    .unwrap();
+                    .await?;
 
                     final_raw_transaction_list[i] = raw_transaction;
                 } else {
@@ -92,13 +96,12 @@ pub async fn skde_build_block(
                             );
 
                             let (raw_transaction, _plain_data) = decrypt_skde_transaction(
-                                &encrypted_transaction.try_into_skde_transaction().unwrap(),
+                                &encrypted_transaction.try_into_skde_transaction()?,
                                 distributed_key_generation_client.clone(),
                                 &mut decryption_keys,
                                 &skde_params,
                             )
-                            .await
-                            .unwrap();
+                            .await?;
 
                             final_raw_transaction_list[i] = raw_transaction;
                             is_direct_sent = false;
@@ -137,8 +140,7 @@ pub async fn skde_build_block(
                     i as u64,
                     final_raw_transaction_list[i].clone(),
                     is_direct_sent,
-                )
-                .unwrap();
+                )?;
             }
         }
 
@@ -153,14 +155,13 @@ pub async fn skde_build_block(
 
     merkle_tree.finalize_tree().await;
     let block_commitment = merkle_tree.get_merkle_root().await;
-
-    let signature = if signature.is_some() {
-        signature.unwrap()
-    } else {
-        let signer = context.get_signer(rollup.platform).await.unwrap();
-        signer.sign_message(block_commitment).unwrap()
+    let signature = match maybe_signature {
+        Some(sig) => sig,
+        None => {
+            let signer = context.get_signer(rollup.platform).await?;
+            signer.sign_message(block_commitment)?
+        }
     };
-
     let block = Block::new(
         rollup_block_height,
         encrypted_transaction_list,
@@ -170,7 +171,7 @@ pub async fn skde_build_block(
         leader_tx_orderer_address,
     );
 
-    Block::put(&block, &rollup_id, rollup_block_height).unwrap();
+    Block::put(&block, &rollup_id, rollup_block_height)?;
 
     tracing::info!(
         "Block built - block_height: {:?} / transaction_count: {:?}",
@@ -196,8 +197,7 @@ async fn decrypt_skde_transaction(
 
             let get_decryption_key_response = distributed_key_generation_client
                 .get_decryption_key(decryption_key_id)
-                .await
-                .map_err(Error::DistributedKeyGeneration)?;
+                .await?;
 
             let inserted_key = entry.insert(get_decryption_key_response.decryption_key.clone());
             inserted_key.clone()

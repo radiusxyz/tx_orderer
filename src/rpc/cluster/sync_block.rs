@@ -3,6 +3,8 @@ use crate::{
     task::follow_block,
 };
 
+const LOG_TARGET: &str = "rpc::cluster::sync_block";
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncBlock {
     pub finalize_block_message: FinalizeBlockMessage,
@@ -21,6 +23,7 @@ impl RpcParameter<AppState> for SyncBlock {
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
         tracing::debug!(
+            target: LOG_TARGET,
             "sync block - executor address: {:?}, rollup_id: {:?}, platform block height: {:?}, rollup block height: {:?}, transaction count: {:?}",
             self.finalize_block_message.executor_address.as_hex_string(),
             self.finalize_block_message.rollup_id,
@@ -34,40 +37,46 @@ impl RpcParameter<AppState> for SyncBlock {
             Error::RollupNotFound
         })?;
 
-        let cluster = Cluster::get(
+        let cluster = match Cluster::get(
             rollup.platform,
             rollup.service_provider,
             &rollup.cluster_id,
             self.finalize_block_message.platform_block_height,
-        );
+        ) {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!(
+                    target: LOG_TARGET,
+                    "Failed to retrieve cluster - cluster_id: {:?} / platform_block_height: {:?} / error: {:?}",
+                    &rollup.cluster_id,
+                    self.finalize_block_message.platform_block_height,
+                    e
+                );
 
-        let cluster = if cluster.is_err() {
-            tracing::warn!("Failed to retrieve cluster - cluster_id: {:?} / platform_block_height: {:?} / error: {:?}", 
-            &rollup.cluster_id,
-            self.finalize_block_message.platform_block_height,
-            cluster.err());
+                let liveness_service_manager_client: liveness_service_manager::radius::LivenessServiceManagerClient = context
+                    .get_liveness_service_manager_client::<liveness_service_manager::radius::LivenessServiceManagerClient>(
+                        rollup.platform,
+                        rollup.service_provider,
+                    )
+                    .await?;
 
-            let liveness_service_manager_client: liveness_service_manager::radius::LivenessServiceManagerClient = context
-                .get_liveness_service_manager_client::<liveness_service_manager::radius::LivenessServiceManagerClient>(
-                    rollup.platform,
-                    rollup.service_provider,
+                Cluster::sync_cluster(
+                    context.clone(),
+                    &rollup.cluster_id,
+                    &liveness_service_manager_client,
+                    self.finalize_block_message.platform_block_height,
                 )
-                .await?;
-
-            Cluster::sync_cluster(
-                context.clone(),
-                &rollup.cluster_id,
-                &liveness_service_manager_client,
-                self.finalize_block_message.platform_block_height,
-            )
-            .await?
-        } else {
-            cluster.unwrap()
+                .await?
+            }
         };
 
         let next_rollup_block_height = self.finalize_block_message.rollup_block_height + 1;
         let signer = context.get_signer(rollup.platform).await.map_err(|_| {
-            tracing::error!("Signer not found for platform {:?}", rollup.platform);
+            tracing::error!(
+                target: LOG_TARGET,
+                "Signer not found for platform {:?}",
+                rollup.platform
+            );
             Error::SignerNotFound
         })?;
         let tx_orderer_address = signer.address().clone();
@@ -121,7 +130,11 @@ impl RpcParameter<AppState> for SyncBlock {
                         .await;
                     rollup_metadata.put(&self.finalize_block_message.rollup_id)?;
                 } else {
-                    tracing::error!("Failed to retrieve rollup metadata: {:?}", error);
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        "Failed to retrieve rollup metadata: {:?}",
+                        error
+                    );
                     return Err(error.into());
                 }
             }

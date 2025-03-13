@@ -5,6 +5,8 @@ use radius_sdk::{signature::ChainType, validation::symbiotic::types::Keccak256};
 
 use crate::{rpc::prelude::*, task::build_block};
 
+const LOG_TARGET: &str = "rpc::cluster::finalize_block";
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FinalizeBlock {
     pub finalize_block_message: FinalizeBlockMessage,
@@ -87,12 +89,15 @@ impl RpcParameter<AppState> for FinalizeBlock {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        tracing::info!("finalize block - executor address: {:?} / block creator (tx_orderer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
-        self.finalize_block_message.executor_address.as_hex_string(),
-        self.finalize_block_message.block_creator_address.as_hex_string(),
-        self.finalize_block_message.rollup_id,
-        self.finalize_block_message.platform_block_height,
-        self.finalize_block_message.rollup_block_height,);
+        tracing::info!(
+            target: LOG_TARGET,
+            "finalize block - executor address: {:?} / block creator (tx_orderer) address: {:?} / rollup_id: {:?} / platform block height: {:?} / rollup block height: {:?}",
+            self.finalize_block_message.executor_address.as_hex_string(),
+            self.finalize_block_message.block_creator_address.as_hex_string(),
+            self.finalize_block_message.rollup_id,
+            self.finalize_block_message.platform_block_height,
+            self.finalize_block_message.rollup_block_height,
+        );
 
         // Check the executor address
         let rollup = Rollup::get(&self.finalize_block_message.rollup_id)?;
@@ -110,36 +115,39 @@ impl RpcParameter<AppState> for FinalizeBlock {
         //         Error::ExecutorAddressNotFound
         //     })?;
 
-        let cluster = Cluster::get(
+        let cluster = match Cluster::get(
             rollup.platform,
             rollup.service_provider,
             &rollup.cluster_id,
             self.finalize_block_message.platform_block_height,
-        );
+        ) {
+            Ok(cluster) => cluster,
+            Err(err) => {
+                tracing::warn!(
+                    target: LOG_TARGET,
+                    "Failed to retrieve cluster - cluster_id: {:?} / platform_block_height: {:?} / error: {:?}",
+                    &rollup.cluster_id,
+                    self.finalize_block_message.platform_block_height,
+                    err
+                );
 
-        let cluster = if cluster.is_err() {
-            tracing::warn!("Failed to retrieve cluster - cluster_id: {:?} / platform_block_height: {:?} / error: {:?}", 
-            &rollup.cluster_id,
-            self.finalize_block_message.platform_block_height,
-            cluster.err());
+                let liveness_service_manager_client: liveness_service_manager::radius::LivenessServiceManagerClient = context
+                    .get_liveness_service_manager_client::<liveness_service_manager::radius::LivenessServiceManagerClient>(
+                        rollup.platform,
+                        rollup.service_provider,
+                    )
+                    .await?;
 
-            let liveness_service_manager_client: liveness_service_manager::radius::LivenessServiceManagerClient = context
-                .get_liveness_service_manager_client::<liveness_service_manager::radius::LivenessServiceManagerClient>(
-                    rollup.platform,
-                    rollup.service_provider,
+                Cluster::sync_cluster(
+                    context.clone(),
+                    &rollup.cluster_id,
+                    &liveness_service_manager_client,
+                    self.finalize_block_message.platform_block_height,
                 )
-                .await?;
-
-            Cluster::sync_cluster(
-                context.clone(),
-                &rollup.cluster_id,
-                &liveness_service_manager_client,
-                self.finalize_block_message.platform_block_height,
-            )
-            .await?
-        } else {
-            cluster.unwrap()
+                .await?
+            }
         };
+
         let transaction_count = self
             .finalize_block(context.clone(), &cluster, &rollup)
             .await?;
@@ -190,7 +198,10 @@ impl FinalizeBlock {
                 ) {
                     rollup_metadata.leader_tx_orderer_rpc_info = tx_orderer_rpc_info;
                 } else {
-                    tracing::error!("TxOrderer RPC info not found");
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        "TxOrderer RPC info not found"
+                    );
                     return Err(Error::TxOrdererInfoNotFound)?;
                 }
 
@@ -217,7 +228,10 @@ impl FinalizeBlock {
                     ) {
                         rollup_metadata.leader_tx_orderer_rpc_info = tx_orderer_rpc_info;
                     } else {
-                        tracing::error!("TxOrderer RPC info not found");
+                        tracing::error!(
+                            target: LOG_TARGET,
+                            "TxOrderer RPC info not found"
+                        );
                         return Err(Error::TxOrdererInfoNotFound)?;
                     }
 

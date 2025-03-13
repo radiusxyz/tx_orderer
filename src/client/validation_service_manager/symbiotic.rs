@@ -6,6 +6,7 @@ use radius_sdk::validation::symbiotic::{
 use tokio::time::{sleep, Duration};
 
 use crate::{client::reward_manager, error::Error, state::AppState, types::*};
+const LOG_TARGET: &str = "client::validation_service_manager::symbiotic";
 
 pub struct ValidationServiceManagerClient {
     inner: Arc<ValidationServiceManagerClientInner>,
@@ -93,7 +94,7 @@ impl ValidationServiceManagerClient {
                     validation_info,
                     &context.config().signing_key,
                 )
-                .unwrap();
+                .expect("Failed to initialize Symbiotic validation service manager client");
 
                 context
                     .add_validation_service_manager_client(
@@ -102,7 +103,7 @@ impl ValidationServiceManagerClient {
                         validation_service_manager_client.clone(),
                     )
                     .await
-                    .unwrap();
+                    .expect("Failed to add Symbiotic validation service manager client");
 
                 tracing::info!(
                     "Initializing Symbiotic validation event listener for {:?}, {:?}..",
@@ -119,13 +120,16 @@ impl ValidationServiceManagerClient {
                         ),
                     )
                     .await
-                    .unwrap();
+                    .expect("Failed to initialize Symbiotic validation event listener");
             }
         });
 
         tokio::spawn(async move {
             if handle.await.is_err() {
-                tracing::warn!("Reconnecting Symbiotic validation event listener..");
+                tracing::warn!(
+                    target: LOG_TARGET,
+                    "Reconnecting Symbiotic validation event listener.."
+                );
                 sleep(Duration::from_secs(5)).await;
                 Self::initialize(
                     context,
@@ -147,9 +151,33 @@ async fn callback(
 ) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = Block::get(&rollup.rollup_id, event.blockNumber.try_into().unwrap()).unwrap();
+        let block = if let Ok(block_height) = event.blockNumber.try_into() {
+            match Block::get(&rollup.rollup_id, block_height) {
+                Ok(block) => block,
+                Err(err) => {
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        "Error getting block: {}", err
+                    );
+                    return;
+                }
+            }
+        } else {
+            tracing::error!(
+                target: LOG_TARGET,
+                "Error converting block number");
+            return;
+        };
 
-        tracing::info!("[Symbiotic] NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?}", event.clusterId, event.rollupId, event.referenceTaskIndex, event.blockNumber, event.blockCommitment);
+        tracing::info!(
+            target: LOG_TARGET,
+            "NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?}",
+            event.clusterId,
+            event.rollupId,
+            event.referenceTaskIndex,
+            event.blockNumber,
+            event.blockCommitment
+        );
 
         if block.block_creator_address != context.publisher().address() {
             let (
@@ -163,25 +191,49 @@ async fn callback(
                 .await
                 .unwrap_or((0, vec![], vec![], vec![], vec![]));
 
-            let reference_task_index = event.referenceTaskIndex.try_into().unwrap();
+            let reference_task_index = match event.referenceTaskIndex.try_into() {
+                Ok(index) => index,
+                Err(err) => {
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        "Error converting reference task index: {:?}",
+                        err
+                    );
+                    return;
+                }
+            };
+
             if operator_merkle_root_list.len() != 0 {
                 let (
                     check_vault_address_list,
                     check_operator_merkle_root_list,
                     check_total_staker_reward_list,
                     check_total_operator_reward_list,
-                ) = context
+                ) = match context
                     .publisher()
                     .get_distribution_data(&rollup.cluster_id, &rollup.rollup_id, reward_task_id)
                     .await
-                    .unwrap();
+                {
+                    Ok(data) => data,
+                    Err(err) => {
+                        tracing::error!(
+                            target: LOG_TARGET,
+                            "Error fetching distribution data: {:?}",
+                            err
+                        );
+                        return;
+                    }
+                };
 
                 if vault_address_list != check_vault_address_list
                     || operator_merkle_root_list != check_operator_merkle_root_list
                     || total_staker_reward_list != check_total_staker_reward_list
                     || total_operator_reward_list != check_total_operator_reward_list
                 {
-                    tracing::warn!("[Symbiotic] Distribution data mismatch..");
+                    tracing::warn!(
+                        target: LOG_TARGET,
+                        "[Symbiotic] Distribution data mismatch.."
+                    );
                     return;
                 }
             }
@@ -199,11 +251,19 @@ async fn callback(
                     .map_err(|error| error.to_string())
                 {
                     Ok(transaction_hash) => {
-                        tracing::info!("[Symbiotic] respond_to_task: {:?}", transaction_hash);
+                        tracing::info!(
+                            target: LOG_TARGET,
+                            "respond_to_task: {:?}",
+                            transaction_hash
+                        );
                         break;
                     }
                     Err(error) => {
-                        tracing::warn!("[Symbiotic] respond_to_task: {:?}", error);
+                        tracing::warn!(
+                            target: LOG_TARGET,
+                            "respond_to_task: {:?}",
+                            error
+                        );
                         sleep(Duration::from_secs(1)).await;
                     }
                 }
