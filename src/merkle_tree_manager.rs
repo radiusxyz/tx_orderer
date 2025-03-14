@@ -28,7 +28,7 @@ impl Default for MerkleTreeManager {
 }
 
 impl MerkleTreeManager {
-    pub async fn init(rpc_client: &RpcClient) -> Self {
+    pub async fn init(rpc_client: &RpcClient) -> Result<Self, Error> {
         let merkle_tree_manager = Self::default();
 
         let rollup_ids = RollupIdList::get().map_or(Default::default(), |ids| ids);
@@ -43,7 +43,7 @@ impl MerkleTreeManager {
                         rollup_metadata.rollup_block_height,
                         rollup_metadata.transaction_order
                     );
-                    let rollup = Rollup::get(rollup_id).unwrap();
+                    let rollup = Rollup::get(rollup_id).map_err(|_| Error::RollupNotFound)?;
                     let latest_cluster_block_height = LatestClusterBlockHeight::get(
                         rollup.platform,
                         rollup.service_provider,
@@ -57,7 +57,7 @@ impl MerkleTreeManager {
                         &rollup.cluster_id,
                         latest_cluster_block_height.get_block_height(),
                     )
-                    .unwrap();
+                    .map_err(|_| Error::ClusterNotFound)?;
 
                     for index in 0..rollup_metadata.transaction_order {
                         let get_raw_transaction_result = RawTransactionModel::get(
@@ -90,19 +90,19 @@ impl MerkleTreeManager {
                                     }
                                     Err(error) => {
                                         tracing::warn!(
-                                        "Failed to fetch raw transaction - rollup_id: {:?} / rollup_block_height: {:?} / index: {:?} / error: {:?}",
-                                        rollup_id,
-                                        rollup_metadata.rollup_block_height,
-                                        index,
-                                        error
-                                    );
+                                            "Failed to fetch raw transaction - rollup_id: {:?} / rollup_block_height: {:?} / index: {:?} / error: {:?}",
+                                            rollup_id,
+                                            rollup_metadata.rollup_block_height,
+                                            index,
+                                            error
+                                        );
 
                                         let encrypted_transaction = EncryptedTransactionModel::get(
                                             rollup_id,
                                             rollup_metadata.rollup_block_height,
                                             index,
                                         )
-                                        .unwrap();
+                                        .map_err(|e| Error::Database(e))?;
 
                                         encrypted_transaction.raw_transaction_hash()
                                     }
@@ -120,7 +120,7 @@ impl MerkleTreeManager {
             merkle_tree_manager.insert(rollup_id, merkle_tree).await;
         }
 
-        merkle_tree_manager
+        Ok(merkle_tree_manager)
     }
 
     pub async fn insert(&self, rollup_id: &str, merkle_tree: MerkleTree) {

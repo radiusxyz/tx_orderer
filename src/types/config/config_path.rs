@@ -31,10 +31,10 @@ impl AsRef<Path> for ConfigPath {
 
 impl Default for ConfigPath {
     fn default() -> Self {
-        let path = PathBuf::from(env::var("HOME").unwrap())
+        let path = PathBuf::from(env::var("HOME").expect("HOME environment variable not set"))
             .join(super::DEFAULT_DATA_PATH)
             .to_str()
-            .unwrap()
+            .expect("Failed to convert path to string")
             .to_string();
 
         Self { path }

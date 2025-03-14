@@ -24,14 +24,12 @@ impl EthTransactionData {
     }
 
     pub fn convert_to_rollup_transaction(&self) -> Result<RollupTransaction, Error> {
-        if self.plain_data.is_none() {
-            return Err(Error::PlainDataDoesNotExist);
+        match self.plain_data.clone() {
+            Some(plain_data) => Ok(RollupTransaction::Eth(
+                self.open_data.convert_to_rollup_transaction(&plain_data),
+            )),
+            None => Err(Error::PlainDataDoesNotExist),
         }
-
-        Ok(RollupTransaction::Eth(
-            self.open_data
-                .convert_to_rollup_transaction(self.plain_data.as_ref().unwrap()),
-        ))
     }
 
     pub fn update_plain_data(&mut self, plain_data: EthPlainData) {

@@ -53,30 +53,39 @@ pub fn sync_set_max_gas_limit(
 ) {
     tokio::spawn(async move {
         let other_cluster_rpc_url_list: Vec<String> = cluster.get_others_cluster_rpc_url_list();
+        if other_cluster_rpc_url_list.is_empty() {
+            return;
+        }
+        let message = SyncMaxGasLimitMessage {
+            rollup_id,
+            max_gas_limit,
+        };
+        let signature = match context
+            .get_signer(platform)
+            .await
+            .map_err(|e| tracing::error!("Failed to get signer: {}", e))
+            .and_then(|signer| {
+                signer
+                    .sign_message(&message)
+                    .map_err(|e| tracing::error!("Failed to sign message: {}", e))
+            }) {
+            Ok(sig) => sig,
+            Err(_) => return,
+        };
+        let params = SyncMaxGasLimit { message, signature };
 
-        if !other_cluster_rpc_url_list.is_empty() {
-            let message = SyncMaxGasLimitMessage {
-                rollup_id,
-                max_gas_limit,
-            };
-            let signature = context
-                .get_signer(platform)
-                .await
-                .unwrap()
-                .sign_message(&message)
-                .unwrap();
-            let params = SyncMaxGasLimit { message, signature };
-
-            context
-                .rpc_client()
-                .multicast(
-                    other_cluster_rpc_url_list,
-                    SyncMaxGasLimit::method(),
-                    &params,
-                    Id::Null,
-                )
-                .await
-                .unwrap();
+        match context
+            .rpc_client()
+            .multicast(
+                other_cluster_rpc_url_list,
+                SyncMaxGasLimit::method(),
+                &params,
+                Id::Null,
+            )
+            .await
+        {
+            Ok(_) => (),
+            Err(e) => tracing::error!("Failed to sync max gas limit: {}", e),
         }
     });
 }

@@ -3,9 +3,11 @@ use std::sync::Arc;
 use sha3::{Digest, Keccak256};
 use tokio::sync::Mutex;
 
+type Hash = [u8; 32];
+
 #[derive(Clone, Debug, Default)]
 pub struct MerkleTree {
-    pub nodes: Arc<Mutex<Vec<Vec<[u8; 32]>>>>, // nodes by tree level
+    pub nodes: Arc<Mutex<Vec<Vec<Hash>>>>, // nodes by tree level
 }
 
 impl MerkleTree {
@@ -15,7 +17,7 @@ impl MerkleTree {
         }
     }
 
-    fn update_tree(nodes: &mut Vec<Vec<[u8; 32]>>) {
+    fn update_tree(nodes: &mut Vec<Vec<Hash>>) {
         let mut current_level = 0;
 
         if nodes[current_level].is_empty() {
@@ -46,11 +48,11 @@ impl MerkleTree {
 
         while nodes[current_level].len() > 1 {
             if nodes[current_level].len() % 2 == 1 {
-                let left_node = nodes[current_level].last().unwrap();
-                let parent_node = Self::hash(&Self::concat_arrays(*left_node, last_node));
-
-                nodes[current_level].push(last_node);
-                nodes[current_level + 1].push(parent_node);
+                if let Some(left_node) = nodes[current_level].last() {
+                    let parent_node = Self::hash(&Self::concat_arrays(*left_node, last_node));
+                    nodes[current_level].push(last_node);
+                    nodes[current_level + 1].push(parent_node);
+                }
             }
 
             if nodes.len() <= current_level + 1 {
@@ -65,7 +67,7 @@ impl MerkleTree {
         }
     }
 
-    pub async fn add_data(&self, data: &str) -> (u64, Vec<[u8; 32]>) {
+    pub async fn add_data(&self, data: &str) -> (u64, Vec<Hash>) {
         let mut nodes = self.nodes.lock().await;
         Self::update_tree(&mut nodes);
 
@@ -77,7 +79,7 @@ impl MerkleTree {
         ((nodes[0].len() - 1) as u64, pre_merkle_path)
     }
 
-    fn get_pre_merkle_path(nodes: &Vec<Vec<[u8; 32]>>) -> Vec<[u8; 32]> {
+    fn get_pre_merkle_path(nodes: &Vec<Vec<Hash>>) -> Vec<Hash> {
         let mut proof = vec![];
         let mut leaf_node_index: usize = 0;
 
@@ -112,7 +114,7 @@ impl MerkleTree {
         proof
     }
 
-    pub async fn get_merkle_path(&self, index: usize) -> Vec<[u8; 32]> {
+    pub async fn get_merkle_path(&self, index: usize) -> Vec<Hash> {
         let nodes = self.nodes.lock().await;
         let mut path = vec![];
         let mut current_index = index;
@@ -138,19 +140,19 @@ impl MerkleTree {
         path
     }
 
-    pub async fn get_merkle_root(&self) -> [u8; 32] {
+    pub async fn get_merkle_root(&self) -> Hash {
         let nodes = self.nodes.lock().await;
         if nodes[0].is_empty() {
-            return Self::hash(b"");
+            return Default::default();
         }
 
         nodes
             .last()
             .and_then(|level| level.get(0).cloned())
-            .unwrap()
+            .unwrap_or_default()
     }
 
-    pub fn hash(data: &[u8]) -> [u8; 32] {
+    pub fn hash(data: &[u8]) -> Hash {
         let mut hasher = Keccak256::new();
         hasher.update(data);
         let result = hasher.finalize();
@@ -159,7 +161,7 @@ impl MerkleTree {
         hash
     }
 
-    pub async fn get_post_merkle_path(&self, mut index: usize) -> Vec<[u8; 32]> {
+    pub async fn get_post_merkle_path(&self, mut index: usize) -> Vec<Hash> {
         let nodes = self.nodes.lock().await;
         let mut post_merkle_path = Vec::new();
 
@@ -174,7 +176,7 @@ impl MerkleTree {
         post_merkle_path
     }
 
-    fn concat_arrays(a: [u8; 32], b: [u8; 32]) -> [u8; 64] {
+    fn concat_arrays(a: Hash, b: Hash) -> [u8; 64] {
         let mut array: [u8; 64] = [0; 64];
         for (index, value) in a.into_iter().chain(b.into_iter()).enumerate() {
             array[index] = value;

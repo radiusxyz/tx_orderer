@@ -14,7 +14,7 @@ use tx_orderer::{
     error::{self, Error},
     logger::PanicLog,
     merkle_tree_manager::MerkleTreeManager,
-    rpc::{cluster, external, internal, common},
+    rpc::{cluster, common, external, internal},
     state::AppState,
     types::*,
     util::initialize_logger,
@@ -121,7 +121,7 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
         .skde_params;
 
     let rpc_client = RpcClient::new().map_err(error::Error::RpcClient)?;
-    let merkle_tree_manager = MerkleTreeManager::init(&rpc_client).await;
+    let merkle_tree_manager = MerkleTreeManager::init(&rpc_client).await?;
     let app_state: AppState = AppState::new(
         config,
         seeder_client,

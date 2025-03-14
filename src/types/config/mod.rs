@@ -98,20 +98,30 @@ impl Config {
 
         // Read signing key
         let signing_key_path = config_path.join(SIGNING_KEY_PATH);
-        let signing_key = fs::read_to_string(signing_key_path).unwrap();
+        let signing_key = fs::read_to_string(signing_key_path).expect("Failed to read signing key");
 
         Ok(Config {
             path: config_path,
-            external_rpc_url: merged_config_option.external_rpc_url.unwrap(),
-            internal_rpc_url: merged_config_option.internal_rpc_url.unwrap(),
-            cluster_rpc_url: merged_config_option.cluster_rpc_url.unwrap(),
-            seeder_rpc_url: merged_config_option.seeder_rpc_url.unwrap(),
-            reward_manager_rpc_url: merged_config_option.reward_manager_rpc_url.unwrap(),
+            external_rpc_url: merged_config_option
+                .external_rpc_url
+                .expect("External RPC URL is required"),
+            internal_rpc_url: merged_config_option
+                .internal_rpc_url
+                .expect("Internal RPC URL is required"),
+            cluster_rpc_url: merged_config_option
+                .cluster_rpc_url
+                .expect("Cluster RPC URL is required"),
+            seeder_rpc_url: merged_config_option
+                .seeder_rpc_url
+                .expect("Seeder RPC URL is required"),
+            reward_manager_rpc_url: merged_config_option
+                .reward_manager_rpc_url
+                .expect("Reward manager RPC URL is required"),
             distributed_key_generation_rpc_url: merged_config_option
                 .distributed_key_generation_rpc_url
-                .unwrap(),
+                .expect("Distributed key generation RPC URL is required"),
             signing_key,
-            is_using_zkp: merged_config_option.is_using_zkp.unwrap(),
+            is_using_zkp: merged_config_option.is_using_zkp.unwrap_or(false),
         })
     }
 

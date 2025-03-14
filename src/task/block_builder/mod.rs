@@ -1,6 +1,5 @@
 mod skde_block_builder;
 mod validation;
-
 use radius_sdk::{
     json_rpc::{client::Id, server::RpcParameter},
     signature::Signature,
@@ -37,7 +36,6 @@ pub fn build_block(
         let leader_tx_orderer_address = finalize_block_message.next_block_creator_address.clone();
 
         let block = match encrypted_transaction_type {
-            EncryptedTransactionType::Pvde => unimplemented!(),
             EncryptedTransactionType::Skde => skde_build_block(
                 context.clone(),
                 &cluster,
@@ -49,7 +47,7 @@ pub fn build_block(
             )
             .await
             .unwrap(),
-            EncryptedTransactionType::NotSupport => unimplemented!(),
+            _ => unimplemented!(),
         };
 
         let rollup = Rollup::get(&finalize_block_message.rollup_id).unwrap();
@@ -121,7 +119,7 @@ pub async fn sync_block(
             "Successfully synchronized block. - rollup id: {:?}, block number: {:?}, transaction count: {:?}",
             parameter.finalize_block_message.rollup_id,
             parameter.finalize_block_message.rollup_block_height,
-            transaction_count          
+            transaction_count
         ),
         Err(e) => tracing::error!("Failed to synchronize block: {:?}", e),
     }

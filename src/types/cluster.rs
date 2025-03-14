@@ -78,34 +78,16 @@ impl Cluster {
     pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
         self.tx_orderer_rpc_infos
             .values()
-            .filter_map(|tx_orderer_rpc_info| {
-                if tx_orderer_rpc_info.tx_orderer_address != self.tx_orderer_address {
-                    if tx_orderer_rpc_info.cluster_rpc_url.is_none() {
-                        return None;
-                    }
-
-                    Some(tx_orderer_rpc_info.cluster_rpc_url.to_owned().unwrap())
-                } else {
-                    None
-                }
-            })
+            .filter(|info| info.tx_orderer_address != self.tx_orderer_address)
+            .filter_map(|info| info.cluster_rpc_url.clone())
             .collect()
     }
 
     pub fn get_others_external_rpc_url_list(&self) -> Vec<String> {
         self.tx_orderer_rpc_infos
             .values()
-            .filter_map(|tx_orderer_rpc_info| {
-                if tx_orderer_rpc_info.tx_orderer_address != self.tx_orderer_address {
-                    if tx_orderer_rpc_info.external_rpc_url.is_none() {
-                        return None;
-                    }
-
-                    Some(tx_orderer_rpc_info.external_rpc_url.to_owned().unwrap())
-                } else {
-                    None
-                }
-            })
+            .filter(|info| info.tx_orderer_address != self.tx_orderer_address)
+            .filter_map(|info| info.external_rpc_url.clone())
             .collect()
     }
 
@@ -167,7 +149,7 @@ impl Cluster {
             block_margin,
         )
         .await
-        .unwrap();
+        .map_err(|e| Error::InitializeNewCluster(e))?;
 
         Cluster::get(
             liveness_service_manager_client.platform(),
