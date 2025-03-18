@@ -31,7 +31,7 @@ struct AppStateInner {
     signers: CachedKvStore,
     skde_params: SkdeParams,
     profiler: Option<Profiler>,
-    rpc_client: RpcClient,
+    rpc_client: Arc<RpcClient>,
     merkle_tree_manager: MerkleTreeManager,
 }
 
@@ -55,7 +55,7 @@ impl AppState {
         validation_service_manager_clients: CachedKvStore,
         skde_params: SkdeParams,
         profiler: Option<Profiler>,
-        rpc_client: RpcClient,
+        rpc_client: Arc<RpcClient>,
         merkle_tree_manager: MerkleTreeManager,
     ) -> Self {
         let inner = AppStateInner {

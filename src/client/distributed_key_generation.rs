@@ -9,7 +9,7 @@ pub struct DistributedKeyGenerationClient {
 
 struct DistributedKeyGenerationClientInner {
     rpc_url: String,
-    rpc_client: RpcClient,
+    rpc_client: Arc<RpcClient>,
 }
 
 impl Clone for DistributedKeyGenerationClient {

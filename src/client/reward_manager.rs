@@ -14,7 +14,7 @@ pub struct RewardManagerClient {
 
 struct RewardManagerClientInner {
     rpc_url: String,
-    rpc_client: RpcClient,
+    rpc_client: Arc<RpcClient>,
 }
 
 impl Clone for RewardManagerClient {

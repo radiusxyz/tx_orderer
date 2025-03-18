@@ -14,7 +14,7 @@ pub struct SeederClient {
 
 struct SeederClientInner {
     rpc_url: String,
-    rpc_client: RpcClient,
+    rpc_client: Arc<RpcClient>,
 }
 
 impl Clone for SeederClient {
