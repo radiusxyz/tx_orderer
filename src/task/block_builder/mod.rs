@@ -2,7 +2,7 @@ mod skde_block_builder;
 mod validation;
 
 use radius_sdk::{
-    json_rpc::{client::Id, server::RpcParameter},
+    json_rpc::{client::{Id, Priority}, server::RpcParameter},
     signature::Signature,
 };
 use skde_block_builder::*;
@@ -109,11 +109,12 @@ pub async fn sync_block(
 
     match context
         .rpc_client()
-        .multicast(
+        .multicast_with_priority(
             others_cluster_rpc_url_list.clone(),
             SyncBlock::method(),
             &parameter,
             Id::Null,
+            Priority::High,
         )
         .await
     {
