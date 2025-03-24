@@ -1,7 +1,10 @@
+mod cluster_metadata;
 use std::collections::{
     btree_set::{self, BTreeSet},
     BTreeMap,
 };
+
+pub use cluster_metadata::*;
 
 use super::prelude::*;
 use crate::{
@@ -13,8 +16,26 @@ use crate::{
     state::AppState,
 };
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
+#[kvstore(key(platform: Platform, liveness_service_provider: LivenessServiceProvider))]
+pub struct ClusterIdList(BTreeSet<String>);
+
+impl ClusterIdList {
+    pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
+        self.0.insert(cluster_id.as_ref().into());
+    }
+
+    pub fn remove(&mut self, cluster_id: impl AsRef<str>) {
+        self.0.remove(cluster_id.as_ref());
+    }
+
+    pub fn iter(&self) -> btree_set::Iter<'_, String> {
+        self.0.iter()
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str, platform_block_height: u64))]
+#[kvstore(key(platform: Platform, liveness_service_provider: LivenessServiceProvider, cluster_id: &str, platform_block_height: u64))]
 pub struct Cluster {
     #[serde(serialize_with = "serialize_address")]
     pub tx_orderer_address: Address,
@@ -43,14 +64,14 @@ impl Cluster {
     pub async fn put_and_update_with_margin(
         cluster: &Cluster,
         platform: Platform,
-        service_provider: ServiceProvider,
+        liveness_service_provider: LivenessServiceProvider,
         cluster_id: &str,
         platform_block_height: u64,
     ) -> Result<(), KvStoreError> {
         Cluster::put(
             cluster,
             platform,
-            service_provider,
+            liveness_service_provider,
             cluster_id,
             platform_block_height,
         )?;
@@ -60,7 +81,7 @@ impl Cluster {
 
         Cluster::delete(
             platform,
-            service_provider,
+            liveness_service_provider,
             cluster_id,
             block_height_for_remove,
         )?;
@@ -185,57 +206,4 @@ impl Cluster {
             Error::ClusterNotFound
         })
     }
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
-#[kvstore(key(platform: Platform, service_provider: ServiceProvider))]
-pub struct ClusterIdList(BTreeSet<String>);
-
-impl ClusterIdList {
-    pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
-        self.0.insert(cluster_id.as_ref().into());
-    }
-
-    pub fn remove(&mut self, cluster_id: impl AsRef<str>) {
-        self.0.remove(cluster_id.as_ref());
-    }
-
-    pub fn iter(&self) -> btree_set::Iter<'_, String> {
-        self.0.iter()
-    }
-}
-
-#[derive(Default, Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(platform: Platform, service_provider: ServiceProvider, cluster_id: &str))]
-pub struct LatestClusterBlockHeight(u64);
-
-impl LatestClusterBlockHeight {
-    pub fn get_block_height(&self) -> u64 {
-        self.0
-    }
-
-    pub fn set_block_height(&mut self, block_height: u64) {
-        self.0 = block_height;
-    }
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
-#[kvstore(key(cluster_id: &str, platform_block_height: u64))]
-pub struct LivenessEventList(Vec<LivenessEventType>);
-
-impl LivenessEventList {
-    pub fn push(&mut self, event_type: LivenessEventType) {
-        self.0.push(event_type.into())
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &LivenessEventType> {
-        self.0.iter()
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum LivenessEventType {
-    RegisteredTxOrderer(usize, TxOrdererRpcInfo),
-    DeregisteredTxOrderer(String),
-    AddedRollup(String, String),
 }
