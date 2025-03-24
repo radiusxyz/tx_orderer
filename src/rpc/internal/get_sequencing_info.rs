@@ -5,7 +5,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfo {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -22,7 +22,7 @@ impl RpcParameter<AppState> for GetSequencingInfo {
 
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let sequencing_info_payload =
-            SequencingInfoPayload::get(self.platform, self.service_provider)?;
+            SequencingInfoPayload::get(self.platform, self.liveness_service_provider)?;
 
         Ok(GetSequencingInfoResponse {
             sequencing_info_payload,

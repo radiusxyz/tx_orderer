@@ -40,7 +40,7 @@ impl SeederClient {
     pub async fn register_tx_orderer(
         &self,
         platform: Platform,
-        service_provider: ServiceProvider,
+        liveness_service_provider: LivenessServiceProvider,
         cluster_id: &str,
         external_rpc_url: &str,
         cluster_rpc_url: &str,
@@ -48,7 +48,7 @@ impl SeederClient {
     ) -> Result<(), SeederError> {
         let message = RegisterTxOrdererMessage {
             platform,
-            service_provider,
+            liveness_service_provider,
             cluster_id: cluster_id.to_owned(),
             tx_orderer_address: signer.address().to_owned(),
             external_rpc_url: external_rpc_url.to_owned(),
@@ -80,13 +80,13 @@ impl SeederClient {
     pub async fn deregister_tx_orderer(
         &self,
         platform: Platform,
-        service_provider: ServiceProvider,
+        liveness_service_provider: LivenessServiceProvider,
         cluster_id: &str,
         signer: &PrivateKeySigner,
     ) -> Result<(), SeederError> {
         let message = DeregisterTxOrdererMessage {
             platform,
-            service_provider,
+            liveness_service_provider,
             cluster_id: cluster_id.to_owned(),
             tx_orderer_address: signer.address().to_owned(),
         };
@@ -159,7 +159,7 @@ impl RegisterTxOrderer {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RegisterTxOrdererMessage {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
     pub cluster_id: String,
     pub tx_orderer_address: Address,
     pub external_rpc_url: String,
@@ -179,7 +179,7 @@ impl DeregisterTxOrderer {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeregisterTxOrdererMessage {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
     pub cluster_id: String,
 
     #[serde(serialize_with = "serialize_address")]

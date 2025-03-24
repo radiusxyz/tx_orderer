@@ -3,7 +3,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AddSequencingInfo {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
     pub payload: SequencingInfoPayload,
 }
 
@@ -18,23 +18,23 @@ impl RpcParameter<AppState> for AddSequencingInfo {
         tracing::info!(
             "Add sequencing info - platform: {:?}, service provider: {:?}, payload: {:?}",
             self.platform,
-            self.service_provider,
+            self.liveness_service_provider,
             self.payload
         );
 
         // Save `LivenessServiceManagerClient` metadata.
         let mut sequencing_info_list = SequencingInfoList::get_mut_or(SequencingInfoList::default)?;
-        sequencing_info_list.insert(self.platform, self.service_provider);
+        sequencing_info_list.insert(self.platform, self.liveness_service_provider);
         sequencing_info_list.update()?;
 
-        SequencingInfoPayload::put(&self.payload, self.platform, self.service_provider)?;
+        SequencingInfoPayload::put(&self.payload, self.platform, self.liveness_service_provider)?;
 
         match &self.payload {
             SequencingInfoPayload::Ethereum(payload) => {
                 liveness_service_manager::radius::LivenessServiceManagerClient::initialize(
                     context.clone(),
                     self.platform,
-                    self.service_provider,
+                    self.liveness_service_provider,
                     payload.clone(),
                 )
                 .await?;

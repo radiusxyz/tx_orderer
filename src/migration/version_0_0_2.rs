@@ -7,6 +7,18 @@ const PREVIOUS_DATABASE_VERSION: &'static str = "v0.0.1";
 const CURRENT_DATABASE_VERSION: &'static str = "v0.0.2";
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct NewRollupMetadata {
+    pub rollup_block_height: u64,
+    pub transaction_order: u64,
+    pub cluster_id: String,
+    pub platform_block_height: u64,
+    pub is_leader: bool,
+    pub leader_tx_orderer_rpc_info: TxOrdererRpcInfo,
+    pub max_gas_limit: u64,
+    pub current_gas: u64,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct OldRollupMetadata {
     pub rollup_block_height: u64,
     pub transaction_order: u64,
@@ -20,7 +32,7 @@ pub struct OldRollupMetadata {
 pub struct OldRollup {
     pub cluster_id: String,
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub service_provider: LivenessServiceProvider,
 
     pub rollup_id: String,
     pub rollup_type: RollupType,
@@ -84,7 +96,7 @@ fn migrate_rollup(kv_store: &KvStore, rollup_id: &str) -> Result<(), Error> {
         let new_rollup = Rollup {
             cluster_id: old_rollup.cluster_id,
             platform: old_rollup.platform,
-            service_provider: old_rollup.service_provider,
+            liveness_service_provider: old_rollup.service_provider,
             rollup_id: old_rollup.rollup_id,
             rollup_type: old_rollup.rollup_type,
             encrypted_transaction_type: old_rollup.encrypted_transaction_type,
@@ -114,7 +126,7 @@ fn migrate_rollup_metadata(kv_store: &KvStore, rollup_id: &str) -> Result<(), Er
             .get(&("RollupMetadata", rollup_id))
             .map_err(Error::Database)?;
 
-        let new_metadata = RollupMetadata {
+        let new_rollup_metadata = NewRollupMetadata {
             rollup_block_height: old_metadata.rollup_block_height,
             transaction_order: old_metadata.transaction_order,
             cluster_id: old_metadata.cluster_id,
@@ -126,7 +138,7 @@ fn migrate_rollup_metadata(kv_store: &KvStore, rollup_id: &str) -> Result<(), Er
         };
 
         kv_store
-            .put(&("RollupMetadata", rollup_id), &new_metadata)
+            .put(&("RollupMetadata", rollup_id), &new_rollup_metadata)
             .map_err(Error::Database)?;
 
         tracing::info!("Migration of RollupMetadata {:?} completed", rollup_id);

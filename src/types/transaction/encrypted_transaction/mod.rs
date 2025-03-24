@@ -10,6 +10,30 @@ pub use eth_bundle_transaction::*;
 pub use eth_transaction::*;
 pub use model::*;
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EncryptedTransactionType {
+    Pvde,
+    Skde,
+    NotSupport,
+}
+
+impl Default for EncryptedTransactionType {
+    fn default() -> Self {
+        Self::NotSupport
+    }
+}
+
+impl From<String> for EncryptedTransactionType {
+    fn from(value: String) -> Self {
+        match value.as_str() {
+            "pvde" | "Pvde" | "PVDE" => Self::Pvde,
+            "skde" | "Skde" | "SKDE" => Self::Skde,
+            _ => Self::NotSupport,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EncryptedTransactionList(Vec<EncryptedTransaction>);
 

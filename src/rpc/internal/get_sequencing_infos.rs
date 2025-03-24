@@ -7,7 +7,7 @@ pub struct GetSequencingInfos;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetSequencingInfosResponse {
-    pub sequencing_infos: Vec<((Platform, ServiceProvider), SequencingInfoPayload)>,
+    pub sequencing_infos: Vec<((Platform, LivenessServiceProvider), SequencingInfoPayload)>,
 }
 
 impl RpcParameter<AppState> for GetSequencingInfos {
@@ -20,7 +20,7 @@ impl RpcParameter<AppState> for GetSequencingInfos {
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let sequencing_info_list = SequencingInfoList::get()?;
 
-        let sequencing_infos: Vec<((Platform, ServiceProvider), SequencingInfoPayload)> =
+        let sequencing_infos: Vec<((Platform, LivenessServiceProvider), SequencingInfoPayload)> =
             sequencing_info_list
                 .iter()
                 .filter_map(|(platform, service_provider)| {

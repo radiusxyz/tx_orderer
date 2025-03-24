@@ -5,7 +5,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Deregister {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
     pub cluster_id: String,
 }
 
@@ -20,7 +20,7 @@ impl RpcParameter<AppState> for Deregister {
         tracing::info!(
             "Deregister - platform: {:?}, service provider: {:?}, cluster id: {:?}",
             self.platform,
-            self.service_provider,
+            self.liveness_service_provider,
             self.cluster_id
         );
 
@@ -33,14 +33,14 @@ impl RpcParameter<AppState> for Deregister {
                 seeder_client
                     .deregister_tx_orderer(
                         self.platform,
-                        self.service_provider,
+                        self.liveness_service_provider,
                         &self.cluster_id,
                         &signer,
                     )
                     .await?;
 
                 let mut cluster_id_list =
-                    ClusterIdList::get_mut(self.platform, self.service_provider)?;
+                    ClusterIdList::get_mut(self.platform, self.liveness_service_provider)?;
                 cluster_id_list.remove(&self.cluster_id);
                 cluster_id_list.update()?;
             }

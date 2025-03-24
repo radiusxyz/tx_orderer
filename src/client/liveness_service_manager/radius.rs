@@ -27,7 +27,7 @@ pub struct LivenessServiceManagerClient {
 
 struct LivenessServiceManagerClientInner {
     platform: Platform,
-    service_provider: ServiceProvider,
+    liveness_service_provider: LivenessServiceProvider,
     publisher: Publisher,
     subscriber: Subscriber,
     seeder: SeederClient,
@@ -44,7 +44,7 @@ impl Clone for LivenessServiceManagerClient {
 impl LivenessServiceManagerClient {
     pub fn new(
         platform: Platform,
-        service_provider: ServiceProvider,
+        liveness_service_provider: LivenessServiceProvider,
         liveness_info: LivenessRadius,
         signing_key: impl AsRef<str>,
         seeder: SeederClient,
@@ -65,7 +65,7 @@ impl LivenessServiceManagerClient {
         Ok(Self {
             inner: Arc::new(LivenessServiceManagerClientInner {
                 platform,
-                service_provider,
+                liveness_service_provider,
                 publisher,
                 subscriber,
                 seeder,
@@ -76,7 +76,7 @@ impl LivenessServiceManagerClient {
     pub async fn initialize(
         context: AppState,
         platform: Platform,
-        service_provider: ServiceProvider,
+        liveness_service_provider: LivenessServiceProvider,
         liveness_info: LivenessRadius,
     ) -> Result<(), Error> {
         let signing_key = &context.config().signing_key;
@@ -94,7 +94,7 @@ impl LivenessServiceManagerClient {
 
         let liveness_service_manager_client = Self::new(
             platform,
-            service_provider,
+            liveness_service_provider,
             liveness_info.clone(),
             signing_key,
             context.seeder_client().clone(),
@@ -144,7 +144,7 @@ impl LivenessServiceManagerClient {
         context
             .add_liveness_service_manager_client(
                 platform,
-                service_provider,
+                liveness_service_provider,
                 liveness_service_manager_client.clone(),
             )
             .await
@@ -158,7 +158,7 @@ impl LivenessServiceManagerClient {
                 tracing::info!(
                     "Initializing the liveness event listener for {:?}, {:?}..",
                     platform,
-                    service_provider
+                    liveness_service_provider
                 );
 
                 if let Err(error) = event_listener_client
@@ -175,7 +175,7 @@ impl LivenessServiceManagerClient {
                     tracing::warn!(
                         "Liveness event listener encountered an error for {:?}, {:?} - {:?}",
                         platform,
-                        service_provider,
+                        liveness_service_provider,
                         error
                     );
                 }
@@ -183,7 +183,7 @@ impl LivenessServiceManagerClient {
                 tracing::warn!(
                     "Reconnecting the liveness event listener for {:?}, {:?}..",
                     platform,
-                    service_provider
+                    liveness_service_provider
                 );
 
                 sleep(Duration::from_secs(5)).await;
@@ -259,14 +259,14 @@ pub async fn initialize_new_cluster(
         platform_block_height
     );
 
-    let mut latest_cluster_block_height = LatestClusterBlockHeight::get_or(
+    let mut cluster_metadata = ClusterMetadata::get_or(
         liveness_service_manager_client.platform(),
         liveness_service_manager_client.service_provider(),
         cluster_id,
-        LatestClusterBlockHeight::default,
+        ClusterMetadata::default,
     )?;
 
-    let block_diff = platform_block_height - latest_cluster_block_height.get_block_height();
+    let block_diff = platform_block_height - cluster_metadata.platform_block_height;
     let block_diff = std::cmp::min(block_diff, block_margin);
 
     for offset in 0..block_diff {
@@ -350,8 +350,8 @@ pub async fn initialize_new_cluster(
         return Ok(());
     }
 
-    latest_cluster_block_height.set_block_height(platform_block_height);
-    latest_cluster_block_height.put(
+    cluster_metadata.platform_block_height = platform_block_height;
+    cluster_metadata.put(
         liveness_service_manager_client.platform(),
         liveness_service_manager_client.service_provider(),
         cluster_id,
@@ -447,7 +447,7 @@ async fn get_rollup_id_list(
 
 async fn update_or_create_rollup(
     platform: Platform,
-    service_provider: ServiceProvider,
+    liveness_service_provider: LivenessServiceProvider,
     validation_service_provider: ValidationServiceProvider,
     cluster_id: &str,
     rollup_info: &RollupInfo,
@@ -509,7 +509,7 @@ async fn update_or_create_rollup(
                     executor_address_list,
                     cluster_id.to_owned(),
                     platform,
-                    service_provider,
+                    liveness_service_provider,
                 );
 
                 let mut rollup_id_list = RollupIdList::get_mut_or(RollupIdList::default)?;
@@ -539,8 +539,8 @@ impl LivenessServiceManagerClient {
         self.inner.platform
     }
 
-    pub fn service_provider(&self) -> ServiceProvider {
-        self.inner.service_provider
+    pub fn service_provider(&self) -> LivenessServiceProvider {
+        self.inner.liveness_service_provider
     }
 
     pub fn publisher(&self) -> &Publisher {

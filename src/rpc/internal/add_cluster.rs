@@ -5,7 +5,7 @@ use crate::{client::liveness_service_manager::radius::initialize_new_cluster, rp
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AddCluster {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
     pub cluster_id: String,
 }
 
@@ -20,7 +20,7 @@ impl RpcParameter<AppState> for AddCluster {
         tracing::info!(
             "Add cluster - platform: {:?}, service provider: {:?}, cluster id: {:?}",
             self.platform,
-            self.service_provider,
+            self.liveness_service_provider,
             self.cluster_id
         );
 
@@ -33,7 +33,7 @@ impl RpcParameter<AppState> for AddCluster {
                 seeder_client
                     .register_tx_orderer(
                         self.platform,
-                        self.service_provider,
+                        self.liveness_service_provider,
                         &self.cluster_id,
                         &context.config().external_rpc_url,
                         &context.config().cluster_rpc_url,
@@ -44,7 +44,7 @@ impl RpcParameter<AppState> for AddCluster {
                 let liveness_service_manager_client: liveness_service_manager::radius::LivenessServiceManagerClient = context
                 .get_liveness_service_manager_client::<liveness_service_manager::radius::LivenessServiceManagerClient>(
                     self.platform,
-                    self.service_provider,
+                    self.liveness_service_provider,
                 )
                 .await?;
 
@@ -62,11 +62,14 @@ impl RpcParameter<AppState> for AddCluster {
                     .try_into()
                     .expect("Failed to convert block margin");
 
-                println!(
-                    "stompesi - platform_block_height: {:?}",
-                    platform_block_height
-                );
-                println!("stompesi - block_margin: {:?}", block_margin);
+                let cluster_metadata =
+                    ClusterMetadata::new(self.cluster_id.clone(), platform_block_height);
+
+                cluster_metadata.put(
+                    self.platform,
+                    self.liveness_service_provider,
+                    &self.cluster_id,
+                )?;
 
                 let _ = initialize_new_cluster(
                     context,
@@ -80,7 +83,7 @@ impl RpcParameter<AppState> for AddCluster {
 
                 let mut cluster_id_list = ClusterIdList::get_mut_or(
                     self.platform,
-                    self.service_provider,
+                    self.liveness_service_provider,
                     ClusterIdList::default,
                 )?;
                 cluster_id_list.insert(&self.cluster_id);

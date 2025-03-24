@@ -3,7 +3,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetClusterIdList {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -19,7 +19,7 @@ impl RpcParameter<AppState> for GetClusterIdList {
     }
 
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        let cluster_id_list = ClusterIdList::get(self.platform, self.service_provider)?;
+        let cluster_id_list = ClusterIdList::get(self.platform, self.liveness_service_provider)?;
 
         Ok(GetClusterIdListResponse { cluster_id_list })
     }

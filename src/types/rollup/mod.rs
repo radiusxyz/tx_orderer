@@ -15,7 +15,7 @@ use super::prelude::*;
 pub struct Rollup {
     pub cluster_id: String,
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
 
     pub rollup_id: String,
     pub rollup_type: RollupType,
@@ -48,7 +48,7 @@ impl Rollup {
         cluster_id: String,
 
         platform: Platform,
-        service_provider: ServiceProvider,
+        liveness_service_provider: LivenessServiceProvider,
     ) -> Self {
         Self {
             rollup_id,
@@ -60,7 +60,7 @@ impl Rollup {
             executor_address_list,
             cluster_id,
             platform,
-            service_provider,
+            liveness_service_provider,
             max_gas_limit: 0,
         }
     }

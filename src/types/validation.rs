@@ -1,12 +1,27 @@
-use std::collections::btree_set::{BTreeSet, Iter};
+use std::{
+    collections::btree_set::{BTreeSet, Iter},
+    str::FromStr,
+};
 
-use crate::types::prelude::*;
+use crate::{error::Error, types::prelude::*};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ValidationServiceProvider {
     EigenLayer,
     Symbiotic,
+}
+
+impl FromStr for ValidationServiceProvider {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "eigen_layer" | "eigenlayer" => Ok(Self::EigenLayer),
+            "symbiotic" => Ok(Self::Symbiotic),
+            _ => Ok(Self::Symbiotic),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
