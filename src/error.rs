@@ -52,6 +52,8 @@ pub enum Error {
     RpcServerTerminated,
     DatabaseVersionMismatch,
     Parse,
+    InvalidBatchNumber,
+
     GeneralError(String),
 }
 
