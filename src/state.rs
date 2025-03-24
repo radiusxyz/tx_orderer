@@ -8,10 +8,7 @@ use radius_sdk::{
 use skde::delay_encryption::SkdeParams;
 
 use crate::{
-    client::{
-        distributed_key_generation::DistributedKeyGenerationClient,
-        reward_manager::RewardManagerClient, seeder::SeederClient,
-    },
+    client::{reward_manager::RewardManagerClient, seeder::SeederClient},
     merkle_tree_manager::MerkleTreeManager,
     profiler::Profiler,
     types::*,
@@ -25,7 +22,6 @@ struct AppStateInner {
     config: Config,
     seeder_client: SeederClient,
     reward_manager_client: RewardManagerClient,
-    distributed_key_generation_client: DistributedKeyGenerationClient,
     liveness_service_manager_clients: CachedKvStore,
     validation_service_manager_clients: CachedKvStore,
     signers: CachedKvStore,
@@ -49,7 +45,6 @@ impl AppState {
         config: Config,
         seeder_client: SeederClient,
         reward_manager_client: RewardManagerClient,
-        distributed_key_generation_client: DistributedKeyGenerationClient,
         signers: CachedKvStore,
         liveness_service_manager_clients: CachedKvStore,
         validation_service_manager_clients: CachedKvStore,
@@ -62,7 +57,6 @@ impl AppState {
             config,
             seeder_client,
             reward_manager_client,
-            distributed_key_generation_client,
             signers,
             liveness_service_manager_clients,
             validation_service_manager_clients,
@@ -87,10 +81,6 @@ impl AppState {
 
     pub fn reward_manager_client(&self) -> &RewardManagerClient {
         &self.inner.reward_manager_client
-    }
-
-    pub fn distributed_key_generation_client(&self) -> &DistributedKeyGenerationClient {
-        &self.inner.distributed_key_generation_client
     }
 
     pub fn skde_params(&self) -> &SkdeParams {
@@ -148,13 +138,13 @@ impl AppState {
     pub async fn add_liveness_service_manager_client<T>(
         &self,
         platform: Platform,
-        service_provider: ServiceProvider,
+        liveness_service_provider: LivenessServiceProvider,
         liveness_service_manager_client: T,
     ) -> Result<(), CachedKvStoreError>
     where
         T: Clone + Any + Send + 'static,
     {
-        let key = &(platform, service_provider);
+        let key = &(platform, liveness_service_provider);
 
         self.inner
             .liveness_service_manager_clients
@@ -165,12 +155,12 @@ impl AppState {
     pub async fn get_liveness_service_manager_client<T>(
         &self,
         platform: Platform,
-        service_provider: ServiceProvider,
+        liveness_service_provider: LivenessServiceProvider,
     ) -> Result<T, CachedKvStoreError>
     where
         T: Clone + Any + Send + 'static,
     {
-        let key = &(platform, service_provider);
+        let key = &(platform, liveness_service_provider);
 
         self.inner.liveness_service_manager_clients.get(key).await
     }

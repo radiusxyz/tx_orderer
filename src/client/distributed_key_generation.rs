@@ -67,6 +67,23 @@ impl DistributedKeyGenerationClient {
             .await
             .map_err(DistributedKeyGenerationClientError::GetSkdeParams)
     }
+
+    pub async fn get_latest_key_id(
+        &self,
+    ) -> Result<GetLatestKeyIdResponse, DistributedKeyGenerationClientError> {
+        let parameter = GetLatestKeyId {};
+
+        self.inner
+            .rpc_client
+            .request(
+                &self.inner.rpc_url,
+                GetLatestKeyId::METHOD_NAME,
+                &parameter,
+                Id::Null,
+            )
+            .await
+            .map_err(DistributedKeyGenerationClientError::GetLatestKeyId)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -95,6 +112,19 @@ pub struct GetSkdeParamsResponse {
     pub skde_params: skde::delay_encryption::SkdeParams,
 }
 
+//////////
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetLatestKeyId {}
+
+impl GetLatestKeyId {
+    pub const METHOD_NAME: &'static str = "get_latest_key_id";
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetLatestKeyIdResponse {
+    pub latest_key_id: u64,
+}
+
 #[derive(Debug)]
 pub enum DistributedKeyGenerationClientError {
     Initialize(radius_sdk::json_rpc::client::RpcClientError),
@@ -102,6 +132,7 @@ pub enum DistributedKeyGenerationClientError {
     GetDecryptionKey(radius_sdk::json_rpc::client::RpcClientError),
     GetLatestEncryptionKey(radius_sdk::json_rpc::client::RpcClientError),
     GetSkdeParams(radius_sdk::json_rpc::client::RpcClientError),
+    GetLatestKeyId(radius_sdk::json_rpc::client::RpcClientError),
 }
 
 impl std::fmt::Display for DistributedKeyGenerationClientError {

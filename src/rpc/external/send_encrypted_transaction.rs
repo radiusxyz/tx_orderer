@@ -104,12 +104,22 @@ impl RpcParameter<AppState> for SendEncryptedTransaction {
                 cluster,
                 context.clone(),
                 rollup.platform,
-                self.rollup_id,
+                self.rollup_id.clone(),
                 batch_number,
                 transaction_order,
-                self.encrypted_transaction,
+                self.encrypted_transaction.clone(),
                 order_commitment.clone(),
             );
+
+            let _ = context
+                .decryptor()
+                .add_encrypted_transaction_to_decrypt(
+                    self.rollup_id,
+                    batch_number,
+                    transaction_order,
+                    self.encrypted_transaction,
+                )
+                .await;
 
             Ok(order_commitment)
         } else {

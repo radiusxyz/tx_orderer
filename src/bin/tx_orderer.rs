@@ -16,6 +16,7 @@ use tx_orderer::{
     merkle_tree_manager::MerkleTreeManager,
     rpc::{cluster, external, internal},
     state::AppState,
+    task::Decryptor,
     types::*,
     util::initialize_logger,
 };
@@ -119,6 +120,20 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
         .get_skde_params()
         .await?
         .skde_params;
+    let latest_key_id = distributed_key_generation_client
+        .get_latest_key_id()
+        .await?
+        .latest_key_id;
+
+    println!("stompesi - latest_key_id: {:?}", latest_key_id);
+
+    let decryptor = Decryptor::new(
+        distributed_key_generation_client.clone(),
+        skde_params.clone(),
+        10,
+    )?;
+
+    decryptor.start().await;
 
     let rpc_client = RpcClient::new().map_err(error::Error::RpcClient)?;
     let merkle_tree_manager = MerkleTreeManager::init(&rpc_client).await;
@@ -126,7 +141,6 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
         config,
         seeder_client,
         reward_manager_client,
-        distributed_key_generation_client,
         CachedKvStore::default(),
         CachedKvStore::default(),
         CachedKvStore::default(),
@@ -271,8 +285,6 @@ async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
     let cluster_rpc_server = RpcServer::new(context)
         .register_rpc_method::<cluster::SyncEncryptedTransaction>()?
         .register_rpc_method::<cluster::SyncRawTransaction>()?
-        .register_rpc_method::<cluster::FinalizeBlock>()?
-        .register_rpc_method::<cluster::SyncBlock>()?
         .register_rpc_method::<cluster::SyncMaxGasLimit>()?
         .register_rpc_method::<external::GetRawTransactionList>()?
         .init(cluster_rpc_url.clone())
@@ -307,8 +319,6 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> 
         .register_rpc_method::<external::GetEncryptedTransactionList>()?
         .register_rpc_method::<external::GetRollup>()?
         .register_rpc_method::<external::GetRollupMetadata>()?
-        .register_rpc_method::<external::GetBlock>()?
-        .register_rpc_method::<external::GetBlockHeight>()?
         .register_rpc_method::<external::GetVersion>()?
         .init(external_rpc_url)
         .await?;
