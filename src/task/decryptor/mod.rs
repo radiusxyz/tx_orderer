@@ -50,11 +50,11 @@ impl Decryptor {
         Ok(decryptor)
     }
 
-    pub async fn start(self: Arc<Self>) {
-        let cloned_decryptor = Arc::clone(&self);
+    pub async fn start(decryptor: Arc<Self>) {
+        let cloned_decryptor = Arc::clone(&decryptor);
         tokio::spawn(async move { cloned_decryptor.process_to_get_decryption_key().await });
 
-        let cloned_decryptor = Arc::clone(&self);
+        let cloned_decryptor = Arc::clone(&decryptor);
         tokio::spawn(async move { cloned_decryptor.process_to_decrypt().await });
     }
 

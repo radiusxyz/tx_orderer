@@ -120,20 +120,18 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
         .get_skde_params()
         .await?
         .skde_params;
-    let latest_key_id = distributed_key_generation_client
+    let latest_decryption_key_id = distributed_key_generation_client
         .get_latest_key_id()
         .await?
         .latest_key_id;
 
-    println!("stompesi - latest_key_id: {:?}", latest_key_id);
-
     let decryptor = Decryptor::new(
         distributed_key_generation_client.clone(),
         skde_params.clone(),
-        10,
+        latest_decryption_key_id,
     )?;
 
-    decryptor.start().await;
+    Decryptor::start(decryptor.clone()).await;
 
     let rpc_client = RpcClient::new().map_err(error::Error::RpcClient)?;
     let merkle_tree_manager = MerkleTreeManager::init(&rpc_client).await;
@@ -141,6 +139,7 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
         config,
         seeder_client,
         reward_manager_client,
+        decryptor,
         CachedKvStore::default(),
         CachedKvStore::default(),
         CachedKvStore::default(),

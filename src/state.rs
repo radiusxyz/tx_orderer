@@ -11,6 +11,7 @@ use crate::{
     client::{reward_manager::RewardManagerClient, seeder::SeederClient},
     merkle_tree_manager::MerkleTreeManager,
     profiler::Profiler,
+    task::Decryptor,
     types::*,
 };
 
@@ -22,6 +23,7 @@ struct AppStateInner {
     config: Config,
     seeder_client: SeederClient,
     reward_manager_client: RewardManagerClient,
+    decryptor: Arc<Decryptor>,
     liveness_service_manager_clients: CachedKvStore,
     validation_service_manager_clients: CachedKvStore,
     signers: CachedKvStore,
@@ -45,6 +47,7 @@ impl AppState {
         config: Config,
         seeder_client: SeederClient,
         reward_manager_client: RewardManagerClient,
+        decryptor: Arc<Decryptor>,
         signers: CachedKvStore,
         liveness_service_manager_clients: CachedKvStore,
         validation_service_manager_clients: CachedKvStore,
@@ -57,6 +60,7 @@ impl AppState {
             config,
             seeder_client,
             reward_manager_client,
+            decryptor,
             signers,
             liveness_service_manager_clients,
             validation_service_manager_clients,
@@ -97,6 +101,10 @@ impl AppState {
 
     pub fn merkle_tree_manager(&self) -> &MerkleTreeManager {
         &self.inner.merkle_tree_manager
+    }
+
+    pub fn decryptor(&self) -> &Arc<Decryptor> {
+        &self.inner.decryptor
     }
 }
 

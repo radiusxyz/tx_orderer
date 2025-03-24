@@ -5,7 +5,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetCluster {
     pub platform: Platform,
-    pub service_provider: ServiceProvider,
+    pub liveness_service_provider: LivenessServiceProvider,
     pub cluster_id: String,
 }
 
@@ -22,18 +22,17 @@ impl RpcParameter<AppState> for GetCluster {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        let latest_cluster_block_height = LatestClusterBlockHeight::get_or(
+        let cluster_metadata = ClusterMetadata::get_or(
             self.platform,
-            self.service_provider,
+            self.liveness_service_provider,
             &self.cluster_id,
-            LatestClusterBlockHeight::default,
-        )?
-        .get_block_height();
+            ClusterMetadata::default,
+        )?;
 
         let liveness_service_manager_client = context
             .get_liveness_service_manager_client::<
                 liveness_service_manager::radius::LivenessServiceManagerClient,
-            >(self.platform, self.service_provider)
+            >(self.platform, self.liveness_service_provider)
             .await?;
 
         let mut block_margin: u64 = liveness_service_manager_client
@@ -46,10 +45,10 @@ impl RpcParameter<AppState> for GetCluster {
 
         let mut cluster_info = BTreeMap::new();
         while block_margin > 0 {
-            let platform_block_height = latest_cluster_block_height - block_margin;
+            let platform_block_height = cluster_metadata.platform_block_height - block_margin;
             let cluster = Cluster::get(
                 self.platform,
-                self.service_provider,
+                self.liveness_service_provider,
                 &self.cluster_id,
                 platform_block_height,
             )?;
