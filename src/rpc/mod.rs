@@ -7,7 +7,7 @@ pub(crate) mod prelude {
             client::Id,
             server::{RpcError, RpcParameter},
         },
-        signature::{Address, Signature},
+        signature::Signature,
     };
     pub use serde::{Deserialize, Serialize};
 

@@ -3,7 +3,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetOrderCommitment {
     pub rollup_id: String,
-    pub rollup_block_height: u64,
+    pub batch_number: u64,
     pub transaction_order: u64,
 }
 
@@ -20,11 +20,8 @@ impl RpcParameter<AppState> for GetOrderCommitment {
     }
 
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        let order_commitment = OrderCommitment::get(
-            &self.rollup_id,
-            self.rollup_block_height,
-            self.transaction_order,
-        )?;
+        let order_commitment =
+            OrderCommitment::get(&self.rollup_id, self.batch_number, self.transaction_order)?;
 
         Ok(GetOrderCommitmentResponse { order_commitment })
     }

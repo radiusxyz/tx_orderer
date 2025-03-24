@@ -151,13 +151,14 @@ async fn callback(
 ) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = if let Ok(block_height) = event.blockNumber.try_into() {
-            match Block::get(&rollup.rollup_id, block_height) {
-                Ok(block) => block,
+        let batch = if let Ok(betch_number) = event.blockNumber.try_into() {
+            // TODO: change
+            match Batch::get(&rollup.rollup_id, betch_number) {
+                Ok(batch) => batch,
                 Err(err) => {
                     tracing::error!(
                         target: LOG_TARGET,
-                        "Error getting block: {}", err
+                        "Error getting batch: {}", err
                     );
                     return;
                 }
@@ -165,13 +166,13 @@ async fn callback(
         } else {
             tracing::error!(
                 target: LOG_TARGET,
-                "Error converting block number");
+                "Error converting batch number");
             return;
         };
 
         tracing::info!(
             target: LOG_TARGET,
-            "NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / blockNumber: {:?} / blockCommitment: {:?}",
+            "NewTaskCreated: clusterId: {:?} / rollupId: {:?} / referenceTaskIndex: {:?} / batchNumber: {:?} / batchCommitment: {:?}",
             event.clusterId,
             event.rollupId,
             event.referenceTaskIndex,
@@ -179,7 +180,7 @@ async fn callback(
             event.blockCommitment
         );
 
-        if block.block_creator_address != context.publisher().address() {
+        if batch.batch_creator_address != context.publisher().address() {
             let (
                 reward_task_id,
                 vault_address_list,

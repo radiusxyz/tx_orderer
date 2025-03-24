@@ -36,32 +36,32 @@ impl MerkleTreeManager {
             if let Some(rollup_metadata) = RollupMetadata::get(rollup_id).ok() {
                 if rollup_metadata.transaction_order > 0 {
                     tracing::info!(
-                        "Building merkle tree for rollup - rollup_id: {:?} / rollup_block_height: {:?} / transaction_order: {:?}",
+                        "Building merkle tree for rollup - rollup_id: {:?} / batch_number: {:?} / transaction_order: {:?}",
                         rollup_id,
-                        rollup_metadata.rollup_block_height,
+                        rollup_metadata.batch_number,
                         rollup_metadata.transaction_order
                     );
                     let rollup = Rollup::get(rollup_id).unwrap();
-                    let latest_cluster_block_height = LatestClusterBlockHeight::get_or(
+                    let cluster_metadata = ClusterMetadata::get_or(
                         rollup.platform,
-                        rollup.service_provider,
+                        rollup.liveness_service_provider,
                         &rollup.cluster_id,
-                        LatestClusterBlockHeight::default,
+                        ClusterMetadata::default,
                     )
                     .unwrap();
 
                     let cluster = Cluster::get(
                         rollup.platform,
-                        rollup.service_provider,
+                        rollup.liveness_service_provider,
                         &rollup.cluster_id,
-                        latest_cluster_block_height.get_block_height(),
+                        cluster_metadata.platform_block_height,
                     )
                     .unwrap();
 
                     for index in 0..rollup_metadata.transaction_order {
                         let get_raw_transaction_result = RawTransactionModel::get(
                             rollup_id,
-                            rollup_metadata.rollup_block_height,
+                            rollup_metadata.batch_number,
                             index,
                         );
 
@@ -69,9 +69,9 @@ impl MerkleTreeManager {
                             Ok((raw_transaction, _)) => raw_transaction.raw_transaction_hash(),
                             Err(_) => {
                                 tracing::warn!(
-                                "Failed to get raw transaction - rollup_id: {:?} / rollup_block_height: {:?} / index: {:?}",
+                                "Failed to get raw transaction - rollup_id: {:?} / batch_number: {:?} / index: {:?}",
                                 rollup_id,
-                                rollup_metadata.rollup_block_height,
+                                rollup_metadata.batch_number,
                                 index
                             );
 
@@ -79,7 +79,7 @@ impl MerkleTreeManager {
                                     rpc_client,
                                     &cluster,
                                     &rollup_id,
-                                    rollup_metadata.rollup_block_height,
+                                    rollup_metadata.batch_number,
                                     index,
                                 )
                                 .await
@@ -89,16 +89,16 @@ impl MerkleTreeManager {
                                     }
                                     Err(error) => {
                                         tracing::warn!(
-                                        "Failed to fetch raw transaction - rollup_id: {:?} / rollup_block_height: {:?} / index: {:?} / error: {:?}",
+                                        "Failed to fetch raw transaction - rollup_id: {:?} / batch_number: {:?} / index: {:?} / error: {:?}",
                                         rollup_id,
-                                        rollup_metadata.rollup_block_height,
+                                        rollup_metadata.batch_number,
                                         index,
                                         error
                                     );
 
                                         let encrypted_transaction = EncryptedTransactionModel::get(
                                             rollup_id,
-                                            rollup_metadata.rollup_block_height,
+                                            rollup_metadata.batch_number,
                                             index,
                                         )
                                         .unwrap();

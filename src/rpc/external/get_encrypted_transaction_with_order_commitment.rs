@@ -3,7 +3,7 @@ use crate::{rpc::prelude::*, types::*};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetEncryptedTransactionWithOrderCommitment {
     pub rollup_id: String,
-    pub rollup_block_height: u64,
+    pub batch_number: u64,
     pub transaction_order: u64,
 }
 
@@ -17,7 +17,7 @@ impl RpcParameter<AppState> for GetEncryptedTransactionWithOrderCommitment {
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
         let encrypted_transaction = EncryptedTransactionModel::get(
             &self.rollup_id,
-            self.rollup_block_height,
+            self.batch_number,
             self.transaction_order,
         )?;
 

@@ -142,22 +142,23 @@ impl ValidationServiceManagerClient {
 async fn callback(event: Avs::NewTaskCreated, context: ValidationServiceManagerClient) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let block = match Block::get(&rollup.rollup_id, event.task.blockNumber) {
-            Ok(block) => block,
+        let batch = match Batch::get(&rollup.rollup_id, event.task.blockNumber) {
+            // TODO: change
+            Ok(batch) => batch,
             Err(err) => {
                 tracing::error!(
                     target: LOG_TARGET,
-                    "Failed to get block: {:?}",
+                    "Failed to get batch: {:?}",
                     err
                 );
                 return;
             }
         };
 
-        if block.block_creator_address != context.publisher().address() {
+        if batch.batch_creator_address != context.publisher().address() {
             let task = IValidationServiceManager::Task {
                 commitment: Bytes::from_iter(&[0u8; 32]),
-                blockNumber: 0,
+                blockNumber: 0, // TODO: change
                 rollupId: rollup.rollup_id,
                 clusterId: rollup.cluster_id,
                 taskCreatedBlock: event.taskCreatedBlock,

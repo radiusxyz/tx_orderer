@@ -1,4 +1,4 @@
-mod block;
+mod batch;
 mod cluster;
 mod config;
 mod liveness;
@@ -10,7 +10,7 @@ mod transaction;
 mod validation;
 mod version;
 
-pub use block::*;
+pub use batch::*;
 pub use cluster::*;
 pub use config::*;
 pub use liveness::*;

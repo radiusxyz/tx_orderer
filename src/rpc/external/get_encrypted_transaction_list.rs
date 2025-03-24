@@ -3,7 +3,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetEncryptedTransactionList {
     pub rollup_id: String,
-    pub rollup_block_height: u64,
+    pub batch_number: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -19,10 +19,10 @@ impl RpcParameter<AppState> for GetEncryptedTransactionList {
     }
 
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        let block = Block::get(&self.rollup_id, self.rollup_block_height)?;
+        let batch = Batch::get(&self.rollup_id, self.batch_number)?;
 
         Ok(GetEncryptedTransactionListResponse {
-            encrypted_transaction_list: block.encrypted_transaction_list,
+            encrypted_transaction_list: batch.encrypted_transaction_list,
         })
     }
 }

@@ -23,23 +23,20 @@ impl RpcParameter<AppState> for SendRawTransaction {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        // tracing::info!(
-        //     "Send raw transaction: rollup_id: {:?}, raw_transaction: {:?}",
-        //     self.rollup_id,
-        //     self.raw_transaction
-        // );
+        let rollup = Rollup::get(&self.rollup_id)?;
 
         let transaction_gas_limit = self.raw_transaction.get_transaction_gas_limit()?;
 
-        let rollup = Rollup::get(&self.rollup_id)?;
-        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
-        let cluster = Cluster::get(
+        let cluster_metadata = ClusterMetadata::get(
             rollup.platform,
-            rollup.service_provider,
+            rollup.liveness_service_provider,
             &rollup.cluster_id,
-            rollup_metadata.platform_block_height,
         )?;
-        let rollup_block_height = rollup_metadata.rollup_block_height;
+
+        // 2. Check is leader
+        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
+
+        let batch_number = rollup_metadata.batch_number;
 
         tracing::debug!(
             "Send raw transaction: rollup_id: {:?}, rollup_metadata: {:?}",
@@ -47,7 +44,14 @@ impl RpcParameter<AppState> for SendRawTransaction {
             rollup_metadata.clone()
         );
 
-        if rollup_metadata.is_leader {
+        if cluster_metadata.is_leader {
+            let cluster = Cluster::get(
+                rollup.platform,
+                rollup.liveness_service_provider,
+                &rollup.cluster_id,
+                cluster_metadata.platform_block_height,
+            )?;
+
             let transaction_order = rollup_metadata.transaction_order;
             let transaction_hash = self.raw_transaction.raw_transaction_hash();
 
@@ -67,7 +71,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
 
             RawTransactionModel::put(
                 &self.rollup_id,
-                rollup_block_height,
+                batch_number,
                 transaction_order,
                 self.raw_transaction.clone(),
                 true,
@@ -76,17 +80,16 @@ impl RpcParameter<AppState> for SendRawTransaction {
             let merkle_tree = context.merkle_tree_manager().get(&self.rollup_id).await?;
             let (_, pre_merkle_path) = merkle_tree.add_data(transaction_hash.as_ref()).await;
 
-            tracing::debug!(
-                "Send raw transaction: rollup_id: {:?}, transaction_order: {:?} / rollup_metadata.transaction_order: {:?}",
-                self.rollup_id,
-                transaction_order,
-                rollup_metadata.transaction_order
-            );
-
             rollup_metadata.current_gas += transaction_gas_limit;
             rollup_metadata.transaction_order += 1;
+            let is_full_batch =
+                rollup_metadata.transaction_order == rollup_metadata.max_transaction_order - 1;
             rollup_metadata.update()?;
             drop(merkle_tree);
+
+            if is_full_batch {
+                // TODO: build_batch
+            }
 
             let order_commitment = issue_order_commitment(
                 context.clone(),
@@ -94,31 +97,24 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 self.rollup_id.clone(),
                 rollup.order_commitment_type,
                 transaction_hash.clone(),
-                rollup_block_height,
+                batch_number,
                 transaction_order,
                 pre_merkle_path,
             )
             .await?;
 
-            order_commitment.put(&self.rollup_id, rollup_block_height, transaction_order)?;
+            order_commitment.put(&self.rollup_id, batch_number, transaction_order)?;
 
             sync_raw_transaction(
                 cluster,
                 context.clone(),
                 rollup.platform,
-                self.rollup_id.clone(),
-                rollup_block_height,
+                self.rollup_id,
+                batch_number,
                 transaction_order,
-                self.raw_transaction.clone(),
+                self.raw_transaction,
                 order_commitment.clone(),
                 true,
-            );
-
-            tracing::debug!(
-                target: LOG_TARGET,
-                "Send raw transaction: rollup_id: {:?}, order_commitment: {:?}",
-                self.rollup_id,
-                order_commitment.clone()
             );
 
             match rollup.order_commitment_type {
@@ -130,30 +126,40 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 OrderCommitmentType::Sign => Ok(order_commitment),
             }
         } else {
-            let leader_external_rpc_url = rollup_metadata
-                .leader_tx_orderer_rpc_info
-                .external_rpc_url
-                .clone()
-                .ok_or(Error::EmptyLeaderClusterRpcUrl)?;
-            drop(rollup_metadata);
+            match cluster_metadata.leader_tx_orderer_rpc_info {
+                Some(leader_tx_orderer_rpc_info) => {
+                    let leader_external_rpc_url = leader_tx_orderer_rpc_info
+                        .external_rpc_url
+                        .clone()
+                        .ok_or(Error::EmptyLeaderClusterRpcUrl)?;
+                    drop(rollup_metadata);
 
-            match context
-                .rpc_client()
-                .request(
-                    leader_external_rpc_url,
-                    SendRawTransaction::method(),
-                    &self,
-                    Id::Null,
-                )
-                .await
-            {
-                Ok(response) => Ok(response),
-                Err(error) => {
+                    match context
+                        .rpc_client()
+                        .request(
+                            leader_external_rpc_url,
+                            SendRawTransaction::method(),
+                            &self,
+                            Id::Null,
+                        )
+                        .await
+                    {
+                        Ok(response) => Ok(response),
+                        Err(error) => {
+                            tracing::error!(
+                                "Send raw transaction - leader external rpc error: {:?}",
+                                error
+                            );
+                            Err(error.into())
+                        }
+                    }
+                }
+                None => {
                     tracing::error!(
-                        "Send raw transaction - leader external rpc error: {:?}",
-                        error
+                        target: LOG_TARGET,
+                        "Send raw transaction - leader tx orderer rpc info is None"
                     );
-                    Err(error.into())
+                    return Err(Error::EmptyLeader)?;
                 }
             }
         }
@@ -166,7 +172,7 @@ pub fn sync_raw_transaction(
     context: AppState,
     platform: Platform,
     rollup_id: String,
-    rollup_block_height: u64,
+    batch_number: u64,
     transaction_order: u64,
     raw_transaction: RawTransaction,
     order_commitment: OrderCommitment,
@@ -179,7 +185,7 @@ pub fn sync_raw_transaction(
     tokio::spawn(async move {
         let message = SyncRawTransactionMessage {
             rollup_id,
-            rollup_block_height,
+            batch_number,
             transaction_order,
             raw_transaction,
             order_commitment: Some(order_commitment),

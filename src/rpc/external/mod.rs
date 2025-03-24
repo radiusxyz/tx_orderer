@@ -1,5 +1,5 @@
-mod get_block;
-mod get_block_height;
+mod get_batch;
+
 mod get_encrypted_transaction_list;
 mod get_encrypted_transaction_with_order_commitment;
 mod get_encrypted_transaction_with_transaction_hash;
@@ -13,8 +13,7 @@ mod get_version;
 mod send_encrypted_transaction;
 mod send_raw_transaction;
 
-pub use get_block::*;
-pub use get_block_height::*;
+pub use get_batch::*;
 pub use get_encrypted_transaction_list::*;
 pub use get_encrypted_transaction_with_order_commitment::*;
 pub use get_encrypted_transaction_with_transaction_hash::*;

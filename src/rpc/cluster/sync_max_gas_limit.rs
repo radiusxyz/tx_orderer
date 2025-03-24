@@ -26,13 +26,18 @@ impl RpcParameter<AppState> for SyncMaxGasLimit {
             self.message.max_gas_limit
         );
 
-        let rollup_metadata = RollupMetadata::get(&self.message.rollup_id)?;
         let mut locked_rollup = Rollup::get_mut(&self.message.rollup_id)?;
+        let cluster_metadata = ClusterMetadata::get(
+            locked_rollup.platform,
+            locked_rollup.liveness_service_provider,
+            &locked_rollup.cluster_id,
+        )?;
+
         let cluster = Cluster::get(
             locked_rollup.platform,
-            locked_rollup.service_provider,
+            locked_rollup.liveness_service_provider,
             &locked_rollup.cluster_id,
-            rollup_metadata.platform_block_height,
+            cluster_metadata.platform_block_height,
         )?;
         let tx_orderer_address_list = cluster.get_tx_orderer_address_list();
 

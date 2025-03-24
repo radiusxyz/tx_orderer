@@ -3,7 +3,7 @@ use crate::rpc::prelude::*;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRawTransactionList {
     pub rollup_id: String,
-    pub rollup_block_height: u64,
+    pub batch_number: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -19,9 +19,9 @@ impl RpcParameter<AppState> for GetRawTransactionList {
     }
 
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        let block = Block::get(&self.rollup_id, self.rollup_block_height)?;
+        let batch = Batch::get(&self.rollup_id, self.batch_number)?;
 
-        let raw_transaction_list: Vec<String> = block
+        let raw_transaction_list: Vec<String> = batch
             .raw_transaction_list
             .into_iter()
             .map(|transaction| match transaction {
