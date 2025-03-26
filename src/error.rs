@@ -23,6 +23,7 @@ pub enum Error {
     Profiler(crate::profiler::ProfilerError),
     MerkleTreeDoesNotExist(String),
     InitializeNewCluster(Box<dyn std::error::Error>),
+    NoLeader,
     EmptyLeader,
     EmptyLeaderClusterRpcUrl,
     InvalidPlatformBlockHeight,
