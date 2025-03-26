@@ -17,15 +17,19 @@ impl RpcParameter<AppState> for SetMaxGasLimit {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        let rollup_metadata = RollupMetadata::get(&self.rollup_id)?;
         let mut locked_rollup = Rollup::get_mut(&self.rollup_id)?;
         let platform = locked_rollup.platform;
+        let service_provider = locked_rollup.liveness_service_provider;
+
+        let rollup_metadata = RollupMetadata::get(&self.rollup_id)?;
+        let cluster_metadata =
+            ClusterMetadata::get(platform, service_provider, &rollup_metadata.cluster_id)?;
 
         let cluster = Cluster::get(
-            locked_rollup.platform,
-            locked_rollup.service_provider,
+            platform,
+            service_provider,
             &locked_rollup.cluster_id,
-            rollup_metadata.platform_block_height,
+            cluster_metadata.platform_block_height,
         )?;
 
         locked_rollup.max_gas_limit = self.max_gas_limit;
