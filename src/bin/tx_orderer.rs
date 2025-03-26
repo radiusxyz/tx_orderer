@@ -265,7 +265,6 @@ async fn initialize_internal_rpc_server(context: AppState) -> Result<(), Error> 
         .register_rpc_method::<internal::GetClusterIdList>()?
         .register_rpc_method::<internal::GetSequencingInfos>()?
         .register_rpc_method::<internal::GetSequencingInfo>()?
-        .register_rpc_method::<internal::SetMaxGasLimit>()?
         .init(internal_rpc_url.clone())
         .await?;
 
@@ -284,8 +283,10 @@ async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
     let cluster_rpc_server = RpcServer::new(context)
         .register_rpc_method::<cluster::SyncEncryptedTransaction>()?
         .register_rpc_method::<cluster::SyncRawTransaction>()?
+        .register_rpc_method::<cluster::SetMaxGasLimit>()?
         .register_rpc_method::<cluster::SyncMaxGasLimit>()?
-        .register_rpc_method::<external::GetRawTransactionList>()?
+        .register_rpc_method::<cluster::SyncLeaderTxOrderer>()?
+        .register_rpc_method::<cluster::GetRawTransactionList>()?
         .init(cluster_rpc_url.clone())
         .await?;
 
@@ -318,6 +319,7 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> 
         .register_rpc_method::<external::GetEncryptedTransactionList>()?
         .register_rpc_method::<external::GetRollup>()?
         .register_rpc_method::<external::GetRollupMetadata>()?
+        .register_rpc_method::<external::GetClusterMetadata>()?
         .register_rpc_method::<external::GetVersion>()?
         .init(external_rpc_url)
         .await?;

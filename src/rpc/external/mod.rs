@@ -1,5 +1,5 @@
 mod get_batch;
-
+mod get_cluster_metadata;
 mod get_encrypted_transaction_list;
 mod get_encrypted_transaction_with_order_commitment;
 mod get_encrypted_transaction_with_transaction_hash;
@@ -14,6 +14,7 @@ mod send_encrypted_transaction;
 mod send_raw_transaction;
 
 pub use get_batch::*;
+pub use get_cluster_metadata::*;
 pub use get_encrypted_transaction_list::*;
 pub use get_encrypted_transaction_with_order_commitment::*;
 pub use get_encrypted_transaction_with_transaction_hash::*;
