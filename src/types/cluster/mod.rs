@@ -16,6 +16,20 @@ use crate::{
     state::AppState,
 };
 
+#[derive(Default, Clone, Debug, Deserialize, Serialize, Model)]
+#[kvstore(key(platform: Platform, liveness_service_provider: LivenessServiceProvider, cluster_id: &str))]
+pub struct LatestSyncedClusterBlockHeight(u64);
+
+impl LatestSyncedClusterBlockHeight {
+    pub fn get_block_height(&self) -> u64 {
+        self.0
+    }
+
+    pub fn set_block_height(&mut self, block_height: u64) {
+        self.0 = block_height;
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, liveness_service_provider: LivenessServiceProvider))]
 pub struct ClusterIdList(BTreeSet<String>);
@@ -93,6 +107,19 @@ impl Cluster {
         self.tx_orderer_rpc_infos
             .values()
             .map(|tx_orderer_rpc_info| tx_orderer_rpc_info.tx_orderer_address.clone())
+            .collect()
+    }
+
+    pub fn get_cluster_rpc_url_list(&self) -> Vec<String> {
+        self.tx_orderer_rpc_infos
+            .values()
+            .filter_map(|tx_orderer_rpc_info| {
+                if tx_orderer_rpc_info.cluster_rpc_url.is_none() {
+                    return None;
+                }
+
+                Some(tx_orderer_rpc_info.cluster_rpc_url.to_owned().unwrap())
+            })
             .collect()
     }
 
