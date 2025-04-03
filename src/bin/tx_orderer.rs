@@ -56,8 +56,8 @@ async fn main() -> Result<(), Error> {
 
             let database_path = config_path.as_ref().join(DATABASE_DIR_NAME);
             let kv_store = KvStoreBuilder::default()
-                .set_default_lock_timeout(5000)
-                .set_txn_lock_timeout(5000)
+                .set_default_lock_timeout(10000)
+                .set_txn_lock_timeout(10000)
                 .build(database_path.clone())
                 .map_err(error::Error::Database)?;
             kv_store.init();
@@ -86,8 +86,8 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
 
     // Initialize the database
     let kv_store = KvStoreBuilder::default()
-        .set_default_lock_timeout(5000)
-        .set_txn_lock_timeout(5000)
+        .set_default_lock_timeout(10000)
+        .set_txn_lock_timeout(10000)
         .build(config.database_path())
         .map_err(error::Error::Database)?;
     kv_store.init();
@@ -281,12 +281,13 @@ async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
     let cluster_rpc_url = anywhere(&context.config().cluster_port()?);
 
     let cluster_rpc_server = RpcServer::new(context)
-        .register_rpc_method::<cluster::SyncEncryptedTransaction>()?
-        .register_rpc_method::<cluster::SyncRawTransaction>()?
-        .register_rpc_method::<cluster::SetMaxGasLimit>()?
-        .register_rpc_method::<cluster::SyncMaxGasLimit>()?
-        .register_rpc_method::<cluster::SyncLeaderTxOrderer>()?
         .register_rpc_method::<cluster::GetRawTransactionList>()?
+        .register_rpc_method::<cluster::SetMaxGasLimit>()?
+        .register_rpc_method::<cluster::SyncEncryptedTransaction>()?
+        .register_rpc_method::<cluster::SyncLeaderTxOrderer>()?
+        .register_rpc_method::<cluster::SyncRawTransaction>()?
+        .register_rpc_method::<cluster::SyncMaxGasLimit>()?
+        .register_rpc_method::<cluster::SyncBatchCreation>()?
         .init(cluster_rpc_url.clone())
         .await?;
 
@@ -321,6 +322,8 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> 
         .register_rpc_method::<external::GetRollupMetadata>()?
         .register_rpc_method::<external::GetClusterMetadata>()?
         .register_rpc_method::<external::GetVersion>()?
+        .register_rpc_method::<external::GetBatch>()?
+        .register_rpc_method::<external::GetCanProvideTransactionInfo>()?
         .init(external_rpc_url)
         .await?;
 

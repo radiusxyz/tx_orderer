@@ -14,8 +14,6 @@ pub struct NewRollupMetadata {
     pub platform_block_height: u64,
     pub is_leader: bool,
     pub leader_tx_orderer_rpc_info: TxOrdererRpcInfo,
-    pub max_gas_limit: u64,
-    pub current_gas: u64,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -46,6 +44,28 @@ pub struct OldRollup {
 
     #[serde(serialize_with = "serialize_address_list")]
     pub executor_address_list: Vec<Address>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NewRollup {
+    pub cluster_id: String,
+    pub platform: Platform,
+    pub liveness_service_provider: LivenessServiceProvider,
+
+    pub rollup_id: String,
+    pub rollup_type: RollupType,
+    pub encrypted_transaction_type: EncryptedTransactionType,
+    pub order_commitment_type: OrderCommitmentType,
+
+    #[serde(serialize_with = "serialize_address")]
+    pub owner: Address,
+
+    pub validation_info: RollupValidationInfo,
+
+    #[serde(serialize_with = "serialize_address_list")]
+    pub executor_address_list: Vec<Address>,
+
+    pub max_gas_limit: u64,
 }
 
 pub async fn migrate_rollup_data(kv_store: KvStore) -> Result<(), Error> {
@@ -93,7 +113,7 @@ fn migrate_rollup(kv_store: &KvStore, rollup_id: &str) -> Result<(), Error> {
         let old_rollup: OldRollup = kv_store
             .get(&("Rollup", rollup_id))
             .map_err(Error::Database)?;
-        let new_rollup = Rollup {
+        let new_rollup = NewRollup {
             cluster_id: old_rollup.cluster_id,
             platform: old_rollup.platform,
             liveness_service_provider: old_rollup.service_provider,
@@ -133,8 +153,6 @@ fn migrate_rollup_metadata(kv_store: &KvStore, rollup_id: &str) -> Result<(), Er
             platform_block_height: old_metadata.platform_block_height,
             is_leader: old_metadata.is_leader,
             leader_tx_orderer_rpc_info: old_metadata.leader_tx_orderer_rpc_info,
-            max_gas_limit: 0,
-            current_gas: 0,
         };
 
         kv_store

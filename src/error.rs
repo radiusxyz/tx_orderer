@@ -49,13 +49,17 @@ pub enum Error {
     Convert,
     InvalidSignature,
     InvalidTransaction,
-    ExceedMaxGasLimit,
     RpcServerTerminated,
     DatabaseVersionMismatch,
     Parse,
     InvalidBatchNumber,
+    ClusterMetadataNotFound,
+    RollupMetadataNotFound,
 
     GeneralError(String),
+
+    SyncLeaderTxOrderer,
+    InvalidOrderCommitment,
 }
 
 unsafe impl Send for Error {}

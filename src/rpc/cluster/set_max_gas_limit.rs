@@ -56,7 +56,7 @@ pub fn sync_set_max_gas_limit(
     max_gas_limit: u64,
 ) {
     tokio::spawn(async move {
-        let other_cluster_rpc_url_list: Vec<String> = cluster.get_others_cluster_rpc_url_list();
+        let other_cluster_rpc_url_list: Vec<String> = cluster.get_other_cluster_rpc_url_list();
 
         if !other_cluster_rpc_url_list.is_empty() {
             let message = SyncMaxGasLimitMessage {
@@ -73,7 +73,7 @@ pub fn sync_set_max_gas_limit(
 
             context
                 .rpc_client()
-                .multicast(
+                .fire_and_forget_multicast(
                     other_cluster_rpc_url_list,
                     SyncMaxGasLimit::method(),
                     &params,

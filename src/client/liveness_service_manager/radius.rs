@@ -245,7 +245,7 @@ async fn callback(
 }
 
 pub async fn initialize_new_cluster(
-    context: AppState,
+    app_state: AppState,
     liveness_service_manager_client: &LivenessServiceManagerClient,
     cluster_id: &str,
     platform_block_height: u64,
@@ -259,14 +259,14 @@ pub async fn initialize_new_cluster(
         platform_block_height
     );
 
-    let mut cluster_metadata = ClusterMetadata::get_or(
+    let mut latest_synced_cluster_block_height = LatestSyncedClusterBlockHeight::get_mut_or(
         liveness_service_manager_client.platform(),
         liveness_service_manager_client.service_provider(),
         cluster_id,
-        ClusterMetadata::default,
+        LatestSyncedClusterBlockHeight::default,
     )?;
 
-    let block_diff = platform_block_height - cluster_metadata.platform_block_height;
+    let block_diff = platform_block_height - latest_synced_cluster_block_height.get_block_height();
     let block_diff = std::cmp::min(block_diff, block_margin);
 
     for offset in 0..block_diff {
@@ -274,7 +274,7 @@ pub async fn initialize_new_cluster(
         while retries > 0 {
             let block_height = platform_block_height - offset;
             tracing::info!(
-                "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?}..",
+                "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?}",
                 liveness_service_manager_client.platform(),
                 liveness_service_manager_client.service_provider(),
                 cluster_id,
@@ -289,13 +289,14 @@ pub async fn initialize_new_cluster(
             {
                 Ok(tx_orderer_rpc_infos) => {
                     let rollup_id_list = get_rollup_id_list(
+                        &app_state,
                         &liveness_service_manager_client,
                         cluster_id,
                         block_height,
                     )
                     .await?;
 
-                    let tx_orderer_address = context
+                    let tx_orderer_address = app_state
                         .get_signer(liveness_service_manager_client.platform())
                         .await?
                         .address()
@@ -313,14 +314,6 @@ pub async fn initialize_new_cluster(
                         cluster_id,
                         block_height,
                     )?;
-
-                    tracing::debug!(
-                        "Sync the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / block height: {:?} - Done",
-                        liveness_service_manager_client.platform(),
-                        liveness_service_manager_client.service_provider(),
-                        cluster_id,
-                        block_height
-                    );
 
                     break;
                 }
@@ -350,12 +343,8 @@ pub async fn initialize_new_cluster(
         return Ok(());
     }
 
-    cluster_metadata.platform_block_height = platform_block_height;
-    cluster_metadata.put(
-        liveness_service_manager_client.platform(),
-        liveness_service_manager_client.service_provider(),
-        cluster_id,
-    )?;
+    latest_synced_cluster_block_height.set_block_height(platform_block_height);
+    latest_synced_cluster_block_height.update()?;
 
     tracing::debug!(
         "Initializing the cluster - platform: {:?} / service provider: {:?} / cluster id: {:?} / platform_block_height: {:?} - Done",
@@ -414,6 +403,7 @@ async fn get_tx_orderer_rpc_infos(
 }
 
 async fn get_rollup_id_list(
+    app_state: &AppState,
     liveness_service_manager_client: &LivenessServiceManagerClient,
     cluster_id: &str,
     platform_block_height: u64,
@@ -433,6 +423,7 @@ async fn get_rollup_id_list(
         ));
 
         update_or_create_rollup(
+            app_state,
             liveness_service_manager_client.platform(),
             liveness_service_manager_client.service_provider(),
             validation_service_provider,
@@ -446,6 +437,7 @@ async fn get_rollup_id_list(
 }
 
 async fn update_or_create_rollup(
+    app_state: &AppState,
     platform: Platform,
     liveness_service_provider: LivenessServiceProvider,
     validation_service_provider: ValidationServiceProvider,
@@ -512,11 +504,18 @@ async fn update_or_create_rollup(
                     liveness_service_provider,
                 );
 
+                let merkle_tree_manager = app_state.merkle_tree_manager();
+
+                merkle_tree_manager
+                    .insert(&rollup.rollup_id, MerkleTree::new())
+                    .await;
+
                 let mut rollup_id_list = RollupIdList::get_mut_or(RollupIdList::default)?;
                 rollup_id_list.insert(&rollup.rollup_id);
                 rollup_id_list.update()?;
 
                 let mut rollup_metadata = RollupMetadata::default();
+                rollup_metadata.max_transaction_count = rollup.max_transaction_count;
                 rollup_metadata.cluster_id = cluster_id.to_owned();
                 rollup_metadata.put(&rollup.rollup_id)?;
 

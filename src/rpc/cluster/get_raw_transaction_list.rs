@@ -1,11 +1,21 @@
-use std::collections::BTreeSet;
+use std::{
+    collections::BTreeSet,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use radius_sdk::signature::Address;
+use radius_sdk::{json_rpc::client::Priority, signature::Address};
 
+use super::SyncLeaderTxOrderer;
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRawTransactionList {
+    pub leader_change_message: LeaderChangeMessage,
+    pub rollup_signature: Signature,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LeaderChangeMessage {
     pub rollup_id: String,
     pub executor_address: Address,
     pub platform_block_height: u64,
@@ -15,116 +25,18 @@ pub struct GetRawTransactionList {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SignMessage {
+    pub rollup_id: String,
+    pub executor_address: String,
+    pub platform_block_height: u64,
+
+    pub current_leader_tx_orderer_address: String,
+    pub next_leader_tx_orderer_address: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRawTransactionListResponse {
     pub raw_transaction_list: Vec<String>,
-}
-impl GetRawTransactionList {
-    async fn get_raw_transaction_list(self) -> Result<GetRawTransactionListResponse, RpcError> {
-        let mut rollup_metadata = RollupMetadata::get(&self.rollup_id)?;
-
-        let start_batch_number = rollup_metadata.provided_batch_number;
-        let end_batch_number = rollup_metadata.can_provide_batch_number;
-        let start_transaction_order = rollup_metadata.provided_transaction_order + 1;
-
-        let mut raw_transaction_list = Vec::new();
-
-        fn extract_raw_transactions(batch: Batch) -> Vec<String> {
-            batch
-                .raw_transaction_list
-                .into_iter()
-                .map(|transaction| match transaction {
-                    RawTransaction::Eth(EthRawTransaction(data)) => data,
-                    RawTransaction::EthBundle(EthRawBundleTransaction(data)) => data,
-                })
-                .collect()
-        }
-
-        fn get_last_valid_transaction(can_provide_transactions: &BTreeSet<u64>, start: u64) -> u64 {
-            let mut last_valid = start;
-            for &tx in can_provide_transactions {
-                if tx == last_valid {
-                    last_valid += 1;
-                } else {
-                }
-            }
-            last_valid
-        }
-
-        fn fetch_and_append_transactions(
-            rollup_id: &str,
-            batch_number: u64,
-            start_transaction_order: u64,
-            last_valid_transaction_order: u64,
-            raw_transaction_list: &mut Vec<String>,
-        ) -> Result<(), RpcError> {
-            for transaction_order in start_transaction_order..last_valid_transaction_order {
-                let (raw_transaction, _) =
-                    RawTransactionModel::get(rollup_id, batch_number, transaction_order)?;
-                let raw_transaction = match raw_transaction {
-                    RawTransaction::Eth(EthRawTransaction(data)) => data,
-                    RawTransaction::EthBundle(EthRawBundleTransaction(data)) => data,
-                };
-                raw_transaction_list.push(raw_transaction);
-            }
-            Ok(())
-        }
-
-        let last_valid_transaction_order;
-        if start_batch_number == end_batch_number {
-            last_valid_transaction_order = get_last_valid_transaction(
-                &rollup_metadata.can_provide_transactions,
-                start_transaction_order,
-            );
-
-            fetch_and_append_transactions(
-                &self.rollup_id,
-                start_batch_number,
-                start_transaction_order,
-                last_valid_transaction_order,
-                &mut raw_transaction_list,
-            )?;
-        } else if start_batch_number < end_batch_number {
-            let batch: Batch = Batch::get(&self.rollup_id, start_batch_number)?;
-
-            for transaction_order in
-                start_transaction_order..batch.raw_transaction_list.len() as u64
-            {
-                let raw_transaction = match &batch.raw_transaction_list[transaction_order as usize]
-                {
-                    RawTransaction::Eth(EthRawTransaction(data)) => data,
-                    RawTransaction::EthBundle(EthRawBundleTransaction(data)) => data,
-                };
-
-                raw_transaction_list.push(raw_transaction.clone());
-            }
-
-            for batch_number in (start_batch_number + 1)..end_batch_number {
-                let batch = Batch::get(&self.rollup_id, batch_number)?;
-                raw_transaction_list.extend(extract_raw_transactions(batch));
-            }
-
-            last_valid_transaction_order =
-                get_last_valid_transaction(&rollup_metadata.can_provide_transactions, 0);
-
-            fetch_and_append_transactions(
-                &self.rollup_id,
-                start_batch_number,
-                0,
-                last_valid_transaction_order,
-                &mut raw_transaction_list,
-            )?;
-        } else {
-            return Err(Error::InvalidBatchNumber.into());
-        }
-
-        rollup_metadata.provided_batch_number = end_batch_number;
-        rollup_metadata.provided_transaction_order = last_valid_transaction_order;
-        rollup_metadata.put(&self.rollup_id)?;
-
-        Ok(GetRawTransactionListResponse {
-            raw_transaction_list,
-        })
-    }
 }
 
 impl RpcParameter<AppState> for GetRawTransactionList {
@@ -134,249 +46,371 @@ impl RpcParameter<AppState> for GetRawTransactionList {
         "get_raw_transaction_list"
     }
 
-    async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        self.get_raw_transaction_list().await
+    async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
+        let start_get_raw_transaction_list_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        let mut raw_transaction_list = Vec::new();
+
+        let rollup_id = self.leader_change_message.rollup_id.clone();
+
+        let rollup_metadata = match RollupMetadata::get(&rollup_id) {
+            Ok(metadata) => metadata,
+            Err(err) => {
+                tracing::error!(
+                    "Failed to get rollup metadata - rollup_id: {:?} / error: {:?}",
+                    rollup_id,
+                    err,
+                );
+
+                return Ok(GetRawTransactionListResponse {
+                    raw_transaction_list: Vec::new(),
+                });
+            }
+        };
+
+        let rollup = Rollup::get(&rollup_id)?;
+
+        let start_batch_number = rollup_metadata.provided_batch_number;
+        let mut current_provided_batch_number = start_batch_number;
+        let mut current_provided_transaction_order = rollup_metadata.provided_transaction_order;
+
+        while let Ok(batch) = Batch::get(&rollup_id, current_provided_batch_number) {
+            let start_transaction_order = if current_provided_batch_number == start_batch_number {
+                current_provided_transaction_order + 1
+            } else {
+                0
+            };
+
+            raw_transaction_list.extend(extract_raw_transactions(
+                batch,
+                start_transaction_order as u64,
+            ));
+
+            current_provided_batch_number += 1;
+            current_provided_transaction_order = -1;
+        }
+
+        if let Ok(can_provide_transaction_info) = CanProvideTransactionInfo::get(&rollup_id) {
+            if let Some(can_provide_transaction_orderers) = can_provide_transaction_info
+                .can_provide_transaction_orders_per_batch
+                .get(&current_provided_batch_number)
+            {
+                let valid_end_transaction_order = get_last_valid_transaction_order(
+                    can_provide_transaction_orderers,
+                    current_provided_transaction_order,
+                );
+
+                fetch_and_append_transactions(
+                    &rollup_id,
+                    current_provided_batch_number,
+                    (current_provided_transaction_order + 1) as u64,
+                    valid_end_transaction_order,
+                    &mut raw_transaction_list,
+                )?;
+
+                current_provided_transaction_order = valid_end_transaction_order;
+
+                if current_provided_transaction_order == rollup.max_transaction_count as i64 - 1 {
+                    current_provided_batch_number += 1;
+                    current_provided_transaction_order = -1;
+                }
+            }
+        }
+
+        let cluster = Cluster::get(
+            rollup.platform,
+            rollup.liveness_service_provider,
+            &rollup.cluster_id,
+            self.leader_change_message.platform_block_height,
+        )?;
+
+        let start_timestamp_millis = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        tracing::info!("stompesi - lock start - {:?}", start_timestamp_millis);
+
+        let mut mut_rollup_metadata = RollupMetadata::get_mut(&rollup_id)?;
+
+        let locked_timestamp_millis = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        let mut batch_number_list_to_delete = Vec::new();
+        for batch_number in start_batch_number..current_provided_batch_number {
+            batch_number_list_to_delete.push(batch_number);
+        }
+
+        mut_rollup_metadata.provided_batch_number = current_provided_batch_number;
+        mut_rollup_metadata.provided_transaction_order = current_provided_transaction_order;
+
+        let leader_tx_orderer_rpc_info = cluster
+            .get_tx_orderer_rpc_info(&self.leader_change_message.next_leader_tx_orderer_address)
+            .ok_or_else(|| {
+                tracing::error!(
+                    "TxOrderer RPC info not found for address {:?}",
+                    self.leader_change_message.next_leader_tx_orderer_address
+                );
+                Error::TxOrdererInfoNotFound
+            })?;
+
+        let signer = context.get_signer(rollup.platform).await.map_err(|_| {
+            tracing::error!("Signer not found for platform {:?}", rollup.platform);
+            Error::SignerNotFound
+        })?;
+        let tx_orderer_address = signer.address().clone();
+        let is_leader =
+            tx_orderer_address == self.leader_change_message.next_leader_tx_orderer_address;
+
+        let start_get_mut_cluster_metadata = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        let mut mut_cluster_metadata = ClusterMetadata::get_mut(
+            rollup.platform,
+            rollup.liveness_service_provider,
+            &rollup.cluster_id,
+        )?;
+
+        let end_get_mut_cluster_metadata = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        mut_cluster_metadata.platform_block_height =
+            self.leader_change_message.platform_block_height;
+        mut_cluster_metadata.is_leader = is_leader;
+        mut_cluster_metadata.leader_tx_orderer_rpc_info = Some(leader_tx_orderer_rpc_info.clone());
+
+        let signer = context.get_signer(rollup.platform).await?;
+        let current_tx_orderer_address = signer.address();
+
+        let start_sync_leader_tx_order_millis = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        sync_leader_tx_orderer(
+            context.clone(),
+            cluster,
+            current_tx_orderer_address,
+            self.leader_change_message.clone(),
+            self.rollup_signature,
+            mut_rollup_metadata.batch_number,
+            mut_rollup_metadata.transaction_order,
+            mut_rollup_metadata.provided_batch_number,
+            mut_rollup_metadata.provided_transaction_order,
+        )
+        .await;
+
+        let end_sync_leader_tx_order_millis = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        mut_cluster_metadata.update()?;
+        let _ = mut_rollup_metadata.update().map_err(|error| {
+            tracing::error!(
+                "rollup_metadata update error - rollup id: {:?}, error: {:?}",
+                self.leader_change_message.rollup_id,
+                error
+            );
+        });
+        let released_timestamp_millis = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        tracing::info!(
+            "stompesi - lock start - {:?} / locked: {:?} / release: {:?} / start_sync_leader_tx_order: {:?} / end_sync_leader_tx_order: {:?} / start_get_mut_cluster_metadata: {:?} / end_get_mut_cluster_metadata: {:?}",
+            start_timestamp_millis,
+            locked_timestamp_millis,
+            released_timestamp_millis,
+            start_sync_leader_tx_order_millis,
+            end_sync_leader_tx_order_millis,
+            start_get_mut_cluster_metadata,
+            end_get_mut_cluster_metadata,
+        );
+
+        tracing::info!(
+            "stompesi - lock start - {:?} / sync_leader_tx_order gap - {:?} / get_mut_cluster_metadata gap - {:?}",
+            start_timestamp_millis,
+            end_sync_leader_tx_order_millis - start_sync_leader_tx_order_millis,
+            end_get_mut_cluster_metadata - start_get_mut_cluster_metadata,
+        );
+
+        let end_get_raw_transaction_list_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
+
+        tracing::info!(
+            "get_raw_transaction_list - total take time: {:?}",
+            end_get_raw_transaction_list_time - start_get_raw_transaction_list_time
+        );
+
+        Ok(GetRawTransactionListResponse {
+            raw_transaction_list,
+        })
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use radius_sdk::{kvstore::KvStoreBuilder, signature::ChainType};
-
-    use super::*;
-
-    fn mock_rollup_metadata(
-        provided_batch: u64,
-        provided_tx_order: u64,
-        can_provide_batch: u64,
-        can_provide_tx_list: &[u64],
-    ) -> RollupMetadata {
-        RollupMetadata {
-            batch_number: 0,
-            transaction_order: 0,
-            max_gas_limit: 100000,
-            current_gas: 0,
-            cluster_id: "test-cluster".to_string(),
-            provided_batch_number: provided_batch,
-            provided_transaction_order: provided_tx_order,
-            can_provide_batch_number: can_provide_batch,
-            can_provide_transactions: can_provide_tx_list.iter().cloned().collect(),
-        }
+pub async fn sync_leader_tx_orderer(
+    context: AppState,
+    cluster: Cluster,
+    current_tx_orderer_address: &Address,
+    leader_change_message: LeaderChangeMessage,
+    rollup_signature: Signature,
+    batch_number: u64,
+    transaction_order: u64,
+    provided_batch_number: u64,
+    provided_transaction_order: i64,
+) {
+    let mut other_cluster_rpc_url_list = cluster.get_other_cluster_rpc_url_list();
+    if other_cluster_rpc_url_list.is_empty() {
+        tracing::info!("No cluster RPC URLs available for synchronization");
+        return;
     }
 
-    fn get_address() -> Address {
-        Address::from_str(
-            ChainType::Ethereum,
-            "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
-        )
-        .unwrap()
-    }
+    if let Some(next_leader_tx_orderer_rpc_info) =
+        cluster.get_tx_orderer_rpc_info(&leader_change_message.next_leader_tx_orderer_address)
+    {
+        let next_leader_tx_orderer_cluster_rpc_url = next_leader_tx_orderer_rpc_info
+            .cluster_rpc_url
+            .clone()
+            .unwrap();
 
-    fn mock_batch_with_raw_txs(tx_data: &[&str]) -> Batch {
-        let mut batch = Batch::new(
-            0,
-            vec![],
-            vec![],
-            BatchCommitment::default(),
-            get_address(),
-            Signature::from(Vec::new()),
-        );
-
-        batch.raw_transaction_list = tx_data
-            .iter()
-            .map(|&data| RawTransaction::Eth(EthRawTransaction(data.to_string())))
+        // Filter out the next leader's cluster URL from the list
+        other_cluster_rpc_url_list = other_cluster_rpc_url_list
+            .into_iter()
+            .filter(|rpc_url| rpc_url != &next_leader_tx_orderer_cluster_rpc_url)
             .collect();
-        batch
-    }
 
-    fn setup_test_environment() {
-        let database_path = "./test_db";
-        let kv_store = KvStoreBuilder::default()
-            .set_default_lock_timeout(5000)
-            .set_txn_lock_timeout(5000)
-            .build(database_path)
-            .map_err(Error::Database)
-            .unwrap();
-        kv_store.init();
-        tracing::info!("Database initialized at {:?}", database_path);
-    }
-
-    fn remove_test_environment() {
-        let database_path = "./test_db";
-        std::fs::remove_dir_all(database_path).unwrap_or_else(|_| {
-            tracing::warn!("Failed to remove test database at {:?}", database_path);
-        });
-    }
-
-    #[tokio::test]
-    async fn test_handler_same_batch_with_continuous_txs() {
-        setup_test_environment();
-
-        let rollup_id = "test-rollup";
-
-        let provided_batch_number = 1;
-        let provided_tx_order = 1;
-
-        let can_provide_batch_number = 1;
-        let can_provide_tx_list = [2, 3, 4];
-
-        let rollup_metadata = mock_rollup_metadata(
+        let parameter = SyncLeaderTxOrderer {
+            leader_change_message,
+            rollup_signature,
+            batch_number,
+            transaction_order,
             provided_batch_number,
-            provided_tx_order,
-            can_provide_batch_number,
-            &can_provide_tx_list,
-        );
-        let _ = rollup_metadata.put(rollup_id);
-
-        for transaction_order in can_provide_tx_list {
-            let raw_transaction_str =
-                format!("tx{}_{}", can_provide_batch_number, transaction_order);
-            let raw_transaction =
-                RawTransaction::Eth(EthRawTransaction(raw_transaction_str.to_string()));
-
-            let _ = RawTransactionModel::put(
-                rollup_id,
-                provided_batch_number,
-                transaction_order,
-                raw_transaction,
-                true,
-            );
-        }
-
-        let get_raw_transaction_list = GetRawTransactionList {
-            rollup_id: rollup_id.to_string(),
-            executor_address: get_address(),
-            platform_block_height: 0,
-            current_leader_tx_orderer_address: get_address(),
-            next_leader_tx_orderer_address: get_address(),
+            provided_transaction_order,
         };
 
-        let result = get_raw_transaction_list
-            .get_raw_transaction_list()
-            .await
-            .unwrap();
+        if next_leader_tx_orderer_rpc_info.tx_orderer_address != current_tx_orderer_address {
+            // Directly request the next leader tx_orderer to sync
+            let start_sync_leader_tx_order_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_nanos();
 
-        assert_eq!(result.raw_transaction_list, vec!["tx1_2", "tx1_3", "tx1_4"]);
+            let _result: Result<(), radius_sdk::json_rpc::client::RpcClientError> = context
+                .rpc_client()
+                .request_with_priority(
+                    next_leader_tx_orderer_cluster_rpc_url,
+                    SyncLeaderTxOrderer::method(),
+                    &parameter,
+                    Id::Null,
+                    Priority::High,
+                )
+                .await;
 
-        remove_test_environment();
-    }
+            let end_sync_leader_tx_order_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_nanos();
 
-    #[tokio::test]
-    async fn test_handler_multiple_batches_with_continuous_txs() {
-        setup_test_environment();
-
-        let rollup_id = "test-rollup";
-
-        let provided_batch_number = 1;
-        let provided_tx_order = 1;
-
-        let can_provide_batch_number = 3;
-        let can_provide_tx_list = [0, 1];
-
-        let rollup_metadata = mock_rollup_metadata(
-            provided_batch_number,
-            provided_tx_order,
-            can_provide_batch_number,
-            &can_provide_tx_list,
-        );
-        let _ = rollup_metadata.put(rollup_id);
-
-        println!("Rollup Metadata: {:?}", rollup_metadata);
-
-        for batch_number in provided_batch_number..can_provide_batch_number {
-            let txs = vec![
-                format!("tx{}_0", batch_number),
-                format!("tx{}_1", batch_number),
-            ];
-            let batch =
-                mock_batch_with_raw_txs(&txs.iter().map(|s| s.as_str()).collect::<Vec<_>>());
-            let _ = batch.put(rollup_id, batch_number);
-        }
-
-        for transaction_order in can_provide_tx_list {
-            let raw_transaction_str =
-                format!("tx{}_{}", can_provide_batch_number, transaction_order);
-            let raw_transaction =
-                RawTransaction::Eth(EthRawTransaction(raw_transaction_str.to_string()));
-
-            let _ = RawTransactionModel::put(
-                rollup_id,
-                provided_batch_number,
-                transaction_order,
-                raw_transaction,
-                true,
+            tracing::info!(
+                "SyncLeaderTxOrderer - start: {:?} / end: {:?} / gap: {:?}",
+                start_sync_leader_tx_order_time,
+                end_sync_leader_tx_order_time,
+                end_sync_leader_tx_order_time - start_sync_leader_tx_order_time
             );
+
+            // Fire and forget to the rest of the cluster nodes asynchronously
+            let urls = other_cluster_rpc_url_list.clone();
+            tokio::spawn(async move {
+                let _ = context
+                    .rpc_client()
+                    .fire_and_forget_multicast(
+                        urls,
+                        SyncLeaderTxOrderer::method(),
+                        &parameter,
+                        Id::Null,
+                    )
+                    .await;
+            });
         }
-
-        let get_raw_transaction_list = GetRawTransactionList {
-            rollup_id: rollup_id.to_string(),
-            executor_address: get_address(),
-            platform_block_height: 0,
-            current_leader_tx_orderer_address: get_address(),
-            next_leader_tx_orderer_address: get_address(),
-        };
-
-        let result = get_raw_transaction_list
-            .get_raw_transaction_list()
-            .await
-            .unwrap();
-
-        assert_eq!(
-            result.raw_transaction_list,
-            vec!["tx2_0", "tx2_1", "tx3_0", "tx3_1"]
+    } else {
+        tracing::error!(
+            "Next leader tx orderer RPC info not found for address {:?}",
+            leader_change_message.next_leader_tx_orderer_address
         );
-        remove_test_environment();
+    }
+}
+
+fn extract_raw_transactions(batch: Batch, start_transaction_order: u64) -> Vec<String> {
+    batch
+        .raw_transaction_list
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, transaction)| {
+            if (i as u64) >= start_transaction_order {
+                Some(match transaction {
+                    RawTransaction::Eth(EthRawTransaction(data)) => data,
+                    RawTransaction::EthBundle(EthRawBundleTransaction(data)) => data,
+                })
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+fn get_last_valid_transaction_order(
+    can_provide_transaction_orders: &BTreeSet<u64>,
+    provided_transaction_order: i64,
+) -> i64 {
+    let mut last_valid_transaction_order = provided_transaction_order;
+
+    for &transaction_order in can_provide_transaction_orders {
+        let transaction_order = transaction_order as i64;
+
+        if transaction_order == last_valid_transaction_order + 1 {
+            last_valid_transaction_order += 1;
+        } else if transaction_order > last_valid_transaction_order {
+            break;
+        }
     }
 
-    #[tokio::test]
-    async fn test_handler_with_non_continuous_txs() {
-        setup_test_environment();
+    last_valid_transaction_order as i64
+}
 
-        let rollup_id = "test-rollup";
-
-        let provided_batch_number = 1;
-        let provided_tx_order = 0;
-
-        let can_provide_batch_number = 1;
-        let can_provide_tx_list = [1, 2, 4, 5];
-
-        let rollup_metadata = mock_rollup_metadata(
-            provided_batch_number,
-            provided_tx_order,
-            can_provide_batch_number,
-            &can_provide_tx_list,
-        );
-        let _ = rollup_metadata.put(rollup_id);
-
-        for transaction_order in can_provide_tx_list {
-            let raw_transaction_str =
-                format!("tx{}_{}", can_provide_batch_number, transaction_order);
-            let raw_transaction =
-                RawTransaction::Eth(EthRawTransaction(raw_transaction_str.to_string()));
-
-            let _ = RawTransactionModel::put(
-                rollup_id,
-                provided_batch_number,
-                transaction_order,
-                raw_transaction,
-                true,
-            );
-        }
-
-        let get_raw_transaction_list = GetRawTransactionList {
-            rollup_id: rollup_id.to_string(),
-            executor_address: get_address(),
-            platform_block_height: 0,
-            current_leader_tx_orderer_address: get_address(),
-            next_leader_tx_orderer_address: get_address(),
-        };
-
-        let result = get_raw_transaction_list
-            .get_raw_transaction_list()
-            .await
-            .unwrap();
-
-        assert_eq!(result.raw_transaction_list, vec!["tx1_1", "tx1_2"]);
-        remove_test_environment();
+fn fetch_and_append_transactions(
+    rollup_id: &str,
+    batch_number: u64,
+    start_transaction_order: u64,
+    last_valid_transaction_order: i64,
+    raw_transaction_list: &mut Vec<String>,
+) -> Result<(), RpcError> {
+    if last_valid_transaction_order < start_transaction_order as i64 {
+        return Ok(());
     }
+
+    for transaction_order in
+        start_transaction_order..=last_valid_transaction_order.try_into().unwrap()
+    {
+        let (raw_transaction, _) =
+            RawTransactionModel::get(rollup_id, batch_number, transaction_order)?;
+        let raw_transaction = match raw_transaction {
+            RawTransaction::Eth(EthRawTransaction(data)) => data,
+            RawTransaction::EthBundle(EthRawBundleTransaction(data)) => data,
+        };
+        raw_transaction_list.push(raw_transaction);
+    }
+    Ok(())
 }

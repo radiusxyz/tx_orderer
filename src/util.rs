@@ -82,7 +82,7 @@ pub async fn fetch_raw_transaction_info(
             Ok((rpc_response.raw_transaction, rpc_response.is_direct_sent))
         }
         Err(error) => {
-            tracing::error!(
+            tracing::warn!(
                 "Failed to fetch raw transaction for Rollup ID: {}, Block Height: {}, Order: {}. Error: {:?}",
                 parameter.rollup_id, parameter.batch_number, parameter.transaction_order, error
             );

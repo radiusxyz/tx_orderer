@@ -1,3 +1,4 @@
+use radius_sdk::signature::{Address, ChainType, Signature};
 use serde::{Deserialize, Serialize};
 
 use crate::types::{deserialize_merkle_path, serialize_merkle_path, RawTransactionHash};
@@ -5,7 +6,7 @@ use crate::types::{deserialize_merkle_path, serialize_merkle_path, RawTransactio
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignOrderCommitment {
     pub data: OrderCommitmentData,
-    pub signature: String,
+    pub signature: Signature,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -31,6 +32,15 @@ impl Default for OrderCommitmentData {
             transaction_order: 0,
             transaction_hash: RawTransactionHash::default().as_string(),
             pre_merkle_path: Vec::new(),
+        }
+    }
+}
+
+impl SignOrderCommitment {
+    pub fn get_signer_address(&self, chain_type: ChainType) -> Address {
+        match self.signature.get_signer_address(chain_type, &self.data) {
+            Ok(address) => address,
+            Err(_) => Address::default(),
         }
     }
 }

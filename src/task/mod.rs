@@ -1,5 +1,5 @@
-// mod batch_builder;
 mod decryptor;
+mod finalize_batch;
 
-// pub use batch_builder::*;
 pub use decryptor::*;
+pub use finalize_batch::*;

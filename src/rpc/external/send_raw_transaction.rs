@@ -1,13 +1,12 @@
 use crate::{
     rpc::{
-        cluster::{SyncRawTransaction, SyncRawTransactionMessage},
+        cluster::{BatchCreationMessage, SyncBatchCreation, SyncRawTransaction},
         external::issue_order_commitment,
         prelude::*,
     },
+    task::finalize_batch,
     types::*,
 };
-
-const LOG_TARGET: &str = "rpc::external::send_raw_transaction";
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendRawTransaction {
@@ -25,24 +24,17 @@ impl RpcParameter<AppState> for SendRawTransaction {
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
         let rollup = Rollup::get(&self.rollup_id)?;
 
-        let transaction_gas_limit = self.raw_transaction.get_transaction_gas_limit()?;
+        let mut mut_rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
 
         let cluster_metadata = ClusterMetadata::get(
             rollup.platform,
             rollup.liveness_service_provider,
             &rollup.cluster_id,
-        )?;
-
-        // 2. Check is leader
-        let mut rollup_metadata = RollupMetadata::get_mut(&self.rollup_id)?;
-
-        let batch_number = rollup_metadata.batch_number;
-
-        tracing::debug!(
-            "Send raw transaction: rollup_id: {:?}, rollup_metadata: {:?}",
-            self.rollup_id,
-            rollup_metadata.clone()
-        );
+        )
+        .map_err(|error| {
+            tracing::error!("Failed to get cluster metadata: {:?}", error);
+            Error::ClusterMetadataNotFound
+        })?;
 
         if cluster_metadata.is_leader {
             let cluster = Cluster::get(
@@ -50,17 +42,15 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 rollup.liveness_service_provider,
                 &rollup.cluster_id,
                 cluster_metadata.platform_block_height,
-            )?;
+            )
+            .map_err(|error| {
+                tracing::error!("Failed to get cluster: {:?}", error);
+                Error::ClusterNotFound
+            })?;
 
-            let transaction_order = rollup_metadata.transaction_order;
+            let batch_number = mut_rollup_metadata.batch_number;
+            let transaction_order = mut_rollup_metadata.transaction_order;
             let transaction_hash = self.raw_transaction.raw_transaction_hash();
-
-            if rollup_metadata.max_gas_limit != 0
-                && rollup_metadata.current_gas + transaction_gas_limit
-                    > rollup_metadata.max_gas_limit
-            {
-                return Err(Error::ExceedMaxGasLimit)?;
-            }
 
             RawTransactionModel::put_with_transaction_hash(
                 &self.rollup_id,
@@ -79,16 +69,26 @@ impl RpcParameter<AppState> for SendRawTransaction {
 
             let merkle_tree = context.merkle_tree_manager().get(&self.rollup_id).await?;
             let (_, pre_merkle_path) = merkle_tree.add_data(transaction_hash.as_ref()).await;
-
-            rollup_metadata.current_gas += transaction_gas_limit;
-            rollup_metadata.transaction_order += 1;
-            let is_full_batch =
-                rollup_metadata.transaction_order == rollup_metadata.max_transaction_order - 1;
-            rollup_metadata.update()?;
             drop(merkle_tree);
 
-            if is_full_batch {
-                // TODO: build_batch
+            mut_rollup_metadata.transaction_order += 1;
+            CanProvideTransactionInfo::add_can_provide_transaction_orders(
+                &self.rollup_id,
+                batch_number,
+                vec![transaction_order],
+            )?;
+
+            let is_updated = mut_rollup_metadata.check_and_update_batch_info();
+
+            mut_rollup_metadata.update()?;
+
+            if is_updated {
+                context
+                    .merkle_tree_manager()
+                    .insert(&self.rollup_id, MerkleTree::new())
+                    .await;
+
+                finalize_batch(context.clone(), &self.rollup_id, batch_number);
             }
 
             let order_commitment = issue_order_commitment(
@@ -106,9 +106,8 @@ impl RpcParameter<AppState> for SendRawTransaction {
             order_commitment.put(&self.rollup_id, batch_number, transaction_order)?;
 
             sync_raw_transaction(
-                cluster,
                 context.clone(),
-                rollup.platform,
+                cluster,
                 self.rollup_id,
                 batch_number,
                 transaction_order,
@@ -126,13 +125,14 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 OrderCommitmentType::Sign => Ok(order_commitment),
             }
         } else {
+            drop(mut_rollup_metadata);
+
             match cluster_metadata.leader_tx_orderer_rpc_info {
                 Some(leader_tx_orderer_rpc_info) => {
                     let leader_external_rpc_url = leader_tx_orderer_rpc_info
                         .external_rpc_url
                         .clone()
                         .ok_or(Error::EmptyLeaderClusterRpcUrl)?;
-                    drop(rollup_metadata);
 
                     match context
                         .rpc_client()
@@ -155,10 +155,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
                     }
                 }
                 None => {
-                    tracing::error!(
-                        target: LOG_TARGET,
-                        "Send raw transaction - leader tx orderer rpc info is None"
-                    );
+                    tracing::error!("Send raw transaction - leader tx orderer rpc info is None");
                     return Err(Error::EmptyLeader)?;
                 }
             }
@@ -168,9 +165,8 @@ impl RpcParameter<AppState> for SendRawTransaction {
 
 #[allow(clippy::too_many_arguments)]
 pub fn sync_raw_transaction(
-    cluster: Cluster,
     context: AppState,
-    platform: Platform,
+    cluster: Cluster,
     rollup_id: String,
     batch_number: u64,
     transaction_order: u64,
@@ -178,61 +174,102 @@ pub fn sync_raw_transaction(
     order_commitment: OrderCommitment,
     is_direct_sent: bool,
 ) {
-    let other_cluster_rpc_url_list = cluster.get_others_cluster_rpc_url_list();
-    if other_cluster_rpc_url_list.is_empty() {
-        return;
-    }
     tokio::spawn(async move {
-        let message = SyncRawTransactionMessage {
+        let other_cluster_rpc_url_list = cluster.get_other_cluster_rpc_url_list();
+        if other_cluster_rpc_url_list.is_empty() {
+            return;
+        }
+
+        let sync_raw_transaction = SyncRawTransaction {
             rollup_id,
             batch_number,
             transaction_order,
             raw_transaction,
-            order_commitment: Some(order_commitment),
+            order_commitment: order_commitment,
             is_direct_sent,
         };
-        let signature = match context
-            .get_signer(platform)
-            .await
-            .map_err(|e| {
-                tracing::error!(
-                    target: LOG_TARGET,
-                    "Failed to get signer: {}",
-                    e
-                )
-            })
-            .and_then(|signer| {
-                signer.sign_message(&message).map_err(|e| {
-                    tracing::error!(
-                        target: LOG_TARGET,
-                        "Failed to sign message: {}",
-                        e
-                    )
-                })
-            }) {
-            Ok(signature) => signature,
-            Err(_) => return,
-        };
-
-        let rpc_self = SyncRawTransaction { message, signature };
 
         match context
             .rpc_client()
-            .multicast(
+            .fire_and_forget_multicast(
                 other_cluster_rpc_url_list,
                 SyncRawTransaction::method(),
-                &rpc_self,
+                &sync_raw_transaction,
                 Id::Null,
             )
             .await
         {
             Ok(_) => (),
             Err(e) => {
-                tracing::error!(
-                    target: LOG_TARGET,
-                    "Failed to send raw transaction: {}",
-                    e
+                tracing::error!("Failed to send raw transaction: {}", e);
+            }
+        }
+    });
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn sync_batch_creation(
+    context: AppState,
+    cluster: Cluster,
+    platform: Platform,
+    rollup_id: String,
+    batch_number: u64,
+    batch_commitment: [u8; 32],
+) {
+    tokio::spawn(async move {
+        tracing::info!(
+            "Sync batch creation - rollup_id: {:?} / batch_number: {:?}",
+            rollup_id,
+            batch_number
+        );
+
+        let other_cluster_rpc_url_list = cluster.get_other_cluster_rpc_url_list();
+        if other_cluster_rpc_url_list.is_empty() {
+            return;
+        }
+
+        let batch_creation_massage = BatchCreationMessage {
+            rollup_id: rollup_id.clone(),
+            batch_number,
+            batch_commitment,
+        };
+        let leader_tx_orderer_signature = match context
+            .get_signer(platform)
+            .await
+            .map_err(|e| tracing::error!("Failed to get signer: {}", e))
+            .and_then(|signer| {
+                signer
+                    .sign_message(&batch_creation_massage)
+                    .map_err(|e| tracing::error!("Failed to sign message: {}", e))
+            }) {
+            Ok(signature) => signature,
+            Err(_) => return,
+        };
+
+        let sync_batch_creation = SyncBatchCreation {
+            batch_creation_massage,
+            leader_tx_orderer_signature,
+        };
+
+        match context
+            .rpc_client()
+            .fire_and_forget_multicast(
+                other_cluster_rpc_url_list.clone(),
+                SyncBatchCreation::method(),
+                &sync_batch_creation,
+                Id::Null,
+            )
+            .await
+        {
+            Ok(_) => {
+                tracing::info!(
+                    "Sync new batch successfully: rollup_id: {:?} / batch_number: {:?}",
+                    rollup_id,
+                    batch_number
                 );
+            }
+            Err(e) => {
+                tracing::error!("Failed to send sync batch creation: {}", e);
             }
         }
     });

@@ -1,18 +1,17 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncRawTransaction {
-    pub message: SyncRawTransactionMessage,
-    pub signature: Signature,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SyncRawTransactionMessage {
     pub rollup_id: String,
+
     pub batch_number: u64,
     pub transaction_order: u64,
+
     pub raw_transaction: RawTransaction,
-    pub order_commitment: Option<OrderCommitment>,
+    pub order_commitment: OrderCommitment,
+
     pub is_direct_sent: bool,
 }
 
@@ -24,81 +23,107 @@ impl RpcParameter<AppState> for SyncRawTransaction {
     }
 
     async fn handler(self, _context: AppState) -> Result<Self::Response, RpcError> {
-        tracing::debug!(
-            "Sync raw transaction - rollup id: {:?}, rollup block height: {:?},
-        transaction order: {:?}, order commitment: {:?}",
-            self.message.rollup_id,
-            self.message.batch_number,
-            self.message.transaction_order,
-            self.message.order_commitment,
-        );
+        let start_sync_raw_transaction_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
 
-        let transaction_gas_limit = self.message.raw_transaction.get_transaction_gas_limit()?;
-        let rollup = Rollup::get(&self.message.rollup_id)?;
+        let rollup_id = self.rollup_id.clone();
+        let rollup = Rollup::get(&rollup_id).map_err(|error| {
+            tracing::error!("Failed to get rollup: {:?}", error);
+            Error::RollupNotFound
+        })?;
 
         let cluster_metadata = ClusterMetadata::get(
             rollup.platform,
             rollup.liveness_service_provider,
             &rollup.cluster_id,
+        )
+        .map_err(|error| {
+            tracing::error!("Failed to get cluster metadata: {:?}", error);
+            Error::ClusterMetadataNotFound
+        })?;
+
+        let cluster = Cluster::get(
+            rollup.platform,
+            rollup.liveness_service_provider,
+            &rollup.cluster_id,
+            cluster_metadata.platform_block_height,
         )?;
-
-        let mut rollup_metadata = RollupMetadata::get_mut(&self.message.rollup_id)?;
-
-        if cluster_metadata.leader_tx_orderer_rpc_info.is_none() {
-            return Err(Error::EmptyLeader.into());
-        }
 
         // Verify the leader signature
-        let leader_tx_orderer_address = &cluster_metadata
-            .leader_tx_orderer_rpc_info
-            .unwrap()
-            .tx_orderer_address;
-        self.signature
-            .verify_message(
-                rollup.platform.into(),
-                &self.message,
-                leader_tx_orderer_address,
-            )
-            .map_err(|error| {
-                tracing::error!("Failed to verify the leader signature: {:?}", error);
-                Error::InvalidSignature
-            })?;
+        let is_valid_order_commitment = match self.order_commitment {
+            OrderCommitment::Single(ref single_order_commitment) => match single_order_commitment {
+                SingleOrderCommitment::Sign(sign_order_commitment) => {
+                    let signer_address =
+                        sign_order_commitment.get_signer_address(rollup.platform.into());
 
-        // Check the batch number
-        if self.message.batch_number != rollup_metadata.batch_number {
-            return Err(Error::BlockHeightMismatch.into());
+                    let tx_orderer_address_list = cluster.get_tx_orderer_address_list();
+
+                    let leader_tx_orderer_address = tx_orderer_address_list
+                        .iter()
+                        .find(|&tx_orderer_address| signer_address == *tx_orderer_address);
+
+                    leader_tx_orderer_address.is_some()
+                }
+                SingleOrderCommitment::TransactionHash(_) => true,
+            },
+            OrderCommitment::Bundle(_bundle) => {
+                todo!("Handle bundle order commitment");
+            }
+        };
+
+        if !is_valid_order_commitment {
+            return Err(Error::InvalidOrderCommitment.into());
         }
 
-        let transaction_hash = self.message.raw_transaction.raw_transaction_hash();
+        let transaction_hash = self.raw_transaction.raw_transaction_hash();
 
         RawTransactionModel::put_with_transaction_hash(
-            &self.message.rollup_id,
+            &rollup_id,
             &transaction_hash,
-            self.message.raw_transaction.clone(),
-            self.message.is_direct_sent,
-        )?;
+            self.raw_transaction.clone(),
+            self.is_direct_sent,
+        )
+        .map_err(|error| {
+            tracing::error!("Failed to put raw transaction with hash: {:?}", error);
+            Error::Database(error)
+        })?;
 
         RawTransactionModel::put(
-            &self.message.rollup_id,
-            self.message.batch_number,
-            self.message.transaction_order,
-            self.message.raw_transaction.clone(),
-            self.message.is_direct_sent,
+            &rollup_id,
+            self.batch_number,
+            self.transaction_order,
+            self.raw_transaction.clone(),
+            self.is_direct_sent,
+        )
+        .map_err(|error| {
+            tracing::error!("Failed to put raw transaction: {:?}", error);
+            Error::Database(error)
+        })?;
+
+        self.order_commitment
+            .put(&rollup_id, self.batch_number, self.transaction_order)
+            .map_err(|error| {
+                tracing::error!("Failed to put order commitment: {:?}", error);
+                Error::Database(error)
+            })?;
+
+        CanProvideTransactionInfo::add_can_provide_transaction_orders(
+            &rollup_id,
+            self.batch_number,
+            vec![self.transaction_order],
         )?;
 
-        if let Some(order_commitment) = self.message.order_commitment {
-            order_commitment.put(
-                &self.message.rollup_id,
-                self.message.batch_number,
-                self.message.transaction_order,
-            )?;
-        }
+        let end_sync_raw_transaction_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_nanos();
 
-        rollup_metadata.current_gas += transaction_gas_limit;
-        if rollup_metadata.transaction_order < self.message.transaction_order {
-            rollup_metadata.transaction_order = self.message.transaction_order;
-        }
-        rollup_metadata.update()?;
+        tracing::info!(
+            "sync_raw_transaction - total take time: {:?}",
+            end_sync_raw_transaction_time - start_sync_raw_transaction_time
+        );
 
         Ok(())
     }

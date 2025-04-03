@@ -123,7 +123,7 @@ impl Cluster {
             .collect()
     }
 
-    pub fn get_others_cluster_rpc_url_list(&self) -> Vec<String> {
+    pub fn get_other_cluster_rpc_url_list(&self) -> Vec<String> {
         self.tx_orderer_rpc_infos
             .values()
             .filter_map(|tx_orderer_rpc_info| {

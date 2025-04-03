@@ -31,6 +31,7 @@ pub struct Rollup {
     pub executor_address_list: Vec<Address>,
 
     pub max_gas_limit: u64,
+    pub max_transaction_count: u64,
 }
 
 impl Rollup {
@@ -61,7 +62,9 @@ impl Rollup {
             cluster_id,
             platform,
             liveness_service_provider,
-            max_gas_limit: 0,
+
+            max_gas_limit: 0,           // TODO
+            max_transaction_count: 100, // TODO
         }
     }
 
