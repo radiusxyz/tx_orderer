@@ -6,7 +6,7 @@ LIVENESS_PLATFORM="ethereum" # Option: [ethereum]
 LIVENESS_SERVICE_PROVIDER="radius" # Option: [radius]
 LIVENESS_RPC_URL=""
 LIVENESS_WS_URL=""
-LIVENESS_CONTRACT_ADDRESS=""
+LIVENESS_SERVICE_MANAGER_CONTRACT_ADDRESS=""
 CLUSTER_ID=""
 #####################################################################################
 

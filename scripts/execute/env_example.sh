@@ -30,11 +30,11 @@ TX_ORDERER_CLUSTER_RPC_URL="http://127.0.0.1:5000"  # External IP - Please chang
 TX_ORDERER_EXTERNAL_RPC_URL="http://127.0.0.1:3000" # External IP - Please change this IP.
 
 # DKG (for ENCRYPTED_TRANSACTION_TYPE=skde)
-DISTRIBUTED_KEY_GENERATOR_RPC_URL="http://127.0.0.1:7100" # Please change this distribured key generator (external) rpc url.
+DISTRIBUTED_KEY_GENERATOR_EXTERNAL_RPC_URL="http://127.0.0.1:7100" # Please change this distribured key generator (external) rpc url.
 
 # Seeder
-SEEDER_RPC_URL="http://127.0.0.1:6000" # Please change this seeder (external) rpc url.
+SEEDER_EXTERNAL_RPC_URL="http://127.0.0.1:6000" # Please change this seeder (external) rpc url.
 
 # Reward Manager
-REWARD_MANAGER_RPC_URL="http://127.0.0.1:6100" # Please change this reward manager (external) rpc url.
+REWARD_MANAGER_EXTERNAL_RPC_URL="http://127.0.0.1:6100" # Please change this reward manager (external) rpc url.
 
