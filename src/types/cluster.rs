@@ -18,10 +18,8 @@ use crate::{
 pub struct Cluster {
     #[serde(serialize_with = "serialize_address")]
     pub tx_orderer_address: Address,
-
     pub rollup_id_list: BTreeSet<String>,
     pub tx_orderer_rpc_infos: BTreeMap<usize, TxOrdererRpcInfo>,
-
     pub block_margin: u64,
 }
 
@@ -71,7 +69,7 @@ impl Cluster {
     pub fn get_tx_orderer_address_list(&self) -> Vec<Address> {
         self.tx_orderer_rpc_infos
             .values()
-            .map(|tx_orderer_rpc_info| tx_orderer_rpc_info.tx_orderer_address.clone())
+            .map(|info| info.tx_orderer_address.clone())
             .collect()
     }
 
@@ -96,11 +94,9 @@ impl Cluster {
         tx_orderer_address: &Address,
     ) -> Option<TxOrdererRpcInfo> {
         self.tx_orderer_rpc_infos
-            .iter()
-            .find(|(_index, tx_orderer_rpc_info)| {
-                tx_orderer_rpc_info.tx_orderer_address == tx_orderer_address
-            })
-            .map(|(_index, tx_orderer_rpc_info)| tx_orderer_rpc_info.clone())
+            .values()
+            .find(|info| info.tx_orderer_address == tx_orderer_address)
+            .map(|info| info.clone())
     }
 
     pub fn register_tx_orderer(&mut self, index: usize, tx_orderer_rpc_info: TxOrdererRpcInfo) {
@@ -108,21 +104,17 @@ impl Cluster {
     }
 
     pub fn deregister_tx_orderer(&mut self, tx_orderer_address: &str) {
-        let tx_orderer_index = self
+        if let Some(i) = self
             .tx_orderer_rpc_infos
             .iter()
-            .find(|(_index, tx_orderer_rpc_info)| {
-                tx_orderer_rpc_info.tx_orderer_address == tx_orderer_address
-            })
-            .map(|(index, _tx_orderer)| *index);
-
-        if let Some(tx_orderer_index) = tx_orderer_index {
-            self.tx_orderer_rpc_infos.remove(&tx_orderer_index);
+            .find_map(|(i, info)| (info.tx_orderer_address == tx_orderer_address).then_some(*i))
+        {
+            self.tx_orderer_rpc_infos.remove(&i);
         }
     }
 
-    pub fn add_rollup(&mut self, rollup_id: &str) {
-        self.rollup_id_list.insert(rollup_id.to_owned());
+    pub fn add_rollup(&mut self, rollup_id: String) {
+        self.rollup_id_list.insert(rollup_id);
     }
 }
 

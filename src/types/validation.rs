@@ -2,11 +2,12 @@ use std::collections::btree_set::{BTreeSet, Iter};
 
 use crate::types::prelude::*;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ValidationServiceProvider {
-    EigenLayer,
+    #[default]
     Symbiotic,
+    EigenLayer,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]

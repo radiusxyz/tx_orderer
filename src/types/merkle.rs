@@ -184,3 +184,25 @@ impl MerkleTree {
         array
     }
 }
+
+mod tests {
+    use super::*;
+
+    async fn create_merkle_tree(data_num: usize) -> MerkleTree {
+        let merkle_tree = MerkleTree::new();
+        for i in 0..data_num {
+            merkle_tree.add_data(&i.to_string()).await;
+        }
+        return merkle_tree;
+    }
+
+    #[tokio::test]
+    async fn get_merkle_path_works() {
+        let merkle_tree = create_merkle_tree(5).await;
+        println!("merkle_tree: {:?}", merkle_tree);
+        let merkle_path = merkle_tree.get_merkle_path(4).await;
+        let expect: Vec<[u8; 32]> = Default::default();
+        println!("merkle_path: {:?}", merkle_path);
+        assert!(merkle_path == expect);
+    }
+}
