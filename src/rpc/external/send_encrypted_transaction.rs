@@ -4,8 +4,6 @@ use crate::{
     types::*,
 };
 
-const LOG_TARGET: &str = "rpc::external::send_encrypted_transaction";
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
     pub rollup_id: String,
@@ -195,7 +193,7 @@ pub fn sync_encrypted_transaction(
             order_commitment,
         };
 
-        match context
+        context
             .rpc_client()
             .fire_and_forget_multicast(
                 other_cluster_rpc_url_list,
@@ -204,16 +202,6 @@ pub fn sync_encrypted_transaction(
                 Id::Null,
             )
             .await
-        {
-            Ok(_) => (),
-            Err(e) => {
-                tracing::error!(
-                    target: LOG_TARGET,
-                    "Failed to send encrypted transaction: {}",
-                    e
-                );
-            }
-        }
     });
 }
 

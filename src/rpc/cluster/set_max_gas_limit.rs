@@ -79,8 +79,7 @@ pub fn sync_set_max_gas_limit(
                     &params,
                     Id::Null,
                 )
-                .await
-                .unwrap();
+                .await;
         }
     });
 }

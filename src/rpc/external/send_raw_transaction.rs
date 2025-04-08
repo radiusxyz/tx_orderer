@@ -189,7 +189,7 @@ pub fn sync_raw_transaction(
             is_direct_sent,
         };
 
-        match context
+        context
             .rpc_client()
             .fire_and_forget_multicast(
                 other_cluster_rpc_url_list,
@@ -198,12 +198,6 @@ pub fn sync_raw_transaction(
                 Id::Null,
             )
             .await
-        {
-            Ok(_) => (),
-            Err(e) => {
-                tracing::error!("Failed to send raw transaction: {}", e);
-            }
-        }
     });
 }
 
@@ -251,7 +245,7 @@ pub fn sync_batch_creation(
             leader_tx_orderer_signature,
         };
 
-        match context
+        context
             .rpc_client()
             .fire_and_forget_multicast(
                 other_cluster_rpc_url_list.clone(),
@@ -260,17 +254,5 @@ pub fn sync_batch_creation(
                 Id::Null,
             )
             .await
-        {
-            Ok(_) => {
-                tracing::info!(
-                    "Sync new batch successfully: rollup_id: {:?} / batch_number: {:?}",
-                    rollup_id,
-                    batch_number
-                );
-            }
-            Err(e) => {
-                tracing::error!("Failed to send sync batch creation: {}", e);
-            }
-        }
     });
 }
