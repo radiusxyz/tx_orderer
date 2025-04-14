@@ -458,19 +458,7 @@ async fn update_or_create_rollup(
         }
         Err(error) => {
             if error.is_none_type() {
-                let validation_service_manager_address = address_from_str(
-                    platform,
-                    rollup_info
-                        .validationInfo
-                        .validationServiceManager
-                        .to_string(),
-                );
-
-                let rollup_validation_info = RollupValidationInfo::new(
-                    platform,
-                    validation_service_provider,
-                    validation_service_manager_address,
-                );
+                let validation_info = ValidationInfo::get(platform, validation_service_provider)?;
 
                 let executor_address_list = rollup_info
                     .executors
@@ -496,7 +484,7 @@ async fn update_or_create_rollup(
                     rollup_type,
                     EncryptedTransactionType::Skde,
                     address_from_str(platform, rollup_info.owner.to_string()),
-                    rollup_validation_info,
+                    validation_info,
                     order_commitment_type,
                     executor_address_list,
                     cluster_id.to_owned(),
