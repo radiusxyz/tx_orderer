@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{fs, io, path::Path, time::Duration};
 
 use radius_sdk::json_rpc::client::{Id, RpcClient, RpcClientError};
 use reqwest::Client;
@@ -151,4 +151,20 @@ pub async fn fetch_encrypted_transaction(
             );
             error
         })
+}
+
+
+pub fn clear_dir<P: AsRef<Path>>(path: P) -> Result<(), io::Error> {
+    if path.as_ref().exists() {
+        for entry in fs::read_dir(&path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                fs::remove_dir_all(&path)?;
+            } else {
+                fs::remove_file(&path)?;
+            }
+        }
+    }
+    Ok(())
 }

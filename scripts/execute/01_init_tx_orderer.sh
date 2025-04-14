@@ -2,7 +2,8 @@
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 source $SCRIPT_PATH/env.sh
 
-rm -rf $DATA_PATH
+mkdir -p $DATA_PATH
+rm -rf $DATA_PATH/* $DATA_PATH/.* 2>/dev/null || true
 
 echo "Initialize tx_orderer" 
 
