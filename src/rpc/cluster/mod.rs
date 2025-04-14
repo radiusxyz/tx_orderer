@@ -1,4 +1,5 @@
 mod create_batch;
+mod get_order_commitment_info;
 mod get_raw_transaction_list;
 mod set_max_gas_limit;
 mod sync_encrypted_transaction;
@@ -8,6 +9,7 @@ mod sync_max_gas_limit;
 mod sync_raw_transaction;
 
 pub use create_batch::*;
+pub use get_order_commitment_info::*;
 pub use get_raw_transaction_list::*;
 pub use set_max_gas_limit::*;
 pub use sync_encrypted_transaction::*;
