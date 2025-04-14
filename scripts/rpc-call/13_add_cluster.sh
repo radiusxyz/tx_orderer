@@ -11,7 +11,7 @@ curl --location $TX_ORDERER_INTERNAL_RPC_URL \
   "method": "add_cluster",
   "params": {
     "platform": "'"$LIVENESS_PLATFORM"'",
-    "service_provider": "'"$LIVENESS_SERVICE_PROVIDER"'",
+    "liveness_service_provider": "'"$LIVENESS_SERVICE_PROVIDER"'",
     
     "cluster_id": "'"$CLUSTER_ID"'"
   },
