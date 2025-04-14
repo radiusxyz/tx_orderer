@@ -13,6 +13,7 @@ curl --location $TX_ORDERER_INTERNAL_RPC_URL \
     "platform": "'"$VALIDATION_PLATFORM"'",
     "validation_service_provider": "'"$VALIDATION_SERVICE_PROVIDER"'",
     "validation_info": {
+      "platform": "'"$VALIDATION_PLATFORM"'",
       "validation_rpc_url": "'"$VALIDATION_RPC_URL"'",
       "validation_websocket_url": "'"$VALIDATION_WS_URL"'",
       "validation_contract_address": "'"$VALIDATION_SERVICE_MANAGER_CONTRACT_ADDRESS"'"
