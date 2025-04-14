@@ -40,7 +40,7 @@ pub struct OldRollup {
     #[serde(serialize_with = "serialize_address")]
     pub owner: Address,
 
-    pub validation_info: RollupValidationInfo,
+    pub validation_info: ValidationInfo,
 
     #[serde(serialize_with = "serialize_address_list")]
     pub executor_address_list: Vec<Address>,
@@ -60,7 +60,7 @@ pub struct NewRollup {
     #[serde(serialize_with = "serialize_address")]
     pub owner: Address,
 
-    pub validation_info: RollupValidationInfo,
+    pub validation_info: ValidationInfo,
 
     #[serde(serialize_with = "serialize_address_list")]
     pub executor_address_list: Vec<Address>,

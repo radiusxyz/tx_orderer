@@ -6,7 +6,10 @@ use std::{
 use radius_sdk::{json_rpc::client::Priority, signature::Address};
 
 use super::SyncLeaderTxOrderer;
-use crate::rpc::prelude::*;
+use crate::rpc::{
+    cluster::{GetOrderCommitmentInfo, GetOrderCommitmentInfoResponse},
+    prelude::*,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRawTransactionList {
@@ -30,8 +33,8 @@ pub struct SignMessage {
     pub executor_address: String,
     pub platform_block_height: u64,
 
-    pub current_leader_tx_orderer_address: String,
-    pub next_leader_tx_orderer_address: String,
+    pub current_leader_tx_orderer_address: Address,
+    pub next_leader_tx_orderer_address: Address,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -132,8 +135,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             .expect("Time went backwards")
             .as_nanos();
 
-        tracing::info!("stompesi - lock start - {:?}", start_timestamp_millis);
-
         let mut mut_rollup_metadata = RollupMetadata::get_mut(&rollup_id)?;
 
         let locked_timestamp_millis = SystemTime::now()
@@ -163,8 +164,10 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             tracing::error!("Signer not found for platform {:?}", rollup.platform);
             Error::SignerNotFound
         })?;
+
         let tx_orderer_address = signer.address().clone();
-        let is_leader =
+
+        let is_next_leader =
             tx_orderer_address == self.leader_change_message.next_leader_tx_orderer_address;
 
         let start_get_mut_cluster_metadata = SystemTime::now()
@@ -178,6 +181,62 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             &rollup.cluster_id,
         )?;
 
+        tracing::info!(
+            "stompesi - get_raw_transaction_list - {:?} / tx_orderer_address: {:?} / is_leader: {:?}",
+            self.leader_change_message,
+            tx_orderer_address,
+            mut_cluster_metadata.is_leader
+        );
+
+        if mut_cluster_metadata.is_leader == false {
+            if let Some(current_leader_tx_orderer_rpc_info) =
+                mut_cluster_metadata.leader_tx_orderer_rpc_info.clone()
+            {
+                let current_leader_tx_orderer_cluster_rpc_url = current_leader_tx_orderer_rpc_info
+                    .cluster_rpc_url
+                    .clone()
+                    .unwrap();
+
+                let parameter = GetOrderCommitmentInfo {
+                    rollup_id: self.leader_change_message.rollup_id.clone(),
+                };
+
+                match context
+                    .rpc_client()
+                    .request_with_priority::<&GetOrderCommitmentInfo, GetOrderCommitmentInfoResponse>(
+                        current_leader_tx_orderer_cluster_rpc_url.clone(),
+                        GetOrderCommitmentInfo::method(),
+                        &parameter,
+                        Id::Null,
+                        Priority::High,
+                    )
+                    .await
+                {
+                    Ok(response) => {
+
+                      tracing::info!(
+                          "Get order commitment info - current leader external rpc response: {:?}",
+                          response
+                      );
+
+                      mut_rollup_metadata.batch_number = response.batch_number;
+                      mut_rollup_metadata.transaction_order = response.transaction_order;
+                    }
+                    Err(error) => {
+                        tracing::error!(
+                            "Get order commitment info - current leader external rpc error: {:?}",
+                            error
+                        );
+                    }
+                }
+            } else {
+                tracing::warn!(
+                    "Current leader tx orderer RPC info not found for address {:?}",
+                    self.leader_change_message.current_leader_tx_orderer_address
+                );
+            }
+        }
+
         let end_get_mut_cluster_metadata = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
@@ -185,7 +244,7 @@ impl RpcParameter<AppState> for GetRawTransactionList {
 
         mut_cluster_metadata.platform_block_height =
             self.leader_change_message.platform_block_height;
-        mut_cluster_metadata.is_leader = is_leader;
+        mut_cluster_metadata.is_leader = is_next_leader;
         mut_cluster_metadata.leader_tx_orderer_rpc_info = Some(leader_tx_orderer_rpc_info.clone());
 
         let signer = context.get_signer(rollup.platform).await?;
@@ -195,6 +254,14 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
             .as_nanos();
+
+        tracing::info!(
+            "stompesi - batch_number: {:?}, transaction_order: {:?}, provided_batch_number: {:?}, provided_transaction_order: {:?}",
+            mut_rollup_metadata.batch_number,
+            mut_rollup_metadata.transaction_order,
+            mut_rollup_metadata.provided_batch_number,
+            mut_rollup_metadata.provided_transaction_order
+        );
 
         sync_leader_tx_orderer(
             context.clone(),
@@ -311,7 +378,7 @@ pub async fn sync_leader_tx_orderer(
             let _result: Result<(), radius_sdk::json_rpc::client::RpcClientError> = context
                 .rpc_client()
                 .request_with_priority(
-                    next_leader_tx_orderer_cluster_rpc_url,
+                    next_leader_tx_orderer_cluster_rpc_url.clone(),
                     SyncLeaderTxOrderer::method(),
                     &parameter,
                     Id::Null,
@@ -325,10 +392,12 @@ pub async fn sync_leader_tx_orderer(
                 .as_nanos();
 
             tracing::info!(
-                "SyncLeaderTxOrderer - start: {:?} / end: {:?} / gap: {:?}",
+                "SyncLeaderTxOrderer - start: {:?} / end: {:?} / gap: {:?} / next_leader_tx_orderer_cluster_rpc_url: {:?}, parameter: {:?}",
                 start_sync_leader_tx_order_time,
                 end_sync_leader_tx_order_time,
-                end_sync_leader_tx_order_time - start_sync_leader_tx_order_time
+                end_sync_leader_tx_order_time - start_sync_leader_tx_order_time,
+                next_leader_tx_orderer_cluster_rpc_url,
+                parameter
             );
 
             // Fire and forget to the rest of the cluster nodes asynchronously

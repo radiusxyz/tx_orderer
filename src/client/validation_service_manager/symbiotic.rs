@@ -188,7 +188,7 @@ async fn callback(
                 total_staker_reward_list,
                 total_operator_reward_list,
             ) = reward_manager_client
-                .get_distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
+                .get_respond_task_reward_data_list(&rollup.cluster_id, &rollup.rollup_id)
                 .await
                 .unwrap_or((0, vec![], vec![], vec![], vec![]));
 

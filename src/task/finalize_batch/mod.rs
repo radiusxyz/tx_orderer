@@ -3,6 +3,7 @@ mod validation;
 
 use radius_sdk::{json_rpc::client::RpcClient, signature::Signature};
 use tokio::time::Duration;
+use validation::submit_batch_commitment;
 
 use crate::{
     error::Error,
@@ -91,7 +92,7 @@ async fn finalize_batch_task(
         );
 
         sync_batch_creation(
-            context,
+            context.clone(),
             cluster,
             rollup.platform,
             rollup_id.to_string(),
@@ -104,6 +105,8 @@ async fn finalize_batch_task(
 
         Batch::put(&batch, rollup_id, batch_number)?;
         tracing::info!("Finalize batch DONE - {}, {}", rollup_id, batch_number);
+
+        submit_batch_commitment(context, &rollup, batch_number, &batch_commitment).await;
 
         break;
     }

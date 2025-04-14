@@ -23,10 +23,10 @@ impl RpcParameter<AppState> for GetSequencingInfos {
         let sequencing_infos: Vec<((Platform, LivenessServiceProvider), SequencingInfoPayload)> =
             sequencing_info_list
                 .iter()
-                .filter_map(|(platform, service_provider)| {
-                    SequencingInfoPayload::get(*platform, *service_provider)
+                .filter_map(|(platform, liveness_service_provider)| {
+                    SequencingInfoPayload::get(*platform, *liveness_service_provider)
                         .ok()
-                        .map(|payload| ((*platform, *service_provider), payload))
+                        .map(|payload| ((*platform, *liveness_service_provider), payload))
                 })
                 .collect();
 

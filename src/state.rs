@@ -129,8 +129,8 @@ impl AppState {
 
     pub async fn get_validation_service_manager_client<T>(
         &self,
-        platform: Platform,
-        validation_service_provider: ValidationServiceProvider,
+        platform: &Platform,
+        validation_service_provider: &ValidationServiceProvider,
     ) -> Result<T, CachedKvStoreError>
     where
         T: Clone + Any + Send + 'static,

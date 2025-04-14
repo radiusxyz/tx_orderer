@@ -1,12 +1,10 @@
 mod rollup_metadata;
 mod rollup_type;
-mod rollup_validation_info;
 
 use std::collections::{btree_set, BTreeSet};
 
 pub use rollup_metadata::*;
 pub use rollup_type::*;
-pub use rollup_validation_info::*;
 
 use super::prelude::*;
 
@@ -25,7 +23,7 @@ pub struct Rollup {
     #[serde(serialize_with = "serialize_address")]
     pub owner: Address,
 
-    pub validation_info: RollupValidationInfo,
+    pub validation_info: ValidationInfo,
 
     #[serde(serialize_with = "serialize_address_list")]
     pub executor_address_list: Vec<Address>,
@@ -42,7 +40,7 @@ impl Rollup {
         encrypted_transaction_type: EncryptedTransactionType,
 
         owner: Address,
-        rollup_validation_info: RollupValidationInfo,
+        validation_info: ValidationInfo,
         order_commitment_type: OrderCommitmentType,
         executor_address_list: Vec<Address>,
 
@@ -56,7 +54,7 @@ impl Rollup {
             rollup_type,
             encrypted_transaction_type,
             owner,
-            validation_info: rollup_validation_info,
+            validation_info,
             order_commitment_type,
             executor_address_list,
             cluster_id,

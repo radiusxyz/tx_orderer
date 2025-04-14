@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use clap::{Parser, Subcommand};
 use futures::future::try_join_all;
 use radius_sdk::{
@@ -76,7 +78,6 @@ async fn main() -> Result<(), Error> {
 
 async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error> {
     set_resource_limits()?;
-
     let config = Config::load(config_option)?;
     initialize_logger(&config)?;
 
@@ -84,7 +85,6 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
     // let profiler = Profiler::init("http://127.0.0.1:4040", "tx_orderer", 100)?;
     let profiler = None;
 
-    // Initialize the database
     let kv_store = KvStoreBuilder::default()
         .set_default_lock_timeout(10000)
         .set_txn_lock_timeout(10000)
@@ -93,44 +93,17 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
     kv_store.init();
     tracing::info!("Database initialized at {:?}", config.database_path());
 
-    let mut version = Version::get_mut_or(Version::default).map_err(error::Error::Database)?;
+    check_and_update_version()?;
 
-    if version.database_version != REQURIED_DATABASE_VERSION {
-        tracing::error!(
-            "Database version mismatch: expected {:?}, found {:?}",
-            REQURIED_DATABASE_VERSION,
-            version.database_version
-        );
-        return Err(error::Error::DatabaseVersionMismatch);
-    }
-
-    version.code_version = CURRENT_CODE_VERSION.to_string();
-
-    tracing::info!("Current code version {:?}", version.code_version);
-    tracing::info!("Current database version {:?}", version.database_version);
-
-    version.update().map_err(error::Error::Database)?;
-
-    let (seeder_client, distributed_key_generation_client, reward_manager_client) = tokio::try_join!(
+    let (seeder_client, dkg_client, reward_manager_client) = tokio::try_join!(
         async { initialize_seeder_client(&config) },
         async { initialize_dkg_client(&config) },
         async { initialize_reward_manager_client(&config) }
     )?;
-    let skde_params = distributed_key_generation_client
-        .get_skde_params()
-        .await?
-        .skde_params;
-    let latest_decryption_key_id = distributed_key_generation_client
-        .get_latest_key_id()
-        .await?
-        .latest_key_id;
+    let skde_params = dkg_client.get_skde_params().await?.skde_params;
+    let latest_key_id = dkg_client.get_latest_key_id().await?.latest_key_id;
 
-    let decryptor = Decryptor::new(
-        distributed_key_generation_client.clone(),
-        skde_params.clone(),
-        latest_decryption_key_id,
-    )?;
-
+    let decryptor = Decryptor::new(dkg_client.clone(), skde_params.clone(), latest_key_id)?;
     Decryptor::start(decryptor.clone()).await;
 
     let rpc_client = RpcClient::new().map_err(error::Error::RpcClient)?;
@@ -229,14 +202,15 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
         ValidationServiceProviders::get_or(ValidationServiceProviders::default)
             .map_err(Error::Database)?;
 
-    for (platform, provider) in validation_service_providers.iter() {
-        let validation_info = ValidationInfo::get(*platform, *provider).map_err(Error::Database)?;
+    for (platform, validation_service_provider) in validation_service_providers.iter() {
+        let validation_info = ValidationInfo::get(*platform, *validation_service_provider)
+            .map_err(Error::Database)?;
         match validation_info {
             ValidationInfo::EigenLayer(info) => {
                 validation_service_manager::eigenlayer::ValidationServiceManagerClient::initialize(
                     app_state.clone(),
                     *platform,
-                    *provider,
+                    *validation_service_provider,
                     info,
                 );
             }
@@ -244,7 +218,7 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
                 validation_service_manager::symbiotic::ValidationServiceManagerClient::initialize(
                     app_state.clone(),
                     *platform,
-                    *provider,
+                    *validation_service_provider,
                     info,
                 );
             }
@@ -257,46 +231,83 @@ async fn initialize_clients(app_state: AppState) -> Result<(), Error> {
 async fn initialize_internal_rpc_server(context: AppState) -> Result<(), Error> {
     let internal_rpc_url = context.config().internal_rpc_url.to_string();
 
-    let internal_rpc_server = RpcServer::new(context.clone())
-        .register_rpc_method::<internal::AddSequencingInfo>()?
-        .register_rpc_method::<internal::AddValidationInfo>()?
-        .register_rpc_method::<internal::AddCluster>()?
-        .register_rpc_method::<internal::GetCluster>()?
-        .register_rpc_method::<internal::GetClusterIdList>()?
-        .register_rpc_method::<internal::GetSequencingInfos>()?
-        .register_rpc_method::<internal::GetSequencingInfo>()?
-        .init(internal_rpc_url.clone())
+    let internal_rpc_server = Arc::new(RpcServer::new(context.clone()));
+
+    // register each RPC method
+    internal_rpc_server
+        .register_rpc_method::<internal::AddSequencingInfo>()
         .await?;
+    internal_rpc_server
+        .register_rpc_method::<internal::AddValidationInfo>()
+        .await?;
+    internal_rpc_server
+        .register_rpc_method::<internal::AddCluster>()
+        .await?;
+    internal_rpc_server
+        .register_rpc_method::<internal::GetCluster>()
+        .await?;
+    internal_rpc_server
+        .register_rpc_method::<internal::GetClusterIdList>()
+        .await?;
+    internal_rpc_server
+        .register_rpc_method::<internal::GetSequencingInfos>()
+        .await?;
+    internal_rpc_server
+        .register_rpc_method::<internal::GetSequencingInfo>()
+        .await?;
+
+    // start the server
+
+    let internal_handle = internal_rpc_server.init(internal_rpc_url.clone()).await?;
 
     tracing::info!(
         "Successfully started the internal RPC server: {}",
         internal_rpc_url
     );
 
-    internal_rpc_server.stopped().await;
+    internal_handle.stopped().await;
     Ok(())
 }
 
 async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
     let cluster_rpc_url = anywhere(&context.config().cluster_port()?);
 
-    let cluster_rpc_server = RpcServer::new(context)
-        .register_rpc_method::<cluster::GetRawTransactionList>()?
-        .register_rpc_method::<cluster::SetMaxGasLimit>()?
-        .register_rpc_method::<cluster::SyncEncryptedTransaction>()?
-        .register_rpc_method::<cluster::SyncLeaderTxOrderer>()?
-        .register_rpc_method::<cluster::SyncRawTransaction>()?
-        .register_rpc_method::<cluster::SyncMaxGasLimit>()?
-        .register_rpc_method::<cluster::SyncBatchCreation>()?
-        .init(cluster_rpc_url.clone())
+    let cluster_rpc_server = Arc::new(RpcServer::new(context.clone()));
+
+    // register each RPC method
+    cluster_rpc_server
+        .register_rpc_method::<cluster::GetRawTransactionList>()
         .await?;
+    cluster_rpc_server
+        .register_rpc_method::<cluster::SetMaxGasLimit>()
+        .await?;
+    cluster_rpc_server
+        .register_rpc_method::<cluster::SyncEncryptedTransaction>()
+        .await?;
+    cluster_rpc_server
+        .register_rpc_method::<cluster::GetOrderCommitmentInfo>()
+        .await?;
+    cluster_rpc_server
+        .register_rpc_method::<cluster::SyncLeaderTxOrderer>()
+        .await?;
+    cluster_rpc_server
+        .register_rpc_method::<cluster::SyncRawTransaction>()
+        .await?;
+    cluster_rpc_server
+        .register_rpc_method::<cluster::SyncMaxGasLimit>()
+        .await?;
+    cluster_rpc_server
+        .register_rpc_method::<cluster::SyncBatchCreation>()
+        .await?;
+
+    let cluster_handle = cluster_rpc_server.init(cluster_rpc_url.clone()).await?;
 
     tracing::info!(
         "Successfully started the cluster RPC server: {}",
         cluster_rpc_url
     );
 
-    cluster_rpc_server.stopped().await;
+    cluster_handle.stopped().await;
     Ok(())
 }
 
@@ -308,29 +319,80 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> 
         external_rpc_url
     );
 
-    let external_rpc_server = RpcServer::new(context)
-        .register_rpc_method::<external::SendEncryptedTransaction>()?
-        .register_rpc_method::<external::GetEncryptedTransactionWithTransactionHash>()?
-        .register_rpc_method::<external::GetEncryptedTransactionWithOrderCommitment>()?
-        .register_rpc_method::<external::GetRawTransactionWithTransactionHash>()?
-        .register_rpc_method::<external::GetRawTransactionWithOrderCommitment>()?
-        .register_rpc_method::<external::GetOrderCommitment>()?
-        .register_rpc_method::<external::SendRawTransaction>()?
-        .register_rpc_method::<external::GetRawTransactionList>()?
-        .register_rpc_method::<external::GetEncryptedTransactionList>()?
-        .register_rpc_method::<external::GetRollup>()?
-        .register_rpc_method::<external::GetRollupMetadata>()?
-        .register_rpc_method::<external::GetClusterMetadata>()?
-        .register_rpc_method::<external::GetVersion>()?
-        .register_rpc_method::<external::GetBatch>()?
-        .register_rpc_method::<external::GetCanProvideTransactionInfo>()?
-        .init(external_rpc_url)
+    let external_rpc_server = Arc::new(RpcServer::new(context.clone()));
+
+    external_rpc_server
+        .register_rpc_method::<external::SendEncryptedTransaction>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetEncryptedTransactionWithTransactionHash>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetEncryptedTransactionWithOrderCommitment>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetRawTransactionWithTransactionHash>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetRawTransactionWithOrderCommitment>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetOrderCommitment>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::SendRawTransaction>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetRawTransactionList>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetEncryptedTransactionList>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetRollup>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetRollupMetadata>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetClusterMetadata>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetVersion>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetBatch>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetCanProvideTransactionInfo>()
         .await?;
 
-    external_rpc_server.stopped().await;
+    let external_handle = external_rpc_server.init(external_rpc_url.clone()).await?;
+
+    tracing::info!(
+        "Successfully started the external RPC server: {}",
+        external_rpc_url
+    );
+
+    external_handle.stopped().await;
     Ok(())
 }
 
 pub fn anywhere(port: &str) -> String {
     format!("0.0.0.0:{}", port)
+}
+
+fn check_and_update_version() -> Result<(), Error> {
+    let mut version = Version::get_mut_or(Version::default).map_err(error::Error::Database)?;
+    if version.database_version != REQURIED_DATABASE_VERSION {
+        tracing::error!(
+            "Database version mismatch: expected {}, found {}",
+            REQURIED_DATABASE_VERSION,
+            version.database_version
+        );
+        return Err(error::Error::DatabaseVersionMismatch);
+    }
+    version.code_version = CURRENT_CODE_VERSION.to_string();
+    version.update().map_err(error::Error::Database)?;
+    Ok(())
 }

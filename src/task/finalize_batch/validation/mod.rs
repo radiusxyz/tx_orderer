@@ -2,49 +2,37 @@ use std::time::Duration;
 
 use tokio::time::sleep;
 
-use super::{BatchCommitment, Platform, Rollup, ValidationInfo, ValidationServiceProvider};
+use super::{Rollup, ValidationInfo, ValidationServiceProvider};
 use crate::{client::validation_service_manager, state::AppState};
 
 pub async fn submit_batch_commitment(
     context: AppState,
     rollup: &Rollup,
-    validation_platform: Platform,
-    validation_service_provider: ValidationServiceProvider,
-    validation_info: ValidationInfo,
     batch_number: u64,
-    batch_commitment: &BatchCommitment,
+    batch_commitment: &[u8; 32],
 ) {
-    let batch_commitment = batch_commitment.as_bytes().unwrap();
+    // let validation_platform = context
+    //     .get_validation_platform(rollup.cluster_id, rollup.rollup_id)
+    //     .await
+    //     .unwrap();
+
+    // let validation_platform: Platform,
+    // let validation_service_provider: ValidationServiceProvider,
+    // let validation_info: ValidationInfo,
+
     if (batch_number % 10) == 0 {
         tracing::info!(
-            "Submit block commitment - rollup_id: {:?}, batch_number: {:?}, batch_commitment: {:?}",
+            "Submit block commitment - rollup_id: {:?}, batch_number: {:?},
+    batch_commitment: {:?}",
             rollup.rollup_id,
             batch_number,
             batch_commitment
         );
 
-        match validation_info {
-            // TODO: we have to manage the nonce for the register block commitment.
+        match rollup.validation_info {
+            // TODO: we have to manage the nonce for the register blockcommitment.
             ValidationInfo::EigenLayer(_) => {
-                let validation_service_manager_client: validation_service_manager::eigenlayer::ValidationServiceManagerClient =
-                    context
-                        .get_validation_service_manager_client(validation_platform, validation_service_provider)
-                        .await
-                        .unwrap();
-
-                validation_service_manager_client
-                    .publisher()
-                    .register_block_commitment(
-                        &rollup.cluster_id,
-                        &rollup.rollup_id,
-                        batch_number,
-                        &batch_commitment,
-                        // vault_addresses
-                        // merkle_roots
-                        // staker_rewards
-                    )
-                    .await
-                    .unwrap();
+                unimplemented!();
             }
             ValidationInfo::Symbiotic(_) => {
                 let (
@@ -55,20 +43,29 @@ pub async fn submit_batch_commitment(
                     total_operator_reward_list,
                 ) = context
                     .reward_manager_client()
-                    .get_distribution_data_list(&rollup.cluster_id, &rollup.rollup_id)
+                    .get_create_task_reward_data_list(&rollup.cluster_id, &rollup.rollup_id)
                     .await
                     .unwrap_or((0, vec![], vec![], vec![], vec![]));
-
-                let validation_service_manager_client: validation_service_manager::symbiotic::ValidationServiceManagerClient =
-                    context
-                        .get_validation_service_manager_client(validation_platform, validation_service_provider)
-                        .await
-                        .unwrap();
 
                 let vault_address_list = vault_address_list
                     .iter()
                     .map(|address| address.as_hex_string())
                     .collect::<Vec<_>>();
+
+                let validation_service_manager_client = match rollup.validation_info.validation_service_provider() {
+                    ValidationServiceProvider::EigenLayer => {
+                        panic!("EigenLayer validation service provider is not supported yet");
+                    }
+                    ValidationServiceProvider::Symbiotic => {
+                        context
+                    .get_validation_service_manager_client::<validation_service_manager::symbiotic::ValidationServiceManagerClient>(
+                        rollup.validation_info.platform(),
+                        &rollup.validation_info.validation_service_provider(),
+                    )
+                    .await
+                    .unwrap()
+                    }
+                };
 
                 for _ in 0..10 {
                     match validation_service_manager_client

@@ -29,7 +29,7 @@ impl RpcParameter<AppState> for SyncLeaderTxOrderer {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        let rollup_id = self.leader_change_message.rollup_id;
+        let rollup_id = self.leader_change_message.rollup_id.clone();
 
         let start_sync_leader_tx_orderer_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -82,7 +82,6 @@ impl RpcParameter<AppState> for SyncLeaderTxOrderer {
 
         mut_rollup_metadata.batch_number = self.batch_number;
         mut_rollup_metadata.transaction_order = self.transaction_order;
-
         mut_rollup_metadata.provided_batch_number = self.provided_batch_number;
         mut_rollup_metadata.provided_transaction_order = self.provided_transaction_order;
 
@@ -94,8 +93,9 @@ impl RpcParameter<AppState> for SyncLeaderTxOrderer {
             .as_nanos();
 
         tracing::info!(
-            "sync_leader_tx_orderer - total take time: {:?} ",
-            end_sync_leader_tx_orderer_time - start_sync_leader_tx_orderer_time
+            "sync_leader_tx_orderer - total take time: {:?} / self: {:?}",
+            end_sync_leader_tx_orderer_time - start_sync_leader_tx_orderer_time,
+            self
         );
 
         Ok(())
