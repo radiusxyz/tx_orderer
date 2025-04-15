@@ -42,7 +42,7 @@ async fn finalize_batch_task(
     batch_number: u64,
 ) -> Result<(), Error> {
     let rollup = Rollup::get(rollup_id)?;
-    let max_transaction_count = rollup.max_transaction_count;
+    let max_transaction_count_per_batch = rollup.max_transaction_count_per_batch;
     let cluster_meta = ClusterMetadata::get(
         rollup.platform,
         rollup.liveness_service_provider,
@@ -63,7 +63,7 @@ async fn finalize_batch_task(
             &cluster,
             rollup_id,
             batch_number,
-            max_transaction_count,
+            max_transaction_count_per_batch,
         )
         .await;
 
@@ -156,7 +156,7 @@ pub async fn create_batch_task(
     leader_tx_orderer_signature: Signature,
 ) -> Result<(), Error> {
     let rollup = Rollup::get(rollup_id)?;
-    let max_transaction_count = rollup.max_transaction_count;
+    let max_transaction_count_per_batch = rollup.max_transaction_count_per_batch;
     let cluster_meta = ClusterMetadata::get(
         rollup.platform,
         rollup.liveness_service_provider,
@@ -177,7 +177,7 @@ pub async fn create_batch_task(
             &cluster,
             rollup_id,
             batch_number,
-            max_transaction_count,
+            max_transaction_count_per_batch,
         )
         .await;
 
@@ -271,19 +271,19 @@ async fn build_batch_data(
     cluster: &Cluster,
     rollup_id: &str,
     batch_number: u64,
-    max_transaction_count: u64,
+    max_transaction_count_per_batch: u64,
 ) -> Result<BatchBuildResult, Error> {
     let rpc_client = context.rpc_client();
 
     let mut encrypted_transaction_list =
-        get_encrypted_transaction_list(rollup_id, batch_number, max_transaction_count);
+        get_encrypted_transaction_list(rollup_id, batch_number, max_transaction_count_per_batch);
 
     let raw_transaction_info_list = get_raw_transaction_info_list(
         rollup_id,
         rpc_client,
         cluster,
         batch_number,
-        max_transaction_count,
+        max_transaction_count_per_batch,
     )
     .await?;
 
@@ -361,12 +361,12 @@ pub async fn get_raw_transaction_info_list(
     rpc_client: &RpcClient,
     cluster: &Cluster,
     batch_number: u64,
-    max_transaction_count: u64,
+    max_transaction_count_per_batch: u64,
 ) -> Result<Vec<(RawTransaction, bool)>, Error> {
     let mut raw_transaction_info_list =
-        Vec::<(RawTransaction, bool)>::with_capacity(max_transaction_count as usize);
+        Vec::<(RawTransaction, bool)>::with_capacity(max_transaction_count_per_batch as usize);
 
-    for transaction_order in 0..max_transaction_count {
+    for transaction_order in 0..max_transaction_count_per_batch {
         let raw_transaction_info =
             match RawTransactionModel::get(rollup_id, batch_number, transaction_order) {
                 Ok(raw_transaction_info) => raw_transaction_info,
@@ -388,10 +388,10 @@ pub async fn get_raw_transaction_info_list(
     }
 
     tracing::info!(
-        "get_raw_transaction_info_list - rollup_id: {:?} / batch_number: {:?} / max_transaction_count: {:?} / raw_transaction_info_list_count: {:?}",
+        "get_raw_transaction_info_list - rollup_id: {:?} / batch_number: {:?} / max_transaction_count_per_batch: {:?} / raw_transaction_info_list_count: {:?}",
         rollup_id,
         batch_number,
-        max_transaction_count,
+        max_transaction_count_per_batch,
         raw_transaction_info_list.len()
     );
     Ok(raw_transaction_info_list)

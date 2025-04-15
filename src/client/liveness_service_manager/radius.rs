@@ -503,7 +503,8 @@ async fn update_or_create_rollup(
                 rollup_id_list.update()?;
 
                 let mut rollup_metadata = RollupMetadata::default();
-                rollup_metadata.max_transaction_count = rollup.max_transaction_count;
+                rollup_metadata.max_transaction_count_per_batch =
+                    rollup.max_transaction_count_per_batch;
                 rollup_metadata.cluster_id = cluster_id.to_owned();
                 rollup_metadata.put(&rollup.rollup_id)?;
 

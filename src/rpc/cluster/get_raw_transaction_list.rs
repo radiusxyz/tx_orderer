@@ -116,7 +116,7 @@ impl RpcParameter<AppState> for GetRawTransactionList {
 
                 current_provided_transaction_order = valid_end_transaction_order;
 
-                if current_provided_transaction_order == rollup.max_transaction_count as i64 - 1 {
+                if current_provided_transaction_order == rollup.max_transaction_count_per_batch as i64 - 1 {
                     current_provided_batch_number += 1;
                     current_provided_transaction_order = -1;
                 }

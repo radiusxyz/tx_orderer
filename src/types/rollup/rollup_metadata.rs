@@ -59,7 +59,7 @@ impl CanProvideTransactionInfo {
 pub struct RollupMetadata {
     pub batch_number: u64,
     pub transaction_order: u64,
-    pub max_transaction_count: u64,
+    pub max_transaction_count_per_batch: u64,
 
     pub cluster_id: String,
 
@@ -72,7 +72,7 @@ impl Default for RollupMetadata {
         Self {
             batch_number: 0,
             transaction_order: 0,
-            max_transaction_count: 0,
+            max_transaction_count_per_batch: 0,
 
             cluster_id: String::new(),
 
@@ -84,7 +84,7 @@ impl Default for RollupMetadata {
 
 impl RollupMetadata {
     pub fn check_and_update_batch_info(&mut self) -> bool {
-        if self.transaction_order == self.max_transaction_count {
+        if self.transaction_order == self.max_transaction_count_per_batch {
             self.batch_number += 1;
             self.transaction_order = 0;
 
