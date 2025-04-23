@@ -16,6 +16,8 @@ use crate::{
     state::AppState,
 };
 
+pub type ClusterId = String;
+
 #[derive(Default, Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, liveness_service_provider: LivenessServiceProvider, cluster_id: &str))]
 pub struct LatestSyncedClusterBlockHeight(u64);
@@ -49,7 +51,7 @@ impl ClusterIdList {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(platform: Platform, liveness_service_provider: LivenessServiceProvider, cluster_id: &str, platform_block_height: u64))]
+#[kvstore(key(platform: Platform, liveness_service_provider: LivenessServiceProvider, cluster_id: &ClusterId, platform_block_height: u64))]
 pub struct Cluster {
     #[serde(serialize_with = "serialize_address")]
     pub tx_orderer_address: Address,
@@ -75,33 +77,34 @@ impl Cluster {
         }
     }
 
-    pub async fn put_and_update_with_margin(
-        cluster: &Cluster,
-        platform: Platform,
-        liveness_service_provider: LivenessServiceProvider,
-        cluster_id: &str,
-        platform_block_height: u64,
-    ) -> Result<(), KvStoreError> {
-        Cluster::put(
-            cluster,
-            platform,
-            liveness_service_provider,
-            cluster_id,
-            platform_block_height,
-        )?;
+    // pub async fn put_and_update_with_margin(
+    //     cluster: &Cluster,
+    //     platform: Platform,
+    //     liveness_service_provider: LivenessServiceProvider,
+    //     cluster_id: &ClusterId,
+    //     platform_block_height: u64,
+    // ) -> Result<(), KvStoreError> {
+    //     Cluster::put(
+    //         cluster,
+    //         platform,
+    //         liveness_service_provider,
+    //         cluster_id,
+    //         platform_block_height,
+    //     )?;
 
-        // Keep [`ClusterInfo`] for `Self::Margin` blocks.
-        let block_height_for_remove = platform_block_height.wrapping_sub(cluster.block_margin * 2);
+    //     // Keep [`ClusterInfo`] for `Self::Margin` blocks.
+    //     let block_height_for_remove =
+    // platform_block_height.wrapping_sub(cluster.block_margin * 2);
 
-        Cluster::delete(
-            platform,
-            liveness_service_provider,
-            cluster_id,
-            block_height_for_remove,
-        )?;
+    //     Cluster::delete(
+    //         platform,
+    //         liveness_service_provider,
+    //         cluster_id,
+    //         block_height_for_remove,
+    //     )?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn get_tx_orderer_address_list(&self) -> Vec<Address> {
         self.tx_orderer_rpc_infos
@@ -195,7 +198,7 @@ impl Cluster {
 impl Cluster {
     pub async fn sync_cluster(
         context: AppState,
-        cluster_id: &str,
+        cluster_id: &ClusterId,
         liveness_service_manager_client: &LivenessServiceManagerClient,
         platform_block_height: u64,
     ) -> Result<Cluster, Error> {

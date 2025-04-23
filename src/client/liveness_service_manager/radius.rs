@@ -247,7 +247,7 @@ async fn callback(
 pub async fn initialize_new_cluster(
     app_state: AppState,
     liveness_service_manager_client: &LivenessServiceManagerClient,
-    cluster_id: &str,
+    cluster_id: &ClusterId,
     platform_block_height: u64,
     block_margin: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -359,7 +359,7 @@ pub async fn initialize_new_cluster(
 
 async fn get_tx_orderer_rpc_infos(
     liveness_service_manager_client: &LivenessServiceManagerClient,
-    cluster_id: &str,
+    cluster_id: &ClusterId,
     platform_block_height: u64,
 ) -> Result<BTreeMap<usize, TxOrdererRpcInfo>, Error> {
     let tx_orderer_address_list = liveness_service_manager_client
@@ -405,7 +405,7 @@ async fn get_tx_orderer_rpc_infos(
 async fn get_rollup_id_list(
     app_state: &AppState,
     liveness_service_manager_client: &LivenessServiceManagerClient,
-    cluster_id: &str,
+    cluster_id: &ClusterId,
     platform_block_height: u64,
 ) -> Result<BTreeSet<String>, Box<dyn std::error::Error>> {
     let rollup_list = liveness_service_manager_client
@@ -441,7 +441,7 @@ async fn update_or_create_rollup(
     platform: Platform,
     liveness_service_provider: LivenessServiceProvider,
     validation_service_provider: ValidationServiceProvider,
-    cluster_id: &str,
+    cluster_id: &ClusterId,
     rollup_info: &RollupInfo,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match Rollup::get_mut(&rollup_info.id) {

@@ -10,6 +10,8 @@ use radius_sdk::{
 };
 pub use types::*;
 
+use crate::types::ClusterId;
+
 pub struct RewardManagerClient {
     inner: Arc<RewardManagerClientInner>,
 }
@@ -41,7 +43,7 @@ impl RewardManagerClient {
 
     pub async fn get_create_task_reward_data_list(
         &self,
-        cluster_id: &str,
+        cluster_id: &ClusterId,
         rollup_id: &str,
     ) -> Result<(u64, Vec<Address>, Vec<[u8; 32]>, Vec<u64>, Vec<u64>), RewardManagerError> {
         let params = GetCreateTaskRewards {
@@ -112,7 +114,7 @@ impl RewardManagerClient {
 
     pub async fn get_respond_task_reward_data_list(
         &self,
-        cluster_id: &str,
+        cluster_id: &ClusterId,
         rollup_id: &str,
     ) -> Result<(u64, Vec<Address>, Vec<[u8; 32]>, Vec<u64>, Vec<u64>), RewardManagerError> {
         let params = GetRespondTaskRewards {

@@ -6,7 +6,7 @@ use crate::rpc::prelude::*;
 pub struct GetCluster {
     pub platform: Platform,
     pub liveness_service_provider: LivenessServiceProvider,
-    pub cluster_id: String,
+    pub cluster_id: ClusterId,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
