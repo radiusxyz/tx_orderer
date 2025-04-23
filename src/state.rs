@@ -11,7 +11,7 @@ use crate::{
     client::{reward_manager::RewardManagerClient, seeder::SeederClient},
     merkle_tree_manager::MerkleTreeManager,
     profiler::Profiler,
-    task::Decryptor,
+    task::{Decryptor, SharedChannelInfos},
     types::*,
 };
 
@@ -31,6 +31,7 @@ struct AppStateInner {
     profiler: Option<Profiler>,
     rpc_client: Arc<RpcClient>,
     merkle_tree_manager: MerkleTreeManager,
+    shared_channel_infos: SharedChannelInfos,
 }
 
 impl Clone for AppState {
@@ -55,6 +56,7 @@ impl AppState {
         profiler: Option<Profiler>,
         rpc_client: Arc<RpcClient>,
         merkle_tree_manager: MerkleTreeManager,
+        shared_channel_infos: SharedChannelInfos,
     ) -> Self {
         let inner = AppStateInner {
             config,
@@ -68,6 +70,7 @@ impl AppState {
             profiler,
             rpc_client,
             merkle_tree_manager,
+            shared_channel_infos,
         };
 
         Self {
@@ -101,6 +104,10 @@ impl AppState {
 
     pub fn merkle_tree_manager(&self) -> &MerkleTreeManager {
         &self.inner.merkle_tree_manager
+    }
+
+    pub fn shared_channel_infos(&self) -> &SharedChannelInfos {
+        &self.inner.shared_channel_infos
     }
 
     pub fn decryptor(&self) -> &Arc<Decryptor> {

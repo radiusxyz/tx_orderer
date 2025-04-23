@@ -1,14 +1,19 @@
 use std::{
     collections::BTreeSet,
-    time::{SystemTime, UNIX_EPOCH},
+    sync::Arc,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use radius_sdk::{json_rpc::client::Priority, signature::Address};
+use tokio::{sync::mpsc::UnboundedReceiver, time::Instant};
 
 use super::SyncLeaderTxOrderer;
-use crate::rpc::{
-    cluster::{GetOrderCommitmentInfo, GetOrderCommitmentInfoResponse},
-    prelude::*,
+use crate::{
+    rpc::{
+        cluster::{GetOrderCommitmentInfo, GetOrderCommitmentInfoResponse},
+        prelude::*,
+    },
+    task::{send_transaction_list_to_mev_searcher, MevTargetTransaction},
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -116,7 +121,9 @@ impl RpcParameter<AppState> for GetRawTransactionList {
 
                 current_provided_transaction_order = valid_end_transaction_order;
 
-                if current_provided_transaction_order == rollup.max_transaction_count_per_batch as i64 - 1 {
+                if current_provided_transaction_order
+                    == rollup.max_transaction_count_per_batch as i64 - 1
+                {
                     current_provided_batch_number += 1;
                     current_provided_transaction_order = -1;
                 }
@@ -320,6 +327,63 @@ impl RpcParameter<AppState> for GetRawTransactionList {
         tracing::info!(
             "get_raw_transaction_list - total take time: {:?}",
             end_get_raw_transaction_list_time - start_get_raw_transaction_list_time
+        );
+
+        let shared_channel_infos = context.shared_channel_infos();
+        let mev_searcher_infos = MevSearcherInfos::get_or(MevSearcherInfos::default).unwrap();
+
+        let ip_list = mev_searcher_infos.get_ip_list_by_rollup_id(&rollup_id);
+        let receivers: Vec<Arc<tokio::sync::Mutex<UnboundedReceiver<MevTargetTransaction>>>> = {
+            let map = shared_channel_infos.lock().unwrap();
+            ip_list
+                .iter()
+                .filter_map(|ip| map.get(ip).map(|(_, rx)| Arc::clone(rx)))
+                .collect()
+        };
+
+        let collected = Arc::new(tokio::sync::Mutex::new(Vec::new()));
+        let mut sub_tasks = vec![];
+
+        for receiver in receivers {
+            let collected_clone = Arc::clone(&collected);
+            let rx = Arc::clone(&receiver);
+
+            let sub_task = tokio::spawn(async move {
+                let deadline = Instant::now() + Duration::from_millis(2000);
+
+                loop {
+                    tokio::select! {
+                        _ = tokio::time::sleep_until(deadline) => {
+                            break;
+                        }
+                        maybe_tx = async {
+                            let mut guard = rx.lock().await;
+                            guard.recv().await
+                        } => {
+                            if let Some(tx) = maybe_tx {
+                                println!("Received backrunning tx: {:?}", tx);
+                                collected_clone.lock().await.push(tx);
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+
+            sub_tasks.push(sub_task);
+        }
+
+        let _ = futures::future::join_all(sub_tasks).await;
+
+        let result = collected.lock().await;
+        println!("Collected backrunning txs: {:?}", *result);
+
+        send_transaction_list_to_mev_searcher(
+            shared_channel_infos,
+            &rollup_id,
+            &mev_searcher_infos,
+            raw_transaction_list.clone(),
         );
 
         Ok(GetRawTransactionListResponse {

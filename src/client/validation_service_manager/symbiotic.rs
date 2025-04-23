@@ -59,11 +59,8 @@ impl ValidationServiceManagerClient {
         )
         .map_err(|error| Error::ValidationServiceManagerClient(error.into()))?;
 
-        let subscriber = Subscriber::new(
-            symbiotic_validation_info.validation_websocket_url,
-            symbiotic_validation_info.validation_contract_address,
-        )
-        .map_err(|error| Error::ValidationServiceManagerClient(error.into()))?;
+        let subscriber = Subscriber::new(symbiotic_validation_info.validation_websocket_url)
+            .map_err(|error| Error::ValidationServiceManagerClient(error.into()))?;
 
         let inner = ValidationServiceManagerClientInner {
             platform,
@@ -110,9 +107,17 @@ impl ValidationServiceManagerClient {
                     platform,
                     validation_service_provider
                 );
+
+                let task_manager_contract_address = validation_service_manager_client
+                    .publisher()
+                    .get_task_manager_contract_address()
+                    .await
+                    .unwrap();
+
                 validation_service_manager_client
                     .subscriber()
-                    .initialize_event_handler(
+                    .initialize_task_manager_event_handler(
+                        task_manager_contract_address,
                         callback,
                         (
                             context.reward_manager_client(),
@@ -151,14 +156,14 @@ async fn callback(
 ) {
     let rollup = Rollup::get(&event.rollupId).ok();
     if let Some(rollup) = rollup {
-        let batch = if let Ok(betch_number) = event.blockNumber.try_into() {
+        let batch = if let Ok(betch_number) = event.batchNumber.try_into() {
             // TODO: change
             match Batch::get(&rollup.rollup_id, betch_number) {
                 Ok(batch) => batch,
                 Err(err) => {
                     tracing::error!(
                         target: LOG_TARGET,
-                        "Error getting batch: {}", err
+                        "Error getting batch: {} / batch_number: {:?}", err, betch_number
                     );
                     return;
                 }
@@ -176,8 +181,8 @@ async fn callback(
             event.clusterId,
             event.rollupId,
             event.referenceTaskIndex,
-            event.blockNumber,
-            event.blockCommitment
+            event.batchNumber,
+            event.batchCommitment
         );
 
         if batch.batch_creator_address != context.publisher().address() {
