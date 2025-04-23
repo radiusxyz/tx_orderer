@@ -209,6 +209,7 @@ pub fn sync_batch_creation(
     rollup_id: RollupId,
     batch_number: u64,
     batch_commitment: [u8; 32],
+    batch_creator_signature: Signature,
 ) {
     tokio::spawn(async move {
         tracing::info!(
@@ -226,6 +227,7 @@ pub fn sync_batch_creation(
             rollup_id: rollup_id.clone(),
             batch_number,
             batch_commitment,
+            batch_creator_signature,
         };
         let leader_tx_orderer_signature = match context
             .get_signer(platform)

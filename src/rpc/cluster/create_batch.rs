@@ -11,6 +11,7 @@ pub struct BatchCreationMessage {
     pub rollup_id: RollupId,
     pub batch_number: u64,
     pub batch_commitment: [u8; 32],
+    pub batch_creator_signature: Signature,
 }
 
 impl RpcParameter<AppState> for SyncBatchCreation {
@@ -21,19 +22,13 @@ impl RpcParameter<AppState> for SyncBatchCreation {
     }
 
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
-        // tracing::info!(
-        //     "Change batch number - rollup id: {:?}, new batch number: {:?}",
-        //     self.batch_change_massage.rollup_id,
-        //     self.batch_change_massage.new_batch_number
-        // );
-
         let rollup_id = self.batch_creation_massage.rollup_id;
 
         create_batch(
             context,
             &rollup_id,
             self.batch_creation_massage.batch_number,
-            self.leader_tx_orderer_signature,
+            self.batch_creation_massage.batch_creator_signature,
         );
 
         Ok(())

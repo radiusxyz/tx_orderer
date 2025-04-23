@@ -80,7 +80,7 @@ async fn finalize_batch_task(
         };
 
         let signer = context.get_signer(rollup.platform).await?;
-        let signature = signer.sign_message(&batch_commitment)?;
+        let batch_creator_signature = signer.sign_message(&batch_commitment)?;
 
         let batch = Batch::new(
             batch_number,
@@ -88,7 +88,7 @@ async fn finalize_batch_task(
             raw_transaction_list,
             BatchCommitment::from(batch_commitment),
             signer.address().clone(),
-            signature,
+            batch_creator_signature.clone(),
         );
 
         sync_batch_creation(
@@ -98,6 +98,7 @@ async fn finalize_batch_task(
             rollup_id.to_string(),
             batch_number,
             batch_commitment,
+            batch_creator_signature,
         );
 
         CanProvideTransactionInfo::remove_can_provide_transaction_orders(&rollup_id, batch_number)
@@ -118,7 +119,7 @@ pub fn create_batch(
     context: AppState,
     rollup_id: &RollupId,
     batch_number: u64,
-    leader_tx_orderer_signature: Signature,
+    batch_creator_signature: Signature,
 ) {
     if Batch::get(rollup_id, batch_number).is_ok() {
         tracing::info!(
@@ -131,13 +132,8 @@ pub fn create_batch(
 
     let rollup_id = rollup_id.to_string();
     tokio::spawn(async move {
-        if let Err(error) = create_batch_task(
-            context,
-            &rollup_id,
-            batch_number,
-            leader_tx_orderer_signature,
-        )
-        .await
+        if let Err(error) =
+            create_batch_task(context, &rollup_id, batch_number, batch_creator_signature).await
         {
             tracing::error!(
                 "Failed to create batch - rollup_id: {:?}, batch_number: {:?}, error: {:?}",
@@ -153,7 +149,7 @@ pub async fn create_batch_task(
     context: AppState,
     rollup_id: &RollupId,
     batch_number: u64,
-    leader_tx_orderer_signature: Signature,
+    batch_creator_signature: Signature,
 ) -> Result<(), Error> {
     let rollup = Rollup::get(rollup_id)?;
     let max_transaction_count_per_batch = rollup.max_transaction_count_per_batch;
@@ -203,9 +199,10 @@ pub async fn create_batch_task(
             rollup_id: rollup_id.to_string(),
             batch_number,
             batch_commitment,
+            batch_creator_signature: batch_creator_signature.clone(),
         };
 
-        if let Ok(signer_address) = leader_tx_orderer_signature
+        if let Ok(signer_address) = batch_creator_signature
             .get_signer_address(rollup.platform.into(), &batch_creation_massage)
         {
             let tx_orderer_address_list = cluster.get_tx_orderer_address_list();
@@ -220,7 +217,7 @@ pub async fn create_batch_task(
                     raw_transactions,
                     BatchCommitment::from(batch_commitment),
                     leader_tx_orderer_address.clone(),
-                    leader_tx_orderer_signature,
+                    batch_creator_signature,
                 );
 
                 CanProvideTransactionInfo::remove_can_provide_transaction_orders(
