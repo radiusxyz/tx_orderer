@@ -120,6 +120,7 @@ pub fn create_batch(
     rollup_id: &RollupId,
     batch_number: u64,
     batch_creator_signature: Signature,
+    leader_tx_orderer_signature: Signature,
 ) {
     if Batch::get(rollup_id, batch_number).is_ok() {
         tracing::info!(
@@ -132,8 +133,14 @@ pub fn create_batch(
 
     let rollup_id = rollup_id.to_string();
     tokio::spawn(async move {
-        if let Err(error) =
-            create_batch_task(context, &rollup_id, batch_number, batch_creator_signature).await
+        if let Err(error) = create_batch_task(
+            context,
+            &rollup_id,
+            batch_number,
+            batch_creator_signature,
+            leader_tx_orderer_signature,
+        )
+        .await
         {
             tracing::error!(
                 "Failed to create batch - rollup_id: {:?}, batch_number: {:?}, error: {:?}",
@@ -150,6 +157,7 @@ pub async fn create_batch_task(
     rollup_id: &RollupId,
     batch_number: u64,
     batch_creator_signature: Signature,
+    leader_tx_orderer_signature: Signature,
 ) -> Result<(), Error> {
     let rollup = Rollup::get(rollup_id)?;
     let max_transaction_count_per_batch = rollup.max_transaction_count_per_batch;
@@ -202,7 +210,7 @@ pub async fn create_batch_task(
             batch_creator_signature: batch_creator_signature.clone(),
         };
 
-        if let Ok(signer_address) = batch_creator_signature
+        if let Ok(signer_address) = leader_tx_orderer_signature
             .get_signer_address(rollup.platform.into(), &batch_creation_massage)
         {
             let tx_orderer_address_list = cluster.get_tx_orderer_address_list();

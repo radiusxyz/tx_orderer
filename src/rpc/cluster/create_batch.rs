@@ -29,6 +29,7 @@ impl RpcParameter<AppState> for SyncBatchCreation {
             &rollup_id,
             self.batch_creation_massage.batch_number,
             self.batch_creation_massage.batch_creator_signature,
+            self.leader_tx_orderer_signature,
         );
 
         Ok(())
