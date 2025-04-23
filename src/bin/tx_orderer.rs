@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use clap::{Parser, Subcommand};
 use futures::future::try_join_all;
@@ -18,7 +21,7 @@ use tx_orderer::{
     merkle_tree_manager::MerkleTreeManager,
     rpc::{cluster, external, internal},
     state::AppState,
-    task::Decryptor,
+    task::{run_backrunning_server, Decryptor},
     types::*,
     util::initialize_logger,
 };
@@ -120,7 +123,10 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
         profiler,
         rpc_client,
         merkle_tree_manager,
+        Arc::new(Mutex::new(HashMap::new())),
     );
+
+    run_backrunning_server(app_state.shared_channel_infos().clone()).await;
 
     initialize_clients(app_state.clone()).await?;
 
@@ -163,7 +169,7 @@ fn initialize_dkg_client(config: &Config) -> Result<DistributedKeyGenerationClie
 fn initialize_reward_manager_client(config: &Config) -> Result<RewardManagerClient, Error> {
     let reward_manager_client = RewardManagerClient::new(&config.reward_manager_rpc_url)?;
     tracing::info!(
-        "Distributed Key Generation client initialized: {:?}",
+        "Reward Manager client initialized: {:?}",
         config.distributed_key_generation_rpc_url
     );
     Ok(reward_manager_client)
@@ -300,6 +306,14 @@ async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
         .register_rpc_method::<cluster::SyncBatchCreation>()
         .await?;
 
+    cluster_rpc_server
+        .register_rpc_method::<cluster::AddMevSearcherInfo>()
+        .await?;
+
+    cluster_rpc_server
+        .register_rpc_method::<cluster::RemoveMevSearcherInfo>()
+        .await?;
+
     let cluster_handle = cluster_rpc_server.init(cluster_rpc_url.clone()).await?;
 
     tracing::info!(
@@ -362,6 +376,9 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> 
         .await?;
     external_rpc_server
         .register_rpc_method::<external::GetBatch>()
+        .await?;
+    external_rpc_server
+        .register_rpc_method::<external::GetPostMerklePath>()
         .await?;
     external_rpc_server
         .register_rpc_method::<external::GetCanProvideTransactionInfo>()
