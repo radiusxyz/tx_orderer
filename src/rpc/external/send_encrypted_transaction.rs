@@ -164,7 +164,7 @@ pub fn sync_encrypted_transaction(
     platform: Platform,
     liveness_service_provider: LivenessServiceProvider,
     platform_block_height: u64,
-    cluster_id: String,
+    cluster_id: ClusterId,
     rollup_id: String,
     batch_number: u64,
     transaction_order: u64,

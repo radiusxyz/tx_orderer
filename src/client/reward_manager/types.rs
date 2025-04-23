@@ -1,11 +1,11 @@
 use radius_sdk::signature::Address;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{deserialize_hash, deserialize_u64_from_string, serialize_hash};
+use crate::types::{deserialize_hash, deserialize_u64_from_string, serialize_hash, ClusterId};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetCreateTaskRewards {
-    pub cluster_id: String,
+    pub cluster_id: ClusterId,
     pub rollup_id: String,
 }
 
@@ -25,7 +25,7 @@ pub struct GetCreateTaskRewardsResponse {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRespondTaskRewards {
-    pub cluster_id: String,
+    pub cluster_id: ClusterId,
     pub rollup_id: String,
 }
 

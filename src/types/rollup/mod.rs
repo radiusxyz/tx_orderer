@@ -8,10 +8,12 @@ pub use rollup_type::*;
 
 use super::prelude::*;
 
+pub type RollupId = String;
+
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(rollup_id: &str))]
 pub struct Rollup {
-    pub cluster_id: String,
+    pub cluster_id: ClusterId,
     pub platform: Platform,
     pub liveness_service_provider: LivenessServiceProvider,
 
@@ -44,7 +46,7 @@ impl Rollup {
         order_commitment_type: OrderCommitmentType,
         executor_address_list: Vec<Address>,
 
-        cluster_id: String,
+        cluster_id: ClusterId,
 
         platform: Platform,
         liveness_service_provider: LivenessServiceProvider,
@@ -61,8 +63,8 @@ impl Rollup {
             platform,
             liveness_service_provider,
 
-            max_gas_limit: 0,                    // TODO
-            max_transaction_count_per_batch: 10, // TODO
+            max_gas_limit: 0,                   // TODO
+            max_transaction_count_per_batch: 4, // TODO
         }
     }
 

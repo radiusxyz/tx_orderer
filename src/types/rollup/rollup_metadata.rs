@@ -3,7 +3,7 @@ use std::collections::{BTreeSet, HashMap};
 use radius_sdk::kvstore::Model;
 use serde::{Deserialize, Serialize};
 
-use crate::error::Error;
+use crate::{error::Error, types::ClusterId};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
 #[kvstore(key(rollup_id: &str))]
@@ -61,7 +61,7 @@ pub struct RollupMetadata {
     pub transaction_order: u64,
     pub max_transaction_count_per_batch: u64,
 
-    pub cluster_id: String,
+    pub cluster_id: ClusterId,
 
     pub provided_batch_number: u64,
     pub provided_transaction_order: i64,

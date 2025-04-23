@@ -6,7 +6,7 @@ use crate::{client::liveness_service_manager::radius::initialize_new_cluster, rp
 pub struct AddCluster {
     pub platform: Platform,
     pub liveness_service_provider: LivenessServiceProvider,
-    pub cluster_id: String,
+    pub cluster_id: ClusterId,
 }
 
 impl RpcParameter<AppState> for AddCluster {

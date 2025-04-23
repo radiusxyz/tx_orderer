@@ -34,7 +34,7 @@ impl LatestSyncedClusterBlockHeight {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key(platform: Platform, liveness_service_provider: LivenessServiceProvider))]
-pub struct ClusterIdList(BTreeSet<String>);
+pub struct ClusterIdList(BTreeSet<ClusterId>);
 
 impl ClusterIdList {
     pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
@@ -45,7 +45,7 @@ impl ClusterIdList {
         self.0.remove(cluster_id.as_ref());
     }
 
-    pub fn iter(&self) -> btree_set::Iter<'_, String> {
+    pub fn iter(&self) -> btree_set::Iter<'_, ClusterId> {
         self.0.iter()
     }
 }
