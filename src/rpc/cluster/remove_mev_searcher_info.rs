@@ -8,7 +8,7 @@ pub struct RemoveMevSearcherInfo {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RemoveMevSearcherInfoMessage {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub mev_searcher_ip: String,
 }
 

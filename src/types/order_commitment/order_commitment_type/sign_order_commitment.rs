@@ -1,7 +1,7 @@
 use radius_sdk::signature::{Address, ChainType, Signature};
 use serde::{Deserialize, Serialize};
 
-use crate::types::{deserialize_merkle_path, serialize_merkle_path, RawTransactionHash};
+use crate::types::{deserialize_merkle_path, serialize_merkle_path, RawTransactionHash, RollupId};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignOrderCommitment {
@@ -11,7 +11,7 @@ pub struct SignOrderCommitment {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OrderCommitmentData {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub batch_number: u64,
     pub transaction_order: u64,
 
@@ -27,7 +27,7 @@ pub struct OrderCommitmentData {
 impl Default for OrderCommitmentData {
     fn default() -> Self {
         Self {
-            rollup_id: String::new(),
+            rollup_id: RollupId::new(),
             batch_number: 0,
             transaction_order: 0,
             transaction_hash: RawTransactionHash::default().as_string(),

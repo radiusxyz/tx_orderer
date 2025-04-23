@@ -7,7 +7,7 @@ impl RawTransactionModel {
     pub const ID: &'static str = stringify!(RawTransactionModel);
 
     pub fn put(
-        rollup_id: &str,
+        rollup_id: &RollupId,
         batch_number: u64,
         transaction_order: u64,
 
@@ -20,7 +20,7 @@ impl RawTransactionModel {
     }
 
     pub fn put_with_transaction_hash(
-        rollup_id: &str,
+        rollup_id: &RollupId,
         transaction_hash: &RawTransactionHash,
 
         raw_transaction: RawTransaction,
@@ -32,7 +32,7 @@ impl RawTransactionModel {
     }
 
     pub fn get(
-        rollup_id: &str,
+        rollup_id: &RollupId,
         batch_number: u64,
         transaction_order: u64,
     ) -> Result<(RawTransaction, bool), KvStoreError> {
@@ -42,7 +42,7 @@ impl RawTransactionModel {
     }
 
     pub fn get_with_transaction_hash(
-        rollup_id: &str,
+        rollup_id: &RollupId,
         transaction_hash: &str,
     ) -> Result<(RawTransaction, bool), KvStoreError> {
         let key = &(Self::ID, rollup_id, transaction_hash);

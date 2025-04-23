@@ -5,7 +5,7 @@ use crate::rpc::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SetMaxGasLimit {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub max_gas_limit: u64,
 }
 
@@ -52,7 +52,7 @@ pub fn sync_set_max_gas_limit(
     cluster: Cluster,
     context: AppState,
     platform: Platform,
-    rollup_id: String,
+    rollup_id: RollupId,
     max_gas_limit: u64,
 ) {
     tokio::spawn(async move {

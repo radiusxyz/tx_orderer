@@ -6,7 +6,7 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendEncryptedTransaction {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub encrypted_transaction: EncryptedTransaction,
 }
 
@@ -165,7 +165,7 @@ pub fn sync_encrypted_transaction(
     liveness_service_provider: LivenessServiceProvider,
     platform_block_height: u64,
     cluster_id: ClusterId,
-    rollup_id: String,
+    rollup_id: RollupId,
     batch_number: u64,
     transaction_order: u64,
     encrypted_transaction: EncryptedTransaction,
@@ -209,7 +209,7 @@ pub fn sync_encrypted_transaction(
 pub async fn issue_order_commitment(
     context: AppState,
     platform: Platform,
-    rollup_id: String,
+    rollup_id: RollupId,
     order_commitment_type: OrderCommitmentType,
     transaction_hash: RawTransactionHash,
     batch_number: u64,

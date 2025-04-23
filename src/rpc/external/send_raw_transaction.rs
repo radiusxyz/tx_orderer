@@ -10,7 +10,7 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendRawTransaction {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub raw_transaction: RawTransaction,
 }
 
@@ -167,7 +167,7 @@ impl RpcParameter<AppState> for SendRawTransaction {
 pub fn sync_raw_transaction(
     context: AppState,
     cluster: Cluster,
-    rollup_id: String,
+    rollup_id: RollupId,
     batch_number: u64,
     transaction_order: u64,
     raw_transaction: RawTransaction,
@@ -206,7 +206,7 @@ pub fn sync_batch_creation(
     context: AppState,
     cluster: Cluster,
     platform: Platform,
-    rollup_id: String,
+    rollup_id: RollupId,
     batch_number: u64,
     batch_commitment: [u8; 32],
 ) {

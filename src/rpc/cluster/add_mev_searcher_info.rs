@@ -9,7 +9,7 @@ pub struct AddMevSearcherInfo {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AddMevSearcherInfoMessage {
     pub mev_searcher_ip: IP,
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
 }
 
 impl RpcParameter<AppState> for AddMevSearcherInfo {

@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{error::Error, types::ClusterId};
 
+use super::RollupId;
+
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(rollup_id: &str))]
+#[kvstore(key(rollup_id: &RollupId))]
 pub struct CanProvideTransactionInfo {
     pub can_provide_transaction_orders_per_batch: HashMap<u64, BTreeSet<u64>>,
 }
@@ -21,7 +23,7 @@ impl Default for CanProvideTransactionInfo {
 
 impl CanProvideTransactionInfo {
     pub fn remove_can_provide_transaction_orders(
-        rollup_id: &str,
+        rollup_id: &RollupId,
         batch_number: u64,
     ) -> Result<(), Error> {
         let mut can_provide_transactions_per_batch = Self::get_mut_or(rollup_id, Self::default)?;
@@ -36,7 +38,7 @@ impl CanProvideTransactionInfo {
     }
 
     pub fn add_can_provide_transaction_orders(
-        rollup_id: &str,
+        rollup_id: &RollupId,
         batch_number: u64,
         transaction_order_list: Vec<u64>,
     ) -> Result<(), Error> {
@@ -55,7 +57,7 @@ impl CanProvideTransactionInfo {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(rollup_id: &str))]
+#[kvstore(key(rollup_id: &RollupId))]
 pub struct RollupMetadata {
     pub batch_number: u64,
     pub transaction_order: u64,

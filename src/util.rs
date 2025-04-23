@@ -44,7 +44,7 @@ pub fn initialize_logger(config: &Config) -> Result<(), Error> {
 pub async fn fetch_raw_transaction_info(
     rpc_client: &RpcClient,
     cluster: &Cluster,
-    rollup_id: &str,
+    rollup_id: &RollupId,
     batch_number: u64,
     transaction_order: u64,
 ) -> Result<(RawTransaction, bool), RpcClientError> {
@@ -94,7 +94,7 @@ pub async fn fetch_raw_transaction_info(
 pub async fn fetch_encrypted_transaction(
     rpc_client: &RpcClient,
     cluster: &Cluster,
-    rollup_id: &str,
+    rollup_id: &RollupId,
     batch_number: u64,
     transaction_order: u64,
 ) -> Result<EncryptedTransaction, RpcClientError> {
@@ -152,7 +152,6 @@ pub async fn fetch_encrypted_transaction(
             error
         })
 }
-
 
 pub fn clear_dir<P: AsRef<Path>>(path: P) -> Result<(), io::Error> {
     if path.as_ref().exists() {

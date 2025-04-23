@@ -4,7 +4,7 @@ pub use batch_commitment::*;
 use crate::types::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(rollup_id: &str, batch_number: u64))]
+#[kvstore(key(rollup_id: &RollupId, batch_number: u64))]
 pub struct Batch {
     pub batch_number: u64,
 

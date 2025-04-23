@@ -2,7 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRawTransactionList {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub batch_number: u64,
 }
 

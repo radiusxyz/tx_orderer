@@ -1,8 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    str::FromStr,
-    sync::Arc,
-};
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 
 use radius_sdk::{
     liveness::radius::{
@@ -407,7 +403,7 @@ async fn get_rollup_id_list(
     liveness_service_manager_client: &LivenessServiceManagerClient,
     cluster_id: &ClusterId,
     platform_block_height: u64,
-) -> Result<BTreeSet<String>, Box<dyn std::error::Error>> {
+) -> Result<RollupIdList, Box<dyn std::error::Error>> {
     let rollup_list = liveness_service_manager_client
         .publisher()
         .get_rollup_info_list(cluster_id, platform_block_height)
@@ -433,7 +429,10 @@ async fn get_rollup_id_list(
         .await?;
     }
 
-    Ok(rollup_list.iter().map(|rollup| rollup.id.clone()).collect())
+    let mut rollup_id_list = RollupIdList::new();
+    rollup_id_list.set(rollup_list.iter().map(|rollup| rollup.id.clone()).collect());
+
+    Ok(rollup_id_list)
 }
 
 async fn update_or_create_rollup(

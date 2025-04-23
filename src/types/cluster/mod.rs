@@ -56,7 +56,7 @@ pub struct Cluster {
     #[serde(serialize_with = "serialize_address")]
     pub tx_orderer_address: Address,
 
-    pub rollup_id_list: BTreeSet<String>,
+    pub rollup_id_list: RollupIdList,
     pub tx_orderer_rpc_infos: BTreeMap<usize, TxOrdererRpcInfo>,
 
     pub block_margin: u64,
@@ -65,7 +65,7 @@ pub struct Cluster {
 impl Cluster {
     pub fn new(
         tx_orderer_rpc_infos: BTreeMap<usize, TxOrdererRpcInfo>,
-        rollup_id_list: BTreeSet<String>,
+        rollup_id_list: RollupIdList,
         tx_orderer_address: Address,
         block_margin: u64,
     ) -> Self {
@@ -190,7 +190,7 @@ impl Cluster {
         }
     }
 
-    pub fn add_rollup(&mut self, rollup_id: &str) {
+    pub fn add_rollup(&mut self, rollup_id: &RollupId) {
         self.rollup_id_list.insert(rollup_id.to_owned());
     }
 }

@@ -8,8 +8,10 @@ use radius_sdk::kvstore::Model;
 use serde::{Deserialize, Serialize};
 pub use single_order_commitment::*;
 
+use crate::types::RollupId;
+
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(rollup_id: &str, batch_number: u64, transaction_order: u64))]
+#[kvstore(key(rollup_id: &RollupId, batch_number: u64, transaction_order: u64))]
 #[serde(rename_all = "snake_case")]
 #[serde(untagged)]
 pub enum OrderCommitment {

@@ -8,7 +8,7 @@ pub struct SyncMaxGasLimit {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncMaxGasLimitMessage {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub max_gas_limit: u64,
 }
 

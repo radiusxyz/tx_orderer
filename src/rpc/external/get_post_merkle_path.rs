@@ -2,7 +2,7 @@ use crate::{rpc::prelude::*, task::get_raw_transaction_info_list};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetPostMerklePath {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub batch_number: u64,
     pub transaction_order: usize,
 }

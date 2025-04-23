@@ -24,7 +24,7 @@ pub struct GetRawTransactionList {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LeaderChangeMessage {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub executor_address: Address,
     pub platform_block_height: u64,
 
@@ -34,7 +34,7 @@ pub struct LeaderChangeMessage {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignMessage {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub executor_address: String,
     pub platform_block_height: u64,
 
@@ -524,7 +524,7 @@ fn get_last_valid_transaction_order(
 }
 
 fn fetch_and_append_transactions(
-    rollup_id: &str,
+    rollup_id: &RollupId,
     batch_number: u64,
     start_transaction_order: u64,
     last_valid_transaction_order: i64,

@@ -11,13 +11,13 @@ use super::prelude::*;
 pub type RollupId = String;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Model)]
-#[kvstore(key(rollup_id: &str))]
+#[kvstore(key(rollup_id: &RollupId))]
 pub struct Rollup {
     pub cluster_id: ClusterId,
     pub platform: Platform,
     pub liveness_service_provider: LivenessServiceProvider,
 
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub rollup_type: RollupType,
     pub encrypted_transaction_type: EncryptedTransactionType,
     pub order_commitment_type: OrderCommitmentType,
@@ -37,7 +37,7 @@ pub struct Rollup {
 impl Rollup {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        rollup_id: String,
+        rollup_id: RollupId,
         rollup_type: RollupType,
         encrypted_transaction_type: EncryptedTransactionType,
 
@@ -75,9 +75,17 @@ impl Rollup {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Model)]
 #[kvstore(key())]
-pub struct RollupIdList(BTreeSet<String>);
+pub struct RollupIdList(BTreeSet<RollupId>);
 
 impl RollupIdList {
+    pub fn new() -> Self {
+        Self(BTreeSet::new())
+    }
+
+    pub fn set(&mut self, rollup_id_list: Vec<RollupId>) {
+        self.0 = rollup_id_list.into_iter().collect();
+    }
+
     pub fn insert(&mut self, cluster_id: impl AsRef<str>) {
         self.0.insert(cluster_id.as_ref().into());
     }
@@ -86,7 +94,7 @@ impl RollupIdList {
         self.0.remove(cluster_id.as_ref());
     }
 
-    pub fn iter(&self) -> btree_set::Iter<'_, String> {
+    pub fn iter(&self) -> btree_set::Iter<'_, RollupId> {
         self.0.iter()
     }
 }

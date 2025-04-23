@@ -2,7 +2,7 @@ use crate::{rpc::prelude::*, types::*};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetEncryptedTransactionWithTransactionHash {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub transaction_hash: String,
 }
 

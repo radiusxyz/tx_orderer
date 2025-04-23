@@ -13,7 +13,7 @@ use crate::{
     util::{fetch_encrypted_transaction, fetch_raw_transaction_info},
 };
 
-pub fn finalize_batch(context: AppState, rollup_id: &str, batch_number: u64) {
+pub fn finalize_batch(context: AppState, rollup_id: &RollupId, batch_number: u64) {
     if Batch::get(rollup_id, batch_number).is_ok() {
         tracing::info!(
             "Finalize batch - rollup id: {:?}, batch number: {:?} already exists",
@@ -38,7 +38,7 @@ pub fn finalize_batch(context: AppState, rollup_id: &str, batch_number: u64) {
 
 async fn finalize_batch_task(
     context: AppState,
-    rollup_id: &str,
+    rollup_id: &RollupId,
     batch_number: u64,
 ) -> Result<(), Error> {
     let rollup = Rollup::get(rollup_id)?;
@@ -116,7 +116,7 @@ async fn finalize_batch_task(
 
 pub fn create_batch(
     context: AppState,
-    rollup_id: &str,
+    rollup_id: &RollupId,
     batch_number: u64,
     leader_tx_orderer_signature: Signature,
 ) {
@@ -151,7 +151,7 @@ pub fn create_batch(
 
 pub async fn create_batch_task(
     context: AppState,
-    rollup_id: &str,
+    rollup_id: &RollupId,
     batch_number: u64,
     leader_tx_orderer_signature: Signature,
 ) -> Result<(), Error> {
@@ -269,7 +269,7 @@ async fn build_batch_data(
     context: &AppState,
 
     cluster: &Cluster,
-    rollup_id: &str,
+    rollup_id: &RollupId,
     batch_number: u64,
     max_transaction_count_per_batch: u64,
 ) -> Result<BatchBuildResult, Error> {
@@ -327,7 +327,7 @@ async fn build_batch_data(
 }
 
 pub fn get_encrypted_transaction_list(
-    rollup_id: &str,
+    rollup_id: &RollupId,
     rollup_batch_number: u64,
     transaction_count: u64,
 ) -> Vec<Option<EncryptedTransaction>> {
@@ -357,7 +357,7 @@ pub fn get_encrypted_transaction_list(
 }
 
 pub async fn get_raw_transaction_info_list(
-    rollup_id: &str,
+    rollup_id: &RollupId,
     rpc_client: &RpcClient,
     cluster: &Cluster,
     batch_number: u64,

@@ -8,7 +8,7 @@ pub struct SyncBatchCreation {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BatchCreationMessage {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub batch_number: u64,
     pub batch_commitment: [u8; 32],
 }

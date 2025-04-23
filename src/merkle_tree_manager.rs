@@ -38,7 +38,7 @@ impl MerkleTreeManager {
         merkle_tree_manager
     }
 
-    pub async fn initilize_merkle_tree(rollup_id: &str, rpc_client: &RpcClient) -> MerkleTree {
+    pub async fn initilize_merkle_tree(rollup_id: &RollupId, rpc_client: &RpcClient) -> MerkleTree {
         let merkle_tree = MerkleTree::new();
 
         if let Some(rollup_metadata) = RollupMetadata::get(rollup_id).ok() {
@@ -107,12 +107,12 @@ impl MerkleTreeManager {
         merkle_tree
     }
 
-    pub async fn insert(&self, rollup_id: &str, merkle_tree: MerkleTree) {
+    pub async fn insert(&self, rollup_id: &RollupId, merkle_tree: MerkleTree) {
         let mut lock = self.inner.lock().await;
         lock.insert(rollup_id.to_owned(), merkle_tree);
     }
 
-    pub async fn get(&self, rollup_id: &str) -> Result<MerkleTree, Error> {
+    pub async fn get(&self, rollup_id: &RollupId) -> Result<MerkleTree, Error> {
         let lock = self.inner.lock().await;
         let merkle_tree = lock
             .get(rollup_id)

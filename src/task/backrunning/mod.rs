@@ -14,7 +14,7 @@ use tokio::{
 };
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
-use crate::types::{MevSearcherInfos, IP};
+use crate::types::{MevSearcherInfos, RollupId, IP};
 
 pub type SharedChannelInfos = Arc<
     Mutex<
@@ -30,13 +30,13 @@ pub type SharedChannelInfos = Arc<
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MevSourceTransaction {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub raw_transaction_list: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MevTargetTransaction {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
     pub backrunning_transaction_list: Vec<String>,
 }
 
@@ -134,7 +134,7 @@ pub async fn run_backrunning_server(shared_channel_infos: SharedChannelInfos) {
 
 pub fn send_transaction_list_to_mev_searcher(
     shared_channel_infos: &SharedChannelInfos,
-    rollup_id: &str,
+    rollup_id: &RollupId,
     mev_searcher_infos: &MevSearcherInfos,
     raw_transaction_list: Vec<String>,
 ) {

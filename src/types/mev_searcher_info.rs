@@ -21,14 +21,14 @@ impl MevSearcherInfos {
     }
 
     /// Check if a given rollup_id exists for an IP
-    pub fn contains_rollup_id(&self, ip: &str, rollup_id: &str) -> bool {
+    pub fn contains_rollup_id(&self, ip: &str, rollup_id: &RollupId) -> bool {
         self.0
             .get(ip)
             .map_or(false, |rollups| rollups.iter().any(|id| id == rollup_id))
     }
 
     /// Add a rollup_id to an IP entry (create if doesn't exist)
-    pub fn add_rollup_id(&mut self, ip: &str, rollup_id: &str) {
+    pub fn add_rollup_id(&mut self, ip: &str, rollup_id: &RollupId) {
         self.0
             .entry(ip.to_string())
             .or_insert_with(Vec::new)
@@ -36,7 +36,7 @@ impl MevSearcherInfos {
     }
 
     /// Remove a rollup_id from an IP entry, and clean up if empty
-    pub fn remove_rollup_id(&mut self, ip: &str, rollup_id: &str) {
+    pub fn remove_rollup_id(&mut self, ip: &str, rollup_id: &RollupId) {
         if let Some(rollups) = self.0.get_mut(ip) {
             rollups.retain(|id| id != rollup_id);
             if rollups.is_empty() {
@@ -56,7 +56,7 @@ impl MevSearcherInfos {
     }
 
     /// Get all IPs that contain a given rollup_id
-    pub fn get_ip_list_by_rollup_id(&self, rollup_id: &str) -> Vec<IP> {
+    pub fn get_ip_list_by_rollup_id(&self, rollup_id: &RollupId) -> Vec<IP> {
         self.0
             .iter()
             .filter_map(|(ip, rollups)| {

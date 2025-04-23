@@ -11,9 +11,7 @@ use crate::{
     client::distributed_key_generation::DistributedKeyGenerationClient,
     error::Error,
     types::{
-        to_raw_tx, CanProvideTransactionInfo, EncryptedTransaction, EthPlainData,
-        EthRawTransaction, PlainData, RawTransaction, RawTransactionModel,
-        SkdeEncryptedTransaction, TransactionData,
+        to_raw_tx, CanProvideTransactionInfo, EncryptedTransaction, EthPlainData, EthRawTransaction, PlainData, RawTransaction, RawTransactionModel, RollupId, SkdeEncryptedTransaction, TransactionData
     },
 };
 
@@ -234,7 +232,7 @@ impl Decryptor {
 
     pub async fn add_encrypted_transaction_to_decrypt(
         &self,
-        rollup_id: String,
+        rollup_id: RollupId,
         batch_number: u64,
         transaction_order: u64,
         encrypted_transaction: EncryptedTransaction,

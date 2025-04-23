@@ -4,7 +4,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SyncRawTransaction {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
 
     pub batch_number: u64,
     pub transaction_order: u64,

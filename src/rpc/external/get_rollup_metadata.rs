@@ -2,7 +2,7 @@ use crate::rpc::prelude::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetRollupMetadata {
-    pub rollup_id: String,
+    pub rollup_id: RollupId,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
