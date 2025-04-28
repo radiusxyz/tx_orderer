@@ -137,17 +137,7 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             self.leader_change_message.platform_block_height,
         )?;
 
-        let start_timestamp_millis = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_nanos();
-
         let mut mut_rollup_metadata = RollupMetadata::get_mut(&rollup_id)?;
-
-        let locked_timestamp_millis = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_nanos();
 
         let mut batch_number_list_to_delete = Vec::new();
         for batch_number in start_batch_number..current_provided_batch_number {
@@ -176,11 +166,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
 
         let is_next_leader =
             tx_orderer_address == self.leader_change_message.next_leader_tx_orderer_address;
-
-        let start_get_mut_cluster_metadata = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_nanos();
 
         let mut mut_cluster_metadata = ClusterMetadata::get_mut(
             rollup.platform,
@@ -237,11 +222,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             }
         }
 
-        let end_get_mut_cluster_metadata = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_nanos();
-
         mut_cluster_metadata.platform_block_height =
             self.leader_change_message.platform_block_height;
         mut_cluster_metadata.is_leader = is_next_leader;
@@ -249,11 +229,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
 
         let signer = context.get_signer(rollup.platform).await?;
         let current_tx_orderer_address = signer.address();
-
-        let start_sync_leader_tx_order_millis = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_nanos();
 
         sync_leader_tx_orderer(
             context.clone(),
@@ -268,11 +243,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
         )
         .await;
 
-        let end_sync_leader_tx_order_millis = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_nanos();
-
         mut_cluster_metadata.update()?;
         let _ = mut_rollup_metadata.update().map_err(|error| {
             tracing::error!(
@@ -281,10 +251,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
                 error
             );
         });
-        let released_timestamp_millis = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_nanos();
 
         let end_get_raw_transaction_list_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
