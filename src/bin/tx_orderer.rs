@@ -106,7 +106,12 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
     let skde_params = dkg_client.get_skde_params().await?.skde_params;
     let latest_key_id = dkg_client.get_latest_key_id().await?.latest_key_id;
 
-    let decryptor = Decryptor::new(dkg_client.clone(), skde_params.clone(), latest_key_id)?;
+    let decryptor = Decryptor::new(
+        dkg_client.clone(),
+        skde_params.clone(),
+        latest_key_id,
+        config.builder_rpc_url.clone(),
+    )?;
     Decryptor::start(decryptor.clone()).await;
 
     let rpc_client = RpcClient::new().map_err(error::Error::RpcClient)?;
@@ -314,6 +319,10 @@ async fn initialize_cluster_rpc_server(context: AppState) -> Result<(), Error> {
         .register_rpc_method::<cluster::RemoveMevSearcherInfo>()
         .await?;
 
+    cluster_rpc_server
+        .register_rpc_method::<cluster::SetLeaderTxOrderer>()
+        .await?;
+
     let cluster_handle = cluster_rpc_server.init(cluster_rpc_url.clone()).await?;
 
     tracing::info!(
@@ -385,11 +394,6 @@ async fn initialize_external_rpc_server(context: AppState) -> Result<(), Error> 
         .await?;
 
     let external_handle = external_rpc_server.init(external_rpc_url.clone()).await?;
-
-    tracing::info!(
-        "Successfully started the external RPC server: {}",
-        external_rpc_url
-    );
 
     external_handle.stopped().await;
     Ok(())

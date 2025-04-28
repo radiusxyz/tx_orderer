@@ -266,18 +266,18 @@ mod tests {
                     println!("{:?}", all_nodes);
 
                     println!(
-                        "stompesi - total_nodes: {} /transaction_order: {:?}",
+                        "total_nodes: {} /transaction_order: {:?}",
                         i, transaction_order
                     );
                     println!(
-                        "stompesi - pre_merkle_path: {:?}",
+                        "pre_merkle_path: {:?}",
                         pre_merkle_path
                             .iter()
                             .map(|x| const_hex::encode_prefixed(x))
                             .collect::<Vec<String>>()
                     );
                     println!(
-                        "stompesi - post_merkle_path: {:?}",
+                        "post_merkle_path: {:?}",
                         post_merkle_path
                             .iter()
                             .map(|x| const_hex::encode_prefixed(x))

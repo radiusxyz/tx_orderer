@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use futures::future::try_join_all;
+use radius_sdk::json_rpc::client::{Id, RpcClient};
 use skde::delay_encryption::{decrypt, SkdeParams};
 use tokio::{
     sync::{Mutex, Notify, RwLock},
@@ -9,9 +10,11 @@ use tokio::{
 
 use crate::{
     client::distributed_key_generation::DistributedKeyGenerationClient,
-    error::Error,
+    error::{self, Error},
     types::{
-        to_raw_tx, CanProvideTransactionInfo, EncryptedTransaction, EthPlainData, EthRawTransaction, PlainData, RawTransaction, RawTransactionModel, RollupId, SkdeEncryptedTransaction, TransactionData
+        to_raw_tx, CanProvideTransactionInfo, EncryptedTransaction, EthPlainData,
+        EthRawTransaction, PlainData, RawTransaction, RawTransactionModel, RollupId,
+        SkdeEncryptedTransaction, TransactionData,
     },
 };
 
@@ -26,6 +29,8 @@ struct DecryptorInner {
     distributed_key_generation_client: DistributedKeyGenerationClient,
     encrypted_transactions: Mutex<HashMap<u64, Vec<(String, u64, u64, SkdeEncryptedTransaction)>>>,
     notify: Notify,
+    rpc_client: Arc<RpcClient>,
+    builder_rpc_url: Option<String>,
 }
 
 impl Decryptor {
@@ -33,6 +38,7 @@ impl Decryptor {
         distributed_key_generation_client: DistributedKeyGenerationClient,
         skde_params: SkdeParams,
         latest_decryption_key_id: u64,
+        builder_rpc_url: Option<String>,
     ) -> Result<Arc<Self>, Error> {
         let decryptor = Arc::new(Self {
             inner: Arc::new(DecryptorInner {
@@ -42,6 +48,8 @@ impl Decryptor {
                 encrypted_transactions: Mutex::new(HashMap::new()),
                 distributed_key_generation_client,
                 notify: Notify::new(),
+                rpc_client: RpcClient::new().map_err(error::Error::RpcClient)?,
+                builder_rpc_url,
             }),
         });
 
@@ -93,6 +101,9 @@ impl Decryptor {
                         let cloned_decrypted_transaction_order_list =
                             Arc::clone(&decrypted_transaction_order_list);
 
+                        let cloned_builder_rpc_url = self.inner.builder_rpc_url.clone();
+                        let cloned_rpc_client = Arc::clone(&self.inner.rpc_client);
+
                         let decryption_handle = tokio::spawn(async move {
                             match decrypt_skde_transaction(
                                 &skde_params,
@@ -140,6 +151,31 @@ impl Decryptor {
                                         batch_number,
                                         transaction_order,
                                     ));
+
+                                    if cloned_builder_rpc_url.is_some() {
+                                        let params = serde_json::json!([
+                                            raw_transaction,
+                                            batch_number,
+                                            transaction_order
+                                        ]);
+
+                                        let _: String = cloned_rpc_client
+                                            .request(
+                                                &cloned_builder_rpc_url.clone().unwrap(),
+                                                "eth_sendRawTransaction",
+                                                &params,
+                                                Id::Null,
+                                            )
+                                            .await
+                                            .map_err(|error| {
+                                                tracing::error!(
+                                                    "Failed to send raw transaction: {:?}",
+                                                    error
+                                                );
+                                                Error::RpcClient(error)
+                                            })
+                                            .unwrap();
+                                    }
                                 }
                                 Err(e) => {
                                     tracing::error!("Failed to decrypt transaction: {:?}", e);

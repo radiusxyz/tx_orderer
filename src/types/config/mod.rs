@@ -32,6 +32,8 @@ pub struct Config {
     pub signing_key: String,
 
     pub is_using_zkp: bool,
+
+    pub builder_rpc_url: Option<String>,
 }
 
 /// Provides a default implementation for the `Config` struct.
@@ -70,6 +72,7 @@ impl Default for Config {
             distributed_key_generation_rpc_url: "http://127.0.0.1:7100".to_string(),
             signing_key: DEFAULT_SIGNING_KEY.to_string(),
             is_using_zkp: true,
+            builder_rpc_url: None,
         }
     }
 }
@@ -112,6 +115,8 @@ impl Config {
                 .unwrap(),
             signing_key,
             is_using_zkp: merged_config_option.is_using_zkp.unwrap(),
+
+            builder_rpc_url: merged_config_option.builder_rpc_url,
         })
     }
 

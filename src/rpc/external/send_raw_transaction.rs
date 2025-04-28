@@ -111,10 +111,43 @@ impl RpcParameter<AppState> for SendRawTransaction {
                 self.rollup_id,
                 batch_number,
                 transaction_order,
-                self.raw_transaction,
+                self.raw_transaction.clone(),
                 order_commitment.clone(),
                 true,
             );
+
+            let builder_rpc_url = context.config().builder_rpc_url.clone();
+            let cloned_rpc_client = context.rpc_client();
+
+            if builder_rpc_url.is_some() {
+                match self.raw_transaction {
+                    RawTransaction::Eth(eth_raw_transaction) => {
+                        let params = serde_json::json!([
+                            eth_raw_transaction.0,
+                            batch_number,
+                            transaction_order
+                        ]);
+
+                        let transaction_hash: String = cloned_rpc_client
+                            .request(
+                                &builder_rpc_url.unwrap(),
+                                "eth_sendRawTransaction",
+                                &params,
+                                Id::Null,
+                            )
+                            .await
+                            .map_err(|error| {
+                                tracing::error!("Failed to send raw transaction: {:?}", error);
+                                Error::RpcClient(error)
+                            })?;
+
+                        println!("transaction_hash: {:?}", transaction_hash);
+                    }
+                    RawTransaction::EthBundle(_eth_bundle_raw_transaction) => {
+                        unimplemented!("EthBundle raw transaction is not supported yet");
+                    }
+                }
+            }
 
             match rollup.order_commitment_type {
                 OrderCommitmentType::TransactionHash => Ok(OrderCommitment::Single(

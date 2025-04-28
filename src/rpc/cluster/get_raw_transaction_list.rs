@@ -188,13 +188,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             &rollup.cluster_id,
         )?;
 
-        tracing::info!(
-            "stompesi - get_raw_transaction_list - {:?} / tx_orderer_address: {:?} / is_leader: {:?}",
-            self.leader_change_message,
-            tx_orderer_address,
-            mut_cluster_metadata.is_leader
-        );
-
         if mut_cluster_metadata.is_leader == false {
             if let Some(current_leader_tx_orderer_rpc_info) =
                 mut_cluster_metadata.leader_tx_orderer_rpc_info.clone()
@@ -262,14 +255,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             .expect("Time went backwards")
             .as_nanos();
 
-        tracing::info!(
-            "stompesi - batch_number: {:?}, transaction_order: {:?}, provided_batch_number: {:?}, provided_transaction_order: {:?}",
-            mut_rollup_metadata.batch_number,
-            mut_rollup_metadata.transaction_order,
-            mut_rollup_metadata.provided_batch_number,
-            mut_rollup_metadata.provided_transaction_order
-        );
-
         sync_leader_tx_orderer(
             context.clone(),
             cluster,
@@ -300,24 +285,6 @@ impl RpcParameter<AppState> for GetRawTransactionList {
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
             .as_nanos();
-
-        tracing::info!(
-            "stompesi - lock start - {:?} / locked: {:?} / release: {:?} / start_sync_leader_tx_order: {:?} / end_sync_leader_tx_order: {:?} / start_get_mut_cluster_metadata: {:?} / end_get_mut_cluster_metadata: {:?}",
-            start_timestamp_millis,
-            locked_timestamp_millis,
-            released_timestamp_millis,
-            start_sync_leader_tx_order_millis,
-            end_sync_leader_tx_order_millis,
-            start_get_mut_cluster_metadata,
-            end_get_mut_cluster_metadata,
-        );
-
-        tracing::info!(
-            "stompesi - lock start - {:?} / sync_leader_tx_order gap - {:?} / get_mut_cluster_metadata gap - {:?}",
-            start_timestamp_millis,
-            end_sync_leader_tx_order_millis - start_sync_leader_tx_order_millis,
-            end_get_mut_cluster_metadata - start_get_mut_cluster_metadata,
-        );
 
         let end_get_raw_transaction_list_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)

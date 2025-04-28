@@ -45,6 +45,10 @@ pub struct ConfigOption {
     #[doc = "Set using zkp"]
     #[clap(long = "is-using-zkp")]
     pub is_using_zkp: Option<bool>,
+
+    #[doc = "Builder rpc url"]
+    #[clap(long = "builder-rpc-rul")]
+    pub builder_rpc_url: Option<String>,
 }
 
 impl Default for ConfigOption {
@@ -63,6 +67,8 @@ impl Default for ConfigOption {
             ),
 
             is_using_zkp: Some(false),
+
+            builder_rpc_url: None,
         }
     }
 }
@@ -100,6 +106,9 @@ impl ConfigOption {
         set_toml_comment(&mut toml_string, "Set using zkp");
         set_toml_name_value(&mut toml_string, "is_using_zkp", &self.is_using_zkp);
 
+        set_toml_comment(&mut toml_string, "Set builder rpc url");
+        set_toml_name_value(&mut toml_string, "builder_rpc_url", &self.builder_rpc_url);
+
         toml_string
     }
 
@@ -136,6 +145,10 @@ impl ConfigOption {
 
         if other.is_using_zkp.is_some() {
             self.is_using_zkp.clone_from(&other.is_using_zkp);
+        }
+
+        if other.builder_rpc_url.is_some() {
+            self.builder_rpc_url.clone_from(&other.builder_rpc_url);
         }
 
         self
