@@ -133,16 +133,16 @@ pub async fn run_backrunning_server(shared_channel_infos: SharedChannelInfos) {
 }
 
 pub fn send_transaction_list_to_mev_searcher(
-    shared_channel_infos: &SharedChannelInfos,
     rollup_id: &RollupId,
-    mev_searcher_infos: &MevSearcherInfos,
     raw_transaction_list: Vec<String>,
+    shared_channel_infos: &SharedChannelInfos,
+    mev_searcher_infos: &MevSearcherInfos,
 ) {
     let ip_list = mev_searcher_infos.get_ip_list_by_rollup_id(rollup_id);
-    let map = shared_channel_infos.lock().unwrap();
+    let locked_shared_channel_infos = shared_channel_infos.lock().unwrap();
 
     for ip in ip_list {
-        if let Some((raw_transaction_list_sender, _)) = map.get(&ip) {
+        if let Some((raw_transaction_list_sender, _)) = locked_shared_channel_infos.get(&ip) {
             let mev_source_transaction = MevSourceTransaction {
                 rollup_id: rollup_id.to_string(),
                 raw_transaction_list: raw_transaction_list.clone(),

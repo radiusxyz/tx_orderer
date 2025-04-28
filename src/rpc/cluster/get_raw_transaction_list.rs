@@ -265,6 +265,13 @@ impl RpcParameter<AppState> for GetRawTransactionList {
         let shared_channel_infos = context.shared_channel_infos();
         let mev_searcher_infos = MevSearcherInfos::get_or(MevSearcherInfos::default).unwrap();
 
+        send_transaction_list_to_mev_searcher(
+            &rollup_id,
+            raw_transaction_list.clone(),
+            shared_channel_infos,
+            &mev_searcher_infos,
+        );
+
         let ip_list = mev_searcher_infos.get_ip_list_by_rollup_id(&rollup_id);
         let receivers: Vec<Arc<tokio::sync::Mutex<UnboundedReceiver<MevTargetTransaction>>>> = {
             let map = shared_channel_infos.lock().unwrap();
@@ -274,31 +281,25 @@ impl RpcParameter<AppState> for GetRawTransactionList {
                 .collect()
         };
 
-        let collected = Arc::new(tokio::sync::Mutex::new(Vec::new()));
+        let collected_mev_target_transaction = Arc::new(tokio::sync::Mutex::new(Vec::new()));
         let mut sub_tasks = vec![];
 
         for receiver in receivers {
-            let collected_clone = Arc::clone(&collected);
+            let collected_clone = Arc::clone(&collected_mev_target_transaction);
             let rx = Arc::clone(&receiver);
 
             let sub_task = tokio::spawn(async move {
-                let deadline = Instant::now() + Duration::from_millis(2000);
+                let deadline = Instant::now() + Duration::from_millis(5000);
 
-                loop {
-                    tokio::select! {
-                        _ = tokio::time::sleep_until(deadline) => {
-                            break;
-                        }
-                        maybe_tx = async {
-                            let mut guard = rx.lock().await;
-                            guard.recv().await
-                        } => {
-                            if let Some(tx) = maybe_tx {
-                                println!("Received backrunning tx: {:?}", tx);
-                                collected_clone.lock().await.push(tx);
-                            } else {
-                                break;
-                            }
+                tokio::select! {
+                    _ = tokio::time::sleep_until(deadline) => {}
+                    maybe_mev_target_transaction = async {
+                        let mut guard = rx.lock().await;
+                        guard.recv().await
+                    } => {
+                        if let Some(mev_target_transaction) = maybe_mev_target_transaction {
+                            println!("Received mev target transaction: {:?}", mev_target_transaction);
+                            collected_clone.lock().await.push(mev_target_transaction);
                         }
                     }
                 }
@@ -309,15 +310,15 @@ impl RpcParameter<AppState> for GetRawTransactionList {
 
         let _ = futures::future::join_all(sub_tasks).await;
 
-        let result = collected.lock().await;
-        println!("Collected backrunning txs: {:?}", *result);
+        {
+            let result = collected_mev_target_transaction.lock().await;
+            println!("Collected mev target transactions: {:?}", *result);
 
-        send_transaction_list_to_mev_searcher(
-            shared_channel_infos,
-            &rollup_id,
-            &mev_searcher_infos,
-            raw_transaction_list.clone(),
-        );
+            for mev_target_transaction in result.iter() {
+                raw_transaction_list
+                    .extend(mev_target_transaction.backrunning_transaction_list.clone());
+            }
+        }
 
         Ok(GetRawTransactionListResponse {
             raw_transaction_list,
