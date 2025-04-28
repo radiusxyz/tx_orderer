@@ -38,3 +38,6 @@ SEEDER_EXTERNAL_RPC_URL="http://127.0.0.1:6000" # Please change this seeder (ext
 # Reward Manager
 REWARD_MANAGER_EXTERNAL_RPC_URL="http://127.0.0.1:6100" # Please change this reward manager (external) rpc url.
 
+# Builder
+# BUILDER_EXTERNAL_RPC_URL="http://127.0.0.1:7200" # Please change this builder (external) rpc url.
+

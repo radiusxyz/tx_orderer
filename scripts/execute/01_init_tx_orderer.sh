@@ -21,5 +21,10 @@ sed -i.temp "s|seeder_rpc_url = \"http://127.0.0.1:6000\"|seeder_rpc_url = \"$SE
 
 sed -i.temp "s|reward_manager_rpc_url = \"http://127.0.0.1:6100\"|reward_manager_rpc_url = \"$REWARD_MANAGER_EXTERNAL_RPC_URL\"|g" $CONFIG_FILE_PATH
 
+if [ -n "$BUILDER_EXTERNAL_RPC_URL" ]; then
+    sed -i.temp "s|# builder_rpc_url = None|builder_rpc_url = \"$BUILDER_EXTERNAL_RPC_URL\"|g" $CONFIG_FILE_PATH
+fi
+
+
 rm $CONFIG_FILE_PATH.temp
 rm $PRIVATE_KEY_PATH.temp
