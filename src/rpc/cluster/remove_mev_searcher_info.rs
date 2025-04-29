@@ -22,7 +22,7 @@ impl RpcParameter<AppState> for RemoveMevSearcherInfo {
     async fn handler(self, context: AppState) -> Result<Self::Response, RpcError> {
         let msg = &self.remove_mev_searcher_info_message;
 
-        let rollup = Rollup::get(&msg.mev_searcher_ip)?;
+        let rollup = Rollup::get(&msg.rollup_id)?;
 
         let mut mut_mev_searcher_infos = MevSearcherInfos::get_mut_or(MevSearcherInfos::default)?;
 

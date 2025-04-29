@@ -49,7 +49,7 @@ pub async fn run_backrunning_server(shared_channel_infos: SharedChannelInfos) {
             let peer_ip = socket_addr.ip().to_string();
 
             if !mev_searcher_infos.contains_ip(&peer_ip) {
-                eprintln!("Unauthorized IPs blocked: {}", peer_ip);
+                tracing::info!("Unauthorized IPs blocked: {}", peer_ip);
                 continue;
             }
 
@@ -61,8 +61,9 @@ pub async fn run_backrunning_server(shared_channel_infos: SharedChannelInfos) {
                     .expect("WebSocket handshake failure");
 
                 // interaction with MEV searcher
-                let (mut write, mut read) = ws_stream.split();
-
+                let (write, mut read) = ws_stream.split();
+                let write = Arc::new(TokioMutex::new(write));
+                let cloned_write = write.clone();
                 // for sending transaction list to MEV searcher (internal)
                 let (mev_source_transaction_sender, mut mev_source_transaction_receiver) =
                     unbounded_channel::<MevSourceTransaction>();
@@ -91,8 +92,9 @@ pub async fn run_backrunning_server(shared_channel_infos: SharedChannelInfos) {
                     {
                         let mev_source_transaction_str =
                             serde_json::to_string(&mev_source_transaction).unwrap_or_default();
+                        let mut locked_write = cloned_write.lock().await;
 
-                        if write
+                        if locked_write
                             .send(Message::Text(mev_source_transaction_str))
                             .await
                             .is_err()
@@ -106,9 +108,17 @@ pub async fn run_backrunning_server(shared_channel_infos: SharedChannelInfos) {
                 while let Some(msg) = read.next().await {
                     match msg {
                         Ok(msg) => {
-                            if msg.is_text() {
-                                println!("Received message: {}", msg);
+                            let mev_searcher_infos =
+                                MevSearcherInfos::get_or(MevSearcherInfos::default).unwrap();
+                            let peer_ip = socket_addr.ip().to_string();
 
+                            if !mev_searcher_infos.contains_ip(&peer_ip) {
+                                tracing::info!("Unauthorized IPs blocked: {}", peer_ip);
+                                write.lock().await.close().await.unwrap();
+                                break;
+                            }
+
+                            if msg.is_text() {
                                 let mev_target_transaction =
                                     serde_json::from_str(&msg.to_string()).unwrap();
 
@@ -118,7 +128,7 @@ pub async fn run_backrunning_server(shared_channel_infos: SharedChannelInfos) {
                             }
                         }
                         Err(e) => {
-                            eprintln!("⚠️ WebSocket error: {}", e);
+                            tracing::error!("⚠️ WebSocket error: {}", e);
                             break;
                         }
                     }
@@ -126,7 +136,7 @@ pub async fn run_backrunning_server(shared_channel_infos: SharedChannelInfos) {
 
                 send_raw_transaction_task.abort();
 
-                println!("Disconnected: {}", peer_ip);
+                tracing::info!("Disconnected: {}", peer_ip);
             });
         }
     });

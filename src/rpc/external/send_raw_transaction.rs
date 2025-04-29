@@ -140,8 +140,6 @@ impl RpcParameter<AppState> for SendRawTransaction {
                                 tracing::error!("Failed to send raw transaction: {:?}", error);
                                 Error::RpcClient(error)
                             })?;
-
-                        println!("transaction_hash: {:?}", transaction_hash);
                     }
                     RawTransaction::EthBundle(_eth_bundle_raw_transaction) => {
                         unimplemented!("EthBundle raw transaction is not supported yet");

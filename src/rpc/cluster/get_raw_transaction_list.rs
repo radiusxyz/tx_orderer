@@ -298,7 +298,7 @@ impl RpcParameter<AppState> for GetRawTransactionList {
                         guard.recv().await
                     } => {
                         if let Some(mev_target_transaction) = maybe_mev_target_transaction {
-                            println!("Received mev target transaction: {:?}", mev_target_transaction);
+                            tracing::info!("Received mev target transaction: {:?}", mev_target_transaction);
                             collected_clone.lock().await.push(mev_target_transaction);
                         }
                     }
@@ -312,7 +312,7 @@ impl RpcParameter<AppState> for GetRawTransactionList {
 
         {
             let result = collected_mev_target_transaction.lock().await;
-            println!("Collected mev target transactions: {:?}", *result);
+            tracing::info!("Collected mev target transactions: {:?}", *result);
 
             for mev_target_transaction in result.iter() {
                 raw_transaction_list
