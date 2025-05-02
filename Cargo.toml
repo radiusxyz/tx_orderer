@@ -7,10 +7,6 @@ edition = "2021"
 name = "tx_orderer"
 path = "src/bin/tx_orderer.rs"
 
-[[bin]]
-name = "database_migrator"
-path = "src/bin/database_migrator.rs"
-
 [dependencies]
 chrono = "0.4.38"
 clap = { version = "4.4.7", features = ["derive"] }
@@ -20,21 +16,20 @@ local-ip-address = "0.6"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.127"
 sha3 = "0.10"
+tokio-tungstenite = "0.23"
 tokio = { version = "1.37.0", features = ["full"] }
 toml = "0.8.13"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
 reqwest = { version = "0.12.4", features = ["json"] }
 dashmap = "5.4"
-
+serde_with = "3"
 # Profiler
 pyroscope = "0.5.4"
 pyroscope_pprofrs = "0.2"
-
 skde = { git = "https://github.com/radiusxyz/skde", rev="d46d66fa1e59aa5d555a1124cf3b89cef4753fd1"}
-# radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", tag = "v0.1", features = ["full"] }
-radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "29714c7501cb91c22b889d874f74bf35fa29b174", features = ["full"] }
-# radius-sdk = { path = "../radius-sdk-rs/radius-sdk", features = ["full"] }
-
-
 futures = "0.3"
+tokio-stream = "0.1"
+
+radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "7fbbffeb6ab7807a489bb5a7bc03eaa66031f398", features = ["full"] }
+# radius-sdk = { path = "../radius-sdk-rs/radius-sdk", features = ["full"] }
