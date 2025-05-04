@@ -16,7 +16,7 @@ curl --location $TX_ORDERER_INTERNAL_RPC_URL \
     "payload": {
       "liveness_rpc_url": "'"$LIVENESS_RPC_URL"'",
       "liveness_websocket_url": "'"$LIVENESS_WS_URL"'",
-      "contract_address": "'"$LIVENESS_CONTRACT_ADDRESS"'"
+      "contract_address": "'"$LIVENESS_SERVICE_MANAGER_CONTRACT_ADDRESS"'"
     }
   },
   "id": 1
