@@ -13,36 +13,44 @@ The system operates in a **leader-follower cluster model**:
 - **Followers**: Forward encrypted transactions to leader, validate block commitments
 
 ### Key Transaction Flow
-1. Encrypted transactions (PVDE/SKDE) arrive with time-lock encryption
-2. Leader issues order commitment before decryption time **t**
-3. At time **t**, transactions are decrypted and sequenced
-4. Leader builds blocks and submits block commitments to validation contract
-5. Followers validate and respond with acceptance/rejection
+1. User sends encrypted transaction (PVDE/SKDE) with specific `key_id` to TX Orderer Leader
+2. Leader immediately assigns transaction order and issues Order Commitment (guarantees inclusion)
+3. Leader adds encrypted transaction to decryptor and syncs with followers
+4. Decryptor continuously polls DKG network (every 500ms) for decryption keys
+5. When matching `key_id` decryption key arrives, transaction is decrypted and stored
+6. Rollup requests transaction batches from Leader
+7. Leader provides ordered batches of decrypted transactions to Rollup for block building
 
 ## Workspace Structure
 
-This is a **fully modularized Rust workspace** with 5 specialized crates:
+This is a **Rust workspace** with 5 crates:
 
 ```
 tx_orderer/
-├── src/main.rs              # Main binary entry point: logger + cli::run()
-├── Cargo.toml               # Workspace root with binary configuration
-├── primitives/              # Core types (Hash, Address, Platform) and traits
-├── shared/                  # Shared utilities and abstractions
-├── node/                    # TX orderer node components (RPC, tasks, clients, state)
+├── src/                     # Main binary entry point
+├── primitives/              # Core types, error definitions, and traits
+├── shared/                  # Shared utilities (logging, profiler)
+├── node/                    # Core TX orderer functionality
+│   ├── src/rpc/            # RPC servers (internal, cluster, external)
+│   ├── src/services/       # Business logic services (NEW)
+│   ├── src/tasks/          # Background workers (decryptor, batch processing)
+│   ├── src/clients/        # External service clients
+│   ├── src/types/          # Data models and structures
+│   ├── src/utils/          # Utilities (merkle tree manager)
+│   └── src/state.rs        # Application state management
 └── cli/                     # Command-line interface
 ```
 
 ### Crate Responsibilities
 
 - **`src/`**: Main binary entry point that delegates to CLI
-- **`primitives/`**: Fundamental types, error definitions, and core traits
-- **`shared/`**: Cross-cutting utilities (logging, storage, crypto, merkle trees)
-- **`node/`**: Core business logic with 3-layer architecture:
+- **`primitives/`**: Core types (Hash, Address, Platform), error definitions, and traits
+- **`shared/`**: Shared utilities (logging, profiler)
+- **`node/`**: Core TX orderer functionality with 3-layer architecture:
   - **RPC Layer**: External/cluster/internal RPC servers (controllers)
   - **Service Layer**: Business logic services (TransactionService, BatchService, ValidationService)
   - **Infrastructure Layer**: Background tasks, external clients, and application state
-- **`cli/`**: Command-line interface with configuration management
+- **`cli/`**: Simple command-line interface (init, start commands)
 
 ## Development Commands
 
@@ -50,8 +58,8 @@ tx_orderer/
 ```bash
 # Run TX Orderer CLI (main entry point)
 cargo run -- --help                    # Show CLI help
-cargo run -- start --port 3000         # Start node on port 3000
-cargo run -- init                      # Generate default configuration
+cargo run -- init                      # Initialize node configuration
+cargo run -- start                     # Start TX orderer node
 
 # Or use the binary name directly
 cargo run --bin tx_orderer -- start
@@ -65,14 +73,14 @@ cargo build
 # Check compilation without building
 cargo check
 
-# Build specific crate
-cargo build -p tx-orderer-primitives
-cargo build -p tx-orderer-node
-cargo build -p tx-orderer-cli
+# Build specific crate (use actual crate names from Cargo.toml)
+cargo build -p primitives
+cargo build -p node
+cargo build -p cli
 
 # Check individual crates
-cargo check -p tx-orderer-shared
-cargo check -p tx-orderer-node
+cargo check -p shared
+cargo check -p node
 ```
 
 ### Testing
@@ -81,11 +89,11 @@ cargo check -p tx-orderer-node
 cargo test
 
 # Test specific crate
-cargo test -p tx-orderer-node
-cargo test -p tx-orderer-cli
+cargo test -p node
+cargo test -p cli
 
 # Test with output
-cargo test --bin tx_orderer -- --nocapture
+cargo test -- --nocapture
 ```
 
 ## Key Dependencies and Integration
@@ -109,16 +117,11 @@ cargo test --bin tx_orderer -- --nocapture
 ### Async-First Design
 All storage, network, and processing operations use async/await with tokio runtime.
 
-### Memory Management
-- Strategic use of `Vec<u8>` for serialized data flexibility
-- Reference-based parameters (`&[u8]`, `&str`) to avoid unnecessary copying
-- Careful `.clone()` usage only when ownership transfer is required
-
 ### Error Handling
-Comprehensive error types with proper From trait implementations for error conversion between crates.
+Error types with From trait implementations for error conversion between crates.
 
 ### Configuration Management
-TOML-based configuration files managed through the CLI with structured types.
+Configuration managed through the CLI with structured types.
 
 ## Working with the Codebase
 
@@ -132,14 +135,14 @@ TOML-based configuration files managed through the CLI with structured types.
 ### Common Development Tasks
 
 **Adding New RPC Methods:**
-1. Add request/response types to `node/src/rpc/types.rs`
-2. Implement handler in appropriate RPC module (internal/cluster/external)
+1. Add request/response types to appropriate RPC module
+2. Implement handler in RPC module (internal/cluster/external)
 3. Register method in server initialization
 
 **Adding New CLI Commands:**
-1. Extend command enums in `cli/src/lib.rs`
+1. Extend `Commands` enum in `cli/src/lib.rs` (currently: Init, Start)
 2. Implement command handler function
-3. Add configuration if needed
+3. Update match statement in `run()` function
 
 **Adding New External Clients:**
 1. Create new module in `node/src/clients/`
@@ -156,20 +159,19 @@ TOML-based configuration files managed through the CLI with structured types.
 
 ## Important Notes
 
-- **No Copy Trait Overuse**: Prefer references and strategic cloning
 - **Database Integration**: Uses Model trait from radius-sdk for persistence
-- **RPC Architecture**: Three separate servers (internal, cluster, external) with different purposes
-- **Encryption Focus**: Core feature is time-delayed transaction decryption for MEV resistance
-- **Cluster Coordination**: Leader election and follower validation are central to the design
+- **RPC Architecture**: Three separate servers (internal, cluster, external)
+- **Encryption Focus**: PVDE/SKDE transaction decryption with key-based timing
+- **Cluster Coordination**: Leader-follower model for transaction sequencing
 
-## Compilation Status
+## Current Status
 
 ✅ **All 5 crates compile successfully**  
-✅ **CLI fully functional with all commands**  
-✅ **Workspace dependencies properly configured**  
-✅ **Clean separation of concerns across crates**
+✅ **Service layer refactoring completed**  
+✅ **Basic CLI with init/start commands**  
+✅ **3-layer architecture implemented (RPC → Services → Infrastructure)**
 
-The refactoring from monolithic to modular architecture is **complete** and ready for production development.
+The service layer refactoring is complete with TransactionService, BatchService, and ValidationService handling business logic.
 
 ## Refactoring Guidelines
 
