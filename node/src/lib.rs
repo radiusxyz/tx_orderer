@@ -4,13 +4,36 @@ pub mod rpc;
 pub mod tasks;
 pub mod clients;
 pub mod state;
+pub mod services;
 
 pub use types::*;
 pub use utils::*;
-pub use rpc::*;
+pub use rpc::{
+    AddMevSearcherInfo, AddMevSearcherInfoMessage, BatchCreationMessage,
+    GetBatch, GetBatchResponse, GetCanProvideTransactionInfo,
+    GetCanProvideTransactionInfoResponse, GetClusterMetadata,
+    GetClusterMetadataResponse, GetEncryptedTransactionList,
+    GetEncryptedTransactionListResponse, GetEncryptedTransactionWithOrderCommitment,
+    GetEncryptedTransactionWithTransactionHash, GetOrderCommitment,
+    GetOrderCommitmentInfo, GetOrderCommitmentInfoResponse,
+    GetOrderCommitmentResponse, GetPostMerklePath,
+    ClusterGetRawTransactionList, ClusterGetRawTransactionListResponse,
+    ExternalGetRawTransactionList, ExternalGetRawTransactionListResponse,
+    GetRawTransactionWithOrderCommitment, GetRawTransactionWithOrderCommitmentResponse,
+    GetRawTransactionWithTransactionHash, GetRawTransactionWithTransactionHashResponse,
+    GetRollup, GetRollupMetadata, GetRollupMetadataResponse, GetRollupResponse,
+    GetVersion, GetVersionResponse, LeaderChangeMessage,
+    RemoveMevSearcherInfo, RemoveMevSearcherInfoMessage,
+    SendEncryptedTransaction, SendRawTransaction, SetLeaderTxOrderer,
+    SetMaxGasLimit, SignMessage, SyncBatchCreation,
+    SyncEncryptedTransaction, SyncLeaderTxOrderer, SyncMaxGasLimit,
+    SyncMaxGasLimitMessage, SyncRawTransaction,
+    sync_batch_creation, sync_encrypted_transaction, sync_raw_transaction,
+};
 pub use tasks::*;
 pub use clients::*;
 pub use state::*;
+pub use services::*;
 
 // Public API functions for CLI
 use std::{collections::HashMap, sync::{Arc, Mutex}};
@@ -120,6 +143,9 @@ pub async fn start_node(config_option: &mut ConfigOption) -> Result<(), Error> {
     );
 
     tasks::run_backrunning_server(app_state.shared_channel_infos().clone()).await;
+
+    // Start all background services
+    services::ServiceManager::start_all_services(app_state.clone()).await;
 
     initialize_node_clients(app_state.clone()).await?;
 
