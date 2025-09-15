@@ -38,7 +38,10 @@ tx_orderer/
 - **`src/`**: Main binary entry point that delegates to CLI
 - **`primitives/`**: Fundamental types, error definitions, and core traits
 - **`shared/`**: Cross-cutting utilities (logging, storage, crypto, merkle trees)
-- **`node/`**: Core business logic including RPC servers, background tasks, external clients, and application state
+- **`node/`**: Core business logic with 3-layer architecture:
+  - **RPC Layer**: External/cluster/internal RPC servers (controllers)
+  - **Service Layer**: Business logic services (TransactionService, BatchService, ValidationService)
+  - **Infrastructure Layer**: Background tasks, external clients, and application state
 - **`cli/`**: Command-line interface with configuration management
 
 ## Development Commands
@@ -167,3 +170,7 @@ TOML-based configuration files managed through the CLI with structured types.
 ✅ **Clean separation of concerns across crates**
 
 The refactoring from monolithic to modular architecture is **complete** and ready for production development.
+
+## Refactoring Guidelines
+
+**CRITICAL: When refactoring this codebase, you MUST NOT create new features that don't exist in the current code.** Only move and reorganize existing functionality. Every existing RPC endpoint and business logic must work exactly the same after refactoring.

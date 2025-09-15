@@ -59,15 +59,177 @@ tx_orderer/
 
 ## System Architecture
 
-TX Orderer plays a core role in our block-building solution. Working in cluster with leader-based approach brings the following benefits over consensus-based approach:
+TX Orderer is built with a **service-oriented architecture** that provides a robust, scalable sequencing solution for blockchain ecosystems. The system operates in a leader-follower cluster model with clear separation of concerns across multiple layers.
 
-- Simplicity: With a single leader responsible for sequencing, the system simplifies the decision-making process. This centralized approach reduces the complexity and overhead associated with achieving consensus among multiple nodes.
+### Overall System Structure
 
-- Efficiency: Leader-based systems can implement more efficient ordering and syncing related decisions  since the leader node acts as the authoritative source for sequencing. This streamlines the process of agreeing on the state of the system, as there's no need for multiple nodes to negotiate each sequence.
+```mermaid
+graph TB
+    subgraph "External Systems"
+        User[Users]
+        DKG[DKG Network]
+        Rollup[Rollup Executor]
+        Validation[Validation Contract]
+    end
 
-- Reduced Latency: By centralizing the sequencing tasks, leader-based systems can often reduce communication latency. Messages do not need to traverse multiple nodes to reach a consensus, as the leader directly sequences and processes requests. However, note that the leader manages all processing, meaning its performance directly influences the overall network's functionality.
+    subgraph "TX Orderer Cluster"
+        subgraph "Leader Node"
+            subgraph "RPC Layer"
+                ExtRPC[External RPC]
+                ClusRPC[Cluster RPC]
+                IntRPC[Internal RPC]
+            end
+            
+            subgraph "Service Layer"
+                TxService[TransactionService]
+                BatchService[BatchService]
+                ValidService[ValidationService]
+                ServiceMgr[ServiceManager]
+            end
+            
+            subgraph "Background Workers"
+                Decryptor[Decryptor]
+                Workers[Background Tasks]
+            end
+            
+            subgraph "Data Layer"
+                Database[(Database)]
+                Cache[(Cache)]
+                MerkleTree[Merkle Trees]
+            end
+        end
+        
+        subgraph "Follower Nodes"
+            FollowerRPC[Follower RPC]
+            FollowerService[Follower Services]
+            FollowerData[(Follower Data)]
+        end
+    end
 
-- Optimized Throughput: The leader can optimize sequencing and resource allocation based on the current system load and priorities, potentially improving the overall throughput of the system.
+    %% External connections
+    User --> ExtRPC
+    DKG --> Decryptor
+    Rollup --> ExtRPC
+    ValidService --> Validation
+
+    %% Internal flow
+    ExtRPC --> TxService
+    ExtRPC --> BatchService
+    TxService --> Database
+    TxService --> Decryptor
+    BatchService --> ValidService
+    BatchService --> MerkleTree
+    ServiceMgr --> Workers
+    
+    %% Cluster communication
+    ClusRPC --> FollowerRPC
+    TxService --> ClusRPC
+    BatchService --> ClusRPC
+    
+    classDef external fill:#e1f5fe
+    classDef rpc fill:#f3e5f5
+    classDef service fill:#e8f5e8
+    classDef worker fill:#fff3e0
+    classDef data fill:#fce4ec
+    
+    class User,DKG,Rollup,Validation external
+    class ExtRPC,ClusRPC,IntRPC,FollowerRPC rpc
+    class TxService,BatchService,ValidService,ServiceMgr,FollowerService service
+    class Decryptor,Workers worker
+    class Database,Cache,MerkleTree,FollowerData data
+```
+
+### Service Layer Architecture
+
+The core innovation of TX Orderer is its **3-layer service architecture** that provides clear separation of concerns:
+
+```mermaid
+graph LR
+    subgraph "Controller Layer"
+        A[RPC Handlers]
+    end
+    
+    subgraph "Service Layer"
+        B[TransactionService<br/>• process_encrypted_transaction<br/>• process_raw_transaction<br/>• issue_order_commitment]
+        C[BatchService<br/>• finalize_batch<br/>• create_batch<br/>• build_batch_data]
+        D[ValidationService<br/>• submit_batch_commitment<br/>• validate_signatures<br/>• check_leader_status]
+    end
+    
+    subgraph "Infrastructure Layer"
+        E[Database Models]
+        F[External Clients]
+        G[Background Workers]
+    end
+
+    A --> B
+    A --> C
+    A --> D
+    B --> E
+    B --> F
+    C --> E
+    C --> G
+    D --> F
+    
+    classDef controller fill:#f3e5f5
+    classDef service fill:#e8f5e8
+    classDef infra fill:#e1f5fe
+    
+    class A controller
+    class B,C,D service
+    class E,F,G infra
+```
+
+### Workspace Structure
+
+```mermaid
+graph TD
+    subgraph "TX Orderer Workspace"
+        A[src/<br/>Main Binary]
+        B[primitives/<br/>Core Types & Traits]
+        C[shared/<br/>Cross-cutting Utilities]
+        D[node/<br/>Core Business Logic]
+        E[cli/<br/>Command Interface]
+    end
+    
+    A --> E
+    A --> D
+    D --> C
+    D --> B
+    C --> B
+    E --> B
+    
+    subgraph "node/ Internal Structure"
+        D1[rpc/ - RPC Servers]
+        D2[services/ - Business Logic]
+        D3[tasks/ - Background Workers]
+        D4[clients/ - External APIs]
+        D5[types/ - Data Models]
+        D6[state/ - Application State]
+    end
+    
+    D --> D1
+    D --> D2
+    D --> D3
+    D --> D4
+    D --> D5
+    D --> D6
+    
+    classDef crate fill:#e8f5e8
+    classDef internal fill:#f3e5f5
+    
+    class A,B,C,D,E crate
+    class D1,D2,D3,D4,D5,D6 internal
+```
+
+### Architectural Benefits
+
+Working in cluster with leader-based approach and service-oriented design brings the following benefits:
+
+- **Simplicity**: Clear separation of concerns with dedicated services for specific business domains
+- **Scalability**: Service layer enables independent scaling and optimization of different components  
+- **Maintainability**: Each service has well-defined responsibilities and interfaces
+- **Efficiency**: Leader-based sequencing reduces consensus overhead while service layer optimizes processing
+- **Extensibility**: New features can be added by extending existing services or creating new ones
 
 ### Key Components
 
