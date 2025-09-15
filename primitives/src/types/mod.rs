@@ -18,8 +18,7 @@ pub use version::*;
 
 pub(crate) mod prelude {
     pub use radius_sdk::{
-        kvstore::{kvstore, KvStoreError, Lock, Model},
-        signature::{Address, Signature},
+        kvstore::Model,
     };
     pub use serde::{Deserialize, Serialize};
 

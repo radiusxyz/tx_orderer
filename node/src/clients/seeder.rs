@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use radius_sdk::{
     json_rpc::client::{Id, RpcClient},
-    signature::{Address, ChainType, PrivateKeySigner, Signature},
+    signature::{Address, PrivateKeySigner, Signature},
 };
 use serde::{Deserialize, Serialize};
 

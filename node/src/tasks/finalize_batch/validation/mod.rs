@@ -4,7 +4,7 @@ use tokio::time::sleep;
 
 use tx_orderer_primitives::{ValidationInfo, ValidationServiceProvider};
 use super::Rollup;
-use crate::{clients::validation_service_manager, state::AppState};
+use crate::state::AppState;
 
 pub async fn submit_batch_commitment(
     context: AppState,

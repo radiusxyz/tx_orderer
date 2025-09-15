@@ -2,7 +2,7 @@ pub mod merkle_tree_manager;
 
 pub use merkle_tree_manager::*;
 
-use radius_sdk::json_rpc::client::{Id, RpcClient, RpcClientError};
+use radius_sdk::json_rpc::client::{Id, RpcClient};
 use crate::types::*;
 use tx_orderer_primitives::Error;
 

@@ -1,10 +1,8 @@
 use std::{fs, io, path::Path, time::Duration};
 
-use radius_sdk::json_rpc::client::{Id, RpcClient, RpcClientError};
 use reqwest::Client;
 
-use tx_orderer_primitives::{error::{self, Error}};
-use crate::logger::Logger;
+use tx_orderer_primitives::error::Error;
 
 pub async fn health_check(tx_orderer_external_rpc_url: impl AsRef<str>) -> Result<(), Error> {
     let health_check_url = format!("{}/health", tx_orderer_external_rpc_url.as_ref());
