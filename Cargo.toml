@@ -1,13 +1,20 @@
-[package]
-name = "tx_orderer"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "src",
+    "primitives",
+    "shared", 
+    "node",
+    "cli"
+]
+resolver = "2"
 
-[[bin]]
-name = "tx_orderer"
-path = "src/bin/tx_orderer.rs"
+[workspace.dependencies]
+tx-orderer-primitives = { path = "primitives" }
+tx-orderer-shared = { path = "shared" }
+tx-orderer-node = { path = "node" }
+tx-orderer-cli = { path = "cli" }
 
-[dependencies]
+# External
 chrono = "0.4.38"
 clap = { version = "4.4.7", features = ["derive"] }
 const-hex = "1.12"
@@ -24,12 +31,14 @@ tracing-subscriber = "0.3.17"
 reqwest = { version = "0.12.4", features = ["json"] }
 dashmap = "5.4"
 serde_with = "3"
-# Profiler
 pyroscope = "0.5.4"
 pyroscope_pprofrs = "0.2"
-skde = { git = "https://github.com/radiusxyz/skde", rev="d46d66fa1e59aa5d555a1124cf3b89cef4753fd1"}
 futures = "0.3"
 tokio-stream = "0.1"
 
+# Radius Extern 
+skde = { git = "https://github.com/radiusxyz/skde", rev = "69e70ac0ab071000b3d13557cdbed43ffeddc878" }
 radius-sdk = { git = "https://github.com/radiusxyz/radius-sdk-rs", rev = "7fbbffeb6ab7807a489bb5a7bc03eaa66031f398", features = ["full"] }
-# radius-sdk = { path = "../radius-sdk-rs/radius-sdk", features = ["full"] }
+
+[patch.crates-io]
+risc0-zkvm = { git = "https://github.com/risc0/risc0", tag = "v2.0.1", package = "risc0-zkvm" }
