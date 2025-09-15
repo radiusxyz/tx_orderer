@@ -1,0 +1,17 @@
+[package]
+name = "tx-orderer-shared"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tx-orderer-primitives = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+pyroscope = { workspace = true }
+pyroscope_pprofrs = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+radius-sdk = { workspace = true }

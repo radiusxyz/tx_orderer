@@ -1,0 +1,27 @@
+[package]
+name = "tx-orderer-node"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tx-orderer-primitives = { workspace = true }
+tx-orderer-shared = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+clap = { workspace = true }
+chrono = { workspace = true }
+ethers-core = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+dashmap = { workspace = true }
+futures = { workspace = true }
+serde_with = { workspace = true }
+const-hex = { workspace = true }
+sha3 = { workspace = true }
+toml = { workspace = true }
+reqwest = { workspace = true }
+skde = { workspace = true }
+tokio-tungstenite = { workspace = true }
+local-ip-address = { workspace = true }
+radius-sdk = { workspace = true }

@@ -1,0 +1,12 @@
+[package]
+name = "tx_orderer"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "tx_orderer"
+path = "main.rs"
+
+[dependencies]
+tx-orderer-cli = { workspace = true }
+tokio = { workspace = true }

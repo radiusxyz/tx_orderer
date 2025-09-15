@@ -1,0 +1,17 @@
+[package]
+name = "tx-orderer-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tx-orderer-primitives = { workspace = true }
+tx-orderer-shared = { workspace = true }
+tx-orderer-node = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+futures = { workspace = true }
+radius-sdk = { workspace = true }
