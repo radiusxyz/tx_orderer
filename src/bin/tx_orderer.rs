@@ -3,6 +3,7 @@ use futures::future::try_join_all;
 use radius_sdk::{
     json_rpc::{client::RpcClient, server::RpcServer},
     kvstore::{CachedKvStore, KvStoreBuilder},
+    signature::PrivateKeySigner,
     util::{get_resource_limit, set_resource_limit, ResourceType},
 };
 use serde::{Deserialize, Serialize};
@@ -125,7 +126,7 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
     let merkle_tree_manager = MerkleTreeManager::init(&rpc_client).await;
     let app_state: AppState = AppState::new(
         config,
-        seeder_client,
+        seeder_client.clone(),
         reward_manager_client,
         distributed_key_generation_client,
         CachedKvStore::default(),
@@ -142,6 +143,35 @@ async fn start_tx_orderer(config_option: &mut ConfigOption) -> Result<(), Error>
     let internal_handle = tokio::spawn(initialize_internal_rpc_server(app_state.clone()));
     let cluster_handle = tokio::spawn(initialize_cluster_rpc_server(app_state.clone()));
     let external_handle = tokio::spawn(initialize_external_rpc_server(app_state.clone()));
+
+    let signing_key = &app_state.config().signing_key;
+    let sequencing_info_list = SequencingInfoList::get().unwrap_or_default();
+
+    for (platform, service_provider) in sequencing_info_list.iter() {
+        let signer = PrivateKeySigner::from_str(platform.clone().into(), signing_key).unwrap();
+
+        let cluster_id_list = ClusterIdList::get(*platform, *service_provider).unwrap();
+
+        for cluster_id in cluster_id_list.iter() {
+            tracing::info!(
+                "Update external / cluster rpc url to sequencer... - cluster_id: {:?} / external_rpc_url: {:?} / cluster_rpc_url: {:?}",
+                cluster_id,
+                app_state.config().external_rpc_url,
+                app_state.config().cluster_rpc_url
+            );
+
+            seeder_client
+                .register_tx_orderer(
+                    *platform,
+                    *service_provider,
+                    cluster_id,
+                    &app_state.config().external_rpc_url.clone(),
+                    &app_state.config().cluster_rpc_url.clone(),
+                    &signer,
+                )
+                .await?;
+        }
+    }
 
     let handles = vec![internal_handle, cluster_handle, external_handle];
     let results = try_join_all(handles).await;
